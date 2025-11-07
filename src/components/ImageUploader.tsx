@@ -104,29 +104,51 @@ export const ImageUploader = ({ onImagesUploaded }: ImageUploaderProps) => {
                 <div className="aspect-square relative">
                   <img
                     src={image.finalUrl || image.preview}
-                    alt="Upload preview"
-                    className="w-full h-full object-cover"
+                    alt={image.status === 'completed' ? 'Bearbetad bild' : 'Original bild'}
+                    className={`w-full h-full object-cover transition-all duration-700 ${
+                      image.status === 'processing' 
+                        ? 'blur-md animate-pulse scale-105' 
+                        : 'blur-0'
+                    }`}
                   />
                   
-                  {/* Status indicator */}
-                  {image.status !== 'pending' && (
-                    <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium ${
-                      image.status === 'processing' ? 'bg-blue-500 text-white' :
-                      image.status === 'completed' ? 'bg-green-500 text-white' :
-                      image.status === 'failed' ? 'bg-red-500 text-white' : ''
-                    }`}>
-                      {image.status === 'processing' && 'Bearbetar...'}
-                      {image.status === 'completed' && '✓ Klar'}
-                      {image.status === 'failed' && '✗ Misslyckades'}
+                  {/* Processing overlay with pulsing effect */}
+                  {image.status === 'processing' && (
+                    <div className="absolute inset-0 bg-primary/20 animate-pulse flex items-center justify-center">
+                      <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-primary/50">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
+                          <span className="text-sm font-medium text-foreground">Bearbetar...</span>
+                        </div>
+                      </div>
                     </div>
                   )}
                   
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  {/* Status badge */}
+                  {image.status === 'completed' && (
+                    <div className="absolute top-2 right-2 px-3 py-1 rounded-full bg-green-500 text-white text-xs font-medium shadow-lg animate-fade-in flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Klar
+                    </div>
+                  )}
+                  
+                  {image.status === 'failed' && (
+                    <div className="absolute top-2 right-2 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-medium shadow-lg">
+                      ✗ Misslyckades
+                    </div>
+                  )}
+                  
+                  {/* Hover overlay with actions */}
+                  <div className={`absolute inset-0 bg-black/60 transition-opacity flex items-center justify-center gap-2 ${
+                    image.status === 'processing' ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
+                  }`}>
                     {image.finalUrl && (
                       <Button
                         variant="secondary"
                         size="icon"
-                        className="rounded-full"
+                        className="rounded-full shadow-lg hover-scale"
                         onClick={() => {
                           const link = document.createElement('a');
                           link.href = image.finalUrl!;
@@ -144,7 +166,7 @@ export const ImageUploader = ({ onImagesUploaded }: ImageUploaderProps) => {
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="rounded-full"
+                      className="rounded-full shadow-lg hover-scale"
                       onClick={() => removeImage(image.id)}
                     >
                       <X className="w-4 h-4" />

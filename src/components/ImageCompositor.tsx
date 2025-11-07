@@ -27,13 +27,27 @@ export const ImageCompositor = ({
       canvas.height = 2048;
 
       try {
-        // Load background image
+        // Load background image - convert to absolute URL
         const bgImage = new Image();
         bgImage.crossOrigin = 'anonymous';
+        
+        // Create absolute URL for local assets
+        const absoluteBgUrl = scene.fullResUrl.startsWith('http') 
+          ? scene.fullResUrl 
+          : new URL(scene.fullResUrl, window.location.origin).href;
+        
+        console.log('Loading background from:', absoluteBgUrl);
+        
         await new Promise((resolve, reject) => {
-          bgImage.onload = resolve;
-          bgImage.onerror = reject;
-          bgImage.src = scene.fullResUrl;
+          bgImage.onload = () => {
+            console.log('Background loaded successfully');
+            resolve(true);
+          };
+          bgImage.onerror = (e) => {
+            console.error('Failed to load background:', e);
+            reject(e);
+          };
+          bgImage.src = absoluteBgUrl;
         });
 
         // Draw background
@@ -42,9 +56,18 @@ export const ImageCompositor = ({
         // Load segmented car image
         const carImage = new Image();
         carImage.crossOrigin = 'anonymous';
+        
+        console.log('Loading car from:', segmentedImageUrl);
+        
         await new Promise((resolve, reject) => {
-          carImage.onload = resolve;
-          carImage.onerror = reject;
+          carImage.onload = () => {
+            console.log('Car loaded successfully, dimensions:', carImage.width, 'x', carImage.height);
+            resolve(true);
+          };
+          carImage.onerror = (e) => {
+            console.error('Failed to load car:', e);
+            reject(e);
+          };
           carImage.src = segmentedImageUrl;
         });
 
@@ -132,7 +155,9 @@ export const ImageCompositor = ({
         }
 
         // Convert to data URL and callback
+        console.log('Composition complete, converting to data URL');
         const dataUrl = canvas.toDataURL('image/png', 1.0);
+        console.log('Data URL created, length:', dataUrl.length);
         onCompositionComplete(dataUrl);
       } catch (error) {
         console.error('Error composing image:', error);
