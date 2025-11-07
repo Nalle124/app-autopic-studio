@@ -86,7 +86,7 @@ serve(async (req) => {
         resizing: {
           width: 2048,
           height: 2048,
-          fit: 'contain'
+          fit: 'bounds'
         },
         background: {
           remove: {
