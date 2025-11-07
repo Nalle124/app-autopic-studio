@@ -54,7 +54,10 @@ const Index = () => {
             const formData = new FormData();
             formData.append('image', image.file);
             formData.append('scene', JSON.stringify(selectedScene));
-            formData.append('backgroundUrl', selectedScene.fullResUrl);
+            
+            // Convert background image to absolute URL
+            const backgroundUrl = new URL(selectedScene.fullResUrl, window.location.origin).href;
+            formData.append('backgroundUrl', backgroundUrl);
 
             const response = await fetch(
               `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`,

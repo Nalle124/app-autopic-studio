@@ -50,27 +50,34 @@ serve(async (req) => {
 
     console.log(`Processing image for scene: ${scene.name}`);
 
-    // Step 1: Remove background using Claid.ai
-    const removeFormData = new FormData();
-    removeFormData.append('file', imageFile);
-    removeFormData.append('operations', JSON.stringify({
-      resizing: {
-        width: 2048,
-        height: 2048,
-        fit: 'contain'
-      },
-      removeBackground: {
-        mode: 'car'
-      }
-    }));
+    // Convert image to base64
+    const imageBuffer = await imageFile.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+    const imageDataUrl = `data:${imageFile.type};base64,${base64Image}`;
 
+    // Step 1: Remove background using Claid.ai
     console.log('Removing background...');
+    const removePayload = {
+      input: imageDataUrl,
+      operations: {
+        resizing: {
+          width: 2048,
+          height: 2048,
+          fit: 'contain'
+        },
+        removeBackground: {
+          clipping: true
+        }
+      }
+    };
+
     const removeResponse = await fetch('https://api.claid.ai/v1-beta1/image/edit', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${CLAID_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      body: removeFormData,
+      body: JSON.stringify(removePayload),
     });
 
     if (!removeResponse.ok) {
@@ -80,50 +87,45 @@ serve(async (req) => {
     }
 
     const removeResult = await removeResponse.json();
-    console.log('Background removed successfully');
+    console.log('Background removed successfully:', removeResult);
 
-    // Step 2: Fetch the segmented image
+    // Step 2: Get the segmented image URL
     const segmentedImageUrl = removeResult.data.output.tmp_url;
-    const segmentedImageResponse = await fetch(segmentedImageUrl);
-    const segmentedImageBlob = await segmentedImageResponse.blob();
+    console.log('Segmented image URL:', segmentedImageUrl);
 
-    // Step 3: Composite with background using Claid.ai
-    const compositeFormData = new FormData();
-    compositeFormData.append('file', segmentedImageBlob, 'segmented.png');
-    
-    const operations: any = {
-      resizing: {
-        width: 2048,
-        height: 2048,
-        fit: 'contain'
-      },
-      background: {
-        image_url: backgroundImageUrl,
-        mode: 'fit'
+    // Step 3: Composite with background - fetch background as base64
+    console.log('Fetching background image:', backgroundImageUrl);
+    const bgResponse = await fetch(backgroundImageUrl);
+    if (!bgResponse.ok) {
+      throw new Error(`Failed to fetch background: ${bgResponse.status}`);
+    }
+    const bgBuffer = await bgResponse.arrayBuffer();
+    const bgBase64 = btoa(String.fromCharCode(...new Uint8Array(bgBuffer)));
+    const bgDataUrl = `data:image/jpeg;base64,${bgBase64}`;
+
+    const compositePayload: any = {
+      input: segmentedImageUrl,
+      operations: {
+        resizing: {
+          width: 2048,
+          height: 2048,
+          fit: 'contain'
+        },
+        background: {
+          prompt: 'none',
+          image: bgDataUrl
+        }
       }
     };
-
-    // Add shadow if enabled
-    if (scene.shadowPreset.enabled) {
-      operations.adjustments = {
-        shadow: {
-          opacity: scene.shadowPreset.strength,
-          blur: scene.shadowPreset.blur,
-          offset_x: scene.shadowPreset.offsetX,
-          offset_y: scene.shadowPreset.offsetY
-        }
-      };
-    }
-
-    compositeFormData.append('operations', JSON.stringify(operations));
 
     console.log('Compositing with background...');
     const compositeResponse = await fetch('https://api.claid.ai/v1-beta1/image/edit', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${CLAID_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      body: compositeFormData,
+      body: JSON.stringify(compositePayload),
     });
 
     if (!compositeResponse.ok) {
