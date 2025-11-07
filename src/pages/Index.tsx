@@ -4,6 +4,7 @@ import { Hero } from '@/components/Hero';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
+import { ImageCompositor } from '@/components/ImageCompositor';
 import { UploadedImage, SceneMetadata, ExportSettings } from '@/types/scene';
 import { toast } from 'sonner';
 
@@ -11,6 +12,7 @@ const Index = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [compositingImages, setCompositingImages] = useState<Map<string, { segmented: string; scene: SceneMetadata }>>(new Map());
 
   const handleImagesUploaded = (newImages: UploadedImage[]) => {
     setUploadedImages((prev) => [...prev, ...newImages]);
@@ -75,25 +77,14 @@ const Index = () => {
 
             if (result.success) {
               successCount++;
-              setUploadedImages(prev =>
-                prev.map(img =>
-                  img.id === image.id
-                    ? {
-                        ...img,
-                        status: 'completed' as const,
-                        finalUrl: result.url,
-                        segmentedUrl: result.segmentedUrl,
-                        sceneId: selectedScene.id,
-                      }
-                    : img
-                )
-              );
-              processedImages.push({
-                ...image,
-                status: 'completed',
-                finalUrl: result.url,
-                segmentedUrl: result.segmentedUrl,
-                sceneId: selectedScene.id,
+              // Trigger composition in browser
+              setCompositingImages(prev => {
+                const next = new Map(prev);
+                next.set(image.id, {
+                  segmented: result.segmentedUrl,
+                  scene: selectedScene,
+                });
+                return next;
               });
             } else {
               throw new Error(result.error || 'Processing failed');
@@ -126,6 +117,28 @@ const Index = () => {
     if (errorCount > 0) {
       toast.error(`${errorCount} bilder misslyckades`);
     }
+  };
+
+  const handleCompositionComplete = (imageId: string, dataUrl: string) => {
+    setUploadedImages(prev =>
+      prev.map(img =>
+        img.id === imageId
+          ? {
+              ...img,
+              status: 'completed' as const,
+              finalUrl: dataUrl,
+              sceneId: selectedScene?.id,
+            }
+          : img
+      )
+    );
+    
+    // Remove from compositing queue
+    setCompositingImages(prev => {
+      const next = new Map(prev);
+      next.delete(imageId);
+      return next;
+    });
   };
 
   return (
@@ -185,6 +198,16 @@ const Index = () => {
           )}
         </div>
       </main>
+
+      {/* Hidden compositors for processing */}
+      {Array.from(compositingImages.entries()).map(([imageId, { segmented, scene }]) => (
+        <ImageCompositor
+          key={imageId}
+          segmentedImageUrl={segmented}
+          scene={scene}
+          onCompositionComplete={(dataUrl) => handleCompositionComplete(imageId, dataUrl)}
+        />
+      ))}
 
       {/* Footer */}
       <footer className="border-t border-border mt-20">

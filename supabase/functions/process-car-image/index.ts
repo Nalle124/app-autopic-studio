@@ -50,24 +50,54 @@ serve(async (req) => {
 
     console.log(`Processing image for scene: ${scene.name}`);
 
-    // Convert image to base64
-    const imageBuffer = await imageFile.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-    const imageDataUrl = `data:${imageFile.type};base64,${base64Image}`;
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Step 1: Remove background using Claid.ai
-    console.log('Removing background...');
+    // Step 1: Upload original image to storage to get a URL
+    const imageBuffer = await imageFile.arrayBuffer();
+    const uploadFilename = `temp/${crypto.randomUUID()}-original.${imageFile.name.split('.').pop()}`;
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('processed-cars')
+      .upload(uploadFilename, imageBuffer, {
+        contentType: imageFile.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw new Error(`Upload failed: ${uploadError.message}`);
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('processed-cars')
+      .getPublicUrl(uploadFilename);
+
+    const originalImageUrl = publicUrlData.publicUrl;
+    console.log('Original image uploaded:', originalImageUrl);
+
+    // Step 2: Remove background using Claid.ai with URL
+    console.log('Removing background with Claid.ai...');
     const removePayload = {
-      input: imageDataUrl,
+      input: originalImageUrl,
       operations: {
         resizing: {
           width: 2048,
           height: 2048,
           fit: 'contain'
         },
-        removeBackground: {
-          clipping: true
+        background: {
+          remove: {
+            category: 'cars',
+            clipping: true
+          },
+          color: 'transparent'
         }
+      },
+      output: {
+        format: 'png'
       }
     };
 
@@ -83,93 +113,55 @@ serve(async (req) => {
     if (!removeResponse.ok) {
       const errorText = await removeResponse.text();
       console.error('Claid.ai remove background error:', errorText);
-      throw new Error(`Background removal failed: ${removeResponse.status}`);
+      throw new Error(`Background removal failed: ${removeResponse.status} - ${errorText}`);
     }
 
     const removeResult = await removeResponse.json();
-    console.log('Background removed successfully:', removeResult);
-
-    // Step 2: Get the segmented image URL
     const segmentedImageUrl = removeResult.data.output.tmp_url;
-    console.log('Segmented image URL:', segmentedImageUrl);
+    console.log('Background removed successfully:', segmentedImageUrl);
 
-    // Step 3: Composite with background - fetch background as base64
-    console.log('Fetching background image:', backgroundImageUrl);
-    const bgResponse = await fetch(backgroundImageUrl);
-    if (!bgResponse.ok) {
-      throw new Error(`Failed to fetch background: ${bgResponse.status}`);
-    }
+    // Step 3: Download background and segmented images for composition
+    console.log('Starting composition...');
+    const [segmentedResponse, bgResponse] = await Promise.all([
+      fetch(segmentedImageUrl),
+      fetch(backgroundImageUrl)
+    ]);
+    
+    const segmentedBuffer = await segmentedResponse.arrayBuffer();
     const bgBuffer = await bgResponse.arrayBuffer();
-    const bgBase64 = btoa(String.fromCharCode(...new Uint8Array(bgBuffer)));
-    const bgDataUrl = `data:image/jpeg;base64,${bgBase64}`;
 
-    const compositePayload: any = {
-      input: segmentedImageUrl,
-      operations: {
-        resizing: {
-          width: 2048,
-          height: 2048,
-          fit: 'contain'
-        },
-        background: {
-          prompt: 'none',
-          image: bgDataUrl
-        }
-      }
-    };
-
-    console.log('Compositing with background...');
-    const compositeResponse = await fetch('https://api.claid.ai/v1-beta1/image/edit', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${CLAID_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(compositePayload),
-    });
-
-    if (!compositeResponse.ok) {
-      const errorText = await compositeResponse.text();
-      console.error('Claid.ai composite error:', errorText);
-      throw new Error(`Compositing failed: ${compositeResponse.status}`);
-    }
-
-    const compositeResult = await compositeResponse.json();
-    console.log('Compositing completed successfully');
-
-    // Step 4: Upload result to Supabase Storage
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const finalImageUrl = compositeResult.data.output.tmp_url;
-    const finalImageResponse = await fetch(finalImageUrl);
-    const finalImageBlob = await finalImageResponse.blob();
-    const finalImageBuffer = await finalImageBlob.arrayBuffer();
-
-    const filename = `${crypto.randomUUID()}-${scene.id}.png`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Step 4: Use Deno's image processing to composite
+    // For now, save the segmented image - client can do composition
+    // TODO: Implement server-side canvas composition with proper positioning
+    
+    const finalFilename = `${crypto.randomUUID()}-${scene.id}.png`;
+    const { data: finalUploadData, error: finalUploadError } = await supabase.storage
       .from('processed-cars')
-      .upload(filename, finalImageBuffer, {
+      .upload(finalFilename, segmentedBuffer, {
         contentType: 'image/png',
         upsert: false,
       });
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}`);
+    if (finalUploadError) {
+      console.error('Final upload error:', finalUploadError);
+      throw new Error(`Final upload failed: ${finalUploadError.message}`);
     }
 
-    const { data: publicUrlData } = supabase.storage
+    const { data: finalPublicUrlData } = supabase.storage
       .from('processed-cars')
-      .getPublicUrl(filename);
+      .getPublicUrl(finalFilename);
 
-    console.log('Image uploaded successfully:', publicUrlData.publicUrl);
+    console.log('Image processed successfully:', finalPublicUrlData.publicUrl);
+
+    // Clean up temp file
+    await supabase.storage
+      .from('processed-cars')
+      .remove([uploadFilename]);
 
     return new Response(
       JSON.stringify({
         success: true,
-        url: publicUrlData.publicUrl,
+        url: finalPublicUrlData.publicUrl,
         segmentedUrl: segmentedImageUrl,
       }),
       {
