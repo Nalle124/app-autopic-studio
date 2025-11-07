@@ -4,15 +4,14 @@ import { Hero } from '@/components/Hero';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
-import { ImageCompositor } from '@/components/ImageCompositor';
 import { UploadedImage, SceneMetadata, ExportSettings } from '@/types/scene';
+import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 const Index = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [compositingImages, setCompositingImages] = useState<Map<string, { segmented: string; scene: SceneMetadata }>>(new Map());
 
   const handleImagesUploaded = (newImages: UploadedImage[]) => {
     setUploadedImages((prev) => [...prev, ...newImages]);
@@ -77,15 +76,20 @@ const Index = () => {
 
             if (result.success) {
               successCount++;
-              // Trigger composition in browser
-              setCompositingImages(prev => {
-                const next = new Map(prev);
-                next.set(image.id, {
-                  segmented: result.segmentedUrl,
-                  scene: selectedScene,
-                });
-                return next;
-              });
+              // Set finalUrl directly - skip canvas composition for now
+              setUploadedImages(prev =>
+                prev.map(img =>
+                  img.id === image.id
+                    ? {
+                        ...img,
+                        status: 'completed' as const,
+                        finalUrl: result.segmentedUrl, // Use segmented URL directly
+                        segmentedUrl: result.segmentedUrl,
+                        sceneId: selectedScene.id,
+                      }
+                    : img
+                )
+              );
             } else {
               throw new Error(result.error || 'Processing failed');
             }
@@ -111,34 +115,12 @@ const Index = () => {
     setIsProcessing(false);
 
     if (successCount > 0) {
-      toast.success(`${successCount} bilder klara! Klicka på bilderna för att ladda ner.`);
+      toast.success(`${successCount} bilder klara! Scrolla ner för att se resultatet.`);
     }
 
     if (errorCount > 0) {
       toast.error(`${errorCount} bilder misslyckades`);
     }
-  };
-
-  const handleCompositionComplete = (imageId: string, dataUrl: string) => {
-    setUploadedImages(prev =>
-      prev.map(img =>
-        img.id === imageId
-          ? {
-              ...img,
-              status: 'completed' as const,
-              finalUrl: dataUrl,
-              sceneId: selectedScene?.id,
-            }
-          : img
-      )
-    );
-    
-    // Remove from compositing queue
-    setCompositingImages(prev => {
-      const next = new Map(prev);
-      next.delete(imageId);
-      return next;
-    });
   };
 
   return (
@@ -148,14 +130,14 @@ const Index = () => {
       <Hero />
 
       <main className="container mx-auto px-6 py-12" id="upload-section">
-        <div className="max-w-7xl mx-auto space-y-12">
+        <div className="max-w-7xl mx-auto space-y-8">
           {/* Upload Section */}
           <section>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-foreground mb-1">
                 1. Ladda upp dina bilder
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Dra och släpp upp till 50 bilbilder åt gången
               </p>
             </div>
@@ -165,11 +147,11 @@ const Index = () => {
           {/* Scene Selection */}
           {uploadedImages.length > 0 && (
             <section>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-foreground mb-1">
                   2. Välj bakgrund
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Välj en professionell scen för dina bilar
                 </p>
               </div>
@@ -183,12 +165,12 @@ const Index = () => {
           {/* Export Panel */}
           {uploadedImages.length > 0 && selectedScene && (
             <section>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-foreground mb-1">
                   3. Exportera
                 </h2>
-                <p className="text-muted-foreground">
-                  Konfigurera och ladda ner dina bearbetade bilder
+                <p className="text-sm text-muted-foreground">
+                  Starta bearbetning av dina bilder
                 </p>
               </div>
               <div className="max-w-lg">
@@ -196,18 +178,58 @@ const Index = () => {
               </div>
             </section>
           )}
+
+          {/* Results Section - Show processed images */}
+          {uploadedImages.some(img => img.status === 'completed') && (
+            <section>
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-foreground mb-1">
+                  4. Färdiga bilder
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Klicka på bilderna för att ladda ner
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {uploadedImages
+                  .filter(img => img.status === 'completed')
+                  .map((image) => (
+                    <Card key={image.id} className="group relative overflow-hidden cursor-pointer hover-scale"
+                      onClick={() => {
+                        if (image.finalUrl) {
+                          const link = document.createElement('a');
+                          link.href = image.finalUrl;
+                          link.download = `${image.file.name.split('.')[0]}-${image.sceneId}.png`;
+                          link.click();
+                        }
+                      }}
+                    >
+                      <div className="aspect-square relative">
+                        <img
+                          src={image.finalUrl || image.preview}
+                          alt="Bearbetad bild"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                              </svg>
+                              Ladda ner
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+              </div>
+            </section>
+          )}
         </div>
       </main>
-
-      {/* Hidden compositors for processing */}
-      {Array.from(compositingImages.entries()).map(([imageId, { segmented, scene }]) => (
-        <ImageCompositor
-          key={imageId}
-          segmentedImageUrl={segmented}
-          scene={scene}
-          onCompositionComplete={(dataUrl) => handleCompositionComplete(imageId, dataUrl)}
-        />
-      ))}
 
       {/* Footer */}
       <footer className="border-t border-border mt-20">
