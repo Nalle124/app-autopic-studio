@@ -18,9 +18,9 @@ export const SCENES: SceneMetadata[] = [
     shadowPreset: {
       enabled: true,
       strength: 0.3,
-      blur: 30,
+      blur: 50,
       offsetX: 0,
-      offsetY: 20,
+      offsetY: 5,
     },
     reflectionPreset: {
       enabled: false,
@@ -40,9 +40,9 @@ export const SCENES: SceneMetadata[] = [
     shadowPreset: {
       enabled: true,
       strength: 0.5,
-      blur: 40,
+      blur: 60,
       offsetX: -10,
-      offsetY: 15,
+      offsetY: 8,
     },
     reflectionPreset: {
       enabled: true,
@@ -62,9 +62,9 @@ export const SCENES: SceneMetadata[] = [
     shadowPreset: {
       enabled: true,
       strength: 0.4,
-      blur: 35,
+      blur: 55,
       offsetX: 5,
-      offsetY: 18,
+      offsetY: 10,
     },
     reflectionPreset: {
       enabled: false,
@@ -84,9 +84,9 @@ export const SCENES: SceneMetadata[] = [
     shadowPreset: {
       enabled: true,
       strength: 0.2,
-      blur: 25,
+      blur: 45,
       offsetX: 0,
-      offsetY: 12,
+      offsetY: 5,
     },
     reflectionPreset: {
       enabled: true,
@@ -106,9 +106,9 @@ export const SCENES: SceneMetadata[] = [
     shadowPreset: {
       enabled: true,
       strength: 0.6,
-      blur: 45,
+      blur: 65,
       offsetX: 0,
-      offsetY: 25,
+      offsetY: 12,
     },
     reflectionPreset: {
       enabled: true,

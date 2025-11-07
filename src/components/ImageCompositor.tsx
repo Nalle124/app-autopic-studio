@@ -89,11 +89,11 @@ export const ImageCompositor = ({
           ctx.globalAlpha = scene.shadowPreset.strength;
           ctx.filter = `blur(${scene.shadowPreset.blur}px)`;
           
-          // Create elliptical shadow
+          // Create elliptical shadow - more realistic proportions
           const shadowY = baselineY + scene.shadowPreset.offsetY;
           const shadowX = carX + (scaledWidth / 2) + scene.shadowPreset.offsetX;
-          const shadowWidth = scaledWidth * 0.8;
-          const shadowHeight = scaledHeight * 0.15;
+          const shadowWidth = scaledWidth * 1.1; // Larger shadow
+          const shadowHeight = scaledHeight * 0.08; // Thinner, more realistic
           
           ctx.fillStyle = '#000000';
           ctx.beginPath();
