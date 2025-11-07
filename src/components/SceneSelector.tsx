@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { SCENES } from '@/data/scenes';
-import { Check } from 'lucide-react';
+import { Check, Plus } from 'lucide-react';
+import { CustomSceneDialog } from './CustomSceneDialog';
 
 interface SceneSelectorProps {
   selectedSceneId: string | null;
@@ -9,19 +11,30 @@ interface SceneSelectorProps {
 }
 
 export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorProps) => {
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">
-          Välj scen
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          Varje scen har optimerade inställningar för position, skugga och reflektion
-        </p>
-      </div>
+  const [customScenes, setCustomScenes] = useState<SceneMetadata[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const allScenes = [...SCENES, ...customScenes];
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {SCENES.map((scene) => (
+  const handleCustomSceneCreated = (scene: SceneMetadata) => {
+    setCustomScenes(prev => [...prev, scene]);
+    onSceneSelect(scene);
+  };
+
+  return (
+    <>
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Välj scen
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Varje scen har optimerade inställningar för position, skugga och reflektion
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {allScenes.map((scene) => (
           <Card
             key={scene.id}
             className={`cursor-pointer transition-all overflow-hidden group ${
@@ -50,21 +63,46 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
             </div>
           </Card>
         ))}
-      </div>
-
-      {selectedSceneId && (
-        <Card className="p-4 bg-primary/5 border-primary/20">
-          <div className="flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-            <div>
-              <h4 className="font-medium text-foreground mb-1">Scen vald</h4>
-              <p className="text-sm text-muted-foreground">
-                Alla bilder kommer att placeras konsekvent enligt scenens inställningar
+          
+          {/* Add Custom Scene Button */}
+          <Card 
+            className="group cursor-pointer border-2 border-dashed hover:border-primary transition-colors"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            <div className="aspect-video relative overflow-hidden bg-muted/30 flex items-center justify-center">
+              <Plus className="w-12 h-12 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <h4 className="font-semibold mb-1 text-muted-foreground group-hover:text-primary transition-colors">
+                Lägg till egen
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Ladda upp din bakgrund
               </p>
             </div>
-          </div>
-        </Card>
-      )}
-    </div>
+          </Card>
+        </div>
+
+        {selectedSceneId && (
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+              <div>
+                <h4 className="font-medium text-foreground mb-1">Scen vald</h4>
+                <p className="text-sm text-muted-foreground">
+                  Alla bilder kommer att placeras konsekvent enligt scenens inställningar
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      <CustomSceneDialog 
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSceneCreated={handleCustomSceneCreated}
+      />
+    </>
   );
 };
