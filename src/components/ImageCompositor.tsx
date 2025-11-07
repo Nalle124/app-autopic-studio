@@ -86,16 +86,25 @@ export const ImageCompositor = ({
         // Draw shadow if enabled
         if (scene.shadowPreset.enabled) {
           ctx.save();
-          ctx.globalAlpha = scene.shadowPreset.strength;
-          ctx.filter = `blur(${scene.shadowPreset.blur}px)`;
           
-          // Create elliptical shadow - more realistic proportions
+          // Create natural soft shadow with gradient
           const shadowY = baselineY + scene.shadowPreset.offsetY;
           const shadowX = carX + (scaledWidth / 2) + scene.shadowPreset.offsetX;
-          const shadowWidth = scaledWidth * 1.1; // Larger shadow
-          const shadowHeight = scaledHeight * 0.08; // Thinner, more realistic
+          const shadowWidth = scaledWidth * 0.9;
+          const shadowHeight = scaledHeight * 0.05; // Very thin, natural
           
-          ctx.fillStyle = '#000000';
+          // Create gradient for soft edges
+          const gradient = ctx.createRadialGradient(
+            shadowX, shadowY, 0,
+            shadowX, shadowY, shadowWidth / 2
+          );
+          gradient.addColorStop(0, `rgba(0, 0, 0, ${scene.shadowPreset.strength})`);
+          gradient.addColorStop(0.7, `rgba(0, 0, 0, ${scene.shadowPreset.strength * 0.3})`);
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          
+          ctx.fillStyle = gradient;
+          ctx.filter = `blur(${scene.shadowPreset.blur}px)`;
+          
           ctx.beginPath();
           ctx.ellipse(
             shadowX,

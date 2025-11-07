@@ -38,16 +38,25 @@ serve(async (req) => {
             content: `You are an expert in analyzing images for automotive product photography. 
 Your task is to analyze a background scene image and determine optimal placement parameters for a car.
 
+CRITICAL REQUIREMENTS:
+1. baselineY MUST be where the ground/floor is visible in the image - this is where car tires touch
+2. horizonY should be the actual horizon or eye-level in the scene
+3. defaultScale should make the car proportional to the environment
+
 Analyze the image and return ONLY a JSON object with these fields:
 - horizonY: The Y position of the horizon line as a percentage (0-100), where 0 is top and 100 is bottom
-- baselineY: Where the car's tires should touch the ground as a percentage (0-100)
-- defaultScale: How large the car should be relative to the scene (0.3-1.0)
+- baselineY: Where the GROUND/FLOOR is in the image - where car tires should touch (typically 60-85%)
+- defaultScale: How large the car should be relative to the scene (0.5-0.8 for most scenes)
+
+Examples:
+- Studio with floor visible at bottom 30%: baselineY should be ~70-75%
+- Outdoor scene with ground in bottom half: baselineY should be ~65-75%
+- Showroom with reflective floor: baselineY should be ~70-80%
 
 Consider:
-- Perspective and vanishing points
-- Ground plane location
-- Scale of environment elements
-- Natural positioning for realistic integration
+- Find where the actual ground plane is visible
+- Ensure car sits ON the ground, not floating
+- Match perspective and scale to environment
 
 Return ONLY valid JSON, no markdown or explanation.`
           },
