@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      processing_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          final_url: string | null
+          id: string
+          original_filename: string
+          scene_id: string
+          segmented_url: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          final_url?: string | null
+          id?: string
+          original_filename: string
+          scene_id: string
+          segmented_url?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          final_url?: string | null
+          id?: string
+          original_filename?: string
+          scene_id?: string
+          segmented_url?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

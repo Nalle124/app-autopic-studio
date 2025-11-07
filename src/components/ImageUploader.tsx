@@ -103,11 +103,44 @@ export const ImageUploader = ({ onImagesUploaded }: ImageUploaderProps) => {
               <Card key={image.id} className="group relative overflow-hidden">
                 <div className="aspect-square relative">
                   <img
-                    src={image.preview}
+                    src={image.finalUrl || image.preview}
                     alt="Upload preview"
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  
+                  {/* Status indicator */}
+                  {image.status !== 'pending' && (
+                    <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium ${
+                      image.status === 'processing' ? 'bg-blue-500 text-white' :
+                      image.status === 'completed' ? 'bg-green-500 text-white' :
+                      image.status === 'failed' ? 'bg-red-500 text-white' : ''
+                    }`}>
+                      {image.status === 'processing' && 'Bearbetar...'}
+                      {image.status === 'completed' && '✓ Klar'}
+                      {image.status === 'failed' && '✗ Misslyckades'}
+                    </div>
+                  )}
+                  
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    {image.finalUrl && (
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="rounded-full"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = image.finalUrl!;
+                          link.download = `${image.file.name.split('.')[0]}-${image.sceneId}.png`;
+                          link.click();
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="7 10 12 15 17 10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                      </Button>
+                    )}
                     <Button
                       variant="destructive"
                       size="icon"

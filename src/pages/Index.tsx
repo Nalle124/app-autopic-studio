@@ -32,14 +32,97 @@ const Index = () => {
     }
 
     setIsProcessing(true);
-    
-    // Simulate processing
-    toast.success('Bearbetning startad! (Demo-läge)');
-    
-    setTimeout(() => {
-      setIsProcessing(false);
-      toast.success(`${uploadedImages.length} bilder klara för export`);
-    }, 2000);
+    toast.success(`Startar bearbetning av ${uploadedImages.length} bilder...`);
+
+    const processedImages: UploadedImage[] = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Process images in batches of 3
+    const batchSize = 3;
+    for (let i = 0; i < uploadedImages.length; i += batchSize) {
+      const batch = uploadedImages.slice(i, i + batchSize);
+      
+      await Promise.all(
+        batch.map(async (image) => {
+          try {
+            // Update status to processing
+            setUploadedImages(prev => 
+              prev.map(img => img.id === image.id ? { ...img, status: 'processing' as const } : img)
+            );
+
+            const formData = new FormData();
+            formData.append('image', image.file);
+            formData.append('scene', JSON.stringify(selectedScene));
+            formData.append('backgroundUrl', selectedScene.fullResUrl);
+
+            const response = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`,
+              {
+                method: 'POST',
+                body: formData,
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+              successCount++;
+              setUploadedImages(prev =>
+                prev.map(img =>
+                  img.id === image.id
+                    ? {
+                        ...img,
+                        status: 'completed' as const,
+                        finalUrl: result.url,
+                        segmentedUrl: result.segmentedUrl,
+                        sceneId: selectedScene.id,
+                      }
+                    : img
+                )
+              );
+              processedImages.push({
+                ...image,
+                status: 'completed',
+                finalUrl: result.url,
+                segmentedUrl: result.segmentedUrl,
+                sceneId: selectedScene.id,
+              });
+            } else {
+              throw new Error(result.error || 'Processing failed');
+            }
+          } catch (error) {
+            errorCount++;
+            console.error('Error processing image:', error);
+            setUploadedImages(prev =>
+              prev.map(img =>
+                img.id === image.id
+                  ? { ...img, status: 'failed' as const }
+                  : img
+              )
+            );
+            toast.error(`Misslyckades bearbeta ${image.file.name}`);
+          }
+        })
+      );
+
+      // Show progress
+      toast.success(`${successCount + errorCount}/${uploadedImages.length} bilder bearbetade`);
+    }
+
+    setIsProcessing(false);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} bilder klara! Klicka på bilderna för att ladda ner.`);
+    }
+
+    if (errorCount > 0) {
+      toast.error(`${errorCount} bilder misslyckades`);
+    }
   };
 
   return (
