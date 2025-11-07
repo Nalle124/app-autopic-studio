@@ -122,34 +122,38 @@ export const ImageCompositor = ({
         // Draw reflection if enabled
         if (scene.reflectionPreset.enabled) {
           ctx.save();
-          ctx.globalAlpha = scene.reflectionPreset.opacity;
           
-          // Flip vertically for reflection
-          ctx.translate(0, canvas.height);
-          ctx.scale(1, -1);
+          // Create a temporary canvas for the reflection
+          const reflectionCanvas = document.createElement('canvas');
+          reflectionCanvas.width = scaledWidth;
+          reflectionCanvas.height = scaledHeight;
+          const reflCtx = reflectionCanvas.getContext('2d');
           
-          // Create gradient mask for fade
-          const gradient = ctx.createLinearGradient(
-            0,
-            canvas.height - baselineY,
-            0,
-            canvas.height - baselineY - scaledHeight * scene.reflectionPreset.fade
-          );
-          gradient.addColorStop(0, 'rgba(255,255,255,1)');
-          gradient.addColorStop(1, 'rgba(255,255,255,0)');
-          
-          ctx.globalCompositeOperation = 'destination-in';
-          ctx.fillStyle = gradient;
-          ctx.fillRect(carX, canvas.height - baselineY, scaledWidth, scaledHeight);
-          
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.drawImage(
-            carImage,
-            carX,
-            canvas.height - baselineY,
-            scaledWidth,
-            scaledHeight
-          );
+          if (reflCtx) {
+            // Draw flipped car
+            reflCtx.translate(0, scaledHeight);
+            reflCtx.scale(1, -1);
+            reflCtx.drawImage(carImage, 0, 0, scaledWidth, scaledHeight);
+            
+            // Apply gradient fade
+            const gradient = reflCtx.createLinearGradient(0, 0, 0, scaledHeight * scene.reflectionPreset.fade);
+            gradient.addColorStop(0, `rgba(0,0,0,${1 - scene.reflectionPreset.opacity})`);
+            gradient.addColorStop(1, 'rgba(0,0,0,1)');
+            
+            reflCtx.globalCompositeOperation = 'destination-out';
+            reflCtx.fillStyle = gradient;
+            reflCtx.fillRect(0, 0, scaledWidth, scaledHeight);
+            
+            // Draw the reflection on main canvas
+            ctx.globalAlpha = scene.reflectionPreset.opacity;
+            ctx.drawImage(
+              reflectionCanvas,
+              carX,
+              baselineY,
+              scaledWidth,
+              scaledHeight
+            );
+          }
           
           ctx.restore();
         }
