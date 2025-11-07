@@ -1,92 +1,46 @@
 import { SceneMetadata } from '@/types/scene';
-import studioClean from '@/assets/scenes/studio-clean.jpg';
-import asphaltEdge from '@/assets/scenes/asphalt-edge.jpg';
-import scandinavianAutumn from '@/assets/scenes/scandinavian-autumn.jpg';
-import showroomWhite from '@/assets/scenes/showroom-white.jpg';
-import midnightSlate from '@/assets/scenes/midnight-slate.jpg';
+import darkStudio from '@/assets/scenes/dark-studio.png';
+import whiteStudio from '@/assets/scenes/white-studio.png';
+import outdoorPark from '@/assets/scenes/outdoor-park.png';
 
 export const SCENES: SceneMetadata[] = [
   {
-    id: 'studio-clean',
-    name: 'Studio Clean',
-    description: 'Ren studiomiljö med perfekt belysning',
-    thumbnailUrl: studioClean,
-    fullResUrl: studioClean,
-    horizonY: 50, // %
-    baselineY: 65, // %
+    id: 'dark-studio',
+    name: 'Dark Studio',
+    description: 'Mörk studiomiljö med kaklad yta',
+    thumbnailUrl: darkStudio,
+    fullResUrl: darkStudio,
+    horizonY: 52,
+    baselineY: 68,
     defaultScale: 0.7,
     shadowPreset: {
       enabled: true,
-      strength: 0.3,
-      blur: 50,
-      offsetX: 0,
-      offsetY: 5,
-    },
-    reflectionPreset: {
-      enabled: false,
-      opacity: 0,
-      fade: 0,
-    },
-  },
-  {
-    id: 'asphalt-edge',
-    name: 'Asphalt Edge',
-    description: 'Urban asfaltmiljö med dramatisk stämning',
-    thumbnailUrl: asphaltEdge,
-    fullResUrl: asphaltEdge,
-    horizonY: 45,
-    baselineY: 70,
-    defaultScale: 0.75,
-    shadowPreset: {
-      enabled: true,
-      strength: 0.5,
-      blur: 60,
-      offsetX: -10,
-      offsetY: 8,
-    },
-    reflectionPreset: {
-      enabled: true,
-      opacity: 0.25,
-      fade: 0.8,
-    },
-  },
-  {
-    id: 'scandinavian-autumn',
-    name: 'Scandinavian Autumn',
-    description: 'Svensk höstlandskap med naturlig känsla',
-    thumbnailUrl: scandinavianAutumn,
-    fullResUrl: scandinavianAutumn,
-    horizonY: 40,
-    baselineY: 68,
-    defaultScale: 0.65,
-    shadowPreset: {
-      enabled: true,
       strength: 0.4,
-      blur: 55,
-      offsetX: 5,
-      offsetY: 10,
+      blur: 70,
+      offsetX: 0,
+      offsetY: 3,
     },
     reflectionPreset: {
-      enabled: false,
-      opacity: 0,
-      fade: 0,
+      enabled: true,
+      opacity: 0.3,
+      fade: 0.85,
     },
   },
   {
-    id: 'showroom-white',
-    name: 'Showroom White',
-    description: 'Premium showroom med reflekterande golv',
-    thumbnailUrl: showroomWhite,
-    fullResUrl: showroomWhite,
-    horizonY: 48,
+    id: 'white-studio',
+    name: 'White Studio',
+    description: 'Ljus minimal showroom',
+    thumbnailUrl: whiteStudio,
+    fullResUrl: whiteStudio,
+    horizonY: 55,
     baselineY: 72,
     defaultScale: 0.68,
     shadowPreset: {
       enabled: true,
-      strength: 0.2,
-      blur: 45,
+      strength: 0.25,
+      blur: 60,
       offsetX: 0,
-      offsetY: 5,
+      offsetY: 3,
     },
     reflectionPreset: {
       enabled: true,
@@ -95,25 +49,25 @@ export const SCENES: SceneMetadata[] = [
     },
   },
   {
-    id: 'midnight-slate',
-    name: 'Midnight Slate',
-    description: 'Mörk dramatisk bakgrund för lyxbilar',
-    thumbnailUrl: midnightSlate,
-    fullResUrl: midnightSlate,
-    horizonY: 50,
-    baselineY: 66,
-    defaultScale: 0.72,
+    id: 'outdoor-park',
+    name: 'Outdoor Park',
+    description: 'Utomhusmiljö med träd och gatsten',
+    thumbnailUrl: outdoorPark,
+    fullResUrl: outdoorPark,
+    horizonY: 48,
+    baselineY: 65,
+    defaultScale: 0.65,
     shadowPreset: {
       enabled: true,
-      strength: 0.6,
+      strength: 0.5,
       blur: 65,
-      offsetX: 0,
-      offsetY: 12,
+      offsetX: 2,
+      offsetY: 5,
     },
     reflectionPreset: {
-      enabled: true,
-      opacity: 0.2,
-      fade: 0.85,
+      enabled: false,
+      opacity: 0,
+      fade: 0,
     },
   },
 ];
