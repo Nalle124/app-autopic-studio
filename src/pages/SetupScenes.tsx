@@ -81,21 +81,33 @@ export default function SetupScenes() {
         </div>
 
         <Card className="p-6 space-y-4">
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold">Scene Images to Upload</h2>
-            <ul className="space-y-2">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Scenbilder att ladda upp</h2>
+            <p className="text-sm text-muted-foreground">
+              Dessa referensbilder kommer att användas av AI:n för att placera bilar i rätt miljö med korrekt belysning och reflektioner.
+            </p>
+            <ul className="space-y-3">
               {sceneFiles.map(scene => (
-                <li key={scene.name} className="flex items-center gap-2">
+                <li key={scene.name} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50">
                   {results[scene.name] === 'success' && (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                   )}
                   {results[scene.name] === 'error' && (
-                    <XCircle className="w-5 h-5 text-destructive" />
+                    <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
                   )}
                   {!results[scene.name] && (
-                    <div className="w-5 h-5 border-2 border-muted rounded-full" />
+                    <div className="w-5 h-5 border-2 border-muted rounded-full flex-shrink-0" />
                   )}
-                  <span className="text-sm">{scene.name}</span>
+                  <div className="flex-1">
+                    <span className="text-sm font-medium">{scene.name}</span>
+                    <span className="text-xs text-muted-foreground block">
+                      {scene.name.includes('dark-studio') && 'Grå Studio - Reflektioner'}
+                      {scene.name.includes('marmorljus') && 'Ljus Marmor - Reflektioner'}
+                      {scene.name.includes('outdoor-park') && 'Park - Skugga'}
+                      {scene.name.includes('contrast') && 'Contrast - Reflektioner'}
+                      {scene.name.includes('vit-kakel') && 'Vit Kakel - Reflektioner'}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>

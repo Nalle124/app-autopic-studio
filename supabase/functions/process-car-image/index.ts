@@ -91,10 +91,20 @@ serve(async (req) => {
     // Set guidance scale to MAXIMUM (1.0) - AI will strictly follow the reference image
     photoroomFormData.append('background.guidance.scale', '1.0');
     
-    // Minimal prompt - let the reference image guide the generation
-    photoroomFormData.append('background.prompt', 
-      'Photorealistic car placement matching the reference background exactly. Natural ground contact and realistic lighting.'
-    );
+    // Scene-specific prompts to match reference image characteristics
+    let scenePrompt = 'Photorealistic car placement on the exact floor surface shown in reference. ';
+    
+    // Add specific instructions based on scene to ensure AI follows reference
+    if (scene.reflectionPreset.enabled) {
+      scenePrompt += 'Place car on reflective floor surface exactly as shown in reference image. Car must have clear mirror reflection beneath it on the glossy floor. ';
+    }
+    if (scene.shadowPreset.enabled) {
+      scenePrompt += 'Place car on ground with natural contact shadow. ';
+    }
+    
+    scenePrompt += 'Match the floor material, lighting, and atmosphere of the reference image precisely. Natural ground contact.';
+    
+    photoroomFormData.append('background.prompt', scenePrompt);
     
     // Add padding to create natural spacing around the vehicle (10% on all sides)
     photoroomFormData.append('padding', '0.1');
