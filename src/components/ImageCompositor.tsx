@@ -94,32 +94,32 @@ export const ImageCompositor = ({
             shadowLength: carAnalysis.shadowLength
           });
         } else {
-          // Smart fallback: estimate tire position based on aspect ratio
+          // Smart fallback: estimate tire position based on aspect ratio and image composition
           console.log('⚠ Using fallback positioning (no AI data)');
           console.log('Image dimensions:', carImage.width, 'x', carImage.height, 'aspect:', aspectRatio.toFixed(2));
           
+          // More conservative positioning to handle various photo perspectives
           if (isPortrait) {
             // Portrait images (9:16, iPhone photos, etc.)
             // Tires are usually much lower in portrait mode
-            scale = scene.defaultScale * 1.3; // Make portrait images 30% larger
-            tireBottomPercent = 85; // Tires much lower in portrait
+            scale = scene.defaultScale * 1.25; // Slightly less aggressive scaling
+            tireBottomPercent = 82; // More conservative placement
             console.log('Portrait mode: scale', scale, 'tireBottom', tireBottomPercent);
           } else if (aspectRatio > 2.5) {
             // Very wide panoramic images
-            // Tires are higher up in the frame
-            tireBottomPercent = 70;
+            tireBottomPercent = 72; // Slightly lower than before
             console.log('Panoramic mode: tireBottom', tireBottomPercent);
           } else if (aspectRatio > 1.8) {
             // Wide landscape (16:9, etc.)
-            tireBottomPercent = 75;
+            tireBottomPercent = 76; // More conservative
             console.log('Wide landscape: tireBottom', tireBottomPercent);
           } else if (aspectRatio > 1.3) {
             // Normal landscape (4:3, 3:2)
-            tireBottomPercent = 78;
+            tireBottomPercent = 79; // Slightly lower
             console.log('Normal landscape: tireBottom', tireBottomPercent);
           } else {
-            // Square-ish or unusual ratios
-            tireBottomPercent = 80;
+            // Square-ish or unusual ratios - be more conservative
+            tireBottomPercent = 81;
             console.log('Square-ish: tireBottom', tireBottomPercent);
           }
         }
@@ -221,33 +221,33 @@ export const ImageCompositor = ({
           // Create a temporary canvas for the reflection
           const reflectionCanvas = document.createElement('canvas');
           reflectionCanvas.width = scaledWidth;
-          reflectionCanvas.height = scaledHeight * 0.5; // Reflection is shorter
+          reflectionCanvas.height = scaledHeight * 0.6; // Slightly taller reflection for more presence
           const reflCtx = reflectionCanvas.getContext('2d');
           
           if (reflCtx) {
             // Draw flipped car
-            reflCtx.translate(0, scaledHeight * 0.5);
+            reflCtx.translate(0, scaledHeight * 0.6);
             reflCtx.scale(1, -1);
             reflCtx.drawImage(carImage, 0, 0, scaledWidth, scaledHeight);
             
-            // Apply smooth gradient fade from bottom to top
-            const gradient = reflCtx.createLinearGradient(0, 0, 0, scaledHeight * 0.5);
-            gradient.addColorStop(0, 'rgba(0,0,0,0.7)'); // More transparent at bottom (contact point)
-            gradient.addColorStop(0.3, 'rgba(0,0,0,0.85)');
+            // Apply enhanced gradient fade - more visible reflection
+            const gradient = reflCtx.createLinearGradient(0, 0, 0, scaledHeight * 0.6);
+            gradient.addColorStop(0, 'rgba(0,0,0,0.5)'); // Less transparent at bottom (stronger reflection)
+            gradient.addColorStop(0.4, 'rgba(0,0,0,0.75)');
             gradient.addColorStop(1, 'rgba(0,0,0,1)'); // Fully transparent at top
             
             reflCtx.globalCompositeOperation = 'destination-out';
             reflCtx.fillStyle = gradient;
-            reflCtx.fillRect(0, 0, scaledWidth, scaledHeight * 0.5);
+            reflCtx.fillRect(0, 0, scaledWidth, scaledHeight * 0.6);
             
-            // Draw the reflection on main canvas with full opacity from preset
-            ctx.globalAlpha = scene.reflectionPreset.opacity;
+            // Draw the reflection on main canvas with 15% increased opacity
+            ctx.globalAlpha = Math.min(1.0, scene.reflectionPreset.opacity * 1.15);
             ctx.drawImage(
               reflectionCanvas,
               carX,
               baselineY, // No gap - direct contact with ground
               scaledWidth,
-              scaledHeight * 0.5
+              scaledHeight * 0.6
             );
           }
           
