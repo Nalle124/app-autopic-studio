@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { Upload, Image as ImageIcon, ChevronDown, Maximize2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -18,17 +18,19 @@ import {
 } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
+import { Slider } from '@/components/ui/slider';
 
 export type LogoPosition = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 
 interface LogoManagerProps {
-  onLogoChange: (logoUrl: string | null, position: LogoPosition, enabled: boolean) => void;
+  onLogoChange: (logoUrl: string | null, position: LogoPosition, enabled: boolean, size: number) => void;
   logoUrl: string | null;
   logoPosition: LogoPosition;
   logoEnabled: boolean;
+  logoSize: number;
 }
 
-export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled }: LogoManagerProps) => {
+export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled, logoSize }: LogoManagerProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -42,7 +44,7 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled }
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      onLogoChange(result, logoPosition, logoEnabled);
+      onLogoChange(result, logoPosition, logoEnabled, logoSize);
       toast.success('Logo uppladdad');
     };
     reader.readAsDataURL(file);
@@ -124,12 +126,33 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled }
             <Checkbox
               id="enable-logo"
               checked={logoEnabled}
-              onCheckedChange={(checked) => onLogoChange(logoUrl, logoPosition, checked as boolean)}
+              onCheckedChange={(checked) => onLogoChange(logoUrl, logoPosition, checked as boolean, logoSize)}
             />
             <Label htmlFor="enable-logo" className="text-sm font-medium cursor-pointer">
               Lägg till logo på bilderna
             </Label>
           </div>
+
+          {/* Logo Size Slider */}
+          {logoEnabled && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Storlek</Label>
+                <span className="text-xs text-muted-foreground">{Math.round(logoSize * 100)}%</span>
+              </div>
+              <Slider
+                value={[logoSize * 100]}
+                onValueChange={(value) => onLogoChange(logoUrl, logoPosition, logoEnabled, value[0] / 100)}
+                min={10}
+                max={40}
+                step={5}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Justera logons storlek på bilderna
+              </p>
+            </div>
+          )}
 
           {/* Logo Position */}
           {logoEnabled && (
@@ -137,7 +160,7 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled }
               <Label className="text-sm font-medium">Position</Label>
               <Select
                 value={logoPosition}
-                onValueChange={(value) => onLogoChange(logoUrl, value as LogoPosition, logoEnabled)}
+                onValueChange={(value) => onLogoChange(logoUrl, value as LogoPosition, logoEnabled, logoSize)}
               >
                 <SelectTrigger>
                   <SelectValue />

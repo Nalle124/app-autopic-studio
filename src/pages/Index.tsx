@@ -25,6 +25,8 @@ const Index = () => {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoPosition, setLogoPosition] = useState<LogoPosition>('bottom-right');
   const [logoEnabled, setLogoEnabled] = useState(false);
+  const [logoSize, setLogoSize] = useState(0.2); // Logo size as fraction of image width (default 20%)
+  const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
 
   const handleImagesUploaded = (newImages: UploadedImage[]) => {
     setUploadedImages((prev) => [...prev, ...newImages]);
@@ -286,12 +288,13 @@ const Index = () => {
     });
   };
 
-  const handleCropSave = (imageId: string, croppedImageUrl: string) => {
+  const handleCropSave = (imageId: string, croppedImageUrl: string, newAspectRatio: 'landscape' | 'portrait') => {
     setUploadedImages(prev =>
       prev.map(img =>
         img.id === imageId ? { ...img, croppedUrl: croppedImageUrl } : img
       )
     );
+    setAspectRatio(newAspectRatio);
     toast.success('Beskärning sparad');
   };
 
@@ -313,7 +316,7 @@ const Index = () => {
         const logo = new Image();
         logo.crossOrigin = 'anonymous';
         logo.onload = () => {
-          const maxLogoWidth = canvas.width * 0.2;
+          const maxLogoWidth = canvas.width * logoSize;
           const logoScale = maxLogoWidth / logo.width;
           const logoWidth = logo.width * logoScale;
           const logoHeight = logo.height * logoScale;
@@ -446,10 +449,12 @@ const Index = () => {
                   logoUrl={logoUrl}
                   logoPosition={logoPosition}
                   logoEnabled={logoEnabled}
-                  onLogoChange={(url, position, enabled) => {
+                  logoSize={logoSize}
+                  onLogoChange={(url, position, enabled, size) => {
                     setLogoUrl(url);
                     setLogoPosition(position);
                     setLogoEnabled(enabled);
+                    setLogoSize(size);
                   }}
                 />
               </div>
@@ -535,11 +540,11 @@ const Index = () => {
                                 />
                               </div>
                             </div>
-                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col sm:flex-row items-center justify-center gap-2 p-2">
+                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-2">
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="secondary"
-                                className="gap-1.5 text-xs w-full sm:w-auto"
+                                className="h-9 w-9"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (image.finalUrl) {
@@ -551,13 +556,12 @@ const Index = () => {
                                   }
                                 }}
                               >
-                                <Crop className="w-3.5 h-3.5" />
-                                Beskär
+                                <Crop className="w-4 h-4" />
                               </Button>
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="secondary"
-                                className="gap-1.5 text-xs w-full sm:w-auto"
+                                className="h-9 w-9"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   const imageUrl = image.croppedUrl || image.finalUrl;
@@ -567,13 +571,12 @@ const Index = () => {
                                   }
                                 }}
                               >
-                                <ImageIcon className="w-3.5 h-3.5" />
-                                Visa
+                                <ImageIcon className="w-4 h-4" />
                               </Button>
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="secondary"
-                                className="gap-1.5 text-xs w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90"
+                                className="h-9 w-9 bg-accent text-accent-foreground hover:bg-accent/90"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (image.finalUrl) {
@@ -585,8 +588,7 @@ const Index = () => {
                                   }
                                 }}
                               >
-                                <Download className="w-3.5 h-3.5" />
-                                Ladda ner
+                                <Download className="w-4 h-4" />
                               </Button>
                             </div>
                           </>
@@ -602,18 +604,59 @@ const Index = () => {
 
       {/* Preview Dialog */}
       <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-        <DialogContent className="max-w-7xl w-full p-0 gap-0">
+        <DialogContent className="max-w-7xl w-full p-0 gap-0 bg-black">
           <DialogClose className="absolute right-4 top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-background/90 backdrop-blur-sm p-2">
             <X className="h-4 w-4" />
             <span className="sr-only">Stäng</span>
           </DialogClose>
           {previewImage && (
-            <div className="relative w-full h-[90vh] bg-black">
+            <div className="relative w-full h-[90vh]">
               <img
                 src={previewImage}
                 alt="Förhandsvisning"
                 className="w-full h-full object-contain"
               />
+              {/* Action Buttons */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+                <Button
+                  variant="secondary"
+                  className="gap-2 bg-background/90 backdrop-blur-sm hover:bg-background"
+                  onClick={() => {
+                    const currentImage = uploadedImages.find(img => 
+                      (img.croppedUrl && previewImage.includes('data:image')) || 
+                      img.finalUrl === previewImage
+                    );
+                    if (currentImage) {
+                      setPreviewImage(null);
+                      setEditingImage({
+                        id: currentImage.id,
+                        finalUrl: currentImage.croppedUrl || currentImage.finalUrl!,
+                        fileName: currentImage.file.name,
+                      });
+                    }
+                  }}
+                >
+                  <Crop className="w-4 h-4" />
+                  Beskär
+                </Button>
+                <Button
+                  className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={() => {
+                    const currentImage = uploadedImages.find(img => 
+                      img.finalUrl && (img.croppedUrl || img.finalUrl)
+                    );
+                    if (currentImage && previewImage) {
+                      handleDownload(
+                        previewImage,
+                        `${currentImage.file.name.split('.')[0]}-${currentImage.sceneId}.png`
+                      );
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4" />
+                  Ladda ner
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -624,6 +667,7 @@ const Index = () => {
         image={editingImage}
         onClose={() => setEditingImage(null)}
         onSave={handleCropSave}
+        aspectRatio={aspectRatio}
       />
 
       {/* Footer */}
