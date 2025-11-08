@@ -100,9 +100,6 @@ serve(async (req) => {
     // Request high quality output in landscape format (3:2 ratio)
     photoroomFormData.append('outputSize', '3072x2048');
     
-    // Enable shadow generation for more realistic placement
-    photoroomFormData.append('shadow.mode', 'ai');
-    
     console.log('Photoroom request prepared with guidance URL:', backgroundImageUrl);
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
