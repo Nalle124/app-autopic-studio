@@ -42,10 +42,10 @@ serve(async (req) => {
     }
 
     const scene: SceneMetadata = JSON.parse(sceneData);
-    const CLAID_API_KEY = Deno.env.get('CLAID_API_KEY');
+    const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
     
-    if (!CLAID_API_KEY) {
-      throw new Error('CLAID_API_KEY not configured');
+    if (!PHOTOROOM_API_KEY) {
+      throw new Error('PHOTOROOM_API_KEY not configured');
     }
 
     console.log(`Processing image for scene: ${scene.name}`);
@@ -78,57 +78,32 @@ serve(async (req) => {
     const originalImageUrl = publicUrlData.publicUrl;
     console.log('Original image uploaded:', originalImageUrl);
 
-    // Step 2: Remove background using Claid.ai with URL
-    console.log('Removing background with Claid.ai...');
-    const removePayload = {
-      input: originalImageUrl,
-      operations: {
-        resizing: {
-          width: 2048,
-          height: 2048,
-          fit: 'bounds'
-        },
-        background: {
-          remove: {
-            category: 'cars',
-            clipping: true
-          },
-          color: 'transparent'
-        }
-      },
-      output: {
-        format: 'png'
-      }
-    };
-
-    const removeResponse = await fetch('https://api.claid.ai/v1-beta1/image/edit', {
+    // Step 2: Remove background using Photoroom API
+    console.log('Removing background with Photoroom...');
+    
+    // Prepare FormData for Photoroom
+    const photoroomFormData = new FormData();
+    photoroomFormData.append('image_file', new Blob([imageBuffer], { type: imageFile.type }));
+    
+    const removeResponse = await fetch('https://sdk.photoroom.com/v1/segment', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${CLAID_API_KEY}`,
-        'Content-Type': 'application/json',
+        'x-api-key': PHOTOROOM_API_KEY,
       },
-      body: JSON.stringify(removePayload),
+      body: photoroomFormData,
     });
 
     if (!removeResponse.ok) {
       const errorText = await removeResponse.text();
-      console.error('Claid.ai remove background error:', errorText);
+      console.error('Photoroom remove background error:', errorText);
       throw new Error(`Background removal failed: ${removeResponse.status} - ${errorText}`);
     }
 
-    const removeResult = await removeResponse.json();
-    const segmentedImageUrl = removeResult.data.output.tmp_url;
-    console.log('Background removed successfully:', segmentedImageUrl);
+    const segmentedBuffer = await removeResponse.arrayBuffer();
+    console.log('Background removed successfully with Photoroom');
 
-    // Step 3: Download background and segmented images for composition
-    console.log('Starting composition...');
-    const [segmentedResponse, bgResponse] = await Promise.all([
-      fetch(segmentedImageUrl),
-      fetch(backgroundImageUrl)
-    ]);
-    
-    const segmentedBuffer = await segmentedResponse.arrayBuffer();
-    const bgBuffer = await bgResponse.arrayBuffer();
+    // Step 3: Segmented image is already in buffer from Photoroom
+    console.log('Image ready for upload...');
 
     // Step 4: Use Deno's image processing to composite
     // For now, save the segmented image - client can do composition
@@ -162,7 +137,6 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         url: finalPublicUrlData.publicUrl,
-        segmentedUrl: segmentedImageUrl,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
