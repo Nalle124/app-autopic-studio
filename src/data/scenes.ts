@@ -23,8 +23,8 @@ export const SCENES: SceneMetadata[] = [
     },
     reflectionPreset: {
       enabled: true,
-      opacity: 0.35,
-      fade: 0.85,
+      opacity: 0.5,
+      fade: 0.75,
     },
   },
   {
@@ -45,8 +45,8 @@ export const SCENES: SceneMetadata[] = [
     },
     reflectionPreset: {
       enabled: true,
-      opacity: 0.4,
-      fade: 0.85,
+      opacity: 0.5,
+      fade: 0.75,
     },
   },
   {
