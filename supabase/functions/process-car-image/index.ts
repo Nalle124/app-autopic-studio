@@ -91,11 +91,7 @@ serve(async (req) => {
     photoroomFormData.append('imageFile', new Blob([imageBuffer], { type: imageFile.type }));
     
     // Use AI background with reference image
-    // This will make Photoroom AI match the car to the background scene
     photoroomFormData.append('background.image_file', bgBlob);
-    
-    // Enable AI shadow and scaling for realistic placement
-    photoroomFormData.append('shadow.mode', 'ai.auto');
     
     // Request high quality output in landscape format (3:2 ratio)
     photoroomFormData.append('outputSize', '3072x2048');
