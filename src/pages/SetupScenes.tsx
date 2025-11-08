@@ -7,13 +7,13 @@ import { Upload, CheckCircle, XCircle } from 'lucide-react';
 
 // Import the scene images
 import darkStudio from '@/assets/scenes/dark-studio.png';
-import whiteStudio from '@/assets/scenes/white-studio.png';
+import whiteStudio from '@/assets/scenes/white-studio.jpg';
 import outdoorPark from '@/assets/scenes/outdoor-park.png';
 
 const sceneFiles = [
-  { name: 'dark-studio.png', url: darkStudio },
-  { name: 'white-studio.png', url: whiteStudio },
-  { name: 'outdoor-park.png', url: outdoorPark },
+  { name: 'dark-studio.png', url: darkStudio, contentType: 'image/png' },
+  { name: 'white-studio.jpg', url: whiteStudio, contentType: 'image/jpeg' },
+  { name: 'outdoor-park.png', url: outdoorPark, contentType: 'image/png' },
 ];
 
 export default function SetupScenes() {
@@ -36,7 +36,7 @@ export default function SetupScenes() {
         const { error } = await supabase.storage
           .from('processed-cars')
           .upload(`scenes/${scene.name}`, blob, {
-            contentType: 'image/png',
+            contentType: scene.contentType,
             upsert: true,
           });
 
