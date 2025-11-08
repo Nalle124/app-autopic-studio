@@ -88,14 +88,12 @@ serve(async (req) => {
     
     // Use AI background with reference/guidance image URL
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    // Set guidance scale to maximum (1.0) to match reference image as closely as possible
+    // Set guidance scale to MAXIMUM (1.0) - AI will strictly follow the reference image
     photoroomFormData.append('background.guidance.scale', '1.0');
     
-    // Add text prompt for consistent photorealistic car advertisement placement
+    // Minimal prompt - let the reference image guide the generation
     photoroomFormData.append('background.prompt', 
-      'Professional car advertisement photo. The vehicle is naturally placed on the ground surface with realistic contact shadows. ' +
-      'Photorealistic lighting that matches the environment. The vehicle is the main subject, properly scaled and positioned to look like a real photograph. ' +
-      'Natural proportions with the vehicle sitting realistically on the ground, not floating. Perfect integration with the background scene.'
+      'Photorealistic car placement matching the reference background exactly. Natural ground contact and realistic lighting.'
     );
     
     // Add padding to create natural spacing around the vehicle (10% on all sides)

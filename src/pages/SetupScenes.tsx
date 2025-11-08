@@ -7,12 +7,12 @@ import { Upload, CheckCircle, XCircle } from 'lucide-react';
 
 // Import the scene images
 import darkStudio from '@/assets/scenes/dark-studio.png';
-import whiteStudio from '@/assets/scenes/white-studio.jpg';
+import marmorljus from '@/assets/scenes/marmorljus.jpg';
 import outdoorPark from '@/assets/scenes/outdoor-park.png';
 
 const sceneFiles = [
   { name: 'dark-studio.png', url: darkStudio, contentType: 'image/png' },
-  { name: 'white-studio.jpg', url: whiteStudio, contentType: 'image/jpeg' },
+  { name: 'marmorljus.jpg', url: marmorljus, contentType: 'image/jpeg' },
   { name: 'outdoor-park.png', url: outdoorPark, contentType: 'image/png' },
 ];
 
