@@ -6,12 +6,17 @@ import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
 import { UploadedImage, SceneMetadata, ExportSettings } from '@/types/scene';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
+import { Download, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const handleImagesUploaded = (newImages: UploadedImage[]) => {
     setUploadedImages((prev) => [...prev, ...newImages]);
@@ -124,6 +129,45 @@ const Index = () => {
     }
   };
 
+  const handleDownload = (imageUrl: string, fileName: string) => {
+    fetch(imageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error('Download failed:', error);
+        toast.error('Nedladdning misslyckades');
+      });
+  };
+
+  const handleDownloadAll = () => {
+    const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
+    
+    if (completedImages.length === 0) {
+      toast.error('Inga bilder att ladda ner');
+      return;
+    }
+
+    toast.success(`Laddar ner ${completedImages.length} bilder...`);
+    
+    completedImages.forEach((image, index) => {
+      setTimeout(() => {
+        handleDownload(
+          image.finalUrl!,
+          `${image.file.name.split('.')[0]}-${image.sceneId}.png`
+        );
+      }, index * 500); // Stagger downloads to avoid browser blocking
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -180,49 +224,73 @@ const Index = () => {
             </section>
           )}
 
-          {/* Results Section - Show processed images */}
-          {uploadedImages.some(img => img.status === 'completed') && (
+          {/* Results Section - Show processing and completed images */}
+          {uploadedImages.some(img => img.status === 'processing' || img.status === 'completed') && (
             <section>
-              <div className="mb-4">
-                <h2 className="text-xl font-bold text-foreground mb-1">
-                  4. Färdiga bilder
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Klicka på bilderna för att ladda ner
-                </p>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-foreground mb-1">
+                    4. Resultat
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Klicka på bilder för förhandsvisning
+                  </p>
+                </div>
+                {uploadedImages.some(img => img.status === 'completed') && (
+                  <Button 
+                    onClick={handleDownloadAll}
+                    className="gap-2"
+                    variant="outline"
+                  >
+                    <Download className="w-4 h-4" />
+                    Ladda ner alla
+                  </Button>
+                )}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {uploadedImages
-                  .filter(img => img.status === 'completed')
+                  .filter(img => img.status === 'processing' || img.status === 'completed')
                   .map((image) => (
-                    <Card key={image.id} className="group relative overflow-hidden cursor-pointer hover-scale"
-                      onClick={() => {
-                        if (image.finalUrl) {
-                          const link = document.createElement('a');
-                          link.href = image.finalUrl;
-                          link.download = `${image.file.name.split('.')[0]}-${image.sceneId}.png`;
-                          link.click();
-                        }
-                      }}
-                    >
+                    <Card key={image.id} className="group relative overflow-hidden">
                       <div className="aspect-square relative">
-                        <img
-                          src={image.finalUrl || image.preview}
-                          alt="Bearbetad bild"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
-                            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="7 10 12 15 17 10"/>
-                                <line x1="12" y1="15" x2="12" y2="3"/>
-                              </svg>
-                              Ladda ner
+                        {image.status === 'processing' ? (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <Skeleton className="w-full h-full animate-pulse" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                                <p className="text-sm font-medium text-foreground">Bearbetar...</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          <>
+                            <img
+                              src={image.finalUrl || image.preview}
+                              alt="Bearbetad bild"
+                              className="w-full h-full object-cover cursor-pointer"
+                              onClick={() => setPreviewImage(image.finalUrl || null)}
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="gap-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (image.finalUrl) {
+                                    handleDownload(
+                                      image.finalUrl,
+                                      `${image.file.name.split('.')[0]}-${image.sceneId}.png`
+                                    );
+                                  }
+                                }}
+                              >
+                                <Download className="w-4 h-4" />
+                                Ladda ner
+                              </Button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </Card>
                   ))}
@@ -231,6 +299,25 @@ const Index = () => {
           )}
         </div>
       </main>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="max-w-7xl w-full p-0 gap-0">
+          <DialogClose className="absolute right-4 top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-background/90 backdrop-blur-sm p-2">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Stäng</span>
+          </DialogClose>
+          {previewImage && (
+            <div className="relative w-full h-[90vh] bg-black">
+              <img
+                src={previewImage}
+                alt="Förhandsvisning"
+                className="w-full h-full object-contain"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <footer className="border-t border-border mt-20">
