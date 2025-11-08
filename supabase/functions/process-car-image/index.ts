@@ -90,8 +90,9 @@ serve(async (req) => {
     const photoroomFormData = new FormData();
     photoroomFormData.append('imageFile', new Blob([imageBuffer], { type: imageFile.type }));
     
-    // Use AI background with reference image
-    photoroomFormData.append('background.image_file', bgBlob);
+    // Use AI background with reference/guidance image - this makes Photoroom AI match the style!
+    photoroomFormData.append('background.guidance.imageFile', bgBlob);
+    photoroomFormData.append('background.guidance.scale', '0.8'); // High matching to reference (0-1)
     
     // Request high quality output in landscape format (3:2 ratio)
     photoroomFormData.append('outputSize', '3072x2048');
