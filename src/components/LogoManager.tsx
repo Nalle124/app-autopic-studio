@@ -158,22 +158,59 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled, 
           {logoEnabled && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">Position</Label>
-              <Select
-                value={logoPosition}
-                onValueChange={(value) => onLogoChange(logoUrl, value as LogoPosition, logoEnabled, logoSize)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="top-left">Överst vänster</SelectItem>
-                  <SelectItem value="top-center">Överst mitten</SelectItem>
-                  <SelectItem value="top-right">Överst höger</SelectItem>
-                  <SelectItem value="bottom-left">Nederst vänster</SelectItem>
-                  <SelectItem value="bottom-center">Nederst mitten</SelectItem>
-                  <SelectItem value="bottom-right">Nederst höger</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant={logoPosition === 'top-left' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onLogoChange(logoUrl, 'top-left', logoEnabled, logoSize)}
+                  className="text-xs"
+                >
+                  ↖
+                </Button>
+                <Button
+                  variant={logoPosition === 'top-center' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onLogoChange(logoUrl, 'top-center', logoEnabled, logoSize)}
+                  className="text-xs"
+                >
+                  ↑
+                </Button>
+                <Button
+                  variant={logoPosition === 'top-right' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onLogoChange(logoUrl, 'top-right', logoEnabled, logoSize)}
+                  className="text-xs"
+                >
+                  ↗
+                </Button>
+                <Button
+                  variant={logoPosition === 'bottom-left' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onLogoChange(logoUrl, 'bottom-left', logoEnabled, logoSize)}
+                  className="text-xs"
+                >
+                  ↙
+                </Button>
+                <Button
+                  variant={logoPosition === 'bottom-center' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onLogoChange(logoUrl, 'bottom-center', logoEnabled, logoSize)}
+                  className="text-xs"
+                >
+                  ↓
+                </Button>
+                <Button
+                  variant={logoPosition === 'bottom-right' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onLogoChange(logoUrl, 'bottom-right', logoEnabled, logoSize)}
+                  className="text-xs"
+                >
+                  ↘
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Välj var logon ska placeras
+              </p>
             </div>
           )}
         </>

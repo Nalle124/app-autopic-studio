@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.analyze-scene]
 verify_jwt = false
+
+[functions.auto-crop-image]
+verify_jwt = false
