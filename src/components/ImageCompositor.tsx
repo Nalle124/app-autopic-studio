@@ -24,8 +24,8 @@ export const ImageCompositor = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Set canvas size to match scene (2048x2048)
-      canvas.width = 2048;
+      // Set canvas size to landscape format (3:2 ratio like iPhone landscape)
+      canvas.width = 3072;
       canvas.height = 2048;
 
       try {
@@ -111,56 +111,65 @@ export const ImageCompositor = ({
           carX
         });
 
-        // Draw shadow with AI-optimized parameters or scene defaults
+        // Draw AI-enhanced shadow or scene default
         const shouldDrawShadow = scene.shadowPreset.enabled;
         
         if (shouldDrawShadow) {
           ctx.save();
           
-          // Use AI analysis for shadow if available, otherwise use scene presets
-          const shadowAngle = carAnalysis?.shadowAngle ?? 0;
-          const shadowLength = carAnalysis?.shadowLength ?? 0.15;
-          const shadowBlur = carAnalysis?.shadowBlur ?? scene.shadowPreset.blur;
-          const shadowOpacity = carAnalysis?.shadowOpacity ?? scene.shadowPreset.strength;
+          // Prioritize AI analysis for shadow parameters
+          const hasAIShadow = carAnalysis && 
+                             typeof carAnalysis.shadowAngle === 'number' &&
+                             typeof carAnalysis.shadowLength === 'number';
           
-          // Calculate shadow offset based on angle
+          const shadowAngle = hasAIShadow ? carAnalysis.shadowAngle : 0;
+          const shadowLength = hasAIShadow ? carAnalysis.shadowLength : 0.15;
+          const shadowBlur = hasAIShadow ? carAnalysis.shadowBlur : scene.shadowPreset.blur;
+          const shadowOpacity = hasAIShadow ? carAnalysis.shadowOpacity : scene.shadowPreset.strength;
+          
+          console.log('Shadow params:', { hasAIShadow, shadowAngle, shadowLength, shadowBlur, shadowOpacity });
+          
+          // Calculate shadow position based on angle and length
           const angleRad = (shadowAngle * Math.PI) / 180;
-          const shadowOffsetX = Math.sin(angleRad) * (scaledWidth * shadowLength);
-          const shadowOffsetY = Math.abs(Math.cos(angleRad)) * 5; // Slight vertical offset
           
-          const shadowY = baselineY + shadowOffsetY;
-          const shadowX = carX + (scaledWidth / 2) + shadowOffsetX;
-          const shadowWidth = scaledWidth * (0.8 + shadowLength);
-          const shadowHeight = scaledHeight * 0.03; // Very thin, natural
+          // Shadow stretches based on angle and length
+          const shadowOffsetX = Math.sin(angleRad) * scaledWidth * shadowLength;
+          const shadowOffsetY = 5; // Slight lift from ground
           
-          // Create perspective-correct gradient
+          const shadowCenterX = carX + (scaledWidth / 2) + shadowOffsetX;
+          const shadowCenterY = baselineY + shadowOffsetY;
+          
+          // Shadow dimensions - wider for angled shadows
+          const shadowWidth = scaledWidth * (0.85 + Math.abs(shadowLength) * 0.5);
+          const shadowHeight = scaledHeight * 0.04;
+          
+          // Create realistic gradient with proper falloff
           const gradient = ctx.createRadialGradient(
-            shadowX, shadowY, 0,
-            shadowX, shadowY, shadowWidth / 2
+            shadowCenterX, shadowCenterY, 0,
+            shadowCenterX, shadowCenterY, shadowWidth / 1.8
           );
+          
           gradient.addColorStop(0, `rgba(0, 0, 0, ${shadowOpacity})`);
-          gradient.addColorStop(0.5, `rgba(0, 0, 0, ${shadowOpacity * 0.4})`);
-          gradient.addColorStop(0.8, `rgba(0, 0, 0, ${shadowOpacity * 0.1})`);
+          gradient.addColorStop(0.4, `rgba(0, 0, 0, ${shadowOpacity * 0.5})`);
+          gradient.addColorStop(0.7, `rgba(0, 0, 0, ${shadowOpacity * 0.2})`);
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
           
           ctx.fillStyle = gradient;
           ctx.filter = `blur(${shadowBlur}px)`;
           
-          // Draw elliptical shadow with slight rotation based on angle
+          // Draw elliptical shadow with rotation
           ctx.beginPath();
           ctx.ellipse(
-            shadowX,
-            shadowY,
+            shadowCenterX,
+            shadowCenterY,
             shadowWidth / 2,
             shadowHeight / 2,
-            angleRad,
+            angleRad * 0.5, // Slight rotation based on angle
             0,
             Math.PI * 2
           );
           ctx.fill();
           ctx.restore();
-          
-          console.log('Shadow drawn with AI params:', { shadowAngle, shadowLength, shadowBlur, shadowOpacity });
         }
 
         // Draw car
