@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { Upload, Image as ImageIcon, ChevronDown } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -11,6 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 
 export type LogoPosition = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
@@ -24,6 +30,8 @@ interface LogoManagerProps {
 
 export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled }: LogoManagerProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -59,18 +67,8 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled }
     setIsDragging(false);
   };
 
-  return (
-    <Card className="p-6 space-y-4">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-          <ImageIcon className="w-6 h-6 text-accent" />
-        </div>
-        <div>
-          <h3 className="text-lg font-bold text-foreground">Logo (valfritt)</h3>
-          <p className="text-sm text-muted-foreground">Lägg till din logo på bilderna</p>
-        </div>
-      </div>
-
+  const content = (
+    <div className="space-y-4">
       {/* Logo Upload */}
       <div
         className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
@@ -157,6 +155,50 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled }
           )}
         </>
       )}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Card className="p-4">
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full flex items-center justify-between p-0 hover:bg-transparent"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                  <ImageIcon className="w-5 h-5 text-accent" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-base font-bold text-foreground">Logo (valfritt)</h3>
+                  {logoEnabled && <p className="text-xs text-muted-foreground">Aktiverad</p>}
+                </div>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-4">
+            {content}
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-6 space-y-4">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+          <ImageIcon className="w-6 h-6 text-accent" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-foreground">Logo (valfritt)</h3>
+          <p className="text-sm text-muted-foreground">Lägg till din logo på bilderna</p>
+        </div>
+      </div>
+      {content}
     </Card>
   );
 };

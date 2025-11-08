@@ -22,20 +22,27 @@ export const ImageCropEditor = ({ image, onClose, onSave }: ImageCropEditorProps
   useEffect(() => {
     if (!image) return;
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      setImageObj(img);
-      // Center image
-      if (canvasRef.current) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        setImageObj(img);
+        
+        // Calculate initial zoom to fit image properly with padding
         const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        const scaleX = (canvas.width - 100) / img.width;
+        const scaleY = (canvas.height - 100) / img.height;
+        // Use the smaller scale to ensure entire image fits with padding
+        const initialZoom = Math.min(scaleX, scaleY) * 0.9;
+        
+        setZoom(initialZoom);
         setPosition({
-          x: (canvas.width - img.width) / 2,
-          y: (canvas.height - img.height) / 2,
+          x: (canvas.width - img.width * initialZoom) / 2,
+          y: (canvas.height - img.height * initialZoom) / 2,
         });
-      }
-    };
-    img.src = image.finalUrl;
+      };
+      img.src = image.finalUrl;
   }, [image]);
 
   useEffect(() => {
@@ -75,6 +82,49 @@ export const ImageCropEditor = ({ image, onClose, onSave }: ImageCropEditorProps
   };
 
   const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Touch event handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      const touch = e.touches[0];
+      setDragStart({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+    } else if (e.touches.length === 2) {
+      // Pinch zoom
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      setDragStart({ x: distance, y: zoom });
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      setPosition({
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y,
+      });
+    } else if (e.touches.length === 2) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      const scale = distance / dragStart.x;
+      const newZoom = Math.max(0.5, Math.min(3, dragStart.y * scale));
+      setZoom(newZoom);
+    }
+  };
+
+  const handleTouchEnd = () => {
     setIsDragging(false);
   };
 
@@ -135,11 +185,14 @@ export const ImageCropEditor = ({ image, onClose, onSave }: ImageCropEditorProps
             ref={canvasRef}
             width={800}
             height={600}
-            className="cursor-move"
+            className="max-w-full max-h-[70vh] border border-border cursor-move touch-none"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
         </div>
 

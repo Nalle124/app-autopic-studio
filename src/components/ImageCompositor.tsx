@@ -76,6 +76,10 @@ export const ImageCompositor = ({
         // Calculate car positioning with AI analysis or smart fallback
         const baselineY = (scene.baselineY / 100) * canvas.height;
         
+        // Detect if image is portrait (taller than wide)
+        const isPortrait = carImage.height > carImage.width;
+        const aspectRatio = carImage.width / carImage.height;
+        
         let scale = scene.defaultScale;
         let tireBottomPercent = 78; // Default: tires are typically at 78% from top for most cars
         
@@ -91,7 +95,13 @@ export const ImageCompositor = ({
           });
         } else {
           // Smart fallback: use scene scale but estimate tire position
-          console.log('⚠ Using fallback positioning (no AI data)');
+          // For portrait images, increase scale to make them appear larger
+          if (isPortrait) {
+            scale = scene.defaultScale * 1.3; // Make portrait images 30% larger
+            console.log('⚠ Portrait image detected, adjusting scale:', scale);
+          } else {
+            console.log('⚠ Using fallback positioning (no AI data)');
+          }
         }
         
         // Calculate dimensions
