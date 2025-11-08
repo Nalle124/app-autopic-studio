@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
-import Cropper from 'react-easy-crop';
+import { useState, useCallback, Suspense, lazy } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Crop, Save, X } from 'lucide-react';
+
+const Cropper = lazy(() => import('react-easy-crop').then(module => ({ default: module.default })));
 
 interface ImageCropEditorProps {
   image: { id: string; finalUrl: string; fileName: string } | null;
@@ -92,16 +93,18 @@ export const ImageCropEditor = ({ image, onClose, onSave }: ImageCropEditorProps
         </DialogHeader>
 
         <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
-          <Cropper
-            image={image.finalUrl}
-            crop={crop}
-            zoom={zoom}
-            aspect={undefined}
-            onCropChange={setCrop}
-            onCropComplete={onCropComplete}
-            onZoomChange={setZoom}
-            objectFit="contain"
-          />
+          <Suspense fallback={<div className="flex items-center justify-center h-full">Laddar...</div>}>
+            <Cropper
+              image={image.finalUrl}
+              crop={crop}
+              zoom={zoom}
+              aspect={undefined}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+              objectFit="contain"
+            />
+          </Suspense>
         </div>
 
         <div className="space-y-4 pt-4">
