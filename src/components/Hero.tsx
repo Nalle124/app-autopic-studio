@@ -14,14 +14,13 @@ export const Hero = () => {
       <div className="container mx-auto px-6 text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
           <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-primary">AI-driven magi</span>
+          <span className="text-sm font-medium text-slate-800">AI-driven magi</span>
         </div>
         
         <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight font-heading">
           Skapa proffsiga{" "}
           <span className="text-accent">
-            bilannonser
-          </span>
+bilannonser</span>
           {" "}på sekunder
         </h2>
         
