@@ -21,6 +21,7 @@ export interface SceneMetadata {
     opacity: number; // 0.0 - 1.0
     fade: number; // 0.0 - 1.0
   };
+  aiPrompt?: string; // Optional AI prompt for specific scene requirements
 }
 
 export interface CarAnalysis {

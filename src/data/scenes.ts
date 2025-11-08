@@ -136,6 +136,7 @@ export const SCENES: SceneMetadata[] = [
       opacity: 0.65,
       fade: 0.7,
     },
+    aiPrompt: 'Place the vehicle in a dramatic studio with dark curtain backdrop and warm lighting, with clear floor reflection',
   },
   {
     id: 'plattform',
@@ -158,5 +159,6 @@ export const SCENES: SceneMetadata[] = [
       opacity: 0,
       fade: 0,
     },
+    aiPrompt: 'Place the vehicle centered on the circular platform on the ground, maintaining the platform surface beneath it',
   },
 ];

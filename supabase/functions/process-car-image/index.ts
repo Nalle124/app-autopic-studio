@@ -24,6 +24,7 @@ interface SceneMetadata {
     opacity: number;
     fade: number;
   };
+  aiPrompt?: string;
 }
 
 serve(async (req) => {
@@ -92,9 +93,11 @@ serve(async (req) => {
     photoroomFormData.append('background.guidance.scale', '1.0');
     photoroomFormData.append('background.guidance.strength', '1.0');
     
-    // NO PROMPT - let guidance image do ALL the work
-    // Adding a prompt can override/conflict with the guidance image
-    // The guidance URL with strength 1.0 should be enough
+    // Add scene-specific prompt if provided to guide AI on specific requirements
+    if (scene.aiPrompt) {
+      photoroomFormData.append('background.prompt', scene.aiPrompt);
+      console.log('Using scene-specific prompt:', scene.aiPrompt);
+    }
     
     // Add padding to create natural spacing around the vehicle (10% on all sides)
     photoroomFormData.append('padding', '0.1');
