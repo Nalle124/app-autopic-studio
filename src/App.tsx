@@ -5,9 +5,15 @@ import Index from "./pages/Index";
 import SetupScenes from "./pages/SetupScenes";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+    },
+  },
+});
 
-const App = () => {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -15,12 +21,11 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/setup-scenes" element={<SetupScenes />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
