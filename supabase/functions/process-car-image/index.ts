@@ -92,15 +92,9 @@ serve(async (req) => {
     photoroomFormData.append('background.guidance.scale', '1.0');
     photoroomFormData.append('background.guidance.strength', '1.0');
     
-    // Simple prompt, but add INDOOR clarification for scenes that AI might misinterpret as outdoor
-    let scenePrompt = 'Place the car naturally on the floor surface shown in the reference image. Match the reference exactly.';
-    
-    // Photoroom's AI sometimes misinterprets indoor wood floors as outdoor - clarify explicitly
-    if (scene.id === 'contrast' || scene.id === 'vit-kakel' || scene.id === 'ljus-marmor') {
-      scenePrompt = 'INDOOR STUDIO: Place the car on the floor surface from the reference image. This is an indoor reflective floor, not outdoor. Match the reference exactly.';
-    }
-    
-    photoroomFormData.append('background.prompt', scenePrompt);
+    // NO PROMPT - let guidance image do ALL the work
+    // Adding a prompt can override/conflict with the guidance image
+    // The guidance URL with strength 1.0 should be enough
     
     // Add padding to create natural spacing around the vehicle (10% on all sides)
     photoroomFormData.append('padding', '0.1');
