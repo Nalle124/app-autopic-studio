@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Upload, CheckCircle, XCircle } from 'lucide-react';
 
 // Import the scene images
@@ -98,12 +99,36 @@ export default function SetupScenes() {
                   {!results[scene.name] && (
                     <div className="w-5 h-5 border-2 border-muted rounded-full flex-shrink-0" />
                   )}
-                  <div className="flex-1">
-                    <span className="text-sm font-medium">{scene.displayName}</span>
-                    <span className="text-xs text-muted-foreground block">
-                      {scene.description} • {scene.name}
-                    </span>
-                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="flex items-center gap-3 flex-1 text-left hover:opacity-80 transition-opacity">
+                        <img 
+                          src={scene.url} 
+                          alt={scene.displayName}
+                          className="w-16 h-16 object-cover rounded border border-border flex-shrink-0"
+                        />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium block">{scene.displayName}</span>
+                          <span className="text-xs text-muted-foreground block">
+                            {scene.description} • {scene.name}
+                          </span>
+                        </div>
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">{scene.displayName}</h3>
+                          <p className="text-sm text-muted-foreground">{scene.description}</p>
+                        </div>
+                        <img 
+                          src={scene.url} 
+                          alt={scene.displayName}
+                          className="w-full h-auto rounded-lg border border-border"
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </li>
               ))}
             </ul>
