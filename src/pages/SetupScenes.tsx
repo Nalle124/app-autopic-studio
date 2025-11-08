@@ -9,11 +9,15 @@ import { Upload, CheckCircle, XCircle } from 'lucide-react';
 import darkStudio from '@/assets/scenes/dark-studio.png';
 import marmorljus from '@/assets/scenes/marmorljus.jpg';
 import outdoorPark from '@/assets/scenes/outdoor-park.jpg';
+import contrast from '@/assets/scenes/contrast.jpg';
+import vitKakel from '@/assets/scenes/vit-kakel.jpg';
 
 const sceneFiles = [
   { name: 'dark-studio.png', url: darkStudio, contentType: 'image/png' },
   { name: 'marmorljus.jpg', url: marmorljus, contentType: 'image/jpeg' },
   { name: 'outdoor-park.jpg', url: outdoorPark, contentType: 'image/jpeg' },
+  { name: 'contrast.jpg', url: contrast, contentType: 'image/jpeg' },
+  { name: 'vit-kakel.jpg', url: vitKakel, contentType: 'image/jpeg' },
 ];
 
 export default function SetupScenes() {
