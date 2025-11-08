@@ -7,7 +7,7 @@ const STORAGE_BASE = 'https://cfsyxrokdemwkklqflnb.supabase.co/storage/v1/object
 export const SCENES: SceneMetadata[] = [
   {
     id: 'dark-studio',
-    name: 'Dark Studio',
+    name: 'Grå Studio',
     description: 'Mörk studiomiljö med kaklad yta',
     thumbnailUrl: `${STORAGE_BASE}/dark-studio.png`,
     fullResUrl: `${STORAGE_BASE}/dark-studio.png`,
@@ -28,9 +28,9 @@ export const SCENES: SceneMetadata[] = [
     },
   },
   {
-    id: 'white-studio',
-    name: 'White Studio',
-    description: 'Ljus minimal showroom',
+    id: 'ljus-marmor',
+    name: 'Ljus Marmor',
+    description: 'Ljus marmorgolv med reflektion',
     thumbnailUrl: `${STORAGE_BASE}/marmorljus.jpg`,
     fullResUrl: `${STORAGE_BASE}/marmorljus.jpg`,
     horizonY: 52,
@@ -51,7 +51,7 @@ export const SCENES: SceneMetadata[] = [
   },
   {
     id: 'outdoor-park',
-    name: 'Outdoor Park',
+    name: 'Park',
     description: 'Utomhusmiljö med träd och gatsten',
     thumbnailUrl: `${STORAGE_BASE}/outdoor-park.png`,
     fullResUrl: `${STORAGE_BASE}/outdoor-park.png`,
