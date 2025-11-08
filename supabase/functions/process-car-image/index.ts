@@ -88,21 +88,12 @@ serve(async (req) => {
     
     // Use AI background with reference/guidance image URL
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    // Set guidance scale to MAXIMUM (1.0) - AI will strictly follow the reference image
+    // Set guidance to MAXIMUM strength - AI must follow reference exactly
     photoroomFormData.append('background.guidance.scale', '1.0');
+    photoroomFormData.append('background.guidance.strength', '1.0');
     
-    // CRITICAL: Force AI to use ONLY the reference image - NO imagination allowed
-    let scenePrompt = 'IMPORTANT: Use EXACTLY the background from the reference image provided. DO NOT create or imagine any other background. ';
-    
-    // Add specific instructions based on scene to ensure AI follows reference
-    if (scene.reflectionPreset.enabled) {
-      scenePrompt += 'The reference shows a reflective floor surface (marble, tile, or glossy studio floor). Place the car on this EXACT floor surface with clear mirror reflection beneath the vehicle. The floor material from the reference image MUST be visible. DO NOT replace it with plain white or any other surface. ';
-    }
-    if (scene.shadowPreset.enabled) {
-      scenePrompt += 'Place car on the exact ground surface shown in reference with natural contact shadow. ';
-    }
-    
-    scenePrompt += 'Copy the exact floor texture, lighting, colors, and atmosphere from the reference image. The background MUST match the reference image precisely - no beaches, no invented backgrounds, only what is shown in the reference.';
+    // Minimal prompt - let the reference image do the work
+    const scenePrompt = 'Place the car naturally on the floor surface shown in the reference image. Match the reference exactly.';
     
     photoroomFormData.append('background.prompt', scenePrompt);
     
