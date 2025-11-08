@@ -18,7 +18,7 @@ export const Hero = () => {
         </div>
         
         <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">Skapa proffsiga
-bilannonser på sekunder<br />
+bilannonser på minuter<br />
           <span className="bg-gradient-premium bg-clip-text text-transparent">
             bilannonser
           </span>
