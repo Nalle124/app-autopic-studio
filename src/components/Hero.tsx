@@ -45,7 +45,7 @@ bilannonser på sekunder<br />
             <div className="text-sm text-muted-foreground">Professionella scener</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-foreground mb-2"><10s</div>
+            <div className="text-3xl font-bold text-foreground mb-2">{"<10s"}</div>
             <div className="text-sm text-muted-foreground">Per bild</div>
           </div>
         </div>
