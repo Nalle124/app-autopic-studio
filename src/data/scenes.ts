@@ -115,4 +115,26 @@ export const SCENES: SceneMetadata[] = [
       fade: 0.8,
     },
   },
+  {
+    id: 'dark-curtain',
+    name: 'Mörkt Draperi',
+    description: 'Mörkt draperi med varm belysning och reflektion',
+    thumbnailUrl: `${STORAGE_BASE}/dark-curtain.jpg`,
+    fullResUrl: `${STORAGE_BASE}/dark-curtain.jpg`,
+    horizonY: 50,
+    baselineY: 72,
+    defaultScale: 0.65,
+    shadowPreset: {
+      enabled: false,
+      strength: 0,
+      blur: 0,
+      offsetX: 0,
+      offsetY: 0,
+    },
+    reflectionPreset: {
+      enabled: true,
+      opacity: 0.65,
+      fade: 0.7,
+    },
+  },
 ];
