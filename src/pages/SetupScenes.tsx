@@ -13,11 +13,11 @@ import contrast from '@/assets/scenes/contrast.jpg';
 import vitKakel from '@/assets/scenes/vit-kakel.jpg';
 
 const sceneFiles = [
-  { name: 'dark-studio.png', url: darkStudio, contentType: 'image/png' },
-  { name: 'marmorljus.jpg', url: marmorljus, contentType: 'image/jpeg' },
-  { name: 'outdoor-park.jpg', url: outdoorPark, contentType: 'image/jpeg' },
-  { name: 'contrast.jpg', url: contrast, contentType: 'image/jpeg' },
-  { name: 'vit-kakel.jpg', url: vitKakel, contentType: 'image/jpeg' },
+  { name: 'dark-studio.png', displayName: 'Grå Studio', description: 'Reflektioner', url: darkStudio, contentType: 'image/png' },
+  { name: 'marmorljus.jpg', displayName: 'Ljus Marmor', description: 'Reflektioner', url: marmorljus, contentType: 'image/jpeg' },
+  { name: 'outdoor-park.jpg', displayName: 'Park', description: 'Skugga', url: outdoorPark, contentType: 'image/jpeg' },
+  { name: 'contrast.jpg', displayName: 'Contrast', description: 'Reflektioner', url: contrast, contentType: 'image/jpeg' },
+  { name: 'vit-kakel.jpg', displayName: 'Vit Kakel', description: 'Reflektioner', url: vitKakel, contentType: 'image/jpeg' },
 ];
 
 export default function SetupScenes() {
@@ -99,13 +99,9 @@ export default function SetupScenes() {
                     <div className="w-5 h-5 border-2 border-muted rounded-full flex-shrink-0" />
                   )}
                   <div className="flex-1">
-                    <span className="text-sm font-medium">{scene.name}</span>
+                    <span className="text-sm font-medium">{scene.displayName}</span>
                     <span className="text-xs text-muted-foreground block">
-                      {scene.name.includes('dark-studio') && 'Grå Studio - Reflektioner'}
-                      {scene.name.includes('marmorljus') && 'Ljus Marmor - Reflektioner'}
-                      {scene.name.includes('outdoor-park') && 'Park - Skugga'}
-                      {scene.name.includes('contrast') && 'Contrast - Reflektioner'}
-                      {scene.name.includes('vit-kakel') && 'Vit Kakel - Reflektioner'}
+                      {scene.description} • {scene.name}
                     </span>
                   </div>
                 </li>
