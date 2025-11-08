@@ -4,7 +4,6 @@ import { Hero } from '@/components/Hero';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
-import { ImageCompositor } from '@/components/ImageCompositor';
 import { UploadedImage, SceneMetadata, ExportSettings } from '@/types/scene';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -13,7 +12,6 @@ const Index = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [compositingImages, setCompositingImages] = useState<Set<string>>(new Set());
 
   const handleImagesUploaded = (newImages: UploadedImage[]) => {
     setUploadedImages((prev) => [...prev, ...newImages]);
@@ -22,21 +20,6 @@ const Index = () => {
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
     toast.success(`Scen "${scene.name}" vald`);
-  };
-
-  const handleCompositionComplete = (imageId: string, compositeDataUrl: string) => {
-    setUploadedImages(prev =>
-      prev.map(img =>
-        img.id === imageId
-          ? { ...img, finalUrl: compositeDataUrl }
-          : img
-      )
-    );
-    setCompositingImages(prev => {
-      const next = new Set(prev);
-      next.delete(imageId);
-      return next;
-    });
   };
 
   const handleExport = async (settings: ExportSettings) => {
@@ -93,21 +76,19 @@ const Index = () => {
 
             if (result.success) {
               successCount++;
-              // Set segmented URL and mark for composition
+              // Photoroom AI has done everything - just use the final URL!
               setUploadedImages(prev =>
                 prev.map(img =>
                   img.id === image.id
                     ? {
                         ...img,
                         status: 'completed' as const,
-                        segmentedUrl: result.segmentedUrl,
+                        finalUrl: result.finalUrl, // Direct final image from Photoroom AI
                         sceneId: selectedScene.id,
-                        carAnalysis: result.carAnalysis,
                       }
                     : img
                 )
               );
-              setCompositingImages(prev => new Set(prev).add(image.id));
             } else {
               throw new Error(result.error || 'Processing failed');
             }
@@ -196,23 +177,6 @@ const Index = () => {
               </div>
             </section>
           )}
-
-          {/* Hidden Compositors */}
-          {uploadedImages
-            .filter(img => img.segmentedUrl && img.sceneId && compositingImages.has(img.id))
-            .map(img => {
-              const scene = selectedScene?.id === img.sceneId ? selectedScene : null;
-              if (!scene) return null;
-              return (
-                <ImageCompositor
-                  key={img.id}
-                  segmentedImageUrl={img.segmentedUrl!}
-                  scene={scene}
-                  carAnalysis={img.carAnalysis}
-                  onCompositionComplete={(dataUrl) => handleCompositionComplete(img.id, dataUrl)}
-                />
-              );
-            })}
 
           {/* Results Section - Show processed images */}
           {uploadedImages.some(img => img.status === 'completed') && (
