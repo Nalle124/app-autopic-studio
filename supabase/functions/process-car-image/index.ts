@@ -122,23 +122,18 @@ serve(async (req) => {
     let carAnalysis = null;
     if (LOVABLE_API_KEY) {
       try {
-        // Convert images to base64 for AI analysis
-        const base64Segmented = btoa(
-          new Uint8Array(segmentedBuffer).reduce(
-            (data, byte) => data + String.fromCharCode(byte),
-            ''
-          )
-        );
+        // Create data URLs directly (more reliable than base64 strings)
+        const segmentedBlob = new Blob([segmentedBuffer], { type: 'image/png' });
+        const segmentedDataUrl = `data:image/png;base64,${btoa(
+          String.fromCharCode(...new Uint8Array(segmentedBuffer))
+        )}`;
 
-        // Fetch and convert background image
+        // Fetch background and create data URL
         const bgResponse = await fetch(backgroundImageUrl);
         const bgBuffer = await bgResponse.arrayBuffer();
-        const base64Background = btoa(
-          new Uint8Array(bgBuffer).reduce(
-            (data, byte) => data + String.fromCharCode(byte),
-            ''
-          )
-        );
+        const bgDataUrl = `data:image/jpeg;base64,${btoa(
+          String.fromCharCode(...new Uint8Array(bgBuffer))
+        )}`;
 
         const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
@@ -193,11 +188,11 @@ Return ONLY valid JSON with these exact keys (no markdown, no backticks, no expl
                   },
                   {
                     type: 'image_url',
-                    image_url: { url: `data:image/png;base64,${base64Segmented}` }
+                    image_url: { url: segmentedDataUrl }
                   },
                   {
                     type: 'image_url',
-                    image_url: { url: `data:image/jpeg;base64,${base64Background}` }
+                    image_url: { url: bgDataUrl }
                   }
                 ]
               }

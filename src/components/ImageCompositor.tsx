@@ -116,60 +116,58 @@ export const ImageCompositor = ({
           carX
         });
 
-        // Draw AI-enhanced shadow or scene default
+        // Draw professional contact shadow directly under the car
         const shouldDrawShadow = scene.shadowPreset.enabled;
         
         if (shouldDrawShadow) {
           ctx.save();
           
-          // Prioritize AI analysis for shadow parameters
+          // Prioritize AI analysis for shadow parameters, otherwise use smart defaults
           const hasAIShadow = carAnalysis && 
                              typeof carAnalysis.shadowAngle === 'number' &&
                              typeof carAnalysis.shadowLength === 'number';
           
           const shadowAngle = hasAIShadow ? carAnalysis.shadowAngle : 0;
-          const shadowLength = hasAIShadow ? carAnalysis.shadowLength : 0.15;
-          const shadowBlur = hasAIShadow ? carAnalysis.shadowBlur : scene.shadowPreset.blur;
-          const shadowOpacity = hasAIShadow ? carAnalysis.shadowOpacity : scene.shadowPreset.strength;
+          const shadowLength = hasAIShadow ? carAnalysis.shadowLength : 0.2;
+          const shadowBlur = hasAIShadow ? carAnalysis.shadowBlur : 20;
+          const shadowOpacity = hasAIShadow ? carAnalysis.shadowOpacity : 0.4;
           
           console.log('Shadow params:', { hasAIShadow, shadowAngle, shadowLength, shadowBlur, shadowOpacity });
           
-          // Calculate shadow position based on angle and length
+          // Draw contact shadow DIRECTLY under the tires at baseline
           const angleRad = (shadowAngle * Math.PI) / 180;
+          const shadowOffsetX = Math.sin(angleRad) * scaledWidth * shadowLength * 0.3;
           
-          // Shadow stretches based on angle and length
-          const shadowOffsetX = Math.sin(angleRad) * scaledWidth * shadowLength;
-          const shadowOffsetY = 5; // Slight lift from ground
-          
+          // Shadow positioned exactly at baseline (where tires touch ground)
           const shadowCenterX = carX + (scaledWidth / 2) + shadowOffsetX;
-          const shadowCenterY = baselineY + shadowOffsetY;
+          const shadowCenterY = baselineY; // RIGHT AT THE GROUND
           
-          // Shadow dimensions - wider for angled shadows
-          const shadowWidth = scaledWidth * (0.85 + Math.abs(shadowLength) * 0.5);
-          const shadowHeight = scaledHeight * 0.04;
+          // Shadow dimensions - tight contact shadow under the car
+          const shadowWidth = scaledWidth * 0.9;
+          const shadowHeight = scaledHeight * 0.05;
           
-          // Create realistic gradient with proper falloff
+          // Create realistic contact shadow gradient
           const gradient = ctx.createRadialGradient(
             shadowCenterX, shadowCenterY, 0,
-            shadowCenterX, shadowCenterY, shadowWidth / 1.8
+            shadowCenterX, shadowCenterY, shadowWidth / 2
           );
           
-          gradient.addColorStop(0, `rgba(0, 0, 0, ${shadowOpacity})`);
-          gradient.addColorStop(0.4, `rgba(0, 0, 0, ${shadowOpacity * 0.5})`);
-          gradient.addColorStop(0.7, `rgba(0, 0, 0, ${shadowOpacity * 0.2})`);
+          gradient.addColorStop(0, `rgba(0, 0, 0, ${shadowOpacity * 0.8})`);
+          gradient.addColorStop(0.3, `rgba(0, 0, 0, ${shadowOpacity * 0.5})`);
+          gradient.addColorStop(0.6, `rgba(0, 0, 0, ${shadowOpacity * 0.2})`);
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
           
           ctx.fillStyle = gradient;
           ctx.filter = `blur(${shadowBlur}px)`;
           
-          // Draw elliptical shadow with rotation
+          // Draw elliptical contact shadow
           ctx.beginPath();
           ctx.ellipse(
             shadowCenterX,
             shadowCenterY,
             shadowWidth / 2,
             shadowHeight / 2,
-            angleRad * 0.5, // Slight rotation based on angle
+            angleRad * 0.3,
             0,
             Math.PI * 2
           );
@@ -186,39 +184,40 @@ export const ImageCompositor = ({
           scaledHeight
         );
 
-        // Draw reflection if enabled
+        // Draw professional reflection for studio floors
         if (scene.reflectionPreset.enabled) {
           ctx.save();
           
           // Create a temporary canvas for the reflection
           const reflectionCanvas = document.createElement('canvas');
           reflectionCanvas.width = scaledWidth;
-          reflectionCanvas.height = scaledHeight;
+          reflectionCanvas.height = scaledHeight * 0.5; // Reflection is shorter
           const reflCtx = reflectionCanvas.getContext('2d');
           
           if (reflCtx) {
             // Draw flipped car
-            reflCtx.translate(0, scaledHeight);
+            reflCtx.translate(0, scaledHeight * 0.5);
             reflCtx.scale(1, -1);
             reflCtx.drawImage(carImage, 0, 0, scaledWidth, scaledHeight);
             
-            // Apply gradient fade
-            const gradient = reflCtx.createLinearGradient(0, 0, 0, scaledHeight * scene.reflectionPreset.fade);
-            gradient.addColorStop(0, `rgba(0,0,0,${1 - scene.reflectionPreset.opacity})`);
-            gradient.addColorStop(1, 'rgba(0,0,0,1)');
+            // Apply smooth gradient fade from bottom to top
+            const gradient = reflCtx.createLinearGradient(0, 0, 0, scaledHeight * 0.5);
+            gradient.addColorStop(0, 'rgba(0,0,0,0.7)'); // More transparent at bottom (contact point)
+            gradient.addColorStop(0.3, 'rgba(0,0,0,0.85)');
+            gradient.addColorStop(1, 'rgba(0,0,0,1)'); // Fully transparent at top
             
             reflCtx.globalCompositeOperation = 'destination-out';
             reflCtx.fillStyle = gradient;
-            reflCtx.fillRect(0, 0, scaledWidth, scaledHeight);
+            reflCtx.fillRect(0, 0, scaledWidth, scaledHeight * 0.5);
             
-            // Draw the reflection on main canvas
-            ctx.globalAlpha = scene.reflectionPreset.opacity;
+            // Draw the reflection on main canvas with reduced opacity
+            ctx.globalAlpha = scene.reflectionPreset.opacity * 0.4; // More subtle reflection
             ctx.drawImage(
               reflectionCanvas,
               carX,
-              baselineY,
+              baselineY + 2, // Small gap for natural look
               scaledWidth,
-              scaledHeight
+              scaledHeight * 0.5
             );
           }
           
