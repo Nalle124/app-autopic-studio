@@ -79,14 +79,19 @@ export const ImageCompositor = ({
         let scale = scene.defaultScale;
         let tireBottomPercent = 78; // Default: tires are typically at 78% from top for most cars
         
-        if (carAnalysis && carAnalysis.tireBottomPercent && carAnalysis.recommendedScale) {
+        if (carAnalysis?.tireBottomPercent && carAnalysis?.recommendedScale) {
           // Use AI-determined positioning
-          console.log('Using AI-based positioning:', carAnalysis);
           scale = carAnalysis.recommendedScale;
           tireBottomPercent = carAnalysis.tireBottomPercent;
+          console.log('✓ Using AI positioning:', { 
+            tireBottomPercent, 
+            scale,
+            shadowAngle: carAnalysis.shadowAngle,
+            shadowLength: carAnalysis.shadowLength
+          });
         } else {
           // Smart fallback: use scene scale but estimate tire position
-          console.log('Using smart fallback positioning with estimated tire position');
+          console.log('⚠ Using fallback positioning (no AI data)');
         }
         
         // Calculate dimensions

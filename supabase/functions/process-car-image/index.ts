@@ -158,14 +158,38 @@ serve(async (req) => {
                 content: [
                   {
                     type: 'text',
-                    text: `IMAGE 1 is a car with transparent background. IMAGE 2 is the background scene.
+                    text: `You are analyzing two images to create a realistic car composite. IMAGE 1 is a car with transparent background. IMAGE 2 is the background scene where the car will be placed.
 
-Find where the car's tires bottom edge is located as a percentage from the top of IMAGE 1 (0-100).
-Analyze IMAGE 2 to determine lighting direction and ground perspective.
-Calculate the perfect placement.
+CRITICAL ANALYSIS STEPS:
 
-Return ONLY this JSON (no markdown, no backticks):
-{"tireBottomPercent":75,"carHeightPercent":50,"recommendedScale":0.6,"shadowAngle":0,"shadowLength":0.2,"shadowBlur":25,"shadowOpacity":0.35}`
+1. CAR TIRE POSITION (IMAGE 1):
+   - Identify the BOTTOM edge of the car's tires/wheels
+   - Measure from the TOP of the image (0%) to where the tire bottoms touch the ground
+   - This MUST be accurate - typically between 70-85% for most car angles
+   - If you see the car from a low angle, tires might be at 65-75%
+   - If you see the car from above, tires might be at 75-85%
+
+2. BACKGROUND PERSPECTIVE (IMAGE 2):
+   - Find the horizon line and ground plane
+   - Determine if it's: ground-level view, slightly elevated, or high angle
+   - Note the perspective vanishing point
+   - The baseline is at ${scene.baselineY}% from top - this is where tires will land
+
+3. SCALE CALCULATION:
+   - Match car size to background perspective
+   - Ground-level backgrounds: use 0.5-0.7 scale
+   - Elevated backgrounds: use 0.4-0.6 scale
+   - The car should look naturally sized for the scene depth
+
+4. SHADOW ANALYSIS (IMAGE 2):
+   - Identify primary light direction (analyze highlights/shadows in the scene)
+   - shadowAngle: -45 to +45 degrees (negative=left, positive=right, 0=center)
+   - shadowLength: 0.1-0.4 (shorter for overhead sun, longer for low sun)
+   - shadowBlur: 15-35px (sharper for direct sun, softer for overcast)
+   - shadowOpacity: 0.2-0.5 (lighter for bright scenes, darker for dim scenes)
+
+Return ONLY valid JSON with these exact keys (no markdown, no backticks, no explanation):
+{"tireBottomPercent":78,"carHeightPercent":55,"recommendedScale":0.55,"shadowAngle":-15,"shadowLength":0.25,"shadowBlur":22,"shadowOpacity":0.32}`
                   },
                   {
                     type: 'image_url',
@@ -184,7 +208,8 @@ Return ONLY this JSON (no markdown, no backticks):
         if (aiResponse.ok) {
           const aiData = await aiResponse.json();
           const content = aiData.choices?.[0]?.message?.content || '';
-          console.log('AI comprehensive analysis response:', content);
+          console.log('=== AI ANALYSIS RESPONSE ===');
+          console.log('Raw content:', content);
           
           // Clean and extract JSON - handle markdown code blocks
           let jsonStr = content.trim();
@@ -194,22 +219,31 @@ Return ONLY this JSON (no markdown, no backticks):
           const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             carAnalysis = JSON.parse(jsonMatch[0]);
+            console.log('Parsed AI analysis:', carAnalysis);
             
             // Validate and set defaults for any missing fields
             carAnalysis = {
               tireBottomPercent: carAnalysis.tireBottomPercent || 78,
               carHeightPercent: carAnalysis.carHeightPercent || 50,
-              recommendedScale: carAnalysis.recommendedScale || 0.6,
+              recommendedScale: carAnalysis.recommendedScale || 0.55,
               shadowAngle: carAnalysis.shadowAngle ?? 0,
               shadowLength: carAnalysis.shadowLength ?? 0.2,
               shadowBlur: carAnalysis.shadowBlur || 25,
               shadowOpacity: carAnalysis.shadowOpacity || 0.35,
             };
             
-            console.log('Comprehensive car analysis validated:', carAnalysis);
+            console.log('=== FINAL VALIDATED ANALYSIS ===');
+            console.log('Tire position:', carAnalysis.tireBottomPercent + '%');
+            console.log('Scale:', carAnalysis.recommendedScale);
+            console.log('Shadow angle:', carAnalysis.shadowAngle + '°');
+            console.log('Shadow length:', carAnalysis.shadowLength);
+            console.log('================================');
+          } else {
+            console.error('Failed to extract JSON from AI response');
           }
         } else {
-          console.error('AI API error:', aiResponse.status, await aiResponse.text());
+          const errorText = await aiResponse.text();
+          console.error('AI API error:', aiResponse.status, errorText);
         }
       } catch (error) {
         console.error('AI analysis failed:', error);
