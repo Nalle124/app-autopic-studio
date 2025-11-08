@@ -137,4 +137,26 @@ export const SCENES: SceneMetadata[] = [
       fade: 0.7,
     },
   },
+  {
+    id: 'plattform',
+    name: 'Plattform',
+    description: 'Cirkulär plattform med naturlig skugga',
+    thumbnailUrl: `${STORAGE_BASE}/plattform.jpg`,
+    fullResUrl: `${STORAGE_BASE}/plattform.jpg`,
+    horizonY: 48,
+    baselineY: 68,
+    defaultScale: 0.55,
+    shadowPreset: {
+      enabled: true,
+      strength: 0.45,
+      blur: 35,
+      offsetX: 0,
+      offsetY: 4,
+    },
+    reflectionPreset: {
+      enabled: false,
+      opacity: 0,
+      fade: 0,
+    },
+  },
 ];

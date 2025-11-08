@@ -13,6 +13,7 @@ import outdoorPark from '@/assets/scenes/outdoor-park.jpg';
 import contrastNew from '@/assets/scenes/contrast-new.jpg';
 import vitKakelNew from '@/assets/scenes/vit-kakel-new.jpg';
 import darkCurtain from '@/assets/scenes/dark-curtain.jpg';
+import plattform from '@/assets/scenes/plattform.jpg';
 
 const sceneFiles = [
   { name: 'dark-studio.png', displayName: 'Grå Studio', description: 'Reflektioner', url: darkStudio, contentType: 'image/png' },
@@ -21,6 +22,7 @@ const sceneFiles = [
   { name: 'contrast-new.jpg', displayName: 'Contrast', description: 'AI-genererad studio med tyg och trägolv', url: contrastNew, contentType: 'image/jpeg' },
   { name: 'vit-kakel-new.jpg', displayName: 'Vit Kakel', description: 'AI-genererad minimal vit studio med kontrast', url: vitKakelNew, contentType: 'image/jpeg' },
   { name: 'dark-curtain.jpg', displayName: 'Mörkt Draperi', description: 'AI-genererad studio med draperi och varm belysning', url: darkCurtain, contentType: 'image/jpeg' },
+  { name: 'plattform.jpg', displayName: 'Plattform', description: 'Cirkulär plattform med naturlig skugga', url: plattform, contentType: 'image/jpeg' },
 ];
 
 export default function SetupScenes() {
