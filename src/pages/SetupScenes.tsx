@@ -8,17 +8,17 @@ import { Upload, CheckCircle, XCircle } from 'lucide-react';
 
 // Import the scene images
 import darkStudio from '@/assets/scenes/dark-studio.png';
-import marmorljus from '@/assets/scenes/marmorljus.jpg';
+import marmorljusNew from '@/assets/scenes/marmorljus-new.jpg';
 import outdoorPark from '@/assets/scenes/outdoor-park.jpg';
-import contrast from '@/assets/scenes/contrast.jpg';
-import vitKakel from '@/assets/scenes/vit-kakel.jpg';
+import contrastNew from '@/assets/scenes/contrast-new.jpg';
+import vitKakelNew from '@/assets/scenes/vit-kakel-new.jpg';
 
 const sceneFiles = [
   { name: 'dark-studio.png', displayName: 'Grå Studio', description: 'Reflektioner', url: darkStudio, contentType: 'image/png' },
-  { name: 'marmorljus.jpg', displayName: 'Ljus Marmor', description: 'Reflektioner', url: marmorljus, contentType: 'image/jpeg' },
+  { name: 'marmorljus-new.jpg', displayName: 'Ljus Marmor', description: 'AI-genererad studio med ljus marmorgolv', url: marmorljusNew, contentType: 'image/jpeg' },
   { name: 'outdoor-park.jpg', displayName: 'Park', description: 'Skugga', url: outdoorPark, contentType: 'image/jpeg' },
-  { name: 'contrast.jpg', displayName: 'Contrast', description: 'Reflektioner', url: contrast, contentType: 'image/jpeg' },
-  { name: 'vit-kakel.jpg', displayName: 'Vit Kakel', description: 'Reflektioner', url: vitKakel, contentType: 'image/jpeg' },
+  { name: 'contrast-new.jpg', displayName: 'Contrast', description: 'AI-genererad studio med tyg och trägolv', url: contrastNew, contentType: 'image/jpeg' },
+  { name: 'vit-kakel-new.jpg', displayName: 'Vit Kakel', description: 'AI-genererad minimal vit studio', url: vitKakelNew, contentType: 'image/jpeg' },
 ];
 
 export default function SetupScenes() {
