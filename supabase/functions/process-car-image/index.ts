@@ -81,17 +81,29 @@ serve(async (req) => {
     // Step 2: Process with Photoroom's AI Background API using reference image
     console.log('Processing with Photoroom AI Background + reference image...');
     
-    // Fetch background image to pass to Photoroom
+    // Fetch background image and get correct content-type
     const bgResponse = await fetch(backgroundImageUrl);
+    if (!bgResponse.ok) {
+      throw new Error(`Failed to fetch background image: ${bgResponse.status}`);
+    }
+    
     const bgBuffer = await bgResponse.arrayBuffer();
-    const bgBlob = new Blob([bgBuffer], { type: 'image/jpeg' });
+    const bgContentType = bgResponse.headers.get('content-type') || 'image/png';
+    console.log('Background image fetched:', { 
+      url: backgroundImageUrl, 
+      contentType: bgContentType,
+      size: bgBuffer.byteLength 
+    });
+    
+    // Create blob with correct content-type
+    const bgBlob = new Blob([bgBuffer], { type: bgContentType });
     
     // Prepare FormData for Photoroom v2/edit endpoint with AI background
     const photoroomFormData = new FormData();
     photoroomFormData.append('imageFile', new Blob([imageBuffer], { type: imageFile.type }));
     
     // Use AI background with reference/guidance image - this makes Photoroom AI match the style!
-    photoroomFormData.append('background.guidance.imageFile', bgBlob);
+    photoroomFormData.append('background.guidance.imageFile', bgBlob, 'background.png');
     photoroomFormData.append('background.guidance.scale', '0.8'); // High matching to reference (0-1)
     
     // Request high quality output in landscape format (3:2 ratio)
