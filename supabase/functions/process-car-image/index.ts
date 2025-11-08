@@ -145,7 +145,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        url: finalPublicUrlData.publicUrl,
+        segmentedUrl: finalPublicUrlData.publicUrl,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
