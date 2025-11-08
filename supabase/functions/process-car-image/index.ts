@@ -79,47 +79,21 @@ serve(async (req) => {
     console.log('Original image uploaded:', originalImageUrl);
 
     // Step 2: Process with Photoroom's AI Background API using reference image
-    console.log('Processing with Photoroom AI Background + reference image...');
+    console.log('Processing with Photoroom AI Background with reference URL...');
     
-    // Fetch background image
-    const bgResponse = await fetch(backgroundImageUrl);
-    if (!bgResponse.ok) {
-      throw new Error(`Failed to fetch background image: ${bgResponse.status}`);
-    }
-    
-    const bgBuffer = await bgResponse.arrayBuffer();
-    
-    // Determine correct content-type from filename extension
-    const bgExtension = backgroundImageUrl.split('.').pop()?.toLowerCase() || 'png';
-    const contentTypeMap: Record<string, string> = {
-      'png': 'image/png',
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'webp': 'image/webp',
-      'avif': 'image/avif',
-    };
-    const bgContentType = contentTypeMap[bgExtension] || 'image/png';
-    
-    console.log('Background image prepared:', { 
-      url: backgroundImageUrl,
-      detectedExtension: bgExtension,
-      contentType: bgContentType,
-      size: bgBuffer.byteLength 
-    });
-    
-    // Create blob with correct content-type
-    const bgBlob = new Blob([bgBuffer], { type: bgContentType });
-    
-    // Prepare FormData for Photoroom v2/edit endpoint with AI background
+    // Use background.guidance.imageUrl instead of uploading the file
+    // This avoids any content-type issues
     const photoroomFormData = new FormData();
     photoroomFormData.append('imageFile', new Blob([imageBuffer], { type: imageFile.type }));
     
-    // Use AI background with reference/guidance image - this makes Photoroom AI match the style!
-    photoroomFormData.append('background.guidance.imageFile', bgBlob, `background.${bgExtension}`);
+    // Use AI background with reference/guidance image URL
+    photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
     photoroomFormData.append('background.guidance.scale', '0.8'); // High matching to reference (0-1)
     
     // Request high quality output in landscape format (3:2 ratio)
     photoroomFormData.append('outputSize', '3072x2048');
+    
+    console.log('Photoroom request prepared with guidance URL:', backgroundImageUrl);
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',

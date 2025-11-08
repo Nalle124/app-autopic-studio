@@ -1,12 +1,16 @@
 import { SceneMetadata } from '@/types/scene';
 
+// IMPORTANT: Update these URLs with your actual Supabase Storage URLs
+// after uploading the scene images to Storage -> processed-cars -> scenes/
+const STORAGE_BASE = 'https://cfsyxrokdemwkklqflnb.supabase.co/storage/v1/object/public/processed-cars/scenes';
+
 export const SCENES: SceneMetadata[] = [
   {
     id: 'dark-studio',
     name: 'Dark Studio',
     description: 'Mörk studiomiljö med kaklad yta',
-    thumbnailUrl: '/scenes/dark-studio.png',
-    fullResUrl: '/scenes/dark-studio.png',
+    thumbnailUrl: `${STORAGE_BASE}/dark-studio.png`,
+    fullResUrl: `${STORAGE_BASE}/dark-studio.png`,
     horizonY: 52,
     baselineY: 73,
     defaultScale: 0.65,
@@ -27,8 +31,8 @@ export const SCENES: SceneMetadata[] = [
     id: 'white-studio',
     name: 'White Studio',
     description: 'Ljus minimal showroom',
-    thumbnailUrl: '/scenes/white-studio.png',
-    fullResUrl: '/scenes/white-studio.png',
+    thumbnailUrl: `${STORAGE_BASE}/white-studio.png`,
+    fullResUrl: `${STORAGE_BASE}/white-studio.png`,
     horizonY: 55,
     baselineY: 75,
     defaultScale: 0.62,
@@ -49,8 +53,8 @@ export const SCENES: SceneMetadata[] = [
     id: 'outdoor-park',
     name: 'Outdoor Park',
     description: 'Utomhusmiljö med träd och gatsten',
-    thumbnailUrl: '/scenes/outdoor-park.png',
-    fullResUrl: '/scenes/outdoor-park.png',
+    thumbnailUrl: `${STORAGE_BASE}/outdoor-park.png`,
+    fullResUrl: `${STORAGE_BASE}/outdoor-park.png`,
     horizonY: 48,
     baselineY: 70,
     defaultScale: 0.6,
