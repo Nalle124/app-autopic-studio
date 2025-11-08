@@ -88,10 +88,20 @@ serve(async (req) => {
     
     // Use AI background with reference/guidance image URL
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    photoroomFormData.append('background.guidance.scale', '0.8'); // High matching to reference (0-1)
+    photoroomFormData.append('background.guidance.scale', '0.9'); // Very high matching to reference (0-1)
+    
+    // Add text prompt for consistent photorealistic car advertisement placement
+    photoroomFormData.append('background.prompt', 
+      'Professional car advertisement photo. The car should be naturally placed on the ground with realistic shadows and reflections. ' +
+      'Photorealistic lighting and perspective. The car should be the main subject, centered and properly scaled to match the environment. ' +
+      'Maintain natural proportions and realistic integration with the background scene.'
+    );
     
     // Request high quality output in landscape format (3:2 ratio)
     photoroomFormData.append('outputSize', '3072x2048');
+    
+    // Enable shadow generation for more realistic placement
+    photoroomFormData.append('shadow.mode', 'ai');
     
     console.log('Photoroom request prepared with guidance URL:', backgroundImageUrl);
     

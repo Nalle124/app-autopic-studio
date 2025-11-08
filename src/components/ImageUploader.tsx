@@ -8,9 +8,10 @@ import { toast } from 'sonner';
 
 interface ImageUploaderProps {
   onImagesUploaded: (images: UploadedImage[]) => void;
+  onClearAll?: () => void;
 }
 
-export const ImageUploader = ({ onImagesUploaded }: ImageUploaderProps) => {
+export const ImageUploader = ({ onImagesUploaded, onClearAll }: ImageUploaderProps) => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -91,6 +92,7 @@ export const ImageUploader = ({ onImagesUploaded }: ImageUploaderProps) => {
                 onClick={() => {
                   uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
                   setUploadedImages([]);
+                  onClearAll?.();
                 }}
               >
                 Rensa alla

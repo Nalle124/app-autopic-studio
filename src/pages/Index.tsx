@@ -186,7 +186,10 @@ const Index = () => {
                 Dra och släpp upp till 50 bilbilder åt gången
               </p>
             </div>
-            <ImageUploader onImagesUploaded={handleImagesUploaded} />
+            <ImageUploader 
+              onImagesUploaded={handleImagesUploaded}
+              onClearAll={() => setUploadedImages([])}
+            />
           </section>
 
           {/* Scene Selection */}
