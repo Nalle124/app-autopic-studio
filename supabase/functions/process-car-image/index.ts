@@ -92,25 +92,8 @@ serve(async (req) => {
     photoroomFormData.append('background.guidance.scale', '1.0');
     photoroomFormData.append('background.guidance.strength', '1.0');
     
-    // Scene-specific prompts - detailed for problematic scenes, simple for working ones
-    let scenePrompt = '';
-    
-    if (scene.id === 'outdoor-park' || scene.id === 'dark-studio') {
-      // These work well - keep simple
-      scenePrompt = 'Place the car naturally on the floor surface shown in the reference image. Match the reference exactly.';
-    } else if (scene.id === 'ljus-marmor') {
-      // Marble floor - needs very specific description
-      scenePrompt = 'CRITICAL: The reference image shows a DARK MARBLE FLOOR with white veining patterns. The car MUST be placed on this EXACT dark marble surface. The marble floor texture with its natural stone veining MUST be visible under and around the car. Create a clear MIRROR REFLECTION of the car on the polished marble surface. DO NOT replace the marble with plain white, gray, or any other surface. Copy the exact dark marble texture, veining pattern, and reflective quality from the reference image.';
-    } else if (scene.id === 'contrast') {
-      // Wood floor with curtain - needs specific description
-      scenePrompt = 'CRITICAL: The reference image shows a WOODEN PARQUET FLOOR with dark curtains in the background. The car MUST be placed on this EXACT wooden floor surface. The wood grain texture and parquet pattern MUST be visible. Create a clear MIRROR REFLECTION of the car on the glossy wood floor. The dark curtains MUST remain in the background. DO NOT replace with beach, gravel road, outdoor scene, or any other environment. This is an INDOOR STUDIO with wood flooring. Copy the exact wood texture, parquet pattern, curtain backdrop, and reflective floor from the reference image.';
-    } else if (scene.id === 'vit-kakel') {
-      // White tile - needs specific description  
-      scenePrompt = 'CRITICAL: The reference image shows a WHITE TILE FLOOR with subtle tile joints/grout lines. The car MUST be placed on this EXACT white tile surface. The tile pattern and grout lines MUST be visible. Create a clear MIRROR REFLECTION of the car on the polished tile floor. DO NOT replace the tiles with plain white, matte surface, or any other material. This is a GLOSSY REFLECTIVE tile floor. Copy the exact tile texture, grout pattern, and mirror-like reflective quality from the reference image.';
-    } else {
-      // Fallback for any other scenes
-      scenePrompt = 'Place the car naturally on the floor surface shown in the reference image. Match the reference exactly.';
-    }
+    // Use same simple prompt for ALL scenes - works for Park and Grå Studio
+    const scenePrompt = 'Place the car naturally on the floor surface shown in the reference image. Match the reference exactly.';
     
     photoroomFormData.append('background.prompt', scenePrompt);
     
