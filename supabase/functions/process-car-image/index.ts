@@ -78,10 +78,10 @@ serve(async (req) => {
     const originalImageUrl = publicUrlData.publicUrl;
     console.log('Original image uploaded:', originalImageUrl);
 
-    // Step 2: Remove background using Photoroom API
+    // Step 2: Remove background using Photoroom Sandbox API
     console.log('Removing background with Photoroom...');
     
-    // Prepare FormData for Photoroom
+    // Prepare FormData for Photoroom segment endpoint
     const photoroomFormData = new FormData();
     photoroomFormData.append('image_file', new Blob([imageBuffer], { type: imageFile.type }));
     
@@ -96,11 +96,20 @@ serve(async (req) => {
     if (!removeResponse.ok) {
       const errorText = await removeResponse.text();
       console.error('Photoroom remove background error:', errorText);
+      
+      // Handle specific error codes
+      if (removeResponse.status === 402) {
+        throw new Error(`Photoroom: Out of API credits. Visit https://app.photoroom.com/api-dashboard to upgrade.`);
+      }
+      if (removeResponse.status === 401) {
+        throw new Error(`Photoroom: Invalid API key. Please check your API key.`);
+      }
+      
       throw new Error(`Background removal failed: ${removeResponse.status} - ${errorText}`);
     }
 
     const segmentedBuffer = await removeResponse.arrayBuffer();
-    console.log('Background removed successfully with Photoroom');
+    console.log('Background removed successfully with Photoroom sandbox API');
 
     // Step 3: Segmented image is already in buffer from Photoroom
     console.log('Image ready for upload...');
