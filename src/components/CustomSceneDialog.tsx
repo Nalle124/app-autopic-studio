@@ -18,64 +18,19 @@ export function CustomSceneDialog({ open, onOpenChange, onSceneCreated }: Custom
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
   const [backgroundPreview, setBackgroundPreview] = useState<string>('');
   const [sceneName, setSceneName] = useState('');
-  const [horizonY, setHorizonY] = useState(50);
-  const [baselineY, setBaselineY] = useState(65);
-  const [defaultScale, setDefaultScale] = useState(0.7);
-  const [shadowEnabled, setShadowEnabled] = useState(true);
-  const [shadowStrength, setShadowStrength] = useState(0.3);
-  const [reflectionEnabled, setReflectionEnabled] = useState(false);
-  const [reflectionOpacity, setReflectionOpacity] = useState(0.25);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [shadowEnabled, setShadowEnabled] = useState(false);
+  const [reflectionEnabled, setReflectionEnabled] = useState(true);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setBackgroundFile(file);
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      reader.onload = (e) => {
         const base64 = e.target?.result as string;
         setBackgroundPreview(base64);
-        
-        // Automatically analyze the scene with AI
-        await analyzeScene(base64);
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const analyzeScene = async (imageBase64: string) => {
-    setIsAnalyzing(true);
-    toast.info('Analyserar bakgrund med AI...');
-    
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-scene`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ imageBase64 }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to analyze scene');
-      }
-
-      const result = await response.json();
-      
-      setHorizonY(result.horizonY);
-      setBaselineY(result.baselineY);
-      setDefaultScale(result.defaultScale);
-      
-      toast.success('Bakgrund analyserad! Justeringar kan göras manuellt om det behövs.');
-    } catch (error) {
-      console.error('Error analyzing scene:', error);
-      toast.error('Kunde inte analysera bakgrund, använd manuella inställningar');
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -91,20 +46,20 @@ export function CustomSceneDialog({ open, onOpenChange, onSceneCreated }: Custom
       description: 'Egen bakgrund',
       thumbnailUrl: backgroundPreview,
       fullResUrl: backgroundPreview,
-      horizonY,
-      baselineY,
-      defaultScale,
+      horizonY: 50,
+      baselineY: 70,
+      defaultScale: 0.65,
       shadowPreset: {
         enabled: shadowEnabled,
-        strength: shadowStrength,
-        blur: 60,
+        strength: 0.3,
+        blur: 25,
         offsetX: 0,
-        offsetY: 8,
+        offsetY: 2,
       },
       reflectionPreset: {
         enabled: reflectionEnabled,
-        opacity: reflectionOpacity,
-        fade: 0.8,
+        opacity: 0.35,
+        fade: 0.85,
       },
     };
 
@@ -124,7 +79,7 @@ export function CustomSceneDialog({ open, onOpenChange, onSceneCreated }: Custom
         <DialogHeader>
           <DialogTitle>Skapa egen bakgrund</DialogTitle>
           <DialogDescription>
-            Ladda upp din egen bakgrund och justera hur bilarna ska placeras
+            Ladda upp din egen bakgrund och välj skugga eller reflektion
           </DialogDescription>
         </DialogHeader>
 
@@ -136,13 +91,7 @@ export function CustomSceneDialog({ open, onOpenChange, onSceneCreated }: Custom
               type="file"
               accept="image/*"
               onChange={handleFileSelect}
-              disabled={isAnalyzing}
             />
-            {isAnalyzing && (
-              <p className="text-sm text-muted-foreground animate-pulse">
-                Analyserar bakgrund med AI...
-              </p>
-            )}
             {backgroundPreview && (
               <div className="mt-2 rounded-lg overflow-hidden border border-border">
                 <img src={backgroundPreview} alt="Preview" className="w-full h-48 object-cover" />
@@ -160,87 +109,20 @@ export function CustomSceneDialog({ open, onOpenChange, onSceneCreated }: Custom
             />
           </div>
 
-          {/* Positioning */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">
-              Placering {isAnalyzing ? '(analyserar...)' : '(AI-analyserad)'}
-            </h3>
-            
-            <div className="space-y-2">
-              <Label>Horisont Y-position: {horizonY}%</Label>
-              <Slider
-                value={[horizonY]}
-                onValueChange={([v]) => setHorizonY(v)}
-                min={0}
-                max={100}
-                step={1}
-              />
-              <p className="text-xs text-muted-foreground">Var horisontlinjen är i bilden</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Baslinje Y-position: {baselineY}%</Label>
-              <Slider
-                value={[baselineY]}
-                onValueChange={([v]) => setBaselineY(v)}
-                min={0}
-                max={100}
-                step={1}
-              />
-              <p className="text-xs text-muted-foreground">Var bilens hjul ska "landa"</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Standardskala: {defaultScale.toFixed(2)}</Label>
-              <Slider
-                value={[defaultScale]}
-                onValueChange={([v]) => setDefaultScale(v)}
-                min={0.3}
-                max={1.0}
-                step={0.05}
-              />
-              <p className="text-xs text-muted-foreground">Hur stor bilen ska vara</p>
-            </div>
-          </div>
-
           {/* Shadow Settings */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Skugga</Label>
               <Switch checked={shadowEnabled} onCheckedChange={setShadowEnabled} />
             </div>
-            {shadowEnabled && (
-              <div className="space-y-2">
-                <Label>Skuggstyrka: {shadowStrength.toFixed(2)}</Label>
-                <Slider
-                  value={[shadowStrength]}
-                  onValueChange={([v]) => setShadowStrength(v)}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                />
-              </div>
-            )}
           </div>
 
           {/* Reflection Settings */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Reflektion</Label>
               <Switch checked={reflectionEnabled} onCheckedChange={setReflectionEnabled} />
             </div>
-            {reflectionEnabled && (
-              <div className="space-y-2">
-                <Label>Reflektionsopacitet: {reflectionOpacity.toFixed(2)}</Label>
-                <Slider
-                  value={[reflectionOpacity]}
-                  onValueChange={([v]) => setReflectionOpacity(v)}
-                  min={0}
-                  max={1}
-                  step={0.05}
-                />
-              </div>
-            )}
           </div>
 
           <Button onClick={handleCreate} className="w-full">
