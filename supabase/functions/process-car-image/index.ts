@@ -81,16 +81,28 @@ serve(async (req) => {
     // Step 2: Process with Photoroom's AI Background API using reference image
     console.log('Processing with Photoroom AI Background + reference image...');
     
-    // Fetch background image and get correct content-type
+    // Fetch background image
     const bgResponse = await fetch(backgroundImageUrl);
     if (!bgResponse.ok) {
       throw new Error(`Failed to fetch background image: ${bgResponse.status}`);
     }
     
     const bgBuffer = await bgResponse.arrayBuffer();
-    const bgContentType = bgResponse.headers.get('content-type') || 'image/png';
-    console.log('Background image fetched:', { 
-      url: backgroundImageUrl, 
+    
+    // Determine correct content-type from filename extension
+    const bgExtension = backgroundImageUrl.split('.').pop()?.toLowerCase() || 'png';
+    const contentTypeMap: Record<string, string> = {
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'webp': 'image/webp',
+      'avif': 'image/avif',
+    };
+    const bgContentType = contentTypeMap[bgExtension] || 'image/png';
+    
+    console.log('Background image prepared:', { 
+      url: backgroundImageUrl,
+      detectedExtension: bgExtension,
       contentType: bgContentType,
       size: bgBuffer.byteLength 
     });
@@ -103,7 +115,7 @@ serve(async (req) => {
     photoroomFormData.append('imageFile', new Blob([imageBuffer], { type: imageFile.type }));
     
     // Use AI background with reference/guidance image - this makes Photoroom AI match the style!
-    photoroomFormData.append('background.guidance.imageFile', bgBlob, 'background.png');
+    photoroomFormData.append('background.guidance.imageFile', bgBlob, `background.${bgExtension}`);
     photoroomFormData.append('background.guidance.scale', '0.8'); // High matching to reference (0-1)
     
     // Request high quality output in landscape format (3:2 ratio)
