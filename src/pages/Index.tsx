@@ -61,8 +61,8 @@ const Index = () => {
             formData.append('image', image.file);
             formData.append('scene', JSON.stringify(selectedScene));
             
-            // Use absolute URL for background image (from public folder)
-            const backgroundUrl = selectedScene.fullResUrl.startsWith('http') 
+            // Use absolute URL for background image (handles both http URLs and data URIs)
+            const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:')
               ? selectedScene.fullResUrl 
               : `${window.location.origin}${selectedScene.fullResUrl}`;
             formData.append('backgroundUrl', backgroundUrl);
