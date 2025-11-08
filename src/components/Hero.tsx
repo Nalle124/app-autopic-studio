@@ -17,12 +17,12 @@ export const Hero = () => {
           <span className="text-sm font-medium text-primary">AI-driven magi</span>
         </div>
         
-        <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">Skapa proffsiga
-bilannonser på minuter<br />
-          <span className="bg-gradient-premium bg-clip-text text-transparent">
+        <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight font-heading">
+          Skapa proffsiga{" "}
+          <span className="text-accent">
             bilannonser
           </span>
-          {" "}på minuter
+          {" "}på sekunder
         </h2>
         
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">Himlen grå eller hallen full... få super-snygga annonsbilder på ett par knapptryck. Anpassade för svensk smak och utan att se fake ut.</p>

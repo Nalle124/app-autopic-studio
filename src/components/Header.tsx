@@ -10,7 +10,7 @@ export const Header = () => {
               <Car className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">AutoScene Pro</h1>
+              <h1 className="text-xl font-bold text-foreground font-heading">AutoScene Pro</h1>
               <p className="text-xs text-muted-foreground">Professionella bilbackgrunder på sekunder</p>
             </div>
           </div>
