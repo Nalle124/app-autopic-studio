@@ -4,13 +4,15 @@ import { Hero } from '@/components/Hero';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
+import { ImageCropEditor } from '@/components/ImageCropEditor';
+import { LogoManager, LogoPosition } from '@/components/LogoManager';
 import { UploadedImage, SceneMetadata, ExportSettings } from '@/types/scene';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
-import { Download, X, RefreshCw } from 'lucide-react';
+import { Download, X, RefreshCw, Crop, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -19,6 +21,10 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set());
+  const [editingImage, setEditingImage] = useState<{ id: string; finalUrl: string; fileName: string } | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoPosition, setLogoPosition] = useState<LogoPosition>('bottom-right');
+  const [logoEnabled, setLogoEnabled] = useState(false);
 
   const handleImagesUploaded = (newImages: UploadedImage[]) => {
     setUploadedImages((prev) => [...prev, ...newImages]);
@@ -280,6 +286,107 @@ const Index = () => {
     });
   };
 
+  const handleCropSave = (imageId: string, croppedImageUrl: string) => {
+    setUploadedImages(prev =>
+      prev.map(img =>
+        img.id === imageId ? { ...img, croppedUrl: croppedImageUrl } : img
+      )
+    );
+    toast.success('Beskärning sparad');
+  };
+
+  const applyLogoToImage = async (imageUrl: string): Promise<string> => {
+    if (!logoUrl || !logoEnabled) return imageUrl;
+
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(imageUrl);
+
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.onload = () => {
+        canvas.width = image.width;
+        canvas.height = image.height;
+        ctx.drawImage(image, 0, 0);
+
+        const logo = new Image();
+        logo.crossOrigin = 'anonymous';
+        logo.onload = () => {
+          const maxLogoWidth = canvas.width * 0.2;
+          const logoScale = maxLogoWidth / logo.width;
+          const logoWidth = logo.width * logoScale;
+          const logoHeight = logo.height * logoScale;
+          const padding = canvas.width * 0.03;
+
+          let x = padding;
+          let y = padding;
+
+          switch (logoPosition) {
+            case 'top-left':
+              x = padding;
+              y = padding;
+              break;
+            case 'top-center':
+              x = (canvas.width - logoWidth) / 2;
+              y = padding;
+              break;
+            case 'top-right':
+              x = canvas.width - logoWidth - padding;
+              y = padding;
+              break;
+            case 'bottom-left':
+              x = padding;
+              y = canvas.height - logoHeight - padding;
+              break;
+            case 'bottom-center':
+              x = (canvas.width - logoWidth) / 2;
+              y = canvas.height - logoHeight - padding;
+              break;
+            case 'bottom-right':
+              x = canvas.width - logoWidth - padding;
+              y = canvas.height - logoHeight - padding;
+              break;
+          }
+
+          ctx.drawImage(logo, x, y, logoWidth, logoHeight);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        logo.src = logoUrl;
+      };
+      image.src = imageUrl;
+    });
+  };
+
+  const handleDownloadWithLogo = async (imageUrl: string, fileName: string) => {
+    const finalImageUrl = await applyLogoToImage(imageUrl);
+    handleDownload(finalImageUrl, fileName);
+  };
+
+  const handleDownloadAllWithLogo = async () => {
+    const completedImages = uploadedImages.filter(img => img.status === 'completed' && (img.croppedUrl || img.finalUrl));
+    
+    if (completedImages.length === 0) {
+      toast.error('Inga bilder att ladda ner');
+      return;
+    }
+
+    toast.success(`Förbereder ${completedImages.length} bilder...`);
+    
+    for (let i = 0; i < completedImages.length; i++) {
+      const image = completedImages[i];
+      const imageUrl = image.croppedUrl || image.finalUrl!;
+      const finalImageUrl = await applyLogoToImage(imageUrl);
+      
+      setTimeout(() => {
+        handleDownload(
+          finalImageUrl,
+          `${image.file.name.split('.')[0]}-${image.sceneId}.png`
+        );
+      }, i * 500);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -333,8 +440,18 @@ const Index = () => {
                   Starta bearbetning av dina bilder
                 </p>
               </div>
-              <div className="max-w-lg">
+              <div className="grid md:grid-cols-2 gap-6">
                 <ExportPanel onExport={handleExport} isProcessing={isProcessing} />
+                <LogoManager
+                  logoUrl={logoUrl}
+                  logoPosition={logoPosition}
+                  logoEnabled={logoEnabled}
+                  onLogoChange={(url, position, enabled) => {
+                    setLogoUrl(url);
+                    setLogoPosition(position);
+                    setLogoEnabled(enabled);
+                  }}
+                />
               </div>
             </section>
           )}
@@ -345,10 +462,10 @@ const Index = () => {
               <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <h2 className="text-xl font-bold text-foreground mb-1">
-                    4. Resultat
+                    4. Redigera och ladda ner
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Klicka för förhandsvisning, markera för att regenerera
+                    Klicka på bild för förhandsvisning, beskär om du vill, sedan ladda ner
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -365,9 +482,8 @@ const Index = () => {
                   )}
                   {uploadedImages.some(img => img.status === 'completed') && (
                     <Button 
-                      onClick={handleDownloadAll}
-                      className="gap-2"
-                      variant="outline"
+                      onClick={handleDownloadAllWithLogo}
+                      className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
                     >
                       <Download className="w-4 h-4" />
                       Ladda ner alla
@@ -393,10 +509,10 @@ const Index = () => {
                         ) : (
                           <>
                             <img
-                              src={image.finalUrl || image.preview}
+                              src={image.croppedUrl || image.finalUrl || image.preview}
                               alt="Bearbetad bild"
                               className="w-full h-full object-cover cursor-pointer"
-                              onClick={() => setPreviewImage(image.finalUrl || null)}
+                              onClick={() => setPreviewImage(image.croppedUrl || image.finalUrl || null)}
                             />
                             <div className="absolute top-2 left-2 z-10">
                               <div 
@@ -417,18 +533,37 @@ const Index = () => {
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="gap-2"
+                                className="gap-1.5 text-xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (image.finalUrl) {
-                                    handleDownload(
-                                      image.finalUrl,
+                                    setEditingImage({
+                                      id: image.id,
+                                      finalUrl: image.croppedUrl || image.finalUrl,
+                                      fileName: image.file.name,
+                                    });
+                                  }
+                                }}
+                              >
+                                <Crop className="w-3.5 h-3.5" />
+                                Beskär
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="gap-1.5 text-xs bg-accent text-accent-foreground hover:bg-accent/90"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (image.finalUrl) {
+                                    const imageUrl = image.croppedUrl || image.finalUrl;
+                                    await handleDownloadWithLogo(
+                                      imageUrl,
                                       `${image.file.name.split('.')[0]}-${image.sceneId}.png`
                                     );
                                   }
                                 }}
                               >
-                                <Download className="w-4 h-4" />
+                                <Download className="w-3.5 h-3.5" />
                                 Ladda ner
                               </Button>
                             </div>
@@ -461,6 +596,13 @@ const Index = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Crop Editor */}
+      <ImageCropEditor
+        image={editingImage}
+        onClose={() => setEditingImage(null)}
+        onSave={handleCropSave}
+      />
 
       {/* Footer */}
       <footer className="border-t border-border mt-20">

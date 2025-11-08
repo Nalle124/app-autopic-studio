@@ -43,6 +43,7 @@ export interface UploadedImage {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   segmentedUrl?: string;
   finalUrl?: string;
+  croppedUrl?: string;
   sceneId?: string;
   carAnalysis?: CarAnalysis;
 }
