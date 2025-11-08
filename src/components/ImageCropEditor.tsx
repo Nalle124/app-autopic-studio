@@ -1,11 +1,9 @@
-import { useState, useCallback, Suspense, lazy } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Crop, Save, X } from 'lucide-react';
-
-const Cropper = lazy(() => import('react-easy-crop').then(module => ({ default: module.default })));
+import { Crop, Save, X, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface ImageCropEditorProps {
   image: { id: string; finalUrl: string; fileName: string } | null;
@@ -13,71 +11,111 @@ interface ImageCropEditorProps {
   onSave: (imageId: string, croppedImage: string) => void;
 }
 
-interface Area {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new Image();
-    image.addEventListener('load', () => resolve(image));
-    image.addEventListener('error', (error) => reject(error));
-    image.setAttribute('crossOrigin', 'anonymous');
-    image.src = url;
-  });
-
-const getCroppedImg = async (
-  imageSrc: string,
-  pixelCrop: Area
-): Promise<string> => {
-  const image = await createImage(imageSrc);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) {
-    throw new Error('Failed to get canvas context');
-  }
-
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
-
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    pixelCrop.width,
-    pixelCrop.height
-  );
-
-  return canvas.toDataURL('image/png');
-};
-
 export const ImageCropEditor = ({ image, onClose, onSave }: ImageCropEditorProps) => {
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
 
-  const onCropComplete = useCallback((_: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+  useEffect(() => {
+    if (!image) return;
 
-  const handleSave = async () => {
-    if (!image || !croppedAreaPixels) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      setImageObj(img);
+      // Center image
+      if (canvasRef.current) {
+        const canvas = canvasRef.current;
+        setPosition({
+          x: (canvas.width - img.width) / 2,
+          y: (canvas.height - img.height) / 2,
+        });
+      }
+    };
+    img.src = image.finalUrl;
+  }, [image]);
 
-    try {
-      const croppedImage = await getCroppedImg(image.finalUrl, croppedAreaPixels);
-      onSave(image.id, croppedImage);
-      onClose();
-    } catch (error) {
-      console.error('Error cropping image:', error);
-    }
+  useEffect(() => {
+    if (!canvasRef.current || !imageObj) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw image with zoom and position
+    ctx.save();
+    ctx.translate(position.x, position.y);
+    ctx.scale(zoom, zoom);
+    ctx.drawImage(imageObj, 0, 0);
+    ctx.restore();
+
+    // Draw crop frame
+    ctx.strokeStyle = '#ffd500';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
+  }, [imageObj, zoom, position]);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleSave = () => {
+    if (!image || !canvasRef.current || !imageObj) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Create new canvas for cropped image
+    const cropCanvas = document.createElement('canvas');
+    const cropWidth = canvas.width - 100;
+    const cropHeight = canvas.height - 100;
+    cropCanvas.width = cropWidth;
+    cropCanvas.height = cropHeight;
+    const cropCtx = cropCanvas.getContext('2d');
+    if (!cropCtx) return;
+
+    // Calculate source rectangle
+    const sourceX = (50 - position.x) / zoom;
+    const sourceY = (50 - position.y) / zoom;
+    const sourceWidth = cropWidth / zoom;
+    const sourceHeight = cropHeight / zoom;
+
+    // Draw cropped portion
+    cropCtx.drawImage(
+      imageObj,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      cropWidth,
+      cropHeight
+    );
+
+    const croppedImage = cropCanvas.toDataURL('image/png');
+    onSave(image.id, croppedImage);
+    onClose();
   };
 
   if (!image) return null;
@@ -92,28 +130,44 @@ export const ImageCropEditor = ({ image, onClose, onSave }: ImageCropEditorProps
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 relative bg-muted rounded-lg overflow-hidden">
-          <Suspense fallback={<div className="flex items-center justify-center h-full">Laddar...</div>}>
-            <Cropper
-              image={image.finalUrl}
-              crop={crop}
-              zoom={zoom}
-              aspect={undefined}
-              onCropChange={setCrop}
-              onCropComplete={onCropComplete}
-              onZoomChange={setZoom}
-              objectFit="contain"
-            />
-          </Suspense>
+        <div className="flex-1 flex items-center justify-center bg-muted rounded-lg overflow-hidden">
+          <canvas
+            ref={canvasRef}
+            width={800}
+            height={600}
+            className="cursor-move"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          />
         </div>
 
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Zoom</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Zoom</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setZoom(Math.min(3, zoom + 0.1))}
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
             <Slider
               value={[zoom]}
               onValueChange={(value) => setZoom(value[0])}
-              min={1}
+              min={0.5}
               max={3}
               step={0.1}
               className="w-full"
