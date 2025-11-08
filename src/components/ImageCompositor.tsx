@@ -73,41 +73,43 @@ export const ImageCompositor = ({
           carImage.src = segmentedImageUrl;
         });
 
-        // Calculate car positioning with AI analysis or fallback to scene defaults
+        // Calculate car positioning with AI analysis or smart fallback
         const baselineY = (scene.baselineY / 100) * canvas.height;
         
         let scale = scene.defaultScale;
-        let carY;
+        let tireBottomPercent = 78; // Default: tires are typically at 78% from top for most cars
         
-        if (carAnalysis) {
+        if (carAnalysis && carAnalysis.tireBottomPercent && carAnalysis.recommendedScale) {
           // Use AI-determined positioning
           console.log('Using AI-based positioning:', carAnalysis);
           scale = carAnalysis.recommendedScale;
-          
-          // Calculate where the car's tires should touch the ground
-          const scaledWidth = carImage.width * scale;
-          const scaledHeight = carImage.height * scale;
-          
-          // Calculate tire position in scaled image
-          const tireBottomInScaledImage = (carAnalysis.tireBottomPercent / 100) * scaledHeight;
-          
-          // Position car so tires align with baseline
-          carY = baselineY - tireBottomInScaledImage;
-          
-          console.log('Calculated positioning - baselineY:', baselineY, 'tireBottom:', tireBottomInScaledImage, 'carY:', carY);
+          tireBottomPercent = carAnalysis.tireBottomPercent;
         } else {
-          // Fallback to scene defaults
-          console.log('Using default scene positioning');
-          const scaledHeight = carImage.height * scale;
-          carY = baselineY - scaledHeight;
+          // Smart fallback: use scene scale but estimate tire position
+          console.log('Using smart fallback positioning with estimated tire position');
         }
         
-        // Calculate scaled dimensions maintaining aspect ratio
+        // Calculate dimensions
         const scaledWidth = carImage.width * scale;
         const scaledHeight = carImage.height * scale;
         
+        // Calculate where tires are in the scaled image
+        const tireBottomInScaledImage = (tireBottomPercent / 100) * scaledHeight;
+        
+        // Position car so the tire bottoms align perfectly with baseline
+        const carY = baselineY - tireBottomInScaledImage;
+        
         // Center horizontally
         const carX = (canvas.width - scaledWidth) / 2;
+        
+        console.log('Positioning:', {
+          baselineY,
+          tireBottomPercent,
+          scaledHeight,
+          tireBottomInScaledImage,
+          carY,
+          carX
+        });
 
         // Draw shadow with AI-optimized parameters or scene defaults
         const shouldDrawShadow = scene.shadowPreset.enabled;

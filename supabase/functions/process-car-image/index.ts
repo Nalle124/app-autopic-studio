@@ -150,42 +150,30 @@ serve(async (req) => {
             model: 'google/gemini-2.5-flash',
             messages: [
               {
+                role: 'system',
+                content: 'You are a computer vision expert. Analyze images precisely and return ONLY valid JSON, no markdown formatting or extra text.'
+              },
+              {
                 role: 'user',
                 content: [
                   {
                     type: 'text',
-                    text: `Analyze these two images for perfect car placement on the background:
+                    text: `IMAGE 1 is a car with transparent background. IMAGE 2 is the background scene.
 
-IMAGE 1 (car with transparent background): Analyze the car's perspective, angle, and tire position.
-IMAGE 2 (background scene): Analyze the ground/floor perspective, horizon line, lighting direction.
+Find where the car's tires bottom edge is located as a percentage from the top of IMAGE 1 (0-100).
+Analyze IMAGE 2 to determine lighting direction and ground perspective.
+Calculate the perfect placement.
 
-Your task is to determine the perfect placement to make it look like a professional photograph. Return ONLY a JSON object:
-
-{
-  "tireBottomPercent": [where bottom of tires are in car image, 0-100],
-  "carHeightPercent": [car height in original image, 0-100],
-  "recommendedScale": [scale factor 0.3-0.9 to match perspective],
-  "shadowAngle": [shadow direction in degrees, -45 to 45, 0=straight down],
-  "shadowLength": [shadow length multiplier, 0.1-0.3],
-  "shadowBlur": [blur amount in pixels, 15-40],
-  "shadowOpacity": [shadow strength, 0.2-0.5],
-  "lightingMatch": [description of how to match lighting],
-  "perspectiveNotes": [any perspective adjustments needed]
-}
-
-Be precise - this needs to look like a real photograph.`
+Return ONLY this JSON (no markdown, no backticks):
+{"tireBottomPercent":75,"carHeightPercent":50,"recommendedScale":0.6,"shadowAngle":0,"shadowLength":0.2,"shadowBlur":25,"shadowOpacity":0.35}`
                   },
                   {
                     type: 'image_url',
-                    image_url: {
-                      url: `data:image/png;base64,${base64Segmented}`
-                    }
+                    image_url: { url: `data:image/png;base64,${base64Segmented}` }
                   },
                   {
                     type: 'image_url',
-                    image_url: {
-                      url: `data:image/jpeg;base64,${base64Background}`
-                    }
+                    image_url: { url: `data:image/jpeg;base64,${base64Background}` }
                   }
                 ]
               }
@@ -198,12 +186,30 @@ Be precise - this needs to look like a real photograph.`
           const content = aiData.choices?.[0]?.message?.content || '';
           console.log('AI comprehensive analysis response:', content);
           
-          // Extract JSON from response
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          // Clean and extract JSON - handle markdown code blocks
+          let jsonStr = content.trim();
+          jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+          jsonStr = jsonStr.trim();
+          
+          const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             carAnalysis = JSON.parse(jsonMatch[0]);
-            console.log('Comprehensive car analysis:', carAnalysis);
+            
+            // Validate and set defaults for any missing fields
+            carAnalysis = {
+              tireBottomPercent: carAnalysis.tireBottomPercent || 78,
+              carHeightPercent: carAnalysis.carHeightPercent || 50,
+              recommendedScale: carAnalysis.recommendedScale || 0.6,
+              shadowAngle: carAnalysis.shadowAngle ?? 0,
+              shadowLength: carAnalysis.shadowLength ?? 0.2,
+              shadowBlur: carAnalysis.shadowBlur || 25,
+              shadowOpacity: carAnalysis.shadowOpacity || 0.35,
+            };
+            
+            console.log('Comprehensive car analysis validated:', carAnalysis);
           }
+        } else {
+          console.error('AI API error:', aiResponse.status, await aiResponse.text());
         }
       } catch (error) {
         console.error('AI analysis failed:', error);
