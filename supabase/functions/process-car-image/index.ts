@@ -111,8 +111,8 @@ serve(async (req) => {
     const segmentedBuffer = await removeResponse.arrayBuffer();
     console.log('Background removed successfully with Photoroom sandbox API');
 
-    // Step 3: Analyze car positioning with AI
-    console.log('Analyzing car positioning with AI...');
+    // Step 3: Comprehensive AI analysis of car AND background
+    console.log('Analyzing car and background with AI...');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
@@ -122,9 +122,19 @@ serve(async (req) => {
     let carAnalysis = null;
     if (LOVABLE_API_KEY) {
       try {
-        // Convert segmented image to base64 for AI analysis
+        // Convert images to base64 for AI analysis
         const base64Segmented = btoa(
           new Uint8Array(segmentedBuffer).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            ''
+          )
+        );
+
+        // Fetch and convert background image
+        const bgResponse = await fetch(backgroundImageUrl);
+        const bgBuffer = await bgResponse.arrayBuffer();
+        const base64Background = btoa(
+          new Uint8Array(bgBuffer).reduce(
             (data, byte) => data + String.fromCharCode(byte),
             ''
           )
@@ -144,18 +154,37 @@ serve(async (req) => {
                 content: [
                   {
                     type: 'text',
-                    text: `Analyze this car image with removed background. Determine:
-1. tireBottomPercent: Where the bottom of the tires are as a percentage from top (0-100)
-2. carHeightPercent: Approximate height the car takes up in the image (0-100)
-3. recommendedScale: Recommended scale factor for the car (0.3-0.9)
+                    text: `Analyze these two images for perfect car placement on the background:
 
-Return ONLY a JSON object with these three values, no other text:
-{"tireBottomPercent": number, "carHeightPercent": number, "recommendedScale": number}`
+IMAGE 1 (car with transparent background): Analyze the car's perspective, angle, and tire position.
+IMAGE 2 (background scene): Analyze the ground/floor perspective, horizon line, lighting direction.
+
+Your task is to determine the perfect placement to make it look like a professional photograph. Return ONLY a JSON object:
+
+{
+  "tireBottomPercent": [where bottom of tires are in car image, 0-100],
+  "carHeightPercent": [car height in original image, 0-100],
+  "recommendedScale": [scale factor 0.3-0.9 to match perspective],
+  "shadowAngle": [shadow direction in degrees, -45 to 45, 0=straight down],
+  "shadowLength": [shadow length multiplier, 0.1-0.3],
+  "shadowBlur": [blur amount in pixels, 15-40],
+  "shadowOpacity": [shadow strength, 0.2-0.5],
+  "lightingMatch": [description of how to match lighting],
+  "perspectiveNotes": [any perspective adjustments needed]
+}
+
+Be precise - this needs to look like a real photograph.`
                   },
                   {
                     type: 'image_url',
                     image_url: {
                       url: `data:image/png;base64,${base64Segmented}`
+                    }
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:image/jpeg;base64,${base64Background}`
                     }
                   }
                 ]
@@ -167,13 +196,13 @@ Return ONLY a JSON object with these three values, no other text:
         if (aiResponse.ok) {
           const aiData = await aiResponse.json();
           const content = aiData.choices?.[0]?.message?.content || '';
-          console.log('AI analysis response:', content);
+          console.log('AI comprehensive analysis response:', content);
           
           // Extract JSON from response
-          const jsonMatch = content.match(/\{[^}]+\}/);
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             carAnalysis = JSON.parse(jsonMatch[0]);
-            console.log('Car analysis:', carAnalysis);
+            console.log('Comprehensive car analysis:', carAnalysis);
           }
         }
       } catch (error) {

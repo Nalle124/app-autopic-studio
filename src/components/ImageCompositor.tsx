@@ -109,40 +109,56 @@ export const ImageCompositor = ({
         // Center horizontally
         const carX = (canvas.width - scaledWidth) / 2;
 
-        // Draw shadow if enabled
-        if (scene.shadowPreset.enabled) {
+        // Draw shadow with AI-optimized parameters or scene defaults
+        const shouldDrawShadow = scene.shadowPreset.enabled;
+        
+        if (shouldDrawShadow) {
           ctx.save();
           
-          // Create natural soft shadow with gradient
-          const shadowY = baselineY + scene.shadowPreset.offsetY;
-          const shadowX = carX + (scaledWidth / 2) + scene.shadowPreset.offsetX;
-          const shadowWidth = scaledWidth * 0.9;
-          const shadowHeight = scaledHeight * 0.05; // Very thin, natural
+          // Use AI analysis for shadow if available, otherwise use scene presets
+          const shadowAngle = carAnalysis?.shadowAngle ?? 0;
+          const shadowLength = carAnalysis?.shadowLength ?? 0.15;
+          const shadowBlur = carAnalysis?.shadowBlur ?? scene.shadowPreset.blur;
+          const shadowOpacity = carAnalysis?.shadowOpacity ?? scene.shadowPreset.strength;
           
-          // Create gradient for soft edges
+          // Calculate shadow offset based on angle
+          const angleRad = (shadowAngle * Math.PI) / 180;
+          const shadowOffsetX = Math.sin(angleRad) * (scaledWidth * shadowLength);
+          const shadowOffsetY = Math.abs(Math.cos(angleRad)) * 5; // Slight vertical offset
+          
+          const shadowY = baselineY + shadowOffsetY;
+          const shadowX = carX + (scaledWidth / 2) + shadowOffsetX;
+          const shadowWidth = scaledWidth * (0.8 + shadowLength);
+          const shadowHeight = scaledHeight * 0.03; // Very thin, natural
+          
+          // Create perspective-correct gradient
           const gradient = ctx.createRadialGradient(
             shadowX, shadowY, 0,
             shadowX, shadowY, shadowWidth / 2
           );
-          gradient.addColorStop(0, `rgba(0, 0, 0, ${scene.shadowPreset.strength})`);
-          gradient.addColorStop(0.7, `rgba(0, 0, 0, ${scene.shadowPreset.strength * 0.3})`);
+          gradient.addColorStop(0, `rgba(0, 0, 0, ${shadowOpacity})`);
+          gradient.addColorStop(0.5, `rgba(0, 0, 0, ${shadowOpacity * 0.4})`);
+          gradient.addColorStop(0.8, `rgba(0, 0, 0, ${shadowOpacity * 0.1})`);
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
           
           ctx.fillStyle = gradient;
-          ctx.filter = `blur(${scene.shadowPreset.blur}px)`;
+          ctx.filter = `blur(${shadowBlur}px)`;
           
+          // Draw elliptical shadow with slight rotation based on angle
           ctx.beginPath();
           ctx.ellipse(
             shadowX,
             shadowY,
             shadowWidth / 2,
             shadowHeight / 2,
-            0,
+            angleRad,
             0,
             Math.PI * 2
           );
           ctx.fill();
           ctx.restore();
+          
+          console.log('Shadow drawn with AI params:', { shadowAngle, shadowLength, shadowBlur, shadowOpacity });
         }
 
         // Draw car

@@ -27,6 +27,12 @@ export interface CarAnalysis {
   tireBottomPercent: number;
   carHeightPercent: number;
   recommendedScale: number;
+  shadowAngle: number;
+  shadowLength: number;
+  shadowBlur: number;
+  shadowOpacity: number;
+  lightingMatch?: string;
+  perspectiveNotes?: string;
 }
 
 export interface UploadedImage {
