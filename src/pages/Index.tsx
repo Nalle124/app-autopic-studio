@@ -56,8 +56,10 @@ const Index = () => {
             formData.append('image', image.file);
             formData.append('scene', JSON.stringify(selectedScene));
             
-            // Convert background image to absolute URL
-            const backgroundUrl = new URL(selectedScene.fullResUrl, window.location.origin).href;
+            // Use absolute URL for background image (from public folder)
+            const backgroundUrl = selectedScene.fullResUrl.startsWith('http') 
+              ? selectedScene.fullResUrl 
+              : `${window.location.origin}${selectedScene.fullResUrl}`;
             formData.append('backgroundUrl', backgroundUrl);
 
             const response = await fetch(

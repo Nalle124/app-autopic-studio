@@ -1,15 +1,12 @@
 import { SceneMetadata } from '@/types/scene';
-import darkStudio from '@/assets/scenes/dark-studio.png';
-import whiteStudio from '@/assets/scenes/white-studio.png';
-import outdoorPark from '@/assets/scenes/outdoor-park.png';
 
 export const SCENES: SceneMetadata[] = [
   {
     id: 'dark-studio',
     name: 'Dark Studio',
     description: 'Mörk studiomiljö med kaklad yta',
-    thumbnailUrl: darkStudio,
-    fullResUrl: darkStudio,
+    thumbnailUrl: '/scenes/dark-studio.png',
+    fullResUrl: '/scenes/dark-studio.png',
     horizonY: 52,
     baselineY: 73,
     defaultScale: 0.65,
@@ -30,8 +27,8 @@ export const SCENES: SceneMetadata[] = [
     id: 'white-studio',
     name: 'White Studio',
     description: 'Ljus minimal showroom',
-    thumbnailUrl: whiteStudio,
-    fullResUrl: whiteStudio,
+    thumbnailUrl: '/scenes/white-studio.png',
+    fullResUrl: '/scenes/white-studio.png',
     horizonY: 55,
     baselineY: 75,
     defaultScale: 0.62,
@@ -52,8 +49,8 @@ export const SCENES: SceneMetadata[] = [
     id: 'outdoor-park',
     name: 'Outdoor Park',
     description: 'Utomhusmiljö med träd och gatsten',
-    thumbnailUrl: outdoorPark,
-    fullResUrl: outdoorPark,
+    thumbnailUrl: '/scenes/outdoor-park.png',
+    fullResUrl: '/scenes/outdoor-park.png',
     horizonY: 48,
     baselineY: 70,
     defaultScale: 0.6,
