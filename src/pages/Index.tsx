@@ -102,6 +102,7 @@ const Index = () => {
                         status: 'completed' as const,
                         segmentedUrl: result.segmentedUrl,
                         sceneId: selectedScene.id,
+                        carAnalysis: result.carAnalysis,
                       }
                     : img
                 )
@@ -207,6 +208,7 @@ const Index = () => {
                   key={img.id}
                   segmentedImageUrl={img.segmentedUrl!}
                   scene={scene}
+                  carAnalysis={img.carAnalysis}
                   onCompositionComplete={(dataUrl) => handleCompositionComplete(img.id, dataUrl)}
                 />
               );

@@ -111,12 +111,78 @@ serve(async (req) => {
     const segmentedBuffer = await removeResponse.arrayBuffer();
     console.log('Background removed successfully with Photoroom sandbox API');
 
-    // Step 3: Segmented image is already in buffer from Photoroom
-    console.log('Image ready for upload...');
+    // Step 3: Analyze car positioning with AI
+    console.log('Analyzing car positioning with AI...');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    
+    if (!LOVABLE_API_KEY) {
+      console.warn('LOVABLE_API_KEY not found, using default positioning');
+    }
 
-    // Step 4: Use Deno's image processing to composite
-    // For now, save the segmented image - client can do composition
-    // TODO: Implement server-side canvas composition with proper positioning
+    let carAnalysis = null;
+    if (LOVABLE_API_KEY) {
+      try {
+        // Convert segmented image to base64 for AI analysis
+        const base64Segmented = btoa(
+          new Uint8Array(segmentedBuffer).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            ''
+          )
+        );
+
+        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: `Analyze this car image with removed background. Determine:
+1. tireBottomPercent: Where the bottom of the tires are as a percentage from top (0-100)
+2. carHeightPercent: Approximate height the car takes up in the image (0-100)
+3. recommendedScale: Recommended scale factor for the car (0.3-0.9)
+
+Return ONLY a JSON object with these three values, no other text:
+{"tireBottomPercent": number, "carHeightPercent": number, "recommendedScale": number}`
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:image/png;base64,${base64Segmented}`
+                    }
+                  }
+                ]
+              }
+            ]
+          }),
+        });
+
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          const content = aiData.choices?.[0]?.message?.content || '';
+          console.log('AI analysis response:', content);
+          
+          // Extract JSON from response
+          const jsonMatch = content.match(/\{[^}]+\}/);
+          if (jsonMatch) {
+            carAnalysis = JSON.parse(jsonMatch[0]);
+            console.log('Car analysis:', carAnalysis);
+          }
+        }
+      } catch (error) {
+        console.error('AI analysis failed:', error);
+      }
+    }
+
+    // Step 4: Save segmented image
+    console.log('Uploading segmented image...');
     
     const finalFilename = `${crypto.randomUUID()}-${scene.id}.png`;
     const { data: finalUploadData, error: finalUploadError } = await supabase.storage
@@ -146,6 +212,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         segmentedUrl: finalPublicUrlData.publicUrl,
+        carAnalysis: carAnalysis,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

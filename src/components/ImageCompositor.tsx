@@ -1,15 +1,17 @@
 import { useEffect, useRef } from 'react';
-import { SceneMetadata } from '@/types/scene';
+import { SceneMetadata, CarAnalysis } from '@/types/scene';
 
 interface ImageCompositorProps {
   segmentedImageUrl: string;
   scene: SceneMetadata;
+  carAnalysis?: CarAnalysis;
   onCompositionComplete: (dataUrl: string) => void;
 }
 
 export const ImageCompositor = ({
   segmentedImageUrl,
   scene,
+  carAnalysis,
   onCompositionComplete,
 }: ImageCompositorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,17 +73,41 @@ export const ImageCompositor = ({
           carImage.src = segmentedImageUrl;
         });
 
-        // Calculate car positioning
+        // Calculate car positioning with AI analysis or fallback to scene defaults
         const baselineY = (scene.baselineY / 100) * canvas.height;
-        const scale = scene.defaultScale;
+        
+        let scale = scene.defaultScale;
+        let carY;
+        
+        if (carAnalysis) {
+          // Use AI-determined positioning
+          console.log('Using AI-based positioning:', carAnalysis);
+          scale = carAnalysis.recommendedScale;
+          
+          // Calculate where the car's tires should touch the ground
+          const scaledWidth = carImage.width * scale;
+          const scaledHeight = carImage.height * scale;
+          
+          // Calculate tire position in scaled image
+          const tireBottomInScaledImage = (carAnalysis.tireBottomPercent / 100) * scaledHeight;
+          
+          // Position car so tires align with baseline
+          carY = baselineY - tireBottomInScaledImage;
+          
+          console.log('Calculated positioning - baselineY:', baselineY, 'tireBottom:', tireBottomInScaledImage, 'carY:', carY);
+        } else {
+          // Fallback to scene defaults
+          console.log('Using default scene positioning');
+          const scaledHeight = carImage.height * scale;
+          carY = baselineY - scaledHeight;
+        }
         
         // Calculate scaled dimensions maintaining aspect ratio
         const scaledWidth = carImage.width * scale;
         const scaledHeight = carImage.height * scale;
         
-        // Center horizontally, position vertically at baseline
+        // Center horizontally
         const carX = (canvas.width - scaledWidth) / 2;
-        const carY = baselineY - scaledHeight;
 
         // Draw shadow if enabled
         if (scene.shadowPreset.enabled) {
@@ -178,7 +204,7 @@ export const ImageCompositor = ({
     };
 
     composeImage();
-  }, [segmentedImageUrl, scene, onCompositionComplete]);
+  }, [segmentedImageUrl, scene, carAnalysis, onCompositionComplete]);
 
   return (
     <canvas

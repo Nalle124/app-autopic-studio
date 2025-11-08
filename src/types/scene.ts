@@ -23,6 +23,12 @@ export interface SceneMetadata {
   };
 }
 
+export interface CarAnalysis {
+  tireBottomPercent: number;
+  carHeightPercent: number;
+  recommendedScale: number;
+}
+
 export interface UploadedImage {
   id: string;
   file: File;
@@ -31,6 +37,7 @@ export interface UploadedImage {
   segmentedUrl?: string;
   finalUrl?: string;
   sceneId?: string;
+  carAnalysis?: CarAnalysis;
 }
 
 export interface ExportSettings {
