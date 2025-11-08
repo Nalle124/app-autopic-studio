@@ -168,52 +168,112 @@ export const ImageCropEditor = ({ image, onClose, onSave }: ImageCropEditorProps
     onClose();
   };
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Generate live preview of cropped area
+  useEffect(() => {
+    if (!canvasRef.current || !imageObj) return;
+
+    const canvas = canvasRef.current;
+    const cropWidth = canvas.width - 100;
+    const cropHeight = canvas.height - 100;
+
+    // Create preview canvas
+    const previewCanvas = document.createElement('canvas');
+    previewCanvas.width = 200;
+    previewCanvas.height = 150;
+    const previewCtx = previewCanvas.getContext('2d');
+    if (!previewCtx) return;
+
+    // Calculate source rectangle
+    const sourceX = (50 - position.x) / zoom;
+    const sourceY = (50 - position.y) / zoom;
+    const sourceWidth = cropWidth / zoom;
+    const sourceHeight = cropHeight / zoom;
+
+    // Draw cropped preview
+    previewCtx.drawImage(
+      imageObj,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      200,
+      150
+    );
+
+    setPreviewUrl(previewCanvas.toDataURL('image/png'));
+  }, [imageObj, zoom, position]);
+
   if (!image) return null;
 
   return (
     <Dialog open={!!image} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Crop className="w-5 h-5" />
-            Beskär bild - {image.fileName}
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Crop className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="truncate">Beskär bild - {image.fileName}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex items-center justify-center bg-muted rounded-lg overflow-hidden">
-          <canvas
-            ref={canvasRef}
-            width={800}
-            height={600}
-            className="max-w-full max-h-[70vh] border border-border cursor-move touch-none"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          />
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+          <div className="flex-1 flex items-center justify-center bg-muted rounded-lg overflow-hidden">
+            <canvas
+              ref={canvasRef}
+              width={800}
+              height={600}
+              className="max-w-full max-h-[50vh] lg:max-h-[70vh] border border-border cursor-move touch-none"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            />
+          </div>
+
+          {/* Live Preview */}
+          <div className="lg:w-[220px] flex flex-col gap-2">
+            <Label className="text-sm font-medium">Förhandsvisning</Label>
+            <div className="bg-muted rounded-lg border-2 border-accent overflow-hidden">
+              {previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="Förhandsvisning av beskärning"
+                  className="w-full h-auto"
+                />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Så här kommer beskärningen att se ut
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-4 pt-4">
+        <div className="space-y-3 sm:space-y-4 pt-4">
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <Label className="text-sm font-medium">Zoom</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
+                  className="h-8 w-8 p-0"
                 >
-                  <ZoomOut className="w-4 h-4" />
+                  <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setZoom(Math.min(3, zoom + 0.1))}
+                  className="h-8 w-8 p-0"
                 >
-                  <ZoomIn className="w-4 h-4" />
+                  <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Button>
               </div>
             </div>
@@ -227,12 +287,12 @@ export const ImageCropEditor = ({ image, onClose, onSave }: ImageCropEditorProps
             />
           </div>
 
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
               <X className="w-4 h-4 mr-2" />
               Avbryt
             </Button>
-            <Button onClick={handleSave} className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button onClick={handleSave} className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90">
               <Save className="w-4 h-4 mr-2" />
               Spara beskärning
             </Button>

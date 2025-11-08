@@ -317,7 +317,7 @@ const Index = () => {
           const logoScale = maxLogoWidth / logo.width;
           const logoWidth = logo.width * logoScale;
           const logoHeight = logo.height * logoScale;
-          const padding = canvas.width * 0.03;
+          const padding = canvas.width * 0.015;
 
           let x = padding;
           let y = padding;
@@ -508,11 +508,17 @@ const Index = () => {
                           </div>
                         ) : (
                           <>
-                            <img
+                             <img
                               src={image.croppedUrl || image.finalUrl || image.preview}
                               alt="Bearbetad bild"
                               className="w-full h-full object-cover cursor-pointer"
-                              onClick={() => setPreviewImage(image.croppedUrl || image.finalUrl || null)}
+                              onClick={async () => {
+                                const imageUrl = image.croppedUrl || image.finalUrl;
+                                if (imageUrl) {
+                                  const withLogo = await applyLogoToImage(imageUrl);
+                                  setPreviewImage(withLogo);
+                                }
+                              }}
                             />
                             <div className="absolute top-2 left-2 z-10">
                               <div 
@@ -529,11 +535,11 @@ const Index = () => {
                                 />
                               </div>
                             </div>
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col sm:flex-row items-center justify-center gap-2 p-2">
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="gap-1.5 text-xs"
+                                className="gap-1.5 text-xs w-full sm:w-auto"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (image.finalUrl) {
@@ -551,7 +557,23 @@ const Index = () => {
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="gap-1.5 text-xs bg-accent text-accent-foreground hover:bg-accent/90"
+                                className="gap-1.5 text-xs w-full sm:w-auto"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const imageUrl = image.croppedUrl || image.finalUrl;
+                                  if (imageUrl) {
+                                    const withLogo = await applyLogoToImage(imageUrl);
+                                    setPreviewImage(withLogo);
+                                  }
+                                }}
+                              >
+                                <ImageIcon className="w-3.5 h-3.5" />
+                                Visa
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="gap-1.5 text-xs w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (image.finalUrl) {
