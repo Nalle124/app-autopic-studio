@@ -8,8 +8,9 @@ import { UploadedImage, SceneMetadata, ExportSettings } from '@/types/scene';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
-import { Download, X } from 'lucide-react';
+import { Download, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -17,6 +18,7 @@ const Index = () => {
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set());
 
   const handleImagesUploaded = (newImages: UploadedImage[]) => {
     setUploadedImages((prev) => [...prev, ...newImages]);
@@ -168,6 +170,116 @@ const Index = () => {
     });
   };
 
+  const handleRegenerateSelected = async () => {
+    if (selectedImageIds.size === 0) {
+      toast.error('Välj bilder att regenerera');
+      return;
+    }
+    if (!selectedScene) {
+      toast.error('Välj en scen först');
+      return;
+    }
+
+    const imagesToRegenerate = uploadedImages.filter(img => selectedImageIds.has(img.id));
+    setIsProcessing(true);
+    setSelectedImageIds(new Set()); // Clear selection
+    toast.success(`Regenererar ${imagesToRegenerate.length} bilder...`);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Process in batches of 3
+    const batchSize = 3;
+    for (let i = 0; i < imagesToRegenerate.length; i += batchSize) {
+      const batch = imagesToRegenerate.slice(i, i + batchSize);
+      
+      await Promise.all(
+        batch.map(async (image) => {
+          try {
+            // Reset to processing status
+            setUploadedImages(prev => 
+              prev.map(img => img.id === image.id ? { ...img, status: 'processing' as const } : img)
+            );
+
+            const formData = new FormData();
+            formData.append('image', image.file);
+            formData.append('scene', JSON.stringify(selectedScene));
+            
+            const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:')
+              ? selectedScene.fullResUrl 
+              : `${window.location.origin}${selectedScene.fullResUrl}`;
+            formData.append('backgroundUrl', backgroundUrl);
+
+            const response = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`,
+              {
+                method: 'POST',
+                body: formData,
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+              successCount++;
+              setUploadedImages(prev =>
+                prev.map(img =>
+                  img.id === image.id
+                    ? {
+                        ...img,
+                        status: 'completed' as const,
+                        finalUrl: result.finalUrl,
+                        sceneId: selectedScene.id,
+                      }
+                    : img
+                )
+              );
+            } else {
+              throw new Error(result.error || 'Processing failed');
+            }
+          } catch (error) {
+            errorCount++;
+            console.error('Error processing image:', error);
+            setUploadedImages(prev =>
+              prev.map(img =>
+                img.id === image.id
+                  ? { ...img, status: 'failed' as const }
+                  : img
+              )
+            );
+          }
+        })
+      );
+
+      toast.success(`${successCount + errorCount}/${imagesToRegenerate.length} bilder bearbetade`);
+    }
+
+    setIsProcessing(false);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} bilder regenererade!`);
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} bilder misslyckades`);
+    }
+  };
+
+  const toggleImageSelection = (imageId: string) => {
+    setSelectedImageIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(imageId)) {
+        newSet.delete(imageId);
+      } else {
+        newSet.add(imageId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -230,25 +342,38 @@ const Index = () => {
           {/* Results Section - Show processing and completed images */}
           {uploadedImages.some(img => img.status === 'processing' || img.status === 'completed') && (
             <section>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <h2 className="text-xl font-bold text-foreground mb-1">
                     4. Resultat
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Klicka på bilder för förhandsvisning
+                    Klicka för förhandsvisning, markera för att regenerera
                   </p>
                 </div>
-                {uploadedImages.some(img => img.status === 'completed') && (
-                  <Button 
-                    onClick={handleDownloadAll}
-                    className="gap-2"
-                    variant="outline"
-                  >
-                    <Download className="w-4 h-4" />
-                    Ladda ner alla
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {selectedImageIds.size > 0 && (
+                    <Button 
+                      onClick={handleRegenerateSelected}
+                      className="gap-2"
+                      variant="outline"
+                      disabled={isProcessing}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Regenerera ({selectedImageIds.size})
+                    </Button>
+                  )}
+                  {uploadedImages.some(img => img.status === 'completed') && (
+                    <Button 
+                      onClick={handleDownloadAll}
+                      className="gap-2"
+                      variant="outline"
+                    >
+                      <Download className="w-4 h-4" />
+                      Ladda ner alla
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {uploadedImages
@@ -273,6 +398,21 @@ const Index = () => {
                               className="w-full h-full object-cover cursor-pointer"
                               onClick={() => setPreviewImage(image.finalUrl || null)}
                             />
+                            <div className="absolute top-2 left-2 z-10">
+                              <div 
+                                className="bg-background/90 backdrop-blur-sm rounded-md p-1.5 cursor-pointer hover:bg-background transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleImageSelection(image.id);
+                                }}
+                              >
+                                <Checkbox
+                                  checked={selectedImageIds.has(image.id)}
+                                  onCheckedChange={() => toggleImageSelection(image.id)}
+                                  className="pointer-events-none"
+                                />
+                              </div>
+                            </div>
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                               <Button
                                 size="sm"

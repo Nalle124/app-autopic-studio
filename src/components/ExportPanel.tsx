@@ -2,10 +2,15 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Slider } from '@/components/ui/slider';
-import { Download, Image as ImageIcon } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { ExportSettings } from '@/types/scene';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ExportPanelProps {
   onExport: (settings: ExportSettings) => void;
@@ -25,113 +30,90 @@ export const ExportPanel = ({ onExport, isProcessing }: ExportPanelProps) => {
   };
 
   return (
-    <Card className="p-6 space-y-6">
+    <Card className="p-6 space-y-6 bg-gradient-to-br from-background to-muted/20">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-          <ImageIcon className="w-5 h-5 text-accent" />
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Sparkles className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Export</h3>
-          <p className="text-sm text-muted-foreground">Konfigurera dina exportinställningar</p>
+          <h3 className="text-lg font-bold text-foreground">AI Generering</h3>
+          <p className="text-sm text-muted-foreground">Starta bearbetning med AI</p>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Format</Label>
-          <RadioGroup
+          <Label className="text-xs font-medium text-muted-foreground">Format</Label>
+          <Select
             value={settings.format}
             onValueChange={(value) =>
               setSettings({ ...settings, format: value as ExportSettings['format'] })
             }
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="jpg" id="jpg" />
-              <Label htmlFor="jpg" className="font-normal cursor-pointer">
-                JPG (mindre filstorlek)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="png" id="png" />
-              <Label htmlFor="png" className="font-normal cursor-pointer">
-                PNG (bättre kvalitet)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="webp" id="webp" />
-              <Label htmlFor="webp" className="font-normal cursor-pointer">
-                WebP (bästa komprimering)
-              </Label>
-            </div>
-          </RadioGroup>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="jpg">JPG</SelectItem>
+              <SelectItem value="png">PNG</SelectItem>
+              <SelectItem value="webp">WebP</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Bildformat</Label>
-          <RadioGroup
+          <Label className="text-xs font-medium text-muted-foreground">Bildformat</Label>
+          <Select
             value={settings.aspectRatio}
             onValueChange={(value) =>
               setSettings({ ...settings, aspectRatio: value as ExportSettings['aspectRatio'] })
             }
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="original" id="original" />
-              <Label htmlFor="original" className="font-normal cursor-pointer">
-                Original
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="1:1" id="1:1" />
-              <Label htmlFor="1:1" className="font-normal cursor-pointer">
-                1:1 (kvadrat)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="4:5" id="4:5" />
-              <Label htmlFor="4:5" className="font-normal cursor-pointer">
-                4:5 (Instagram)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="16:9" id="16:9" />
-              <Label htmlFor="16:9" className="font-normal cursor-pointer">
-                16:9 (widescreen)
-              </Label>
-            </div>
-          </RadioGroup>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="original">Original</SelectItem>
+              <SelectItem value="1:1">1:1</SelectItem>
+              <SelectItem value="4:5">4:5</SelectItem>
+              <SelectItem value="16:9">16:9</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Kvalitet</Label>
-            <span className="text-sm font-semibold text-primary">{settings.quality}%</span>
-          </div>
-          <Slider
-            value={[settings.quality]}
-            onValueChange={([value]) => setSettings({ ...settings, quality: value })}
-            min={50}
-            max={100}
-            step={5}
-            className="w-full"
-          />
-          <p className="text-xs text-muted-foreground">
-            Högre kvalitet ger större filer
-          </p>
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground">Kvalitet</Label>
+          <Select
+            value={settings.quality.toString()}
+            onValueChange={(value) =>
+              setSettings({ ...settings, quality: parseInt(value) })
+            }
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="70">70%</SelectItem>
+              <SelectItem value="80">80%</SelectItem>
+              <SelectItem value="90">90%</SelectItem>
+              <SelectItem value="95">95%</SelectItem>
+              <SelectItem value="100">100%</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       <Button
-        className="w-full gap-2 bg-gradient-premium hover:opacity-90"
-        size="lg"
+        className="w-full gap-2 h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 shadow-lg"
         onClick={handleExport}
         disabled={isProcessing}
       >
-        <Download className="w-5 h-5" />
-        {isProcessing ? 'Bearbetar...' : 'Exportera bilder'}
+        <Sparkles className="w-5 h-5" />
+        {isProcessing ? 'Genererar...' : 'Starta AI-generering'}
       </Button>
 
       <p className="text-xs text-center text-muted-foreground">
-        Alla bearbetade bilder exporteras som en zip-fil
+        AI bearbetar dina bilder med vald bakgrund och inställningar
       </p>
     </Card>
   );
