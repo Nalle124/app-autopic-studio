@@ -81,7 +81,7 @@ export const ImageCompositor = ({
         const aspectRatio = carImage.width / carImage.height;
         
         let scale = scene.defaultScale;
-        let tireBottomPercent = 78; // Default: tires are typically at 78% from top for most cars
+        let tireBottomPercent = 78; // Will be calculated smartly
         
         if (carAnalysis?.tireBottomPercent && carAnalysis?.recommendedScale) {
           // Use AI-determined positioning
@@ -94,13 +94,33 @@ export const ImageCompositor = ({
             shadowLength: carAnalysis.shadowLength
           });
         } else {
-          // Smart fallback: use scene scale but estimate tire position
-          // For portrait images, increase scale to make them appear larger
+          // Smart fallback: estimate tire position based on aspect ratio
+          console.log('⚠ Using fallback positioning (no AI data)');
+          console.log('Image dimensions:', carImage.width, 'x', carImage.height, 'aspect:', aspectRatio.toFixed(2));
+          
           if (isPortrait) {
+            // Portrait images (9:16, iPhone photos, etc.)
+            // Tires are usually much lower in portrait mode
             scale = scene.defaultScale * 1.3; // Make portrait images 30% larger
-            console.log('⚠ Portrait image detected, adjusting scale:', scale);
+            tireBottomPercent = 85; // Tires much lower in portrait
+            console.log('Portrait mode: scale', scale, 'tireBottom', tireBottomPercent);
+          } else if (aspectRatio > 2.5) {
+            // Very wide panoramic images
+            // Tires are higher up in the frame
+            tireBottomPercent = 70;
+            console.log('Panoramic mode: tireBottom', tireBottomPercent);
+          } else if (aspectRatio > 1.8) {
+            // Wide landscape (16:9, etc.)
+            tireBottomPercent = 75;
+            console.log('Wide landscape: tireBottom', tireBottomPercent);
+          } else if (aspectRatio > 1.3) {
+            // Normal landscape (4:3, 3:2)
+            tireBottomPercent = 78;
+            console.log('Normal landscape: tireBottom', tireBottomPercent);
           } else {
-            console.log('⚠ Using fallback positioning (no AI data)');
+            // Square-ish or unusual ratios
+            tireBottomPercent = 80;
+            console.log('Square-ish: tireBottom', tireBottomPercent);
           }
         }
         
