@@ -64,13 +64,13 @@ const AdminScenes = () => {
     baseline_y: 70,
     default_scale: 0.65,
     shadow_enabled: false,
-    shadow_strength: 0,
-    shadow_blur: 0,
-    shadow_offset_x: 0,
-    shadow_offset_y: 0,
+    shadow_strength: 0.4,
+    shadow_blur: 30,
+    shadow_offset_x: 2,
+    shadow_offset_y: 3,
     reflection_enabled: false,
-    reflection_opacity: 0,
-    reflection_fade: 0,
+    reflection_opacity: 0.6,
+    reflection_fade: 0.7,
     ai_prompt: '',
     sort_order: 0,
   });
@@ -238,13 +238,13 @@ const AdminScenes = () => {
       baseline_y: 70,
       default_scale: 0.65,
       shadow_enabled: false,
-      shadow_strength: 0,
-      shadow_blur: 0,
-      shadow_offset_x: 0,
-      shadow_offset_y: 0,
+      shadow_strength: 0.4,
+      shadow_blur: 30,
+      shadow_offset_x: 2,
+      shadow_offset_y: 3,
       reflection_enabled: false,
-      reflection_opacity: 0,
-      reflection_fade: 0,
+      reflection_opacity: 0.6,
+      reflection_fade: 0.7,
       ai_prompt: '',
       sort_order: scenes.length,
     });
@@ -386,85 +386,42 @@ const AdminScenes = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="shadow_enabled">Aktivera skugga</Label>
-                        <Switch
-                          id="shadow_enabled"
-                          checked={formData.shadow_enabled}
-                          onCheckedChange={(checked) => setFormData({ ...formData, shadow_enabled: checked })}
-                        />
-                      </div>
-                      {formData.shadow_enabled && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Styrka</Label>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              value={formData.shadow_strength}
-                              onChange={(e) => setFormData({ ...formData, shadow_strength: parseFloat(e.target.value) })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Oskärpa (px)</Label>
-                            <Input
-                              type="number"
-                              value={formData.shadow_blur}
-                              onChange={(e) => setFormData({ ...formData, shadow_blur: parseInt(e.target.value) })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Offset X</Label>
-                            <Input
-                              type="number"
-                              value={formData.shadow_offset_x}
-                              onChange={(e) => setFormData({ ...formData, shadow_offset_x: parseInt(e.target.value) })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Offset Y</Label>
-                            <Input
-                              type="number"
-                              value={formData.shadow_offset_y}
-                              onChange={(e) => setFormData({ ...formData, shadow_offset_y: parseInt(e.target.value) })}
-                            />
-                          </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="shadow_enabled">Aktivera skugga</Label>
+                          <Switch
+                            id="shadow_enabled"
+                            checked={formData.shadow_enabled}
+                            onCheckedChange={(checked) => setFormData({ 
+                              ...formData, 
+                              shadow_enabled: checked,
+                              shadow_strength: checked ? 0.4 : 0,
+                              shadow_blur: checked ? 30 : 0,
+                              shadow_offset_x: checked ? 2 : 0,
+                              shadow_offset_y: checked ? 3 : 0,
+                            })}
+                          />
                         </div>
-                      )}
-                    </div>
+                        <p className="text-xs text-muted-foreground">AI anpassar skugginställningar automatiskt</p>
+                      </div>
 
-                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="reflection_enabled">Aktivera reflektion</Label>
-                        <Switch
-                          id="reflection_enabled"
-                          checked={formData.reflection_enabled}
-                          onCheckedChange={(checked) => setFormData({ ...formData, reflection_enabled: checked })}
-                        />
-                      </div>
-                      {formData.reflection_enabled && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Opacitet</Label>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              value={formData.reflection_opacity}
-                              onChange={(e) => setFormData({ ...formData, reflection_opacity: parseFloat(e.target.value) })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Fade</Label>
-                            <Input
-                              type="number"
-                              step="0.1"
-                              value={formData.reflection_fade}
-                              onChange={(e) => setFormData({ ...formData, reflection_fade: parseFloat(e.target.value) })}
-                            />
-                          </div>
+                      <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="reflection_enabled">Aktivera reflektion</Label>
+                          <Switch
+                            id="reflection_enabled"
+                            checked={formData.reflection_enabled}
+                            onCheckedChange={(checked) => setFormData({ 
+                              ...formData, 
+                              reflection_enabled: checked,
+                              reflection_opacity: checked ? 0.6 : 0,
+                              reflection_fade: checked ? 0.7 : 0,
+                            })}
+                          />
                         </div>
-                      )}
+                        <p className="text-xs text-muted-foreground">AI anpassar reflektionsinställningar automatiskt</p>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
