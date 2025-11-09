@@ -83,6 +83,78 @@ export type Database = {
         }
         Relationships: []
       }
+      scenes: {
+        Row: {
+          ai_prompt: string | null
+          baseline_y: number
+          category: string
+          created_at: string
+          default_scale: number
+          description: string
+          full_res_url: string
+          horizon_y: number
+          id: string
+          name: string
+          reflection_enabled: boolean
+          reflection_fade: number
+          reflection_opacity: number
+          shadow_blur: number
+          shadow_enabled: boolean
+          shadow_offset_x: number
+          shadow_offset_y: number
+          shadow_strength: number
+          sort_order: number
+          thumbnail_url: string
+          updated_at: string
+        }
+        Insert: {
+          ai_prompt?: string | null
+          baseline_y?: number
+          category?: string
+          created_at?: string
+          default_scale?: number
+          description: string
+          full_res_url: string
+          horizon_y?: number
+          id: string
+          name: string
+          reflection_enabled?: boolean
+          reflection_fade?: number
+          reflection_opacity?: number
+          shadow_blur?: number
+          shadow_enabled?: boolean
+          shadow_offset_x?: number
+          shadow_offset_y?: number
+          shadow_strength?: number
+          sort_order?: number
+          thumbnail_url: string
+          updated_at?: string
+        }
+        Update: {
+          ai_prompt?: string | null
+          baseline_y?: number
+          category?: string
+          created_at?: string
+          default_scale?: number
+          description?: string
+          full_res_url?: string
+          horizon_y?: number
+          id?: string
+          name?: string
+          reflection_enabled?: boolean
+          reflection_fade?: number
+          reflection_opacity?: number
+          shadow_blur?: number
+          shadow_enabled?: boolean
+          shadow_offset_x?: number
+          shadow_offset_y?: number
+          shadow_strength?: number
+          sort_order?: number
+          thumbnail_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

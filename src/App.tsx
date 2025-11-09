@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import SetupScenes from "./pages/SetupScenes";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import AdminScenes from "./pages/AdminScenes";
 import Examples from "./pages/Examples";
 import { Profile } from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ function App() {
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/admin/scener" element={<ProtectedRoute><AdminScenes /></ProtectedRoute>} />
             <Route path="/setup-scenes" element={<ProtectedRoute><SetupScenes /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

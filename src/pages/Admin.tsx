@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
-import { Users, Image, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Table,
@@ -91,10 +91,16 @@ const Admin = () => {
                 Hantera användare och se statistik
               </p>
             </div>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Tillbaka
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={() => navigate('/admin/scener')}>
+                <Images className="mr-2 h-4 w-4" />
+                Hantera Scener
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Tillbaka
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards */}

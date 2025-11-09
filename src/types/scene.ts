@@ -22,6 +22,7 @@ export interface SceneMetadata {
     fade: number; // 0.0 - 1.0
   };
   aiPrompt?: string; // Optional AI prompt for specific scene requirements
+  category?: string; // Category for organizing scenes
 }
 
 export interface CarAnalysis {
