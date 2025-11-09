@@ -61,9 +61,8 @@ const Examples = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Compact Hero Section - Gallery Style */}
-      <section className="relative py-12 px-6 bg-gradient-to-br from-primary/10 via-primary/5 to-background overflow-hidden">
-        {/* Animated background */}
+      {/* Hero Section - Visual Process Display */}
+      <section className="relative py-20 px-6 bg-gradient-to-br from-primary/5 via-background to-background overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div 
             className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
@@ -76,32 +75,63 @@ const Examples = () => {
         </div>
 
         <div className="container mx-auto max-w-7xl">
-          <div className="text-center space-y-4 mb-12 animate-fade-in">
+          <div className="text-center space-y-6 mb-16 animate-fade-in">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-medium">
               <Sparkles className="w-4 h-4 animate-pulse" />
-              <span>Exempel & Inspiration</span>
+              <span>AI-driven bildtransformation</span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold text-foreground font-heading">
-              Se resultaten själv
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground font-heading">
+              Snabbare försäljning börjar här
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Från vanlig mobilbild till professionell annons på sekunder
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Konsekvent, märkesanpassade, högkvalitativa begagnatbildvisuals levererade i hastighet och skala
             </p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
-            <Card className="text-center p-4 hover-scale">
-              <div className="text-2xl font-bold text-primary">2s</div>
-              <div className="text-xs text-muted-foreground">Per bild</div>
+          {/* Visual Gallery Carousel - Showing transformation */}
+          <div className="relative max-w-6xl mx-auto mb-12">
+            <div className="flex items-center justify-center gap-4 overflow-hidden">
+              {/* Left preview */}
+              <Card className="hidden lg:block w-48 opacity-50 hover:opacity-70 transition-opacity overflow-hidden hover-scale">
+                <img src={vwBefore} alt="Preview" className="w-full h-32 object-cover" />
+              </Card>
+
+              {/* Center - Featured transformation */}
+              <Card className="relative border-4 border-primary shadow-premium overflow-hidden max-w-xl flex-1 animate-scale-in">
+                <div className="relative aspect-video">
+                  <img 
+                    src={fordAfter} 
+                    alt="Transformed car" 
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Processing indicator */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-pulse">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-sm font-medium">Transformerad på 2s</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Right preview */}
+              <Card className="hidden lg:block w-48 opacity-50 hover:opacity-70 transition-opacity overflow-hidden hover-scale">
+                <img src={audiAfter} alt="Preview" className="w-full h-32 object-cover" />
+              </Card>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto">
+            <Card className="text-center p-6 hover-scale border-primary/20">
+              <div className="text-3xl font-bold text-primary mb-2">2s</div>
+              <div className="text-sm text-muted-foreground">Per bild</div>
             </Card>
-            <Card className="text-center p-4 hover-scale">
-              <div className="text-2xl font-bold text-primary">6+</div>
-              <div className="text-xs text-muted-foreground">Scener</div>
+            <Card className="text-center p-6 hover-scale border-primary/20">
+              <div className="text-3xl font-bold text-primary mb-2">6+</div>
+              <div className="text-sm text-muted-foreground">Professionella scener</div>
             </Card>
-            <Card className="text-center p-4 hover-scale">
-              <div className="text-2xl font-bold text-primary">100%</div>
-              <div className="text-xs text-muted-foreground">Automatiskt</div>
+            <Card className="text-center p-6 hover-scale border-primary/20">
+              <div className="text-3xl font-bold text-primary mb-2">100%</div>
+              <div className="text-sm text-muted-foreground">Automatiskt</div>
             </Card>
           </div>
         </div>
@@ -295,46 +325,102 @@ const Examples = () => {
         </div>
       </section>
 
-      {/* Logo Feature Section - PLACEHOLDER */}
+      {/* Logo/Branding Feature Section - Visual Process */}
       <section className="py-20 px-6">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Visual Process on Left */}
+            <div className="relative">
+              <Card className="overflow-hidden shadow-2xl">
+                <CardContent className="p-0 bg-muted/20">
+                  <div className="relative p-8">
+                    {/* Main car image with logo examples */}
+                    <div className="relative mb-6">
+                      <img 
+                        src={audiAfter} 
+                        alt="Branded car example" 
+                        className="w-full rounded-lg shadow-lg"
+                      />
+                      {/* Logo callouts */}
+                      <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-border animate-fade-in">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-8 h-8 bg-primary/20 rounded flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-primary" />
+                          </div>
+                          <span className="text-xs font-medium">Din Logo</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional views/thumbnails */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="relative group cursor-pointer">
+                        <img 
+                          src={fordAfter} 
+                          alt="Thumbnail" 
+                          className="w-full aspect-video object-cover rounded border-2 border-border group-hover:border-primary transition-colors"
+                        />
+                        <div className="absolute top-1 right-1 bg-primary/20 backdrop-blur-sm p-1 rounded">
+                          <ImageIcon className="w-3 h-3 text-primary" />
+                        </div>
+                      </div>
+                      <div className="relative group cursor-pointer">
+                        <img 
+                          src={vwAfter} 
+                          alt="Thumbnail" 
+                          className="w-full aspect-video object-cover rounded border-2 border-border group-hover:border-primary transition-colors"
+                        />
+                        <div className="absolute top-1 right-1 bg-primary/20 backdrop-blur-sm p-1 rounded">
+                          <ImageIcon className="w-3 h-3 text-primary" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center bg-muted rounded border-2 border-dashed border-border aspect-video">
+                        <span className="text-xs text-muted-foreground">+Fler</span>
+                      </div>
+                    </div>
+
+                    {/* Progress bar mockup */}
+                    <div className="mt-6 space-y-2">
+                      <div className="flex gap-2">
+                        <div className="h-2 flex-1 bg-muted-foreground/20 rounded-full"></div>
+                        <div className="h-2 flex-1 bg-muted-foreground/20 rounded-full"></div>
+                        <div className="h-2 flex-1 bg-foreground rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Content on Right */}
             <div>
-              <Badge className="mb-4">
-                <ImageIcon className="w-3 h-3 mr-1" />
-                Logotyp
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Din logo på alla bilder
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+                Syns med <span className="text-primary">märkesanpassade</span> bilder
               </h2>
-              <p className="text-lg text-muted-foreground mb-6">
-                Ladda upp din logga en gång och applicera den automatiskt på 
-                alla dina bilbilder. Välj position och storlek som passar dig bäst.
+              <p className="text-lg text-muted-foreground mb-8">
+                Generiska bilder är lätta att skippa. Märkesanpassade bilder är inte det. 
+                Se till att varje fordon sticker ut med studiokvalitet, märkesanpassade visuals 
+                som driver medvetenhet och konverteringar.
               </p>
-              <ul className="space-y-3">
+              
+              <ul className="space-y-4">
                 {[
-                  "Anpassningsbar storlek och position",
-                  "Transparent bakgrund stöds",
-                  "Appliceras automatiskt på alla bilder",
-                  "Sparas för framtida användning"
+                  { icon: <CheckCircle2 className="w-5 h-5" />, text: "Ultrarealistiska 3D-bakgrunder" },
+                  { icon: <CheckCircle2 className="w-5 h-5" />, text: "Anpassade till ditt varumärke eller OEM-riktlinjer" },
+                  { icon: <CheckCircle2 className="w-5 h-5" />, text: "Märkesanpassade registreringsskyltar" }
                 ].map((item, index) => (
-                  <li key={index} className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span>{item}</span>
+                  <li key={index} className="flex items-center gap-3 text-foreground">
+                    <div className="text-primary flex-shrink-0">{item.icon}</div>
+                    <span className="text-base">{item.text}</span>
                   </li>
                 ))}
               </ul>
+
+              <Button size="lg" className="mt-8" onClick={() => navigate('/')}>
+                Utforska AI-bakgrunder
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
             </div>
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="aspect-video bg-muted flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <ImageIcon className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">Exempel med logo här</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>
