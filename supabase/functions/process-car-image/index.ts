@@ -93,11 +93,14 @@ serve(async (req) => {
     photoroomFormData.append('background.guidance.scale', '1.0');
     photoroomFormData.append('background.guidance.strength', '1.0');
     
-    // Add scene-specific prompt if provided to guide AI on specific requirements
-    if (scene.aiPrompt) {
-      photoroomFormData.append('background.prompt', scene.aiPrompt);
-      console.log('Using scene-specific prompt:', scene.aiPrompt);
-    }
+    // CRITICAL: When using guidance image, the prompt should reinforce using that exact background
+    // NOT describe a new scene (which would make AI generate something random)
+    photoroomFormData.append('background.prompt', 
+      'Place the vehicle in the exact background scene shown in the reference image. ' +
+      'Maintain all lighting, perspective, and environmental details from the reference. ' +
+      'Do not generate a new background - use the reference image exactly as provided.'
+    );
+    console.log('Using reference image:', backgroundImageUrl);
     
     // Add padding to create natural spacing around the vehicle (10% on all sides)
     photoroomFormData.append('padding', '0.1');
