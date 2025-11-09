@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UploadedImage } from '@/types/scene';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface ImageUploaderProps {
   onImagesUploaded: (images: UploadedImage[]) => void;
@@ -13,8 +15,17 @@ interface ImageUploaderProps {
 
 export const ImageUploader = ({ onImagesUploaded, onClearAll }: ImageUploaderProps) => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    // Require login to upload
+    if (!user) {
+      toast.error('Du måste logga in för att ladda upp bilder');
+      navigate('/auth');
+      return;
+    }
+
     if (acceptedFiles.length > 50) {
       toast.error('Max 50 bilder åt gången');
       return;
@@ -30,7 +41,7 @@ export const ImageUploader = ({ onImagesUploaded, onClearAll }: ImageUploaderPro
     setUploadedImages((prev) => [...prev, ...newImages]);
     onImagesUploaded(newImages);
     toast.success(`${acceptedFiles.length} bilder uppladdade`);
-  }, [onImagesUploaded]);
+  }, [onImagesUploaded, user, navigate]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

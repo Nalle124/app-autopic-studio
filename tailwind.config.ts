@@ -25,6 +25,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -41,6 +42,10 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          purple: "hsl(var(--accent-purple))",
+          pink: "hsl(var(--accent-pink))",
+          orange: "hsl(var(--accent-orange))",
+          blue: "hsl(var(--accent-blue))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -50,39 +55,26 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        chrome: {
-          DEFAULT: "hsl(var(--chrome))",
-          light: "hsl(var(--chrome-light))",
-        },
-        slate: {
-          dark: "hsl(var(--slate-dark))",
-          DEFAULT: "hsl(var(--slate))",
-          light: "hsl(var(--slate-light))",
+        chart: {
+          "1": "hsl(var(--chart-1))",
+          "2": "hsl(var(--chart-2))",
+          "3": "hsl(var(--chart-3))",
+          "4": "hsl(var(--chart-4))",
+          "5": "hsl(var(--chart-5))",
         },
       },
       backgroundImage: {
-        "gradient-premium": "var(--gradient-premium)",
-        "gradient-dark": "var(--gradient-dark)",
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-hero": "var(--gradient-hero)",
+        "gradient-accent": "var(--gradient-accent)",
+        "gradient-subtle": "var(--gradient-subtle)",
       },
       boxShadow: {
-        premium: "var(--shadow-premium)",
-        soft: "var(--shadow-soft)",
+        elegant: "var(--shadow-elegant)",
+        glow: "var(--shadow-glow)",
         card: "var(--shadow-card)",
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-      keyframes: {
-        "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
-        },
         "accordion-up": {
           from: {
             height: "var(--radix-accordion-content-height)",
