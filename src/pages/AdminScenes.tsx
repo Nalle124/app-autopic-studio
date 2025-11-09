@@ -137,6 +137,12 @@ const AdminScenes = () => {
       return;
     }
 
+    // Validate that we have an image for new scenes
+    if (!editingScene && !imageFile) {
+      toast.error('En bild krävs för nya scener');
+      return;
+    }
+
     setUploading(true);
     try {
       let imageUrl = editingScene?.thumbnail_url || '';
@@ -148,6 +154,13 @@ const AdminScenes = () => {
           return;
         }
         imageUrl = uploadedUrl;
+      }
+
+      // Final validation that we have an image URL
+      if (!imageUrl) {
+        toast.error('Bilduppladdning misslyckades');
+        setUploading(false);
+        return;
       }
 
       const sceneData = {
