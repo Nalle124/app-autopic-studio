@@ -5,6 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Sparkles, Image as ImageIcon, Palette, Star, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import fordBefore from '@/assets/examples/ford-before.png';
+import fordAfter from '@/assets/examples/ford-after.png';
+import vwBefore from '@/assets/examples/vw-before.png';
+import vwAfter from '@/assets/examples/vw-after.png';
+import audiAfter from '@/assets/examples/audi-after.png';
 
 const Examples = () => {
   const navigate = useNavigate();
@@ -134,48 +139,122 @@ const Examples = () => {
             </p>
           </div>
           
-          {/* Example Grid - Interactive hover */}
-          <div className="grid md:grid-cols-2 gap-8 mb-12">
-            <Card className="overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow">
+          {/* Example Grid - Real Images */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {/* Ford Ranger - Before/After */}
+            <Card className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all">
               <CardContent className="p-0">
-                <div className="aspect-video bg-gradient-to-br from-muted via-muted/80 to-muted/60 flex items-center justify-center relative overflow-hidden">
-                  <div className="text-center p-8 z-10">
-                    <div className="text-6xl mb-4">📸</div>
-                    <p className="text-muted-foreground font-medium">Bifoga före-bild här</p>
-                    <p className="text-xs text-muted-foreground/60 mt-2">Standard mobilfoto</p>
-                  </div>
-                  {/* Subtle pattern */}
-                  <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NCAwLTE4IDguMDYtMTggMThzOC4wNiAxOCAxOCAxOCAxOC04LjA2IDE4LTE4LTguMDYtMTgtMTgtMTh6bTAtMzJjLTkuOTQgMC0xOCA4LjA2LTE4IDE4czguMDYgMTggMTggMTggMTgtOC4wNiAxOC0xOC04LjA2LTE4LTE4LTE4eiIgZmlsbD0iIzAwMCIvPjwvZz48L3N2Zz4=')]" />
+                <div className="aspect-square overflow-hidden">
+                  <img 
+                    src={fordBefore} 
+                    alt="Ford Ranger - Före" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="p-4 bg-card group-hover:bg-muted/20 transition-colors">
                   <Badge variant="secondary">Före</Badge>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Standard bilbild från mobilkamera
+                    Ford Ranger - Utomhus
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
               <CardContent className="p-0">
-                <div className="aspect-video bg-gradient-to-br from-primary/20 via-primary/10 to-background flex items-center justify-center relative overflow-hidden">
-                  <div className="text-center p-8 z-10">
-                    <div className="text-6xl mb-4 animate-pulse">✨</div>
-                    <p className="text-foreground font-medium">Bifoga efter-bild här</p>
-                    <p className="text-xs text-muted-foreground mt-2">AI-bearbetad professionell bild</p>
-                  </div>
-                  {/* Shimmer effect */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-50 group-hover:opacity-70 transition-opacity" />
+                <div className="aspect-square overflow-hidden relative">
+                  <img 
+                    src={fordAfter} 
+                    alt="Ford Ranger - Efter" 
+                    className="w-full h-full object-cover"
+                  />
                   <div className="absolute top-4 right-4">
-                    <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+                    <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
                   </div>
                 </div>
-                <div className="p-4 bg-card border-t-2 border-primary/20 group-hover:border-primary/40 transition-colors">
-                  <Badge className="bg-primary">Efter</Badge>
+                <div className="p-4 bg-card border-t-2 border-primary/20">
+                  <Badge className="bg-primary">Efter - Mörk Studio</Badge>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Professionell bild med vald bakgrund och logo
+                    Med logo & professionell bakgrund
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* VW Golf - Before/After */}
+            <Card className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all">
+              <CardContent className="p-0">
+                <div className="aspect-square overflow-hidden">
+                  <img 
+                    src={vwBefore} 
+                    alt="VW Golf - Före" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-4 bg-card group-hover:bg-muted/20 transition-colors">
+                  <Badge variant="secondary">Före</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    VW Golf - Grusplan
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
+              <CardContent className="p-0">
+                <div className="aspect-square overflow-hidden relative">
+                  <img 
+                    src={vwAfter} 
+                    alt="VW Golf - Efter" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-4 right-4">
+                    <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
+                  </div>
+                </div>
+                <div className="p-4 bg-card border-t-2 border-primary/20">
+                  <Badge className="bg-primary">Efter - Park Miljö</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Naturlig utomhusmiljö med logo
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Audi e-tron - Showcase */}
+            <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
+              <CardContent className="p-0">
+                <div className="aspect-square overflow-hidden relative">
+                  <img 
+                    src={audiAfter} 
+                    alt="Audi e-tron" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-4 right-4">
+                    <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
+                  </div>
+                </div>
+                <div className="p-4 bg-card border-t-2 border-primary/20">
+                  <Badge className="bg-primary">Audi e-tron - Park</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Professionell slutresultat
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* CTA Card */}
+            <Card className="overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30 group cursor-pointer hover:shadow-premium transition-all flex items-center justify-center">
+              <CardContent className="p-8 text-center">
+                <div className="text-4xl mb-4">🚀</div>
+                <h3 className="font-bold text-lg mb-2">Din tur!</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Skapa professionella bilder på sekunder
+                </p>
+                <Button onClick={() => navigate('/')} size="sm">
+                  Kom igång
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
               </CardContent>
             </Card>
           </div>

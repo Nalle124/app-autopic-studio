@@ -1,8 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
+import fordBefore from "@/assets/examples/ford-before.png";
+import fordAfter from "@/assets/examples/ford-after.png";
 
 export const Hero = () => {
+  const navigate = useNavigate();
+  
   const scrollToUpload = () => {
     const uploadSection = document.getElementById('upload-section');
     if (uploadSection) {
@@ -52,9 +57,9 @@ export const Hero = () => {
                 size="lg" 
                 variant="outline"
                 className="text-lg px-8 py-6"
-                onClick={scrollToUpload}
+                onClick={() => navigate('/exempel')}
               >
-                Se hur det fungerar
+                Se exempel
               </Button>
             </div>
 
@@ -78,32 +83,34 @@ export const Hero = () => {
           <div className="relative animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <Card className="overflow-hidden shadow-2xl hover:shadow-premium-hover transition-shadow duration-500">
               <div className="relative aspect-[4/3] bg-gradient-to-br from-muted to-muted/50">
-                {/* Placeholder for before/after split image */}
+                {/* Real before/after split image */}
                 <div className="absolute inset-0 flex">
                   {/* Before side - left 50% */}
-                  <div className="w-1/2 bg-gradient-to-br from-muted via-muted/80 to-muted/60 relative overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center p-6">
-                        <div className="text-4xl mb-2">📸</div>
-                        <p className="text-sm font-medium text-muted-foreground">Före</p>
-                        <p className="text-xs text-muted-foreground/60 mt-1">Vanlig bilbild</p>
-                      </div>
+                  <div className="w-1/2 relative overflow-hidden">
+                    <img 
+                      src={fordBefore} 
+                      alt="Före - Vanlig bilbild" 
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ objectPosition: 'left center' }}
+                    />
+                    <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      <p className="text-sm font-medium text-white">Före</p>
                     </div>
-                    {/* Subtle pattern overlay */}
-                    <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_50%,rgba(0,0,0,0.1),transparent_50%)]" />
                   </div>
                   
                   {/* After side - right 50% */}
-                  <div className="w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background relative overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center p-6">
-                        <div className="text-4xl mb-2">✨</div>
-                        <p className="text-sm font-medium text-foreground">Efter</p>
-                        <p className="text-xs text-muted-foreground mt-1">Professionell</p>
-                      </div>
+                  <div className="w-1/2 relative overflow-hidden">
+                    <img 
+                      src={fordAfter} 
+                      alt="Efter - Professionell bild" 
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ objectPosition: 'right center' }}
+                    />
+                    <div className="absolute bottom-4 right-4 bg-primary backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      <p className="text-sm font-medium text-white">Efter</p>
                     </div>
                     {/* Shimmer effect */}
-                    <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_70%)]" />
+                    <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_70%)]" />
                   </div>
                 </div>
                 
