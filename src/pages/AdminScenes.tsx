@@ -113,20 +113,31 @@ const AdminScenes = () => {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `scenes/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('processed-cars')
-        .upload(filePath, file);
+      console.log('Uploading to:', filePath);
 
-      if (uploadError) throw uploadError;
+      const { data, error: uploadError } = await supabase.storage
+        .from('processed-cars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', data);
 
       const { data: { publicUrl } } = supabase.storage
         .from('processed-cars')
         .getPublicUrl(filePath);
 
+      console.log('Public URL:', publicUrl);
       return publicUrl;
     } catch (error: any) {
       console.error('Error uploading image:', error);
-      toast.error('Kunde inte ladda upp bild');
+      toast.error(`Kunde inte ladda upp bild: ${error.message || 'Okänt fel'}`);
       return null;
     }
   };
