@@ -10,68 +10,83 @@ import fordAfter from '@/assets/examples/ford-after.png';
 import vwBefore from '@/assets/examples/vw-before.png';
 import vwAfter from '@/assets/examples/vw-after.png';
 import audiAfter from '@/assets/examples/audi-after.png';
-
 const Examples = () => {
   const navigate = useNavigate();
   const [scrollY, setScrollY] = useState(0);
-
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const features = [
-    {
-      icon: <Sparkles className="w-6 h-6" />,
-      title: "Professionella resultat",
-      description: "Konsekvent hög kvalitet på alla dina bilbilder"
-    },
-    {
-      icon: <ImageIcon className="w-6 h-6" />,
-      title: "Din egen logo",
-      description: "Lägg till din logotype automatiskt på alla bilder"
-    },
-    {
-      icon: <Palette className="w-6 h-6" />,
-      title: "Svenska miljöer",
-      description: "Kurerade teman anpassade för svenska bilhandlare"
-    }
-  ];
-
-  const scenes = [
-    { name: "Grå Studio", description: "Mörk och elegant studiomiljö", emoji: "🎬" },
-    { name: "Ljus Marmor", description: "Lyxig ljus studiomiljö", emoji: "💎" },
-    { name: "Park", description: "Naturlig utomhusmiljö", emoji: "🌳" },
-    { name: "Contrast", description: "Modern kontraststudie", emoji: "⚡" },
-    { name: "Vit Kakel", description: "Minimalistisk vit studio", emoji: "✨" },
-    { name: "Mörkt Draperi", description: "Dramatisk studiomiljö", emoji: "🎭" }
-  ];
-
-  const testimonials = [
-    { company: "Premium Motors", logo: "🚗" },
-    { company: "Nordic Cars", logo: "🏆" },
-    { company: "AutoElite", logo: "⭐" },
-    { company: "DriveSweden", logo: "🇸🇪" },
-    { company: "CarDealer Pro", logo: "💼" },
-    { company: "Stockholm Wheels", logo: "🌟" }
-  ];
-
-  return (
-    <div className="min-h-screen bg-background">
+  const features = [{
+    icon: <Sparkles className="w-6 h-6" />,
+    title: "Professionella resultat",
+    description: "Konsekvent hög kvalitet på alla dina bilbilder"
+  }, {
+    icon: <ImageIcon className="w-6 h-6" />,
+    title: "Din egen logo",
+    description: "Lägg till din logotype automatiskt på alla bilder"
+  }, {
+    icon: <Palette className="w-6 h-6" />,
+    title: "Svenska miljöer",
+    description: "Kurerade teman anpassade för svenska bilhandlare"
+  }];
+  const scenes = [{
+    name: "Grå Studio",
+    description: "Mörk och elegant studiomiljö",
+    emoji: "🎬"
+  }, {
+    name: "Ljus Marmor",
+    description: "Lyxig ljus studiomiljö",
+    emoji: "💎"
+  }, {
+    name: "Park",
+    description: "Naturlig utomhusmiljö",
+    emoji: "🌳"
+  }, {
+    name: "Contrast",
+    description: "Modern kontraststudie",
+    emoji: "⚡"
+  }, {
+    name: "Vit Kakel",
+    description: "Minimalistisk vit studio",
+    emoji: "✨"
+  }, {
+    name: "Mörkt Draperi",
+    description: "Dramatisk studiomiljö",
+    emoji: "🎭"
+  }];
+  const testimonials = [{
+    company: "Premium Motors",
+    logo: "🚗"
+  }, {
+    company: "Nordic Cars",
+    logo: "🏆"
+  }, {
+    company: "AutoElite",
+    logo: "⭐"
+  }, {
+    company: "DriveSweden",
+    logo: "🇸🇪"
+  }, {
+    company: "CarDealer Pro",
+    logo: "💼"
+  }, {
+    company: "Stockholm Wheels",
+    logo: "🌟"
+  }];
+  return <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section - Visual Process Display */}
       <section className="relative py-20 px-6 bg-gradient-to-br from-primary/5 via-background to-background overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <div 
-            className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
-            style={{ transform: `translate(${scrollY * 0.1}px, ${scrollY * 0.05}px)` }}
-          />
-          <div 
-            className="absolute bottom-0 left-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl"
-            style={{ transform: `translate(-${scrollY * 0.08}px, -${scrollY * 0.04}px)` }}
-          />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" style={{
+          transform: `translate(${scrollY * 0.1}px, ${scrollY * 0.05}px)`
+        }} />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl" style={{
+          transform: `translate(-${scrollY * 0.08}px, -${scrollY * 0.04}px)`
+        }} />
         </div>
 
         <div className="container mx-auto max-w-7xl">
@@ -99,11 +114,7 @@ const Examples = () => {
               {/* Center - Featured transformation */}
               <Card className="relative border-4 border-primary shadow-premium overflow-hidden max-w-xl flex-1 animate-scale-in">
                 <div className="relative aspect-video">
-                  <img 
-                    src={fordAfter} 
-                    alt="Transformed car" 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={fordAfter} alt="Transformed car" className="w-full h-full object-cover" />
                   {/* Processing indicator */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-pulse">
                     <Sparkles className="w-4 h-4" />
@@ -144,15 +155,10 @@ const Examples = () => {
             Används av ledande bilhandlare i Sverige
           </p>
           <div className="flex items-center justify-center gap-8 flex-wrap opacity-70">
-            {testimonials.map((testimonial, index) => (
-              <div 
-                key={index} 
-                className="flex items-center gap-2 text-sm font-medium hover:opacity-100 transition-opacity"
-              >
+            {testimonials.map((testimonial, index) => <div key={index} className="flex items-center gap-2 text-sm font-medium hover:opacity-100 transition-opacity">
                 <span className="text-2xl">{testimonial.logo}</span>
                 <span className="text-muted-foreground">{testimonial.company}</span>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -175,11 +181,7 @@ const Examples = () => {
             <Card className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden">
-                  <img 
-                    src={fordBefore} 
-                    alt="Ford Ranger - Före" 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={fordBefore} alt="Ford Ranger - Före" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-4 bg-card group-hover:bg-muted/20 transition-colors">
                   <Badge variant="secondary">Före</Badge>
@@ -193,11 +195,7 @@ const Examples = () => {
             <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden relative">
-                  <img 
-                    src={fordAfter} 
-                    alt="Ford Ranger - Efter" 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={fordAfter} alt="Ford Ranger - Efter" className="w-full h-full object-cover" />
                   <div className="absolute top-4 right-4">
                     <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
                   </div>
@@ -215,11 +213,7 @@ const Examples = () => {
             <Card className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden">
-                  <img 
-                    src={vwBefore} 
-                    alt="VW Golf - Före" 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={vwBefore} alt="VW Golf - Före" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-4 bg-card group-hover:bg-muted/20 transition-colors">
                   <Badge variant="secondary">Före</Badge>
@@ -233,11 +227,7 @@ const Examples = () => {
             <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden relative">
-                  <img 
-                    src={vwAfter} 
-                    alt="VW Golf - Efter" 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={vwAfter} alt="VW Golf - Efter" className="w-full h-full object-cover" />
                   <div className="absolute top-4 right-4">
                     <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
                   </div>
@@ -255,11 +245,7 @@ const Examples = () => {
             <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden relative">
-                  <img 
-                    src={audiAfter} 
-                    alt="Audi e-tron" 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={audiAfter} alt="Audi e-tron" className="w-full h-full object-cover" />
                   <div className="absolute top-4 right-4">
                     <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
                   </div>
@@ -310,8 +296,7 @@ const Examples = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="text-center">
+            {features.map((feature, index) => <Card key={index} className="text-center">
                 <CardContent className="pt-6">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-primary">
                     {feature.icon}
@@ -319,8 +304,7 @@ const Examples = () => {
                   <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -336,11 +320,7 @@ const Examples = () => {
                   <div className="relative p-8">
                     {/* Main car image with logo examples */}
                     <div className="relative mb-6">
-                      <img 
-                        src={audiAfter} 
-                        alt="Branded car example" 
-                        className="w-full rounded-lg shadow-lg"
-                      />
+                      <img src={audiAfter} alt="Branded car example" className="w-full rounded-lg shadow-lg" />
                       {/* Logo callouts */}
                       <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-border animate-fade-in">
                         <div className="flex items-center gap-2 mb-1">
@@ -355,21 +335,13 @@ const Examples = () => {
                     {/* Additional views/thumbnails */}
                     <div className="grid grid-cols-3 gap-3">
                       <div className="relative group cursor-pointer">
-                        <img 
-                          src={fordAfter} 
-                          alt="Thumbnail" 
-                          className="w-full aspect-video object-cover rounded border-2 border-border group-hover:border-primary transition-colors"
-                        />
+                        <img src={fordAfter} alt="Thumbnail" className="w-full aspect-video object-cover rounded border-2 border-border group-hover:border-primary transition-colors" />
                         <div className="absolute top-1 right-1 bg-primary/20 backdrop-blur-sm p-1 rounded">
                           <ImageIcon className="w-3 h-3 text-primary" />
                         </div>
                       </div>
                       <div className="relative group cursor-pointer">
-                        <img 
-                          src={vwAfter} 
-                          alt="Thumbnail" 
-                          className="w-full aspect-video object-cover rounded border-2 border-border group-hover:border-primary transition-colors"
-                        />
+                        <img src={vwAfter} alt="Thumbnail" className="w-full aspect-video object-cover rounded border-2 border-border group-hover:border-primary transition-colors" />
                         <div className="absolute top-1 right-1 bg-primary/20 backdrop-blur-sm p-1 rounded">
                           <ImageIcon className="w-3 h-3 text-primary" />
                         </div>
@@ -394,8 +366,7 @@ const Examples = () => {
 
             {/* Content on Right */}
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                Syns med <span className="text-primary">märkesanpassade</span> bilder
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Syns med din logo och högpresterande annonsbilder<span className="text-primary">din logo</span> bilder
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
                 Generiska bilder är lätta att skippa. Märkesanpassade bilder är inte det. 
@@ -404,16 +375,19 @@ const Examples = () => {
               </p>
               
               <ul className="space-y-4">
-                {[
-                  { icon: <CheckCircle2 className="w-5 h-5" />, text: "Ultrarealistiska 3D-bakgrunder" },
-                  { icon: <CheckCircle2 className="w-5 h-5" />, text: "Anpassade till ditt varumärke eller OEM-riktlinjer" },
-                  { icon: <CheckCircle2 className="w-5 h-5" />, text: "Märkesanpassade registreringsskyltar" }
-                ].map((item, index) => (
-                  <li key={index} className="flex items-center gap-3 text-foreground">
+                {[{
+                icon: <CheckCircle2 className="w-5 h-5" />,
+                text: "Ultrarealistiska 3D-bakgrunder"
+              }, {
+                icon: <CheckCircle2 className="w-5 h-5" />,
+                text: "Anpassade till ditt varumärke eller OEM-riktlinjer"
+              }, {
+                icon: <CheckCircle2 className="w-5 h-5" />,
+                text: "Märkesanpassade registreringsskyltar"
+              }].map((item, index) => <li key={index} className="flex items-center gap-3 text-foreground">
                     <div className="text-primary flex-shrink-0">{item.icon}</div>
                     <span className="text-base">{item.text}</span>
-                  </li>
-                ))}
+                  </li>)}
               </ul>
 
               <Button size="lg" className="mt-8" onClick={() => navigate('/')}>
@@ -439,12 +413,9 @@ const Examples = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {scenes.map((scene, index) => (
-              <Card 
-                key={index} 
-                className="overflow-hidden hover:shadow-lg hover-scale transition-all cursor-pointer group animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
+            {scenes.map((scene, index) => <Card key={index} className="overflow-hidden hover:shadow-lg hover-scale transition-all cursor-pointer group animate-fade-in" style={{
+            animationDelay: `${index * 0.1}s`
+          }}>
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-primary/10 via-muted to-muted/50 flex items-center justify-center relative overflow-hidden">
                     <div className="text-5xl z-10 group-hover:scale-110 transition-transform">
@@ -460,8 +431,7 @@ const Examples = () => {
                     <p className="text-sm text-muted-foreground">{scene.description}</p>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
 
           <div className="text-center mt-8">
@@ -496,8 +466,6 @@ const Examples = () => {
           </Card>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default Examples;
