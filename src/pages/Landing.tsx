@@ -17,36 +17,36 @@ export default function Landing() {
       <Header />
       
       {/* Hero Section - Clean & Compact */}
-      <section className="relative py-20 px-6 overflow-hidden">
+      <section className="relative py-12 md:py-20 px-4 md:px-6 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-subtle -z-10" />
         
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center space-y-6 mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-blue/10 border border-accent-blue/20 text-accent-blue text-sm font-medium">
-              <Sparkles className="w-4 h-4" />
+          <div className="text-center space-y-4 md:space-y-6 mb-12 md:mb-16">
+            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent-blue/10 border border-accent-blue/20 text-accent-blue text-xs md:text-sm font-medium">
+              <Sparkles className="w-3 h-3 md:w-4 md:h-4" />
               <span>AI-Driven Transformation</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-foreground font-heading">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-foreground font-heading px-4">
               Professionella bilbilder<br />
               <span className="bg-gradient-primary bg-clip-text text-transparent">på sekunder</span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Transformera dina bilbilder till professionella annonser med AI. 
               Perfekt för bilhandlare som vill sticka ut.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center pt-2 md:pt-4 px-4">
               <Button 
                 size="lg"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow text-lg px-8 h-14"
-                onClick={() => navigate('/auth')}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-glow text-base md:text-lg px-6 md:px-8 h-12 md:h-14"
+                onClick={() => navigate('/app')}
               >
-                Kom igång
-                <ArrowRight className="ml-2 w-5 h-5" />
+                Prova gratis
+                <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5" />
               </Button>
               <Button 
                 size="lg"
                 variant="outline"
-                className="text-lg px-8 h-14 border-2"
+                className="text-base md:text-lg px-6 md:px-8 h-12 md:h-14 border-2"
                 onClick={() => navigate('/exempel')}
               >
                 Se exempel
@@ -55,7 +55,7 @@ export default function Landing() {
           </div>
 
           {/* Visual Gallery - Compact Display */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto px-4">
             {[fordAfter, vwAfter, audiAfter].map((img, idx) => (
               <Card key={idx} className="overflow-hidden shadow-card hover:shadow-elegant transition-all hover:-translate-y-1">
                 <div className="aspect-[4/3] relative group">
@@ -76,11 +76,11 @@ export default function Landing() {
       <Features />
 
       {/* Visual Feature - Branding */}
-      <section className="py-20 px-6 bg-muted/30">
+      <section className="py-12 md:py-20 px-4 md:px-6 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="order-2 md:order-1 space-y-6">
-              <h2 className="text-4xl font-bold text-foreground">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+            <div className="order-2 md:order-1 space-y-4 md:space-y-6">
+              <h2 className="text-2xl md:text-4xl font-bold text-foreground">
                 Märkesanpassade bilder som <span className="text-primary">konverterar</span>
               </h2>
               <div className="space-y-4">
@@ -142,29 +142,29 @@ export default function Landing() {
       <Pricing />
 
       {/* CTA Section */}
-      <section className="py-24 px-6 relative overflow-hidden">
+      <section className="py-16 md:py-24 px-4 md:px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-subtle -z-10" />
         
         <div className="container mx-auto max-w-4xl text-center relative z-10">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 md:mb-6 px-4">
             Redo att transformera dina bilbilder?
           </h2>
-          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+          <p className="text-base md:text-xl text-muted-foreground mb-8 md:mb-10 max-w-2xl mx-auto px-4">
             Börja använda Reflekt idag. Ingen erfarenhet krävs.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center px-4">
             <Button 
               size="lg"
-              className="bg-primary hover:bg-primary/90 shadow-glow text-lg px-8 h-14"
-              onClick={() => navigate('/auth')}
+              className="bg-primary hover:bg-primary/90 shadow-glow text-base md:text-lg px-6 md:px-8 h-12 md:h-14"
+              onClick={() => navigate('/app')}
             >
-              Kom igång nu
-              <ArrowRight className="ml-2 w-5 h-5" />
+              Prova gratis
+              <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5" />
             </Button>
             <Button 
               size="lg"
               variant="outline"
-              className="text-lg px-8 h-14 border-2"
+              className="text-base md:text-lg px-6 md:px-8 h-12 md:h-14 border-2"
               onClick={() => navigate('/exempel')}
             >
               Se fler exempel
@@ -174,12 +174,12 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/30 backdrop-blur-sm py-12 px-6">
+      <footer className="border-t border-border/50 bg-card/30 backdrop-blur-sm py-8 md:py-12 px-4 md:px-6">
         <div className="container mx-auto max-w-7xl">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-bold text-foreground mb-3">Reflekt</h3>
-              <p className="text-sm text-muted-foreground max-w-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-6 md:mb-8">
+            <div className="sm:col-span-2">
+              <h3 className="text-base md:text-lg font-bold text-foreground mb-2 md:mb-3">Reflekt</h3>
+              <p className="text-xs md:text-sm text-muted-foreground max-w-md">
                 AI-driven bilbildsbearbetning för professionella bilhandlare.
               </p>
             </div>
@@ -227,15 +227,15 @@ export default function Landing() {
               </div>
             </div>
           </div>
-          <div className="border-t border-border/50 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="border-t border-border/50 pt-6 md:pt-8 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
+            <p className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
               © 2025 Reflekt. Alla rättigheter förbehållna.
             </p>
-            <div className="flex gap-6">
-              <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            <div className="flex gap-4 md:gap-6">
+              <a href="#" className="text-xs md:text-sm text-muted-foreground hover:text-primary transition-colors">
                 Integritetspolicy
               </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              <a href="#" className="text-xs md:text-sm text-muted-foreground hover:text-primary transition-colors">
                 Villkor
               </a>
             </div>
