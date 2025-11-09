@@ -20,6 +20,7 @@ const Index = () => {
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewingImageId, setPreviewingImageId] = useState<string | null>(null);
   const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set());
   const [editingImage, setEditingImage] = useState<{ id: string; finalUrl: string; fileName: string } | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -242,6 +243,7 @@ const Index = () => {
                         status: 'completed' as const,
                         finalUrl: result.finalUrl,
                         sceneId: selectedScene.id,
+                        croppedUrl: undefined, // Clear any previous crop when regenerating
                       }
                     : img
                 )
@@ -291,7 +293,12 @@ const Index = () => {
   const handleCropSave = (imageId: string, croppedImageUrl: string, newAspectRatio: 'landscape' | 'portrait') => {
     setUploadedImages(prev =>
       prev.map(img =>
-        img.id === imageId ? { ...img, croppedUrl: croppedImageUrl } : img
+        img.id === imageId ? { 
+          ...img, 
+          croppedUrl: croppedImageUrl,
+          // Clear the scene ID so regeneration uses the original finalUrl
+          sceneId: img.sceneId 
+        } : img
       )
     );
     setAspectRatio(newAspectRatio);
@@ -522,6 +529,7 @@ const Index = () => {
                                 if (imageUrl) {
                                   const withLogo = await applyLogoToImage(imageUrl);
                                   setPreviewImage(withLogo);
+                                  setPreviewingImageId(image.id);
                                 }
                               }}
                             />
@@ -568,6 +576,7 @@ const Index = () => {
                                   if (imageUrl) {
                                     const withLogo = await applyLogoToImage(imageUrl);
                                     setPreviewImage(withLogo);
+                                    setPreviewingImageId(image.id);
                                   }
                                 }}
                               >
@@ -603,7 +612,12 @@ const Index = () => {
       </main>
 
       {/* Preview Dialog */}
-      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+      <Dialog open={!!previewImage} onOpenChange={(open) => {
+        if (!open) {
+          setPreviewImage(null);
+          setPreviewingImageId(null);
+        }
+      }}>
         <DialogContent className="max-w-7xl w-full p-0 gap-0 bg-black">
           <DialogClose className="absolute right-4 top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-background/90 backdrop-blur-sm p-2">
             <X className="h-4 w-4" />
@@ -622,15 +636,15 @@ const Index = () => {
                   variant="secondary"
                   className="gap-2 bg-background/90 backdrop-blur-sm hover:bg-background"
                   onClick={() => {
-                    const currentImage = uploadedImages.find(img => 
-                      (img.croppedUrl && previewImage.includes('data:image')) || 
-                      img.finalUrl === previewImage
-                    );
-                    if (currentImage) {
+                    const currentImage = previewingImageId 
+                      ? uploadedImages.find(img => img.id === previewingImageId)
+                      : null;
+                    if (currentImage && currentImage.finalUrl) {
                       setPreviewImage(null);
+                      setPreviewingImageId(null);
                       setEditingImage({
                         id: currentImage.id,
-                        finalUrl: currentImage.croppedUrl || currentImage.finalUrl!,
+                        finalUrl: currentImage.finalUrl,
                         fileName: currentImage.file.name,
                       });
                     }
@@ -642,9 +656,9 @@ const Index = () => {
                 <Button
                   className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
                   onClick={() => {
-                    const currentImage = uploadedImages.find(img => 
-                      img.finalUrl && (img.croppedUrl || img.finalUrl)
-                    );
+                    const currentImage = previewingImageId
+                      ? uploadedImages.find(img => img.id === previewingImageId)
+                      : null;
                     if (currentImage && previewImage) {
                       handleDownload(
                         previewImage,

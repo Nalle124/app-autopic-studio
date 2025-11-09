@@ -131,17 +131,17 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
 
   return (
     <Dialog open={!!image} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-6xl h-[95vh] flex flex-col p-3 sm:p-6">
-        <DialogHeader className="pb-3">
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Crop className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="truncate">Beskär bild - {image.fileName}</span>
+      <DialogContent className="max-w-6xl max-h-[96vh] flex flex-col p-2 sm:p-4 overflow-hidden">
+        <DialogHeader className="pb-2 flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
+            <Crop className="w-4 h-4" />
+            <span className="truncate text-sm">{image.fileName}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 overflow-hidden">
           {/* Crop Area */}
-          <div className="flex-1 relative bg-background rounded-lg overflow-hidden min-h-[400px]">
+          <div className="flex-1 relative bg-background rounded-lg overflow-hidden min-h-[300px] sm:min-h-[400px]">
             <Cropper
               image={image.finalUrl}
               crop={crop}
@@ -163,45 +163,45 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
           </div>
 
           {/* Side Panel */}
-          <div className="lg:w-[280px] flex flex-col gap-3">
+          <div className="lg:w-[260px] flex flex-col gap-2 overflow-y-auto flex-shrink-0">
             {/* Aspect Ratio */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Format</Label>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Format</Label>
+              <div className="grid grid-cols-2 gap-1.5">
                 <Button
                   variant={localAspectRatio === 'landscape' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setLocalAspectRatio('landscape')}
-                  className="gap-1.5"
+                  className="gap-1 h-8 text-xs"
                 >
-                  <Maximize2 className="w-3.5 h-3.5" />
+                  <Maximize2 className="w-3 h-3" />
                   16:9
                 </Button>
                 <Button
                   variant={localAspectRatio === 'portrait' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setLocalAspectRatio('portrait')}
-                  className="gap-1.5"
+                  className="gap-1 h-8 text-xs"
                 >
-                  <Maximize2 className="w-3.5 h-3.5 rotate-90" />
+                  <Maximize2 className="w-3 h-3 rotate-90" />
                   9:16
                 </Button>
               </div>
             </div>
 
             {/* Auto Crop */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-accent" />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-accent" />
                 Auto-beskär
               </Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleAutoCrop('tight')}
                   disabled={isAutoCropping}
-                  className="text-xs"
+                  className="text-xs h-8 px-2"
                 >
                   Tight
                 </Button>
@@ -210,7 +210,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
                   size="sm"
                   onClick={() => handleAutoCrop('medium')}
                   disabled={isAutoCropping}
-                  className="text-xs"
+                  className="text-xs h-8 px-2"
                 >
                   Normal
                 </Button>
@@ -219,19 +219,19 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
                   size="sm"
                   onClick={() => handleAutoCrop('airy')}
                   disabled={isAutoCropping}
-                  className="text-xs"
+                  className="text-xs h-8 px-2"
                 >
                   Luftig
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground leading-tight">
                 AI centrerar bilen automatiskt
               </p>
             </div>
 
             {/* Zoom */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">
                 Zoom: {Math.round(zoom * 100)}%
               </Label>
               <Slider
@@ -244,20 +244,20 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
               />
             </div>
 
-            <p className="text-xs text-muted-foreground pt-2">
+            <p className="text-[10px] text-muted-foreground leading-tight pt-1">
               Dra bilden för att positionera. Använd zoom eller auto-beskär för bästa resultat.
             </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t">
-          <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
-            <X className="w-4 h-4 mr-2" />
+        <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t flex-shrink-0">
+          <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none h-9 text-sm">
+            <X className="w-3.5 h-3.5 mr-1.5" />
             Avbryt
           </Button>
-          <Button onClick={handleSave} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90">
-            <Save className="w-4 h-4 mr-2" />
+          <Button onClick={handleSave} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 h-9 text-sm">
+            <Save className="w-3.5 h-3.5 mr-1.5" />
             Spara beskärning
           </Button>
         </div>
