@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Header } from '@/components/Header';
-import { Hero } from '@/components/Hero';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
@@ -403,10 +402,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
-      <Hero />
 
-      <main className="container mx-auto px-4 md:px-6 py-8 md:py-12" id="upload-section">
+      <main className="container mx-auto px-4 md:px-6 py-8 md:py-12 pt-20 md:pt-24" id="upload-section">
         <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
           {/* Upload Section */}
           <section>
