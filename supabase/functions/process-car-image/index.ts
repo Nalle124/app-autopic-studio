@@ -142,7 +142,15 @@ serve(async (req) => {
     // Step 3: Save final image (no AI analysis needed - Photoroom does it all!)
     console.log('Uploading final AI-processed image...');
     
-    const finalFilename = `${crypto.randomUUID()}-${scene.id}.png`;
+    // Sanitize scene ID to remove special characters (Swedish letters etc.)
+    const sanitizedSceneId = scene.id
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+      .replace(/[^a-z0-9-]/gi, '-')     // Replace non-alphanumeric with dash
+      .replace(/-+/g, '-')              // Replace multiple dashes with single
+      .replace(/^-|-$/g, '');           // Remove leading/trailing dashes
+    
+    const finalFilename = `${crypto.randomUUID()}-${sanitizedSceneId}.png`;
     const { data: finalUploadData, error: finalUploadError } = await supabase.storage
       .from('processed-cars')
       .upload(finalFilename, finalImageBuffer, {
