@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -14,18 +10,13 @@ All colors MUST be HSL.
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    
-    /* Brand colors - Reflekt */
-    --primary: 48 100% 50%; /* #ffd500 - Brand yellow */
+    --primary: 48 100% 50%;
     --primary-foreground: 222.2 84% 4.9%;
-    --primary-glow: 48 100% 65%; /* Lighter yellow for glow effects */
-    
-    /* Gradient accent colors */
+    --primary-glow: 48 100% 65%;
     --accent-purple: 280 70% 60%;
     --accent-pink: 320 70% 65%;
     --accent-orange: 30 90% 60%;
     --accent-blue: 220 80% 60%;
-    
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
@@ -38,14 +29,10 @@ All colors MUST be HSL.
     --input: 214.3 31.8% 91.4%;
     --ring: 48 100% 50%;
     --radius: 0.5rem;
-    
-    /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(48 100% 50%), hsl(30 90% 60%));
     --gradient-hero: linear-gradient(135deg, hsl(280 70% 60%), hsl(320 70% 65%), hsl(30 90% 60%));
     --gradient-accent: linear-gradient(135deg, hsl(320 70% 65%), hsl(280 70% 60%));
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
-    
-    /* Shadows */
     --shadow-elegant: 0 10px 30px -10px hsl(48 100% 50% / 0.2);
     --shadow-glow: 0 0 40px hsl(48 100% 65% / 0.3);
     --shadow-card: 0 4px 20px hsl(222.2 84% 4.9% / 0.08);
@@ -58,18 +45,13 @@ All colors MUST be HSL.
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    
-    /* Brand colors - Reflekt (dark mode) */
     --primary: 48 100% 50%;
     --primary-foreground: 222.2 84% 4.9%;
     --primary-glow: 48 100% 65%;
-    
-    /* Gradient accent colors (dark mode) */
     --accent-purple: 280 70% 65%;
     --accent-pink: 320 70% 70%;
     --accent-orange: 30 90% 65%;
     --accent-blue: 220 80% 65%;
-    
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -81,21 +63,15 @@ All colors MUST be HSL.
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 48 100% 50%;
-    
-    /* Gradients (dark mode) */
     --gradient-primary: linear-gradient(135deg, hsl(48 100% 50%), hsl(30 90% 60%));
     --gradient-hero: linear-gradient(135deg, hsl(280 70% 65%), hsl(320 70% 70%), hsl(30 90% 65%));
     --gradient-accent: linear-gradient(135deg, hsl(320 70% 70%), hsl(280 70% 65%));
     --gradient-subtle: linear-gradient(180deg, hsl(222.2 84% 4.9%), hsl(217.2 32.6% 17.5%));
-    
-    /* Shadows (dark mode) */
     --shadow-elegant: 0 10px 30px -10px hsl(48 100% 50% / 0.3);
     --shadow-glow: 0 0 40px hsl(48 100% 65% / 0.4);
     --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -110,4 +86,3 @@ All colors MUST be HSL.
     @apply transition-transform duration-200 hover:scale-105 active:scale-95;
   }
 }
-
