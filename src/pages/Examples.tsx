@@ -2,470 +2,268 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Sparkles, Image as ImageIcon, Palette, Star, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import fordBefore from '@/assets/examples/ford-before.png';
 import fordAfter from '@/assets/examples/ford-after.png';
 import vwBefore from '@/assets/examples/vw-before.png';
 import vwAfter from '@/assets/examples/vw-after.png';
 import audiAfter from '@/assets/examples/audi-after.png';
+
 const Examples = () => {
   const navigate = useNavigate();
-  const [scrollY, setScrollY] = useState(0);
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-  const features = [{
-    icon: <Sparkles className="w-6 h-6" />,
-    title: "Professionella resultat",
-    description: "Konsekvent hög kvalitet på alla dina bilbilder"
-  }, {
-    icon: <ImageIcon className="w-6 h-6" />,
-    title: "Din egen logo",
-    description: "Lägg till din logotype automatiskt på alla bilder"
-  }, {
-    icon: <Palette className="w-6 h-6" />,
-    title: "Svenska miljöer",
-    description: "Kurerade teman anpassade för svenska bilhandlare"
-  }];
-  const scenes = [{
-    name: "Grå Studio",
-    description: "Mörk och elegant studiomiljö",
-    emoji: "🎬"
-  }, {
-    name: "Ljus Marmor",
-    description: "Lyxig ljus studiomiljö",
-    emoji: "💎"
-  }, {
-    name: "Park",
-    description: "Naturlig utomhusmiljö",
-    emoji: "🌳"
-  }, {
-    name: "Contrast",
-    description: "Modern kontraststudie",
-    emoji: "⚡"
-  }, {
-    name: "Vit Kakel",
-    description: "Minimalistisk vit studio",
-    emoji: "✨"
-  }, {
-    name: "Mörkt Draperi",
-    description: "Dramatisk studiomiljö",
-    emoji: "🎭"
-  }];
-  const testimonials = [{
-    company: "Premium Motors",
-    logo: "🚗"
-  }, {
-    company: "Nordic Cars",
-    logo: "🏆"
-  }, {
-    company: "AutoElite",
-    logo: "⭐"
-  }, {
-    company: "DriveSweden",
-    logo: "🇸🇪"
-  }, {
-    company: "CarDealer Pro",
-    logo: "💼"
-  }, {
-    company: "Stockholm Wheels",
-    logo: "🌟"
-  }];
-  return <div className="min-h-screen bg-background">
+
+  const features = [
+    {
+      title: "Snabb process",
+      description: "2 sekunder per bild"
+    },
+    {
+      title: "Automatisk branding",
+      description: "Din logo på alla bilder"
+    },
+    {
+      title: "Professionella scener",
+      description: "6+ kurerade miljöer"
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section - Visual Process Display */}
-      <section className="relative py-20 px-6 bg-gradient-to-br from-primary/5 via-background to-background overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" style={{
-          transform: `translate(${scrollY * 0.1}px, ${scrollY * 0.05}px)`
-        }} />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl" style={{
-          transform: `translate(-${scrollY * 0.08}px, -${scrollY * 0.04}px)`
-        }} />
-        </div>
-
+      {/* Compact Hero */}
+      <section className="relative py-12 md:py-20 px-4 md:px-6 bg-gradient-subtle overflow-hidden">
         <div className="container mx-auto max-w-7xl">
-          <div className="text-center space-y-6 mb-16 animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-medium">
-              <Sparkles className="w-4 h-4 animate-pulse" />
-              <span>AI-driven bildtransformation</span>
+          <div className="text-center space-y-4 md:space-y-6 mb-12 md:mb-16">
+            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs md:text-sm font-medium">
+              <Sparkles className="w-3 h-3 md:w-4 md:h-4" />
+              <span>AI-driven transformation</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground font-heading">
-              Snabbare försäljning börjar här
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground font-heading px-4">
+              Från vanlig bild till<br />
+              <span className="bg-gradient-primary bg-clip-text text-transparent">professionell annons</span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Konsekvent, märkesanpassade, högkvalitativa begagnatbildvisuals levererade i hastighet och skala
+            <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
+              Se hur våra AI-drivna verktyg transformerar bilbilder på sekunder
             </p>
           </div>
 
-          {/* Visual Gallery Carousel - Showing transformation */}
-          <div className="relative max-w-6xl mx-auto mb-12">
-            <div className="flex items-center justify-center gap-4 overflow-hidden">
-              {/* Left preview */}
-              <Card className="hidden lg:block w-48 opacity-50 hover:opacity-70 transition-opacity overflow-hidden hover-scale">
-                <img src={vwBefore} alt="Preview" className="w-full h-32 object-cover" />
-              </Card>
-
-              {/* Center - Featured transformation */}
-              <Card className="relative border-4 border-primary shadow-premium overflow-hidden max-w-xl flex-1 animate-scale-in">
-                <div className="relative aspect-video">
-                  <img src={fordAfter} alt="Transformed car" className="w-full h-full object-cover" />
-                  {/* Processing indicator */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-pulse">
-                    <Sparkles className="w-4 h-4" />
-                    <span className="text-sm font-medium">Transformerad på 2s</span>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Right preview */}
-              <Card className="hidden lg:block w-48 opacity-50 hover:opacity-70 transition-opacity overflow-hidden hover-scale">
-                <img src={audiAfter} alt="Preview" className="w-full h-32 object-cover" />
-              </Card>
-            </div>
-          </div>
-
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto">
-            <Card className="text-center p-6 hover-scale border-primary/20">
-              <div className="text-3xl font-bold text-primary mb-2">2s</div>
-              <div className="text-sm text-muted-foreground">Per bild</div>
-            </Card>
-            <Card className="text-center p-6 hover-scale border-primary/20">
-              <div className="text-3xl font-bold text-primary mb-2">6+</div>
-              <div className="text-sm text-muted-foreground">Professionella scener</div>
-            </Card>
-            <Card className="text-center p-6 hover-scale border-primary/20">
-              <div className="text-3xl font-bold text-primary mb-2">100%</div>
-              <div className="text-sm text-muted-foreground">Automatiskt</div>
-            </Card>
+          <div className="grid grid-cols-3 gap-3 md:gap-6 max-w-3xl mx-auto mb-12 md:mb-16">
+            {features.map((feature, idx) => (
+              <Card key={idx} className="text-center p-4 md:p-6 hover:shadow-card transition-shadow">
+                <div className="flex items-center justify-center mb-2">
+                  <Check className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                </div>
+                <div className="text-sm md:text-base font-bold text-foreground mb-1">{feature.title}</div>
+                <div className="text-xs md:text-sm text-muted-foreground">{feature.description}</div>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials/Partners Slider */}
-      <section className="py-8 px-6 bg-muted/20 border-y border-border">
-        <div className="container mx-auto max-w-7xl">
-          <p className="text-center text-sm text-muted-foreground mb-6">
-            Används av ledande bilhandlare i Sverige
-          </p>
-          <div className="flex items-center justify-center gap-8 flex-wrap opacity-70">
-            {testimonials.map((testimonial, index) => <div key={index} className="flex items-center gap-2 text-sm font-medium hover:opacity-100 transition-opacity">
-                <span className="text-2xl">{testimonial.logo}</span>
-                <span className="text-muted-foreground">{testimonial.company}</span>
-              </div>)}
-          </div>
-        </div>
-      </section>
-
-      {/* Before/After Examples Section - PLACEHOLDER */}
-      <section className="py-20 px-6">
+      {/* Before/After Gallery */}
+      <section className="py-12 md:py-20 px-4 md:px-6">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 md:mb-4">
               Före & Efter
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
               Se transformationen från vanliga bilbilder till professionella annonser
             </p>
           </div>
           
-          {/* Example Grid - Real Images */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {/* Ford Ranger - Before/After */}
-            <Card className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all">
+          {/* Example Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
+            {/* Ford - Before */}
+            <Card className="overflow-hidden group hover:shadow-elegant transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden">
-                  <img src={fordBefore} alt="Ford Ranger - Före" className="w-full h-full object-cover" />
+                  <img src={fordBefore} alt="Ford - Före" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                 </div>
-                <div className="p-4 bg-card group-hover:bg-muted/20 transition-colors">
-                  <Badge variant="secondary">Före</Badge>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Ford Ranger - Utomhus
-                  </p>
+                <div className="p-3 md:p-4 bg-card">
+                  <Badge variant="secondary" className="text-xs">Före</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">Ford Ranger - Utomhus</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
+            {/* Ford - After */}
+            <Card className="overflow-hidden border-2 border-primary group hover:shadow-elegant transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden relative">
-                  <img src={fordAfter} alt="Ford Ranger - Efter" className="w-full h-full object-cover" />
-                  <div className="absolute top-4 right-4">
-                    <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
+                  <img src={fordAfter} alt="Ford - Efter" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                  <div className="absolute top-3 md:top-4 right-3 md:right-4">
+                    <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary drop-shadow-lg" />
                   </div>
                 </div>
-                <div className="p-4 bg-card border-t-2 border-primary/20">
-                  <Badge className="bg-primary">Efter - Mörk Studio</Badge>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Med logo & professionell bakgrund
-                  </p>
+                <div className="p-3 md:p-4 bg-card border-t-2 border-primary/20">
+                  <Badge className="bg-primary text-xs">Efter - Mörk Studio</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">Med logo & professionell bakgrund</p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* VW Golf - Before/After */}
-            <Card className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all">
+            {/* VW - Before */}
+            <Card className="overflow-hidden group hover:shadow-elegant transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden">
-                  <img src={vwBefore} alt="VW Golf - Före" className="w-full h-full object-cover" />
+                  <img src={vwBefore} alt="VW - Före" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                 </div>
-                <div className="p-4 bg-card group-hover:bg-muted/20 transition-colors">
-                  <Badge variant="secondary">Före</Badge>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    VW Golf - Grusplan
-                  </p>
+                <div className="p-3 md:p-4 bg-card">
+                  <Badge variant="secondary" className="text-xs">Före</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">VW Golf - Grusplan</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
+            {/* VW - After */}
+            <Card className="overflow-hidden border-2 border-primary group hover:shadow-elegant transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden relative">
-                  <img src={vwAfter} alt="VW Golf - Efter" className="w-full h-full object-cover" />
-                  <div className="absolute top-4 right-4">
-                    <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
+                  <img src={vwAfter} alt="VW - Efter" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                  <div className="absolute top-3 md:top-4 right-3 md:right-4">
+                    <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary drop-shadow-lg" />
                   </div>
                 </div>
-                <div className="p-4 bg-card border-t-2 border-primary/20">
-                  <Badge className="bg-primary">Efter - Park Miljö</Badge>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Naturlig utomhusmiljö med logo
-                  </p>
+                <div className="p-3 md:p-4 bg-card border-t-2 border-primary/20">
+                  <Badge className="bg-primary text-xs">Efter - Park Miljö</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">Naturlig utomhusmiljö med logo</p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Audi e-tron - Showcase */}
-            <Card className="overflow-hidden border-2 border-primary group cursor-pointer hover:shadow-premium transition-all">
+            {/* Audi - Showcase */}
+            <Card className="overflow-hidden border-2 border-primary group hover:shadow-elegant transition-all">
               <CardContent className="p-0">
                 <div className="aspect-square overflow-hidden relative">
-                  <img src={audiAfter} alt="Audi e-tron" className="w-full h-full object-cover" />
-                  <div className="absolute top-4 right-4">
-                    <Sparkles className="w-6 h-6 text-primary drop-shadow-lg" />
+                  <img src={audiAfter} alt="Audi e-tron" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                  <div className="absolute top-3 md:top-4 right-3 md:right-4">
+                    <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary drop-shadow-lg" />
                   </div>
                 </div>
-                <div className="p-4 bg-card border-t-2 border-primary/20">
-                  <Badge className="bg-primary">Audi e-tron - Park</Badge>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Professionell slutresultat
-                  </p>
+                <div className="p-3 md:p-4 bg-card border-t-2 border-primary/20">
+                  <Badge className="bg-primary text-xs">Audi e-tron</Badge>
+                  <p className="text-sm text-muted-foreground mt-2">Professionell slutresultat</p>
                 </div>
               </CardContent>
             </Card>
 
             {/* CTA Card */}
-            <Card className="overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/30 group cursor-pointer hover:shadow-premium transition-all flex items-center justify-center">
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl mb-4">🚀</div>
-                <h3 className="font-bold text-lg mb-2">Din tur!</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+            <Card className="overflow-hidden bg-gradient-glass border-2 border-primary/30 group hover:shadow-elegant transition-all flex items-center justify-center">
+              <CardContent className="p-6 md:p-8 text-center">
+                <div className="text-3xl md:text-4xl mb-3 md:mb-4">🚀</div>
+                <h3 className="font-bold text-base md:text-lg mb-2">Din tur!</h3>
+                <p className="text-xs md:text-sm text-muted-foreground mb-4">
                   Skapa professionella bilder på sekunder
                 </p>
-                <Button onClick={() => navigate('/')} size="sm">
-                  Kom igång
+                <Button onClick={() => navigate('/app')} size="sm" className="w-full">
+                  Prova nu
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </CardContent>
             </Card>
           </div>
-
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground italic">
-              💡 Bifoga dina exempel-bilder så lägger jag in dem här
-            </p>
-          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-6 bg-muted/30">
+      {/* Branding Section - Compact */}
+      <section className="py-12 md:py-20 px-4 md:px-6 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Allt du behöver
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Kraftfulla funktioner för bilhandlare
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => <Card key={index} className="text-center">
-                <CardContent className="pt-6">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-primary">
-                    {feature.icon}
+          <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+            <div className="order-2 md:order-1 space-y-4 md:space-y-6">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+                Märkesanpassade bilder som <span className="text-primary">konverterar</span>
+              </h2>
+              <div className="space-y-3 md:space-y-4">
+                <div className="flex gap-3">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Check className="w-4 h-4 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>)}
-          </div>
-        </div>
-      </section>
-
-      {/* Logo/Branding Feature Section - Visual Process */}
-      <section className="py-20 px-6">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Visual Process on Left */}
-            <div className="relative">
-              <Card className="overflow-hidden shadow-2xl">
-                <CardContent className="p-0 bg-muted/20">
-                  <div className="relative p-8">
-                    {/* Main car image with logo examples */}
-                    <div className="relative mb-6">
-                      <img src={audiAfter} alt="Branded car example" className="w-full rounded-lg shadow-lg" />
-                      {/* Logo callouts */}
-                      <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-border animate-fade-in">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-8 h-8 bg-primary/20 rounded flex items-center justify-center">
-                            <ImageIcon className="w-4 h-4 text-primary" />
-                          </div>
-                          <span className="text-xs font-medium">Din Logo</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Additional views/thumbnails */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="relative group cursor-pointer">
-                        <img src={fordAfter} alt="Thumbnail" className="w-full aspect-video object-cover rounded border-2 border-border group-hover:border-primary transition-colors" />
-                        <div className="absolute top-1 right-1 bg-primary/20 backdrop-blur-sm p-1 rounded">
-                          <ImageIcon className="w-3 h-3 text-primary" />
-                        </div>
-                      </div>
-                      <div className="relative group cursor-pointer">
-                        <img src={vwAfter} alt="Thumbnail" className="w-full aspect-video object-cover rounded border-2 border-border group-hover:border-primary transition-colors" />
-                        <div className="absolute top-1 right-1 bg-primary/20 backdrop-blur-sm p-1 rounded">
-                          <ImageIcon className="w-3 h-3 text-primary" />
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-center bg-muted rounded border-2 border-dashed border-border aspect-video">
-                        <span className="text-xs text-muted-foreground">+Fler</span>
-                      </div>
-                    </div>
-
-                    {/* Progress bar mockup */}
-                    <div className="mt-6 space-y-2">
-                      <div className="flex gap-2">
-                        <div className="h-2 flex-1 bg-muted-foreground/20 rounded-full"></div>
-                        <div className="h-2 flex-1 bg-muted-foreground/20 rounded-full"></div>
-                        <div className="h-2 flex-1 bg-foreground rounded-full"></div>
-                      </div>
-                    </div>
+                  <div>
+                    <h4 className="font-semibold text-sm md:text-base mb-1">Din logo, varje bild</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">Automatisk placering och storlek</p>
                   </div>
-                </CardContent>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Check className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm md:text-base mb-1">Batch-processing</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">Ladda upp 30 bilder samtidigt</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Check className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm md:text-base mb-1">2 sekunder per bild</h4>
+                    <p className="text-xs md:text-sm text-muted-foreground">Snabbare än någon manuell process</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="order-1 md:order-2">
+              <Card className="overflow-hidden shadow-elegant">
+                <div className="relative bg-gradient-glass p-6 md:p-8">
+                  <img 
+                    src={audiAfter} 
+                    alt="Branded example" 
+                    className="w-full rounded-lg shadow-card"
+                  />
+                  <div className="absolute top-8 md:top-12 left-8 md:left-12 bg-background/95 backdrop-blur-sm p-3 md:p-4 rounded-lg shadow-card border border-border animate-fade-in">
+                    <div className="flex items-center gap-2 md:gap-3 mb-2">
+                      <div className="w-8 h-8 md:w-10 md:h-10 bg-primary/20 rounded flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                      </div>
+                      <span className="font-semibold text-sm md:text-base">Din Logo</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Automatiskt applicerad</p>
+                  </div>
+                </div>
               </Card>
             </div>
-
-            {/* Content on Right */}
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Syns med din logo och högpresterande annonsbilder<span className="text-primary">din logo</span> bilder
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                Generiska bilder är lätta att skippa. Märkesanpassade bilder är inte det. 
-                Se till att varje fordon sticker ut med studiokvalitet, märkesanpassade visuals 
-                som driver medvetenhet och konverteringar.
-              </p>
-              
-              <ul className="space-y-4">
-                {[{
-                icon: <CheckCircle2 className="w-5 h-5" />,
-                text: "Ultrarealistiska 3D-bakgrunder"
-              }, {
-                icon: <CheckCircle2 className="w-5 h-5" />,
-                text: "Anpassade till ditt varumärke eller OEM-riktlinjer"
-              }, {
-                icon: <CheckCircle2 className="w-5 h-5" />,
-                text: "Märkesanpassade registreringsskyltar"
-              }].map((item, index) => <li key={index} className="flex items-center gap-3 text-foreground">
-                    <div className="text-primary flex-shrink-0">{item.icon}</div>
-                    <span className="text-base">{item.text}</span>
-                  </li>)}
-              </ul>
-
-              <Button size="lg" className="mt-8" onClick={() => navigate('/')}>
-                Utforska AI-bakgrunder
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Scenes/Themes Section */}
-      <section className="py-20 px-6 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Professionella scener
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Kurerade teman anpassade för svenska bilhandlare. 
-              Från eleganta studiomiljöer till naturliga utomhusscener.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {scenes.map((scene, index) => <Card key={index} className="overflow-hidden hover:shadow-lg hover-scale transition-all cursor-pointer group animate-fade-in" style={{
-            animationDelay: `${index * 0.1}s`
-          }}>
-                <CardContent className="p-0">
-                  <div className="aspect-video bg-gradient-to-br from-primary/10 via-muted to-muted/50 flex items-center justify-center relative overflow-hidden">
-                    <div className="text-5xl z-10 group-hover:scale-110 transition-transform">
-                      {scene.emoji}
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div className="p-4 group-hover:bg-muted/20 transition-colors">
-                    <h3 className="font-bold text-lg mb-1 flex items-center justify-between">
-                      {scene.name}
-                      <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{scene.description}</p>
-                  </div>
-                </CardContent>
-              </Card>)}
-          </div>
-
-          <div className="text-center mt-8">
-            <p className="text-muted-foreground mb-4">
-              Fler teman och miljöer tillkommer löpande
-            </p>
+      {/* Final CTA */}
+      <section className="py-16 md:py-24 px-4 md:px-6 bg-gradient-subtle">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 md:mb-6 px-4">
+            Redo att transformera dina bilbilder?
+          </h2>
+          <p className="text-base md:text-xl text-muted-foreground mb-8 md:mb-10 max-w-2xl mx-auto px-4">
+            Börja använda Reflekt idag. Ingen erfarenhet krävs.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center px-4">
+            <Button 
+              size="lg"
+              className="bg-primary hover:bg-primary/90 shadow-glow text-base md:text-lg px-6 md:px-8 h-12 md:h-14"
+              onClick={() => navigate('/app')}
+            >
+              Prova gratis
+              <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5" />
+            </Button>
+            <Button 
+              size="lg"
+              variant="outline"
+              className="text-base md:text-lg px-6 md:px-8 h-12 md:h-14 border-2"
+              onClick={() => navigate('/')}
+            >
+              Läs mer
+            </Button>
           </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-6">
-        <div className="container mx-auto max-w-4xl">
-          <Card className="bg-gradient-to-br from-primary/10 to-background border-primary/20">
-            <CardContent className="p-12 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Redo att komma igång?
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Skapa professionella bilbilder på sekunder. 
-                Ingen erfarenhet av bildredigering krävs.
-              </p>
-              <div className="flex gap-4 justify-center">
-                <Button size="lg" onClick={() => navigate('/')}>
-                  Börja gratis
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate('/')}>
-                  Se priser
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-    </div>;
+    </div>
+  );
 };
+
 export default Examples;

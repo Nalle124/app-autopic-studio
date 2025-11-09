@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
-import { Download, X, RefreshCw, Crop, Image as ImageIcon } from 'lucide-react';
+import { Download, X, RefreshCw, Crop, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -406,15 +406,15 @@ const Index = () => {
       
       <Hero />
 
-      <main className="container mx-auto px-6 py-12" id="upload-section">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <main className="container mx-auto px-4 md:px-6 py-8 md:py-12" id="upload-section">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
           {/* Upload Section */}
           <section>
-            <div className="mb-4">
-              <h2 className="text-xl font-bold text-foreground mb-1">
+            <div className="mb-3 md:mb-4">
+              <h2 className="text-lg md:text-xl font-bold text-foreground mb-1">
                 1. Ladda upp dina bilder
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Dra och släpp upp till 50 bilbilder åt gången
               </p>
             </div>
@@ -427,11 +427,11 @@ const Index = () => {
           {/* Scene Selection */}
           {uploadedImages.length > 0 && (
             <section>
-              <div className="mb-4">
-                <h2 className="text-xl font-bold text-foreground mb-1">
+              <div className="mb-3 md:mb-4">
+                <h2 className="text-lg md:text-xl font-bold text-foreground mb-1">
                   2. Välj bakgrund
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Välj en professionell scen för dina bilar
                 </p>
               </div>
@@ -445,15 +445,15 @@ const Index = () => {
           {/* Export Panel */}
           {uploadedImages.length > 0 && selectedScene && (
             <section>
-              <div className="mb-4">
-                <h2 className="text-xl font-bold text-foreground mb-1">
+              <div className="mb-3 md:mb-4">
+                <h2 className="text-lg md:text-xl font-bold text-foreground mb-1">
                   3. Exportera
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Starta bearbetning av dina bilder
                 </p>
               </div>
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <ExportPanel onExport={handleExport} isProcessing={isProcessing} />
                 <LogoManager
                   logoUrl={logoUrl}
@@ -474,39 +474,39 @@ const Index = () => {
           {/* Results Section - Show processing and completed images */}
           {uploadedImages.some(img => img.status === 'processing' || img.status === 'completed') && (
             <section>
-              <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
+              <div className="mb-3 md:mb-4 flex items-center justify-between flex-wrap gap-2 md:gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-foreground mb-1">
+                  <h2 className="text-lg md:text-xl font-bold text-foreground mb-1">
                     4. Redigera och ladda ner
                   </h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     Klicka på bild för förhandsvisning, beskär om du vill, sedan ladda ner
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                   {selectedImageIds.size > 0 && (
                     <Button 
                       onClick={handleRegenerateSelected}
-                      className="gap-2"
+                      className="gap-2 flex-1 sm:flex-none text-xs md:text-sm h-9 md:h-10"
                       variant="outline"
                       disabled={isProcessing}
                     >
-                      <RefreshCw className="w-4 h-4" />
+                      <RefreshCw className="w-3 h-3 md:w-4 md:h-4" />
                       Regenerera ({selectedImageIds.size})
                     </Button>
                   )}
                   {uploadedImages.some(img => img.status === 'completed') && (
                     <Button 
                       onClick={handleDownloadAllWithLogo}
-                      className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+                      className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 flex-1 sm:flex-none text-xs md:text-sm h-9 md:h-10"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-3 h-3 md:w-4 md:h-4" />
                       Ladda ner alla
                     </Button>
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
                 {uploadedImages
                   .filter(img => img.status === 'processing' || img.status === 'completed')
                   .map((image) => (
@@ -614,7 +614,7 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Preview Dialog */}
+      {/* Preview Dialog with Gallery Navigation */}
       <Dialog open={!!previewImage} onOpenChange={(open) => {
         if (!open) {
           setPreviewImage(null);
@@ -622,60 +622,111 @@ const Index = () => {
         }
       }}>
         <DialogContent className="max-w-7xl w-full p-0 gap-0 bg-black">
-          <DialogClose className="absolute right-4 top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-background/90 backdrop-blur-sm p-2">
+          <DialogClose className="absolute right-2 top-2 md:right-4 md:top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-background/90 backdrop-blur-sm p-1.5 md:p-2">
             <X className="h-4 w-4" />
             <span className="sr-only">Stäng</span>
           </DialogClose>
-          {previewImage && (
-            <div className="relative w-full h-[90vh]">
-              <img
-                src={previewImage}
-                alt="Förhandsvisning"
-                className="w-full h-full object-contain"
-              />
-              {/* Action Buttons */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                <Button
-                  variant="secondary"
-                  className="gap-2 bg-background/90 backdrop-blur-sm hover:bg-background"
-                  onClick={() => {
-                    const currentImage = previewingImageId 
-                      ? uploadedImages.find(img => img.id === previewingImageId)
-                      : null;
-                    if (currentImage && currentImage.finalUrl) {
-                      setPreviewImage(null);
-                      setPreviewingImageId(null);
-                      setEditingImage({
-                        id: currentImage.id,
-                        finalUrl: currentImage.finalUrl,
-                        fileName: currentImage.file.name,
-                      });
-                    }
-                  }}
-                >
-                  <Crop className="w-4 h-4" />
-                  Beskär
-                </Button>
-                <Button
-                  className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-                  onClick={() => {
-                    const currentImage = previewingImageId
-                      ? uploadedImages.find(img => img.id === previewingImageId)
-                      : null;
-                    if (currentImage && previewImage) {
-                      handleDownload(
-                        previewImage,
-                        `${currentImage.file.name.split('.')[0]}-${currentImage.sceneId}.png`
-                      );
-                    }
-                  }}
-                >
-                  <Download className="w-4 h-4" />
-                  Ladda ner
-                </Button>
+          {previewImage && (() => {
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            const currentIndex = completedImages.findIndex(img => img.id === previewingImageId);
+            const hasPrevious = currentIndex > 0;
+            const hasNext = currentIndex < completedImages.length - 1;
+            
+            const navigateToImage = async (direction: 'prev' | 'next') => {
+              const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+              const newImage = completedImages[newIndex];
+              if (newImage) {
+                const imageUrl = newImage.croppedUrl || newImage.finalUrl;
+                if (imageUrl) {
+                  const withLogo = await applyLogoToImage(imageUrl);
+                  setPreviewImage(withLogo);
+                  setPreviewingImageId(newImage.id);
+                }
+              }
+            };
+
+            return (
+              <div className="relative w-full h-[90vh]">
+                <img
+                  src={previewImage}
+                  alt="Förhandsvisning"
+                  className="w-full h-full object-contain"
+                />
+                
+                {/* Navigation Arrows */}
+                {hasPrevious && (
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm hover:bg-background w-10 h-10 md:w-12 md:h-12 rounded-full"
+                    onClick={() => navigateToImage('prev')}
+                  >
+                    <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+                  </Button>
+                )}
+                
+                {hasNext && (
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur-sm hover:bg-background w-10 h-10 md:w-12 md:h-12 rounded-full"
+                    onClick={() => navigateToImage('next')}
+                  >
+                    <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+                  </Button>
+                )}
+
+                {/* Image Counter */}
+                <div className="absolute top-2 md:top-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                  <p className="text-xs md:text-sm font-medium text-foreground">
+                    {currentIndex + 1} / {completedImages.length}
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+                  <Button
+                    variant="secondary"
+                    className="gap-2 bg-background/90 backdrop-blur-sm hover:bg-background text-xs md:text-sm h-9 md:h-10 px-3 md:px-4"
+                    onClick={() => {
+                      const currentImage = previewingImageId 
+                        ? uploadedImages.find(img => img.id === previewingImageId)
+                        : null;
+                      if (currentImage && currentImage.finalUrl) {
+                        setPreviewImage(null);
+                        setPreviewingImageId(null);
+                        setEditingImage({
+                          id: currentImage.id,
+                          finalUrl: currentImage.finalUrl,
+                          fileName: currentImage.file.name,
+                        });
+                      }
+                    }}
+                  >
+                    <Crop className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Beskär</span>
+                  </Button>
+                  <Button
+                    className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs md:text-sm h-9 md:h-10 px-3 md:px-4"
+                    onClick={() => {
+                      const currentImage = previewingImageId
+                        ? uploadedImages.find(img => img.id === previewingImageId)
+                        : null;
+                      if (currentImage && previewImage) {
+                        handleDownload(
+                          previewImage,
+                          `${currentImage.file.name.split('.')[0]}-${currentImage.sceneId}.png`
+                        );
+                      }
+                    }}
+                  >
+                    <Download className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Ladda ner</span>
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
@@ -688,20 +739,20 @@ const Index = () => {
       />
 
       {/* Footer */}
-      <footer className="border-t border-border mt-20">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              © 2024 AutoScene Pro. Professionella bilbackgrunder för svenska marknaden.
+      <footer className="border-t border-border mt-12 md:mt-20">
+        <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
+            <p className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
+              © 2025 Reflekt. Professionella bilbackgrunder för svenska marknaden.
             </p>
-            <div className="flex gap-6">
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <div className="flex gap-4 md:gap-6">
+              <a href="#" className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Integritetspolicy
               </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a href="#" className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Användarvillkor
               </a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a href="#" className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Kontakt
               </a>
             </div>

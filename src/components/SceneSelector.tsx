@@ -82,52 +82,56 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">
+    <div className="space-y-4 md:space-y-6">
+      <div className="px-1">
+        <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">
           Välj scen
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm md:text-base text-muted-foreground">
           Varje scen har optimerade inställningar för position, skugga och reflektion
         </p>
       </div>
 
       <Tabs defaultValue={categories[0]} className="w-full">
-        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}>
+        <TabsList className="grid w-full overflow-x-auto" style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}>
           {categories.map((category) => (
-            <TabsTrigger key={category} value={category}>
+            <TabsTrigger 
+              key={category} 
+              value={category}
+              className="text-xs md:text-sm whitespace-nowrap"
+            >
               {CATEGORY_LABELS[category] || category}
             </TabsTrigger>
           ))}
         </TabsList>
         {categories.map((category) => (
-          <TabsContent key={category} value={category}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <TabsContent key={category} value={category} className="mt-4 md:mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               {getScenesByCategory(category).map((scene) => (
                 <Card
                   key={scene.id}
                   className={`cursor-pointer transition-all overflow-hidden group ${
                     selectedSceneId === scene.id
-                      ? 'ring-2 ring-primary shadow-premium'
-                      : 'hover:shadow-card hover:scale-[1.02]'
+                      ? 'ring-2 ring-primary shadow-elegant'
+                      : 'hover:shadow-card hover:-translate-y-1'
                   }`}
                   onClick={() => onSceneSelect(scene)}
                 >
-                  <div className="relative aspect-video">
+                  <div className="relative aspect-[4/3]">
                     <img
                       src={scene.thumbnailUrl}
                       alt={scene.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     />
                     {selectedSceneId === scene.id && (
-                      <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-premium">
-                        <Check className="w-5 h-5 text-primary-foreground" />
+                      <div className="absolute top-2 right-2 md:top-3 md:right-3 w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary flex items-center justify-center shadow-elegant animate-scale-in">
+                        <Check className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h4 className="text-white font-semibold mb-1">{scene.name}</h4>
-                      <p className="text-white/80 text-xs">{scene.description}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4">
+                      <h4 className="text-white font-semibold text-sm md:text-base mb-0.5 md:mb-1">{scene.name}</h4>
+                      <p className="text-white/80 text-xs line-clamp-2">{scene.description}</p>
                     </div>
                   </div>
                 </Card>
@@ -138,12 +142,12 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
       </Tabs>
 
       {selectedSceneId && (
-        <Card className="p-4 bg-primary/5 border-primary/20">
-          <div className="flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+        <Card className="p-3 md:p-4 bg-primary/5 border-primary/20 animate-fade-in">
+          <div className="flex items-start gap-2 md:gap-3">
+            <div className="w-2 h-2 rounded-full bg-primary mt-1.5 md:mt-2 flex-shrink-0" />
             <div>
-              <h4 className="font-medium text-foreground mb-1">Scen vald</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="font-medium text-foreground mb-1 text-sm md:text-base">Scen vald</h4>
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Alla bilder kommer att placeras konsekvent enligt scenens inställningar
               </p>
             </div>
