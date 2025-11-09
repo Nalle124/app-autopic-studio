@@ -35,6 +35,14 @@ export const Header = () => {
           </div>
           
           <nav className="flex items-center gap-6">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/exempel')}
+              className="text-sm font-medium"
+            >
+              Se exempel
+            </Button>
+            
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import SetupScenes from "./pages/SetupScenes";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import Examples from "./pages/Examples";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -25,6 +26,7 @@ function App() {
           <Sonner />
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/exempel" element={<Examples />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/setup-scenes" element={<ProtectedRoute><SetupScenes /></ProtectedRoute>} />
