@@ -9,14 +9,36 @@ const UploadSceneImages = () => {
   const [uploading, setUploading] = useState(false);
 
   const uploadSceneImage = async (sceneId: string, localPath: string) => {
-    const fullUrl = `${window.location.origin}${localPath}`;
+    // Fetch the image as a blob from the public folder
+    const response = await fetch(localPath);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image from ${localPath}`);
+    }
     
-    const { data, error } = await supabase.functions.invoke('upload-scene-images', {
-      body: { imageUrl: fullUrl, sceneId }
-    });
+    const blob = await response.blob();
+    const fileExt = localPath.split('.').pop();
+    const fileName = `${sceneId}.${fileExt}`;
+    const filePath = `scenes/${fileName}`;
+
+    console.log('Uploading to Storage:', filePath);
+
+    // Upload directly to Supabase Storage from client
+    const { data, error } = await supabase.storage
+      .from('processed-cars')
+      .upload(filePath, blob, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: blob.type
+      });
 
     if (error) throw error;
-    return data.publicUrl;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('processed-cars')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
   };
 
   const handleUploadAll = async () => {
