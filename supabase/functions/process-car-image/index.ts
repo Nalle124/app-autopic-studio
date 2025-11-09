@@ -93,12 +93,13 @@ serve(async (req) => {
     photoroomFormData.append('background.guidance.scale', '1.0');
     photoroomFormData.append('background.guidance.strength', '1.0');
     
-    // CRITICAL: When using guidance image, the prompt should reinforce using that exact background
-    // NOT describe a new scene (which would make AI generate something random)
+    // CRITICAL: Be very specific about indoor placement to avoid rooftop placement
     photoroomFormData.append('background.prompt', 
-      'Place the vehicle in the exact background scene shown in the reference image. ' +
-      'Maintain all lighting, perspective, and environmental details from the reference. ' +
-      'Do not generate a new background - use the reference image exactly as provided.'
+      'Place the vehicle INSIDE the interior space shown in the reference image. ' +
+      'The vehicle must be positioned ON THE FLOOR inside this indoor environment. ' +
+      'Maintain the exact interior walls, ceiling, lighting, and doors from the reference. ' +
+      'This is an indoor scene - the vehicle should be parked inside the building, not on top of it. ' +
+      'Match the perspective and scale to fit naturally inside the interior space.'
     );
     console.log('Using reference image:', backgroundImageUrl);
     
