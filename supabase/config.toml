@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.auto-crop-image]
 verify_jwt = false
+
+[functions.upload-scene-images]
+verify_jwt = false

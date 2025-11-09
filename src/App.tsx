@@ -11,6 +11,7 @@ import AdminScenes from "./pages/AdminScenes";
 import Examples from "./pages/Examples";
 import { Profile } from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import UploadSceneImages from "./pages/UploadSceneImages";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +35,7 @@ function App() {
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/admin/scener" element={<ProtectedRoute><AdminScenes /></ProtectedRoute>} />
             <Route path="/setup-scenes" element={<ProtectedRoute><SetupScenes /></ProtectedRoute>} />
+            <Route path="/upload-scenes" element={<ProtectedRoute><UploadSceneImages /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
