@@ -35,6 +35,14 @@ const Index = () => {
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
     toast.success(`Scen "${scene.name}" vald`);
+    
+    // Auto-scroll to export section after scene selection
+    setTimeout(() => {
+      const exportSection = document.getElementById('export-section');
+      if (exportSection) {
+        exportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 300);
   };
 
   const handleExport = async (settings: ExportSettings) => {
@@ -423,7 +431,7 @@ const Index = () => {
 
           {/* Scene Selection */}
           {uploadedImages.length > 0 && (
-            <section>
+            <section id="scene-section">
               <div className="mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-bold text-foreground mb-1">
                   2. Välj bakgrund
@@ -441,13 +449,13 @@ const Index = () => {
 
           {/* Export Panel */}
           {uploadedImages.length > 0 && selectedScene && (
-            <section>
+            <section id="export-section">
               <div className="mb-3 md:mb-4">
                 <h2 className="text-lg md:text-xl font-bold text-foreground mb-1">
-                  3. Exportera
+                  3. Generera
                 </h2>
                 <p className="text-xs md:text-sm text-muted-foreground">
-                  Starta bearbetning av dina bilder
+                  Starta AI-bearbetning av dina bilder
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">

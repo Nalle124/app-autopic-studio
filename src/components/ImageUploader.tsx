@@ -41,6 +41,14 @@ export const ImageUploader = ({ onImagesUploaded, onClearAll }: ImageUploaderPro
     setUploadedImages((prev) => [...prev, ...newImages]);
     onImagesUploaded(newImages);
     toast.success(`${acceptedFiles.length} bilder uppladdade`);
+    
+    // Auto-scroll to scene selector after upload
+    setTimeout(() => {
+      const sceneSection = document.getElementById('scene-section');
+      if (sceneSection) {
+        sceneSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 300);
   }, [onImagesUploaded, user, navigate]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

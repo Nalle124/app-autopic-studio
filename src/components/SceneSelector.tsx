@@ -1,159 +1,250 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
-import { Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Check, Star } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface SceneSelectorProps {
   selectedSceneId: string | null;
   onSceneSelect: (scene: SceneMetadata) => void;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  studio: 'Studio',
-  utomhus: 'Utomhus',
-  stad: 'Stad',
-  landsbygd: 'Landsbygd',
-  fancy: 'Fancy',
-  himmel: 'Himmel',
+// Category descriptions
+const categoryDescriptions: Record<string, string> = {
+  'studio': 'Professionella studiolösningar',
+  'utomhus': 'Anpassat för Skandinavien',
+  'stad': 'Urban karaktär',
+  'landsbygd': 'Naturnära miljöer',
+  'fancy': 'Exklusiva designlösningar',
+  'himmel': 'Luftiga perspektiv'
+};
+
+// Category gradients
+const categoryGradients: Record<string, string> = {
+  'studio': 'from-slate-500/20 via-gray-400/10 to-zinc-300/5',
+  'utomhus': 'from-blue-500/20 via-cyan-400/10 to-sky-300/5',
+  'stad': 'from-orange-500/20 via-amber-400/10 to-yellow-300/5',
+  'landsbygd': 'from-green-500/20 via-emerald-400/10 to-teal-300/5',
+  'fancy': 'from-violet-500/20 via-purple-400/10 to-indigo-300/5',
+  'himmel': 'from-blue-400/20 via-sky-300/10 to-cyan-200/5'
 };
 
 export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorProps) => {
   const [scenes, setScenes] = useState<SceneMetadata[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadScenes();
+    loadFavorites();
   }, []);
+
+  const loadFavorites = () => {
+    try {
+      const saved = localStorage.getItem('favorite-scenes');
+      if (saved) {
+        setFavorites(new Set(JSON.parse(saved)));
+      }
+    } catch (error) {
+      console.error('Failed to load favorites:', error);
+    }
+  };
+
+  const saveFavorites = (newFavorites: Set<string>) => {
+    try {
+      localStorage.setItem('favorite-scenes', JSON.stringify(Array.from(newFavorites)));
+      setFavorites(newFavorites);
+    } catch (error) {
+      console.error('Failed to save favorites:', error);
+    }
+  };
+
+  const toggleFavorite = (sceneId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(sceneId)) {
+      newFavorites.delete(sceneId);
+      toast.success('Borttagen från favoriter');
+    } else {
+      newFavorites.add(sceneId);
+      toast.success('Tillagd i favoriter');
+    }
+    saveFavorites(newFavorites);
+  };
 
   const loadScenes = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('scenes')
         .select('*')
         .order('sort_order');
-      
+
       if (error) throw error;
-      
-      const sceneMetadata: SceneMetadata[] = (data || []).map(scene => ({
+
+      const scenesData = data.map((scene) => ({
         id: scene.id,
         name: scene.name,
         description: scene.description,
+        category: scene.category,
         thumbnailUrl: scene.thumbnail_url,
         fullResUrl: scene.full_res_url,
-        horizonY: scene.horizon_y,
-        baselineY: scene.baseline_y,
-        defaultScale: scene.default_scale,
+        horizonY: Number(scene.horizon_y),
+        baselineY: Number(scene.baseline_y),
+        defaultScale: Number(scene.default_scale),
         shadowPreset: {
           enabled: scene.shadow_enabled,
-          strength: scene.shadow_strength,
-          blur: scene.shadow_blur,
-          offsetX: scene.shadow_offset_x,
-          offsetY: scene.shadow_offset_y,
+          strength: Number(scene.shadow_strength),
+          blur: Number(scene.shadow_blur),
+          offsetX: Number(scene.shadow_offset_x),
+          offsetY: Number(scene.shadow_offset_y),
         },
         reflectionPreset: {
           enabled: scene.reflection_enabled,
-          opacity: scene.reflection_opacity,
-          fade: scene.reflection_fade,
+          opacity: Number(scene.reflection_opacity),
+          fade: Number(scene.reflection_fade),
         },
         aiPrompt: scene.ai_prompt || undefined,
-        category: scene.category,
       }));
 
-      setScenes(sceneMetadata);
-      
-      const uniqueCategories = Array.from(new Set(sceneMetadata.map(s => s.category || 'studio')));
-      setCategories(uniqueCategories);
+      setScenes(scenesData);
+
+      // Extract unique categories
+      const uniqueCategories = Array.from(new Set(scenesData.map((s) => s.category)));
+      setCategories(['favorites', ...uniqueCategories]);
     } catch (error) {
       console.error('Error loading scenes:', error);
+      toast.error('Kunde inte ladda scener');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const getScenesByCategory = (category: string) => {
-    return scenes.filter(s => (s.category || 'studio') === category);
+    if (category === 'favorites') {
+      return scenes.filter(scene => favorites.has(scene.id));
+    }
+    return scenes.filter((scene) => scene.category === category);
   };
 
-  if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Laddar scener...</div>;
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Laddar scener...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="px-1">
-        <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">
-          Välj scen
-        </h3>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Varje scen har optimerade inställningar för position, skugga och reflektion
-        </p>
-      </div>
-
-      <Tabs defaultValue={categories[0]} className="w-full">
-        <TabsList className="grid w-full overflow-x-auto" style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}>
-          {categories.map((category) => (
-            <TabsTrigger 
-              key={category} 
-              value={category}
-              className="text-xs md:text-sm whitespace-nowrap"
-            >
-              {CATEGORY_LABELS[category] || category}
-            </TabsTrigger>
-          ))}
+    <div className="space-y-4">
+      <Tabs defaultValue={favorites.size > 0 ? "favorites" : categories[1]} className="w-full">
+        <TabsList className="w-full flex-wrap h-auto gap-2 bg-muted/50 p-2">
+          {categories.map((category) => {
+            const categoryScenes = getScenesByCategory(category);
+            if (category !== 'favorites' && categoryScenes.length === 0) return null;
+            if (category === 'favorites' && favorites.size === 0) return null;
+            
+            return (
+              <TabsTrigger
+                key={category}
+                value={category}
+                className="capitalize text-xs md:text-sm px-3 md:px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                {category === 'favorites' ? (
+                  <span className="flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    Favoriter
+                  </span>
+                ) : (
+                  category
+                )}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
-        {categories.map((category) => (
-          <TabsContent key={category} value={category} className="mt-4 md:mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-              {getScenesByCategory(category).map((scene) => (
-                <Card
-                  key={scene.id}
-                  className={`cursor-pointer transition-all overflow-hidden group ${
-                    selectedSceneId === scene.id
-                      ? 'ring-2 ring-primary shadow-elegant'
-                      : 'hover:shadow-card hover:-translate-y-1'
-                  }`}
-                  onClick={() => onSceneSelect(scene)}
-                >
-                  <div className="relative aspect-[4/3]">
-                    <img
-                      src={scene.thumbnailUrl}
-                      alt={scene.name}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
-                    {selectedSceneId === scene.id && (
-                      <div className="absolute top-2 right-2 md:top-3 md:right-3 w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary flex items-center justify-center shadow-elegant animate-scale-in">
-                        <Check className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4">
-                      <h4 className="text-white font-semibold text-sm md:text-base mb-0.5 md:mb-1">{scene.name}</h4>
-                      <p className="text-white/80 text-xs line-clamp-2">{scene.description}</p>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
 
-      {selectedSceneId && (
-        <Card className="p-3 md:p-4 bg-primary/5 border-primary/20 animate-fade-in">
-          <div className="flex items-start gap-2 md:gap-3">
-            <div className="w-2 h-2 rounded-full bg-primary mt-1.5 md:mt-2 flex-shrink-0" />
-            <div>
-              <h4 className="font-medium text-foreground mb-1 text-sm md:text-base">Scen vald</h4>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                Alla bilder kommer att placeras konsekvent enligt scenens inställningar
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
+        {categories.map((category) => {
+          const categoryScenes = getScenesByCategory(category);
+          if (category !== 'favorites' && categoryScenes.length === 0) return null;
+          if (category === 'favorites' && favorites.size === 0) return null;
+
+          return (
+            <TabsContent key={category} value={category} className="mt-6">
+              {category !== 'favorites' && categoryDescriptions[category] && (
+                <p className="text-xs text-muted-foreground mb-4 text-center">
+                  {categoryDescriptions[category]}
+                </p>
+              )}
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {categoryScenes.map((scene) => (
+                  <Card
+                    key={scene.id}
+                    onClick={() => onSceneSelect(scene)}
+                    className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                      selectedSceneId === scene.id
+                        ? 'ring-2 ring-primary shadow-lg shadow-primary/20'
+                        : 'hover:shadow-elegant'
+                    }`}
+                  >
+                    {/* Gradient overlay */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${categoryGradients[scene.category] || categoryGradients.studio} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+                    
+                    {/* Favorite button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
+                      onClick={(e) => toggleFavorite(scene.id, e)}
+                    >
+                      <Star
+                        className={`w-4 h-4 transition-colors ${
+                          favorites.has(scene.id)
+                            ? 'fill-primary text-primary'
+                            : 'text-muted-foreground'
+                        }`}
+                      />
+                    </Button>
+
+                    {/* Image */}
+                    <div className="relative aspect-[4/3] overflow-hidden">
+                      <img
+                        src={scene.thumbnailUrl}
+                        alt={scene.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      
+                      {/* Selected indicator */}
+                      {selectedSceneId === scene.id && (
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg animate-scale-in">
+                            <Check className="w-6 h-6 text-primary-foreground" strokeWidth={3} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4 relative">
+                      <h3 className="font-semibold text-sm text-foreground mb-1 truncate">
+                        {scene.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {scene.description}
+                      </p>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          );
+        })}
+      </Tabs>
     </div>
   );
 };
