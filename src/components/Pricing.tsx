@@ -1,147 +1,128 @@
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const pricingTiers = [
-  {
-    name: "Prova",
-    price: "49",
-    period: "engångsköp",
-    description: "Perfekt för att testa Reflekt",
-    credits: "30 bilder",
-    features: [
-      "30 AI-bearbetade bilder",
-      "Alla 30+ premium scener",
-      "Egen logotyp",
-      "Smart beskärning",
-      "HD-kvalitet export",
-    ],
-    cta: "Kom igång",
-    popular: false,
-  },
-  {
-    name: "Månadsplan",
-    price: "199",
-    period: "per månad",
-    description: "Bäst för aktiva bilhandlare",
-    credits: "100 bilder/mån",
-    extraPrice: "1.5 kr/bild därefter",
-    features: [
-      "100 bilder per månad",
-      "Alla premium scener",
-      "Batch-bearbetning",
-      "Egen logotyp",
-      "Prioriterad support",
-      "Extra bilder för 1.5 kr/st",
-    ],
-    cta: "Välj månadsplan",
-    popular: true,
-  },
-  {
-    name: "Företag",
-    price: "499",
-    period: "per månad",
-    description: "För stora volymer och kedjeföretag",
-    credits: "300 bilder/mån",
-    extraPrice: "Anpassat pris därefter",
-    features: [
-      "300 bilder per månad",
-      "Alla premium scener",
-      "Obegränsad batch-bearbetning",
-      "Flera logotyper",
-      "Prioriterad support",
-      "Anpassade scener (tillval)",
-      "Dedikerad account manager",
-    ],
-    cta: "Kontakta oss",
-    popular: false,
-  },
-];
 
 export const Pricing = () => {
   const navigate = useNavigate();
 
+  const tiers = [
+    {
+      name: "Enstaka",
+      price: "49",
+      period: "engångsköp",
+      description: "Perfekt för att testa",
+      features: [
+        "30 bilder",
+        "Alla scener",
+        "Logo på bilder",
+        "Högupplösta filer",
+        "Ingen bindningstid",
+      ],
+      cta: "Kom igång",
+      popular: false,
+    },
+    {
+      name: "Starter",
+      price: "199",
+      period: "/månad",
+      description: "För mindre bilhandlare",
+      features: [
+        "100 bilder/månad",
+        "Alla scener",
+        "Logo på bilder",
+        "Högupplösta filer",
+        "Därefter 1.5 kr/bild",
+      ],
+      cta: "Välj Starter",
+      popular: true,
+    },
+    {
+      name: "Professional",
+      price: "499",
+      period: "/månad",
+      description: "För aktiva bilhandlare",
+      features: [
+        "300 bilder/månad",
+        "Alla scener",
+        "Logo på bilder",
+        "Högupplösta filer",
+        "Anpassat därefter",
+      ],
+      cta: "Välj Professional",
+      popular: false,
+    },
+  ];
+
   return (
-    <section className="py-24 px-6 relative overflow-hidden">
-      {/* Background gradient orbs */}
-      <div className="absolute top-1/2 left-0 w-96 h-96 bg-accent-pink/10 rounded-full blur-3xl" />
-      <div className="absolute top-1/2 right-0 w-96 h-96 bg-accent-blue/10 rounded-full blur-3xl" />
-      
-      <div className="container mx-auto max-w-7xl relative z-10">
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground">
-            Enkel och transparent prissättning
+    <section className="py-20 px-6 bg-muted/30">
+      <div className="container mx-auto max-w-6xl">
+        <div className="text-center mb-12 space-y-3">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground font-heading">
+            Transparenta priser
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Välj den plan som passar dina behov. Alla planer inkluderar full tillgång till alla funktioner.
+            Betala bara för det du använder
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {pricingTiers.map((tier, index) => (
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {tiers.map((tier, index) => (
             <Card 
-              key={index}
-              className={`p-8 relative ${
+              key={index} 
+              className={`p-6 relative overflow-hidden transition-all ${
                 tier.popular 
-                  ? 'border-primary shadow-glow scale-105' 
-                  : 'border-border/50'
-              } bg-card/50 backdrop-blur-sm hover-scale`}
+                  ? 'border-2 border-primary shadow-elegant' 
+                  : 'hover:shadow-card hover:-translate-y-1'
+              }`}
             >
               {tier.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-primary to-accent-orange px-4 py-1 rounded-full text-sm font-medium text-white shadow-elegant">
-                    Populärast
-                  </span>
+                <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-lg">
+                  Populärast
                 </div>
               )}
+              
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-foreground mb-1">{tier.name}</h3>
+                <p className="text-sm text-muted-foreground">{tier.description}</p>
+              </div>
 
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-2xl font-bold text-foreground mb-2">{tier.name}</h3>
-                  <p className="text-sm text-muted-foreground">{tier.description}</p>
-                </div>
-
-                <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold text-foreground">{tier.price}</span>
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-foreground">{tier.price}</span>
                   <span className="text-muted-foreground">kr</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{tier.period}</p>
-
-                <div className="space-y-2">
-                  <p className="font-medium text-foreground">{tier.credits}</p>
-                  {tier.extraPrice && (
-                    <p className="text-sm text-muted-foreground">{tier.extraPrice}</p>
-                  )}
-                </div>
-
-                <Button 
-                  className={`w-full ${
-                    tier.popular 
-                      ? 'bg-gradient-to-r from-primary to-accent-orange hover:shadow-glow' 
-                      : ''
-                  }`}
-                  variant={tier.popular ? 'default' : 'outline'}
-                  onClick={() => navigate('/auth')}
-                >
-                  {tier.cta}
-                </Button>
-
-                <div className="space-y-3 pt-6 border-t border-border">
-                  {tier.features.map((feature, featureIndex) => (
-                    <div key={featureIndex} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-muted-foreground">{feature}</span>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-sm text-muted-foreground mt-1">{tier.period}</p>
               </div>
+
+              <Button 
+                className={`w-full mb-6 ${
+                  tier.popular 
+                    ? 'bg-primary hover:bg-primary/90 shadow-glow' 
+                    : ''
+                }`}
+                variant={tier.popular ? 'default' : 'outline'}
+                onClick={() => navigate('/auth')}
+              >
+                {tier.cta}
+              </Button>
+
+              <ul className="space-y-2.5">
+                {tier.features.map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-start gap-2">
+                    <div className="w-5 h-5 rounded-full bg-accent-blue/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="w-3 h-3 text-accent-blue" />
+                    </div>
+                    <span className="text-sm text-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
             </Card>
           ))}
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-12">
-          Alla priser är exklusive moms. Betalning via kort eller faktura. Ingen bindningstid.
+        <p className="text-center text-sm text-muted-foreground mt-8">
+          Alla priser är exklusive moms. Ingen bindningstid.
         </p>
       </div>
     </section>

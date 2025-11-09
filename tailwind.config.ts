@@ -42,9 +42,6 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-          purple: "hsl(var(--accent-purple))",
-          pink: "hsl(var(--accent-pink))",
-          orange: "hsl(var(--accent-orange))",
           blue: "hsl(var(--accent-blue))",
         },
         popover: {
@@ -55,19 +52,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        chart: {
-          "1": "hsl(var(--chart-1))",
-          "2": "hsl(var(--chart-2))",
-          "3": "hsl(var(--chart-3))",
-          "4": "hsl(var(--chart-4))",
-          "5": "hsl(var(--chart-5))",
-        },
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-primary": "var(--gradient-primary)",
-        "gradient-hero": "var(--gradient-hero)",
-        "gradient-accent": "var(--gradient-accent)",
+        "gradient-glass": "var(--gradient-glass)",
         "gradient-subtle": "var(--gradient-subtle)",
       },
       boxShadow: {

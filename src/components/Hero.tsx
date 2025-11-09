@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,37 +21,34 @@ export const Hero = () => {
   };
 
   return (
-    <section className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-accent-purple/5 via-accent-pink/5 to-accent-orange/5">
-      {/* Gradient orbs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent-purple/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent-orange/10 rounded-full blur-3xl" />
+    <section className="relative py-20 px-6 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-subtle -z-10" />
       
       <div className="container mx-auto max-w-7xl relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left: Text Content */}
           <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
-              <Wand2 className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground">AI-driven bakgrundsbearbetning</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent-blue/10 border border-accent-blue/20 rounded-full">
+              <Sparkles className="w-4 h-4 text-accent-blue" />
+              <span className="text-sm font-medium text-foreground">AI-driven transformation</span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold text-foreground leading-tight">
-              Proffsiga bilannonser
-              <span className="block bg-gradient-to-r from-primary via-accent-orange to-accent-pink bg-clip-text text-transparent mt-2">
+            <h1 className="text-5xl md:text-7xl font-bold text-foreground leading-tight font-heading">
+              Professionella bilbilder
+              <span className="block bg-gradient-primary bg-clip-text text-transparent mt-2">
                 på sekunder
               </span>
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-xl">
               Automatisk bakgrundsbyte och perfekt placering med AI. 
-              Ingen erfarenhet krävs - ladda upp, välj scen, exportera.
+              Ingen erfarenhet krävs.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button 
                 size="lg" 
                 onClick={handleGetStarted}
-                className="bg-gradient-to-r from-primary to-accent-orange hover:shadow-glow transition-all"
+                className="bg-primary hover:bg-primary/90 shadow-glow h-14"
               >
                 Kom igång nu
                 <ArrowRight className="ml-2 w-5 h-5" />
@@ -60,7 +57,7 @@ export const Hero = () => {
                 size="lg" 
                 variant="outline" 
                 onClick={() => navigate('/exempel')}
-                className="border-primary/20 hover:bg-primary/5"
+                className="border-2 h-14"
               >
                 Se exempel
               </Button>
@@ -69,11 +66,11 @@ export const Hero = () => {
             <div className="flex items-center gap-8 pt-6 text-sm text-muted-foreground">
               <div>
                 <span className="text-2xl font-bold text-foreground">30+</span>
-                <p>Professionella scener</p>
+                <p>Scener</p>
               </div>
               <div>
-                <span className="text-2xl font-bold text-foreground">~3 sek</span>
-                <p>Bearbetningstid</p>
+                <span className="text-2xl font-bold text-foreground">2s</span>
+                <p>Per bild</p>
               </div>
               <div>
                 <span className="text-2xl font-bold text-foreground">100%</span>
@@ -82,18 +79,15 @@ export const Hero = () => {
             </div>
           </div>
 
-          {/* Right: Interactive Before/After Slider */}
           <div className="relative">
-            <Card className="overflow-hidden shadow-card border-primary/10 bg-card/50 backdrop-blur-sm">
+            <Card className="overflow-hidden shadow-elegant border">
               <div className="relative aspect-[4/3] select-none">
-                {/* After image (full) */}
                 <img 
                   src={fordAfter} 
                   alt="Efter bearbetning" 
                   className="absolute inset-0 w-full h-full object-cover" 
                 />
                 
-                {/* Before image (clipped) */}
                 <div 
                   className="absolute inset-0 overflow-hidden"
                   style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
@@ -105,7 +99,6 @@ export const Hero = () => {
                   />
                 </div>
                 
-                {/* Slider line */}
                 <div 
                   className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg cursor-ew-resize"
                   style={{ left: `${sliderPosition}%` }}
@@ -133,12 +126,11 @@ export const Hero = () => {
                   </div>
                 </div>
                 
-                {/* Labels */}
                 <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-full">
                   <p className="text-xs font-medium text-white">Före</p>
                 </div>
-                <div className="absolute bottom-4 right-4 bg-gradient-to-r from-primary to-accent-orange backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <p className="text-xs font-medium text-white">Efter</p>
+                <div className="absolute bottom-4 right-4 bg-primary backdrop-blur-sm px-3 py-1.5 rounded-full">
+                  <p className="text-xs font-medium text-primary-foreground">Efter</p>
                 </div>
               </div>
             </Card>

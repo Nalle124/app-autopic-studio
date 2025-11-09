@@ -1,78 +1,57 @@
 import { Card } from "@/components/ui/card";
-import { Wand2, Upload, Palette, Download, Sparkles, Layers } from "lucide-react";
-
-const features = [
-  {
-    icon: Wand2,
-    title: "AI-driven bearbetning",
-    description: "Avancerad AI placerar din bil perfekt i nya professionella miljöer automatiskt.",
-    gradient: "from-accent-purple to-accent-pink",
-  },
-  {
-    icon: Upload,
-    title: "Batch-bearbetning",
-    description: "Ladda upp flera bilder samtidigt och bearbeta dem i ett svep. Spara timmar av arbete.",
-    gradient: "from-accent-pink to-accent-orange",
-  },
-  {
-    icon: Palette,
-    title: "30+ Premium scener",
-    description: "Välj mellan studio, utomhus, showroom och fler professionella bakgrunder.",
-    gradient: "from-accent-orange to-primary",
-  },
-  {
-    icon: Layers,
-    title: "Egen logotyp",
-    description: "Lägg till din dealerships logotyp direkt på bilderna. Perfekt för social media.",
-    gradient: "from-primary to-accent-blue",
-  },
-  {
-    icon: Sparkles,
-    title: "Smart beskärning",
-    description: "Justera bildformat och beskär perfekt för olika plattformar och annonser.",
-    gradient: "from-accent-blue to-accent-purple",
-  },
-  {
-    icon: Download,
-    title: "Snabb export",
-    description: "Ladda ner högupplösta bilder redo för publicering på webben eller i tryck.",
-    gradient: "from-accent-purple to-accent-pink",
-  },
-];
+import { Sparkles, Image as ImageIcon, Zap, Shield } from "lucide-react";
 
 export const Features = () => {
+  const features = [
+    {
+      icon: <Sparkles className="w-8 h-8" />,
+      title: "AI-Driven Precision",
+      description: "Vår AI identifierar automatiskt bilen och placerar den perfekt i varje scen",
+    },
+    {
+      icon: <ImageIcon className="w-8 h-8" />,
+      title: "Professionella Scener",
+      description: "Välj från kurerade studiomiljöer designade för bilhandlare",
+    },
+    {
+      icon: <Zap className="w-8 h-8" />,
+      title: "Blixtsnabb Process",
+      description: "Ladda upp 30 bilder, välj scen, och få professionella resultat på 2 sekunder per bild",
+    },
+    {
+      icon: <Shield className="w-8 h-8" />,
+      title: "Din Branding",
+      description: "Lägg automatiskt till din logo på alla bilder för konsekvent varumärkesbyggande",
+    },
+  ];
+
   return (
-    <section className="py-24 px-6 bg-gradient-subtle">
-      <div className="container mx-auto max-w-7xl">
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground">
-            Allt du behöver för proffsiga bilannonser
+    <section className="py-20 px-6">
+      <div className="container mx-auto max-w-6xl">
+        <div className="text-center mb-12 space-y-3">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground font-heading">
+            Kraftfullt och enkelt
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Kraftfulla funktioner som gör bilredigering snabbt, enkelt och professionellt.
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Allt du behöver för professionella bilannonser
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <Card 
-                key={index} 
-                className="p-8 hover:shadow-card transition-all duration-300 border-border/50 bg-card/50 backdrop-blur-sm hover-scale"
-              >
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-elegant`}>
-                  <Icon className="w-7 h-7 text-white" />
+        <div className="grid md:grid-cols-2 gap-6">
+          {features.map((feature, index) => (
+            <Card 
+              key={index} 
+              className="p-8 hover:shadow-elegant transition-all hover:-translate-y-1 bg-card/50 backdrop-blur-sm border"
+            >
+              <div className="w-14 h-14 rounded-xl bg-accent-blue/10 flex items-center justify-center mb-4">
+                <div className="text-accent-blue">
+                  {feature.icon}
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-3">
-                  {feature.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
-              </Card>
-            );
-          })}
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-foreground">{feature.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+            </Card>
+          ))}
         </div>
       </div>
     </section>
