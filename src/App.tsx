@@ -8,6 +8,7 @@ import SetupScenes from "./pages/SetupScenes";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import Examples from "./pages/Examples";
+import { Profile } from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -28,6 +29,7 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/exempel" element={<Examples />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/setup-scenes" element={<ProtectedRoute><SetupScenes /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

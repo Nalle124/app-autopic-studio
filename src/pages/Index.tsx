@@ -191,13 +191,12 @@ const Index = () => {
 
     const imagesToRegenerate = uploadedImages.filter(img => selectedImageIds.has(img.id));
     setIsProcessing(true);
-    setSelectedImageIds(new Set()); // Clear selection
-    toast.success(`Regenererar ${imagesToRegenerate.length} bilder...`);
+    setSelectedImageIds(new Set());
+    toast.success(`Regenererar ${imagesToRegenerate.length} bilder med "${selectedScene.name}"...`);
 
     let successCount = 0;
     let errorCount = 0;
 
-    // Process in batches of 3
     const batchSize = 3;
     for (let i = 0; i < imagesToRegenerate.length; i += batchSize) {
       const batch = imagesToRegenerate.slice(i, i + batchSize);
@@ -205,9 +204,14 @@ const Index = () => {
       await Promise.all(
         batch.map(async (image) => {
           try {
-            // Reset to processing status
             setUploadedImages(prev => 
-              prev.map(img => img.id === image.id ? { ...img, status: 'processing' as const } : img)
+              prev.map(img => img.id === image.id ? { 
+                ...img, 
+                status: 'processing' as const,
+                finalUrl: undefined,
+                croppedUrl: undefined,
+                sceneId: undefined
+              } : img)
             );
 
             const formData = new FormData();
@@ -243,7 +247,6 @@ const Index = () => {
                         status: 'completed' as const,
                         finalUrl: result.finalUrl,
                         sceneId: selectedScene.id,
-                        croppedUrl: undefined, // Clear any previous crop when regenerating
                       }
                     : img
                 )
@@ -271,7 +274,7 @@ const Index = () => {
     setIsProcessing(false);
 
     if (successCount > 0) {
-      toast.success(`${successCount} bilder regenererade!`);
+      toast.success(`${successCount} bilder regenererade med "${selectedScene.name}"!`);
     }
     if (errorCount > 0) {
       toast.error(`${errorCount} bilder misslyckades`);

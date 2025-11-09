@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Upload, Image as ImageIcon, ChevronDown, Maximize2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Select,
   SelectContent,
@@ -34,6 +36,31 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled, 
   const [isDragging, setIsDragging] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.id && !logoUrl) {
+      loadProfileLogos();
+    }
+  }, [user]);
+
+  const loadProfileLogos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('logo_light, logo_dark')
+        .eq('id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data?.logo_light) {
+        onLogoChange(data.logo_light, logoPosition, logoEnabled, logoSize);
+      }
+    } catch (error) {
+      console.error('Error loading profile logos:', error);
+    }
+  };
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
