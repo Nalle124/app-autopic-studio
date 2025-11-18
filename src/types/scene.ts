@@ -37,6 +37,13 @@ export interface CarAnalysis {
   perspectiveNotes?: string;
 }
 
+export interface CarAdjustments {
+  brightness: number; // -100 to 100
+  contrast: number; // -100 to 100
+  warmth: number; // -100 to 100 (temperature)
+  shadows: number; // -100 to 100 (crush blacks)
+}
+
 export interface UploadedImage {
   id: string;
   file: File;
@@ -47,6 +54,7 @@ export interface UploadedImage {
   croppedUrl?: string;
   sceneId?: string;
   carAnalysis?: CarAnalysis;
+  carAdjustments?: CarAdjustments;
 }
 
 export interface ExportSettings {

@@ -4,15 +4,17 @@ import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
+import { CarAdjustmentPanel } from '@/components/CarAdjustmentPanel';
 import { LogoManager, LogoPosition } from '@/components/LogoManager';
-import { UploadedImage, SceneMetadata, ExportSettings } from '@/types/scene';
+import { UploadedImage, SceneMetadata, ExportSettings, CarAdjustments } from '@/types/scene';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogClose } from '@/components/ui/dialog';
-import { Download, X, RefreshCw, Crop, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, X, RefreshCw, Crop, Image as ImageIcon, ChevronLeft, ChevronRight, Sliders, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { applyCarAdjustments } from '@/utils/imageAdjustments';
 
 const Index = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
@@ -21,12 +23,18 @@ const Index = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewingImageId, setPreviewingImageId] = useState<string | null>(null);
   const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set());
-  const [editingImage, setEditingImage] = useState<{ id: string; finalUrl: string; fileName: string } | null>(null);
+  const [editingImage, setEditingImage] = useState<{ id: string; finalUrl: string; fileName: string; type: 'crop' | 'adjust' } | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoPosition, setLogoPosition] = useState<LogoPosition>('bottom-right');
   const [logoEnabled, setLogoEnabled] = useState(false);
   const [logoSize, setLogoSize] = useState(0.2); // Logo size as fraction of image width (default 20%)
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
+  const [batchAdjustments, setBatchAdjustments] = useState<CarAdjustments>({
+    brightness: 0,
+    contrast: 0,
+    warmth: 0,
+    shadows: 0,
+  });
 
   const handleImagesUploaded = (newImages: UploadedImage[]) => {
     setUploadedImages((prev) => [...prev, ...newImages]);
@@ -568,6 +576,7 @@ const Index = () => {
                                       id: image.id,
                                       finalUrl: image.croppedUrl || image.finalUrl,
                                       fileName: image.file.name,
+                                      type: 'crop',
                                     });
                                   }
                                 }}
@@ -704,6 +713,29 @@ const Index = () => {
                           id: currentImage.id,
                           finalUrl: currentImage.finalUrl,
                           fileName: currentImage.file.name,
+                          type: 'adjust',
+                        });
+                      }
+                    }}
+                  >
+                    <Sliders className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Justera</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="gap-2 bg-background/90 backdrop-blur-sm hover:bg-background text-xs md:text-sm h-9 md:h-10 px-3 md:px-4"
+                    onClick={() => {
+                      const currentImage = previewingImageId 
+                        ? uploadedImages.find(img => img.id === previewingImageId)
+                        : null;
+                      if (currentImage && currentImage.finalUrl) {
+                        setPreviewImage(null);
+                        setPreviewingImageId(null);
+                        setEditingImage({
+                          id: currentImage.id,
+                          finalUrl: currentImage.finalUrl,
+                          fileName: currentImage.file.name,
+                          type: 'crop',
                         });
                       }
                     }}
@@ -736,12 +768,113 @@ const Index = () => {
       </Dialog>
 
       {/* Crop Editor */}
-      <ImageCropEditor
-        image={editingImage}
-        onClose={() => setEditingImage(null)}
-        onSave={handleCropSave}
-        aspectRatio={aspectRatio}
-      />
+      {editingImage && editingImage.type === 'crop' && (
+        <ImageCropEditor
+          image={editingImage}
+          onClose={() => setEditingImage(null)}
+          onSave={handleCropSave}
+          aspectRatio={aspectRatio}
+        />
+      )}
+
+      {/* Car Adjustment Dialog */}
+      {editingImage && editingImage.type === 'adjust' && (
+        <Dialog open={true} onOpenChange={() => setEditingImage(null)}>
+          <DialogContent className="max-w-4xl">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Förhandsgranskning</h3>
+                <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden">
+                  <img
+                    src={editingImage.finalUrl}
+                    alt="Preview"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Justera bil</h3>
+                <CarAdjustmentPanel
+                  adjustments={
+                    uploadedImages.find(img => img.id === editingImage.id)?.carAdjustments || {
+                      brightness: 0,
+                      contrast: 0,
+                      warmth: 0,
+                      shadows: 0,
+                    }
+                  }
+                  onAdjustmentsChange={async (adjustments) => {
+                    const image = uploadedImages.find(img => img.id === editingImage.id);
+                    if (!image?.finalUrl) return;
+                    
+                    try {
+                      const adjustedUrl = await applyCarAdjustments(image.finalUrl, adjustments);
+                      setUploadedImages(prev =>
+                        prev.map(img =>
+                          img.id === editingImage.id
+                            ? { ...img, carAdjustments: adjustments, croppedUrl: adjustedUrl }
+                            : img
+                        )
+                      );
+                      setEditingImage(prev => prev ? { ...prev, finalUrl: adjustedUrl } : null);
+                    } catch (error) {
+                      console.error('Error applying adjustments:', error);
+                      toast.error('Kunde inte applicera justeringar');
+                    }
+                  }}
+                  onApplyToAll={async () => {
+                    const currentImage = uploadedImages.find(img => img.id === editingImage.id);
+                    if (!currentImage?.carAdjustments) return;
+                    
+                    toast.success('Applicerar justeringar på alla bilder...');
+                    
+                    for (const image of uploadedImages) {
+                      if (image.status === 'completed' && image.finalUrl) {
+                        try {
+                          const adjustedUrl = await applyCarAdjustments(
+                            image.finalUrl,
+                            currentImage.carAdjustments
+                          );
+                          setUploadedImages(prev =>
+                            prev.map(img =>
+                              img.id === image.id
+                                ? { ...img, carAdjustments: currentImage.carAdjustments, croppedUrl: adjustedUrl }
+                                : img
+                            )
+                          );
+                        } catch (error) {
+                          console.error('Error applying adjustments to image:', image.id, error);
+                        }
+                      }
+                    }
+                    
+                    toast.success('Justeringar applicerade på alla bilder!');
+                    setEditingImage(null);
+                  }}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setEditingImage(null)}
+                  >
+                    Avbryt
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => {
+                      toast.success('Justeringar sparade!');
+                      setEditingImage(null);
+                    }}
+                  >
+                    Spara
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border mt-12 md:mt-20">
