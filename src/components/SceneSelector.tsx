@@ -14,22 +14,14 @@ interface SceneSelectorProps {
 
 // Category descriptions
 const categoryDescriptions: Record<string, string> = {
-  'studio': 'Professionella studiolösningar',
-  'utomhus': 'Anpassat för Skandinavien',
-  'stad': 'Urban karaktär',
-  'landsbygd': 'Naturnära miljöer',
-  'fancy': 'Exklusiva designlösningar',
-  'himmel': 'Luftiga perspektiv'
+  'norden-utomhus': 'Anpassat för Skandinavien',
+  'inomhus-studios': 'Professionella miljöer'
 };
 
 // Category gradients
 const categoryGradients: Record<string, string> = {
-  'studio': 'from-slate-500/20 via-gray-400/10 to-zinc-300/5',
-  'utomhus': 'from-blue-500/20 via-cyan-400/10 to-sky-300/5',
-  'stad': 'from-orange-500/20 via-amber-400/10 to-yellow-300/5',
-  'landsbygd': 'from-green-500/20 via-emerald-400/10 to-teal-300/5',
-  'fancy': 'from-violet-500/20 via-purple-400/10 to-indigo-300/5',
-  'himmel': 'from-blue-400/20 via-sky-300/10 to-cyan-200/5'
+  'norden-utomhus': 'from-accent-blue/20 via-accent-green/10 to-background/5',
+  'inomhus-studios': 'from-accent-orange/20 via-accent-pink/10 to-background/5'
 };
 
 export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorProps) => {
@@ -140,9 +132,9 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Tabs defaultValue={favorites.size > 0 ? "favorites" : categories[1]} className="w-full">
-        <TabsList className="w-full flex-wrap h-auto gap-2 bg-muted/50 p-2">
+        <TabsList className="w-full justify-start gap-3 bg-background/50 backdrop-blur-sm p-3 rounded-xl border border-border/50">
           {categories.map((category) => {
             const categoryScenes = getScenesByCategory(category);
             if (category !== 'favorites' && categoryScenes.length === 0) return null;
@@ -152,15 +144,15 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
               <TabsTrigger
                 key={category}
                 value={category}
-                className="capitalize text-xs md:text-sm px-3 md:px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="capitalize px-6 py-3 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow transition-all"
               >
                 {category === 'favorites' ? (
-                  <span className="flex items-center gap-1.5">
-                    <Star className="w-3.5 h-3.5 fill-current" />
+                  <span className="flex items-center gap-2">
+                    <Star className="w-4 h-4 fill-current" />
                     Favoriter
                   </span>
                 ) : (
-                  category
+                  <span className="font-medium">{category.replace('-', ' ')}</span>
                 )}
               </TabsTrigger>
             );
@@ -173,78 +165,93 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
           if (category === 'favorites' && favorites.size === 0) return null;
 
           return (
-            <TabsContent key={category} value={category} className="mt-6">
+            <TabsContent key={category} value={category} className="mt-8">
               {category !== 'favorites' && categoryDescriptions[category] && (
-                <p className="text-xs text-muted-foreground mb-4 text-center">
-                  {categoryDescriptions[category]}
-                </p>
+                <div className="text-center mb-6">
+                  <p className="text-sm text-muted-foreground">
+                    {categoryDescriptions[category]}
+                  </p>
+                </div>
               )}
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {categoryScenes.map((scene) => (
-                  <Card
-                    key={scene.id}
-                    onClick={() => onSceneSelect(scene)}
-                    className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
-                      selectedSceneId === scene.id
-                        ? 'ring-2 ring-primary shadow-lg shadow-primary/20'
-                        : 'hover:shadow-elegant'
-                    }`}
-                  >
-                    {/* Gradient overlay */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${categoryGradients[scene.category] || categoryGradients.studio} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
-                    
-                    {/* Favorite button */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
-                      onClick={(e) => toggleFavorite(scene.id, e)}
+              {/* Horizontal scrolling gallery */}
+              <div className="relative">
+                <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+                  {categoryScenes.map((scene) => (
+                    <Card
+                      key={scene.id}
+                      onClick={() => onSceneSelect(scene)}
+                      className={`group relative flex-shrink-0 w-72 overflow-hidden cursor-pointer transition-all duration-300 snap-center ${
+                        selectedSceneId === scene.id
+                          ? 'ring-2 ring-primary shadow-xl shadow-primary/30 scale-[1.02]'
+                          : 'hover:shadow-xl hover:scale-[1.02]'
+                      }`}
                     >
-                      <Star
-                        className={`w-4 h-4 transition-colors ${
-                          favorites.has(scene.id)
-                            ? 'fill-primary text-primary'
-                            : 'text-muted-foreground'
-                        }`}
-                      />
-                    </Button>
-
-                    {/* Image */}
-                    <div className="relative aspect-[4/3] overflow-hidden">
-                      <img
-                        src={scene.thumbnailUrl}
-                        alt={scene.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
+                      {/* Gradient overlay */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${categoryGradients[scene.category] || categoryGradients['inomhus-studios']} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
                       
-                      {/* Selected indicator */}
-                      {selectedSceneId === scene.id && (
-                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg animate-scale-in">
-                            <Check className="w-6 h-6 text-primary-foreground" strokeWidth={3} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      {/* Favorite button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-md"
+                        onClick={(e) => toggleFavorite(scene.id, e)}
+                      >
+                        <Star
+                          className={`w-4 h-4 transition-all ${
+                            favorites.has(scene.id)
+                              ? 'fill-primary text-primary scale-110'
+                              : 'text-muted-foreground'
+                          }`}
+                        />
+                      </Button>
 
-                    {/* Content */}
-                    <div className="p-4 relative">
-                      <h3 className="font-semibold text-sm text-foreground mb-1 truncate">
-                        {scene.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {scene.description}
-                      </p>
-                    </div>
-                  </Card>
-                ))}
+                      {/* Image */}
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        <img
+                          src={scene.thumbnailUrl}
+                          alt={scene.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          loading="lazy"
+                        />
+                        
+                        {/* Selected indicator */}
+                        {selectedSceneId === scene.id && (
+                          <div className="absolute inset-0 bg-primary/20 backdrop-blur-[2px] flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-xl animate-scale-in">
+                              <Check className="w-7 h-7 text-primary-foreground" strokeWidth={3} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-5 relative bg-gradient-to-t from-background via-background to-transparent">
+                        <h3 className="font-bold text-base text-foreground mb-1.5">
+                          {scene.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                          {scene.description}
+                        </p>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
               </div>
             </TabsContent>
           );
         })}
       </Tabs>
+
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 };

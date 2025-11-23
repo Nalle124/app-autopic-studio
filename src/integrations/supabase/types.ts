@@ -22,6 +22,7 @@ export type Database = {
           final_url: string | null
           id: string
           original_filename: string
+          project_id: string | null
           scene_id: string
           segmented_url: string | null
           status: string
@@ -34,6 +35,7 @@ export type Database = {
           final_url?: string | null
           id?: string
           original_filename: string
+          project_id?: string | null
           scene_id: string
           segmented_url?: string | null
           status?: string
@@ -46,12 +48,21 @@ export type Database = {
           final_url?: string | null
           id?: string
           original_filename?: string
+          project_id?: string | null
           scene_id?: string
           segmented_url?: string | null
           status?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "processing_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -80,6 +91,30 @@ export type Database = {
           logo_dark?: string | null
           logo_light?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string
+          id: string
+          registration_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          registration_number: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          registration_number?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
