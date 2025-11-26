@@ -11,7 +11,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2 } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { CarAdjustmentPanel } from '@/components/CarAdjustmentPanel';
@@ -23,6 +23,7 @@ export default function Index() {
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const [editingImage, setEditingImage] = useState<{ id: string; finalUrl: string; fileName: string; type: 'crop' | 'adjust' } | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
@@ -35,10 +36,10 @@ export default function Index() {
   const [logoSize, setLogoSize] = useState(0.2);
 
   useEffect(() => {
-    if (uploadedImages.length > 0 && !currentProjectId) {
-      document.getElementById('registration-input')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (uploadedImages.length > 0 && selectedScene) {
+      document.getElementById('scene-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [uploadedImages, currentProjectId]);
+  }, [uploadedImages, selectedScene]);
 
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
@@ -57,7 +58,7 @@ export default function Index() {
 
     if (!registrationNumber.trim()) {
       toast.error('Ange registreringsnummer först');
-      document.getElementById('registration-input')?.focus();
+      document.getElementById('reg-number')?.focus();
       return;
     }
 
@@ -270,7 +271,7 @@ export default function Index() {
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-2">
                 <History className="w-4 h-4" />
-                Historik
+                Galleri
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -295,48 +296,32 @@ export default function Index() {
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-lg font-bold text-primary">1</span>
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">Ladda upp bilder</h2>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-foreground">Ladda upp bilder</h2>
+                  {uploadedImages.length > 0 && (
+                    <Input
+                      id="reg-number"
+                      type="text"
+                      placeholder="Registreringsnummer (valfritt)"
+                      value={registrationNumber}
+                      onChange={(e) => setRegistrationNumber(e.target.value.toUpperCase())}
+                      className="mt-3 max-w-xs"
+                      maxLength={10}
+                    />
+                  )}
+                </div>
               </div>
               <ImageUploader
                 onImagesUploaded={setUploadedImages}
               />
             </section>
 
-            {/* Step 2: Registration Number */}
+            {/* Step 2: Scene Selection */}
             {uploadedImages.length > 0 && (
-              <section id="registration-input" className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">2</span>
-                  </div>
-                  <h2 className="text-2xl font-bold text-foreground">Registreringsnummer</h2>
-                </div>
-                <Card className="p-6 max-w-md">
-                  <Label htmlFor="reg-number" className="text-base font-semibold mb-2 block">
-                    Bilens registreringsnummer
-                  </Label>
-                  <Input
-                    id="reg-number"
-                    type="text"
-                    placeholder="ABC123"
-                    value={registrationNumber}
-                    onChange={(e) => setRegistrationNumber(e.target.value.toUpperCase())}
-                    className="text-lg font-mono tracking-wider"
-                    maxLength={10}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Detta hjälper dig att hitta projektet senare
-                  </p>
-                </Card>
-              </section>
-            )}
-
-            {/* Step 3: Scene Selection */}
-            {uploadedImages.length > 0 && registrationNumber && (
               <section id="scene-section" className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">3</span>
+                    <span className="text-lg font-bold text-primary">2</span>
                   </div>
                   <h2 className="text-2xl font-bold text-foreground">Välj bakgrund</h2>
                 </div>
@@ -347,12 +332,12 @@ export default function Index() {
               </section>
             )}
 
-            {/* Step 4: Generation & Logo */}
+            {/* Step 3: Generation & Logo */}
             {selectedScene && (
               <section id="export-section" className="space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">4</span>
+                    <span className="text-lg font-bold text-primary">3</span>
                   </div>
                   <h2 className="text-2xl font-bold text-foreground">Generera & Anpassa</h2>
                 </div>
@@ -378,30 +363,78 @@ export default function Index() {
               </section>
             )}
 
-            {/* Step 5: Results Gallery */}
+            {/* Step 4: Results Gallery */}
             {uploadedImages.some((img) => img.status === 'completed') && (
               <section className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-lg font-bold text-primary">5</span>
+                      <span className="text-lg font-bold text-primary">4</span>
                     </div>
                     <h2 className="text-2xl font-bold text-foreground">Redigera och ladda ner</h2>
                   </div>
                   
-                  {selectedImages.size > 0 && (
-                    <Button onClick={handleShareSelected} className="gap-2">
-                      <Share2 className="w-4 h-4" />
-                      Dela valda ({selectedImages.size})
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                        if (selectedImages.size === completedImages.length) {
+                          setSelectedImages(new Set());
+                        } else {
+                          setSelectedImages(new Set(completedImages.map(img => img.id)));
+                        }
+                      }}
+                    >
+                      {selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length 
+                        ? 'Avmarkera alla' 
+                        : 'Markera alla'}
                     </Button>
-                  )}
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (selectedImages.size === 0) {
+                          toast.error('Välj minst en bild');
+                          return;
+                        }
+                        const firstSelected = uploadedImages.find(img => selectedImages.has(img.id) && img.status === 'completed');
+                        if (firstSelected) {
+                          const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                          setGalleryIndex(completedImages.findIndex(img => img.id === firstSelected.id));
+                          setPreviewImage(firstSelected.croppedUrl || firstSelected.finalUrl!);
+                        }
+                      }}
+                    >
+                      <Sliders className="w-4 h-4 mr-2" />
+                      Redigera
+                    </Button>
+                    
+                    <Button onClick={() => {
+                      if (selectedImages.size === 0) {
+                        toast.error('Välj minst en bild');
+                        return;
+                      }
+                      handleShareSelected();
+                    }}>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Dela
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {uploadedImages
                     .filter((img) => img.status === 'completed')
-                    .map((image) => (
-                      <Card key={image.id} className="group relative overflow-hidden">
+                    .map((image, idx) => (
+                      <Card 
+                        key={image.id} 
+                        className={`group relative overflow-hidden cursor-pointer transition-all ${
+                          selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''
+                        }`}
+                        onClick={() => toggleImageSelection(image.id)}
+                      >
                         {/* Image Preview */}
                         <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                           <img
@@ -410,54 +443,28 @@ export default function Index() {
                             className="w-full h-full object-cover"
                           />
                           
-                          {/* Overlay with actions */}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
-                            <div className="flex gap-2">
-                              <Button
-                                size="icon"
-                                variant="secondary"
-                                onClick={() => setEditingImage({ id: image.id, finalUrl: image.finalUrl!, fileName: image.file.name, type: 'adjust' })}
-                                title="Justera ljus"
-                              >
-                                <Sliders className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="secondary"
-                                onClick={() => setEditingImage({ id: image.id, finalUrl: image.finalUrl!, fileName: image.file.name, type: 'crop' })}
-                                title="Beskär"
-                              >
-                                <Scissors className="w-4 h-4" />
-                              </Button>
+                          {/* Selection indicator */}
+                          {selectedImages.has(image.id) && (
+                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="w-4 h-4 text-primary-foreground" />
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="icon"
-                                variant="secondary"
-                                onClick={() => setPreviewImage(image.croppedUrl || image.finalUrl!)}
-                                title="Förhandsgranska"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="secondary"
-                                onClick={() => handleDownload(image.croppedUrl || image.finalUrl!, `${registrationNumber}_${image.id}.jpg`)}
-                                title="Ladda ner"
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Selection checkbox */}
-                          <div
-                            className="absolute top-2 left-2 w-6 h-6 rounded border-2 border-white bg-black/30 backdrop-blur-sm cursor-pointer flex items-center justify-center"
-                            onClick={() => toggleImageSelection(image.id)}
-                          >
-                            {selectedImages.has(image.id) && (
-                              <div className="w-4 h-4 bg-primary rounded-sm" />
-                            )}
+                          )}
+                          
+                          {/* Preview button overlay */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button
+                              size="icon"
+                              variant="secondary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                                setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
+                                setPreviewImage(image.croppedUrl || image.finalUrl!);
+                              }}
+                              title="Förhandsgranska"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </Card>
@@ -469,26 +476,105 @@ export default function Index() {
         )}
       </main>
 
-      {/* Preview Dialog */}
+      {/* Gallery Preview Dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] p-0">
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70 text-white"
-              onClick={() => setPreviewImage(null)}
-            >
-              <X className="w-5 h-5" />
-            </Button>
-            {previewImage && (
-              <img
-                src={previewImage}
-                alt="Preview"
-                className="w-full h-auto max-h-[90vh] object-contain"
-              />
-            )}
-          </div>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0">
+          {previewImage && (() => {
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            const currentImage = completedImages[galleryIndex];
+            
+            return (
+              <div className="flex flex-col h-full">
+                {/* Image Display */}
+                <div className="relative flex-1 bg-black">
+                  <img
+                    src={currentImage?.croppedUrl || currentImage?.finalUrl || previewImage}
+                    alt="Preview"
+                    className="w-full h-full object-contain"
+                  />
+                  
+                  {/* Navigation Arrows */}
+                  {completedImages.length > 1 && (
+                    <>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="absolute left-4 top-1/2 -translate-y-1/2"
+                        onClick={() => {
+                          const newIndex = galleryIndex > 0 ? galleryIndex - 1 : completedImages.length - 1;
+                          setGalleryIndex(newIndex);
+                          setPreviewImage(completedImages[newIndex].croppedUrl || completedImages[newIndex].finalUrl!);
+                        }}
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="absolute right-4 top-1/2 -translate-y-1/2"
+                        onClick={() => {
+                          const newIndex = galleryIndex < completedImages.length - 1 ? galleryIndex + 1 : 0;
+                          setGalleryIndex(newIndex);
+                          setPreviewImage(completedImages[newIndex].croppedUrl || completedImages[newIndex].finalUrl!);
+                        }}
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Counter */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                    {galleryIndex + 1} / {completedImages.length}
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="p-4 bg-background border-t flex items-center justify-between gap-3">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingImage({ 
+                          id: currentImage.id, 
+                          finalUrl: currentImage.finalUrl!, 
+                          fileName: currentImage.file.name, 
+                          type: 'adjust' 
+                        });
+                        setPreviewImage(null);
+                      }}
+                    >
+                      <Sliders className="w-4 h-4 mr-2" />
+                      Justera
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingImage({ 
+                          id: currentImage.id, 
+                          finalUrl: currentImage.finalUrl!, 
+                          fileName: currentImage.file.name, 
+                          type: 'crop' 
+                        });
+                        setPreviewImage(null);
+                      }}
+                    >
+                      <Scissors className="w-4 h-4 mr-2" />
+                      Beskär
+                    </Button>
+                  </div>
+                  
+                  <Button onClick={() => handleDownload(
+                    currentImage.croppedUrl || currentImage.finalUrl!, 
+                    `${registrationNumber}_${currentImage.id}.jpg`
+                  )}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Ladda ner
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

@@ -38,7 +38,7 @@ export const ProjectGallery = () => {
           id,
           registration_number,
           created_at,
-          processing_jobs (
+          jobs:processing_jobs (
             id,
             final_url,
             scene_id
