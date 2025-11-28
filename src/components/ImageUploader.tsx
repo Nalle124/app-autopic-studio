@@ -11,9 +11,11 @@ import { useNavigate } from 'react-router-dom';
 interface ImageUploaderProps {
   onImagesUploaded: (images: UploadedImage[]) => void;
   onClearAll?: () => void;
+  registrationNumber?: string;
+  onRegistrationNumberChange?: (value: string) => void;
 }
 
-export const ImageUploader = ({ onImagesUploaded, onClearAll }: ImageUploaderProps) => {
+export const ImageUploader = ({ onImagesUploaded, onClearAll, registrationNumber, onRegistrationNumberChange }: ImageUploaderProps) => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -42,11 +44,11 @@ export const ImageUploader = ({ onImagesUploaded, onClearAll }: ImageUploaderPro
     onImagesUploaded(newImages);
     toast.success(`${acceptedFiles.length} bilder uppladdade`);
     
-    // Auto-scroll to scene selector after upload
+    // Auto-scroll to uploaded images section
     setTimeout(() => {
-      const sceneSection = document.getElementById('scene-section');
-      if (sceneSection) {
-        sceneSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const uploadedSection = document.getElementById('uploaded-images');
+      if (uploadedSection) {
+        uploadedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 300);
   }, [onImagesUploaded, user, navigate]);
@@ -98,12 +100,24 @@ export const ImageUploader = ({ onImagesUploaded, onClearAll }: ImageUploaderPro
       </Card>
 
       {uploadedImages.length > 0 && (
-        <div>
+        <div id="uploaded-images">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <ImageIcon className="w-5 h-5" />
-              Uppladdade bilder ({uploadedImages.length})
-            </h3>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-2">
+                <ImageIcon className="w-5 h-5" />
+                Uppladdade bilder ({uploadedImages.length})
+              </h3>
+              {onRegistrationNumberChange && (
+                <input
+                  type="text"
+                  placeholder="Registreringsnummer (valfritt)"
+                  value={registrationNumber || ''}
+                  onChange={(e) => onRegistrationNumberChange(e.target.value.toUpperCase())}
+                  className="text-sm px-3 py-1.5 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 max-w-[200px]"
+                  maxLength={10}
+                />
+              )}
+            </div>
             {uploadedImages.length > 0 && (
               <Button
                 variant="outline"

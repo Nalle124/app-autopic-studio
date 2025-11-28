@@ -9,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -36,10 +35,10 @@ export default function Index() {
   const [logoSize, setLogoSize] = useState(0.2);
 
   useEffect(() => {
-    if (uploadedImages.length > 0 && selectedScene) {
-      document.getElementById('scene-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (selectedScene) {
+      document.getElementById('export-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [uploadedImages, selectedScene]);
+  }, [selectedScene]);
 
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
@@ -56,18 +55,12 @@ export default function Index() {
       return;
     }
 
-    if (!registrationNumber.trim()) {
-      toast.error('Ange registreringsnummer först');
-      document.getElementById('reg-number')?.focus();
-      return;
-    }
-
     try {
       setIsProcessing(true);
       
-      // Create project if not exists
+      // Create project if registrationNumber is provided
       let projectId = currentProjectId;
-      if (!projectId) {
+      if (!projectId && registrationNumber.trim()) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           toast.error('Du måste vara inloggad');
@@ -298,21 +291,12 @@ export default function Index() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-foreground">Ladda upp bilder</h2>
-                  {uploadedImages.length > 0 && (
-                    <Input
-                      id="reg-number"
-                      type="text"
-                      placeholder="Registreringsnummer (valfritt)"
-                      value={registrationNumber}
-                      onChange={(e) => setRegistrationNumber(e.target.value.toUpperCase())}
-                      className="mt-3 max-w-xs"
-                      maxLength={10}
-                    />
-                  )}
                 </div>
               </div>
               <ImageUploader
                 onImagesUploaded={setUploadedImages}
+                registrationNumber={registrationNumber}
+                onRegistrationNumberChange={setRegistrationNumber}
               />
             </section>
 
