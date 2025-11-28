@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { CarAdjustmentPanel } from '@/components/CarAdjustmentPanel';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
@@ -148,6 +149,11 @@ export default function Index() {
 
       if (successCount > 0) {
         toast.success(`${successCount} bilder klara!`);
+        
+        // Scroll to results section after generation
+        setTimeout(() => {
+          document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
       }
 
       if (errorCount > 0) {
@@ -349,7 +355,7 @@ export default function Index() {
 
             {/* Step 4: Results Gallery */}
             {uploadedImages.some((img) => img.status === 'completed') && (
-              <section className="space-y-6">
+              <section id="results-section" className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -358,26 +364,32 @@ export default function Index() {
                     <h2 className="text-2xl font-bold text-foreground">Redigera och ladda ner</h2>
                   </div>
                   
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                        if (selectedImages.size === completedImages.length) {
-                          setSelectedImages(new Set());
-                        } else {
-                          setSelectedImages(new Set(completedImages.map(img => img.id)));
-                        }
-                      }}
-                    >
-                      {selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length 
-                        ? 'Avmarkera alla' 
-                        : 'Markera alla'}
-                    </Button>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="select-all"
+                        checked={selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length}
+                        onCheckedChange={(checked) => {
+                          const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                          if (checked) {
+                            setSelectedImages(new Set(completedImages.map(img => img.id)));
+                          } else {
+                            setSelectedImages(new Set());
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="select-all"
+                        className="text-sm text-muted-foreground cursor-pointer"
+                      >
+                        Markera alla
+                      </label>
+                    </div>
                     
                     <Button
                       variant="outline"
+                      size="icon"
+                      title="Redigera"
                       onClick={() => {
                         if (selectedImages.size === 0) {
                           toast.error('Välj minst en bild');
@@ -391,8 +403,7 @@ export default function Index() {
                         }
                       }}
                     >
-                      <Sliders className="w-4 h-4 mr-2" />
-                      Redigera
+                      <Sliders className="w-4 h-4" />
                     </Button>
                     
                     <Button onClick={() => {
@@ -517,7 +528,9 @@ export default function Index() {
                 <div className="p-4 bg-background border-t flex items-center justify-between gap-3">
                   <div className="flex gap-2">
                     <Button
+                      size="icon"
                       variant="outline"
+                      title="Justera"
                       onClick={() => {
                         setEditingImage({ 
                           id: currentImage.id, 
@@ -528,11 +541,12 @@ export default function Index() {
                         setPreviewImage(null);
                       }}
                     >
-                      <Sliders className="w-4 h-4 mr-2" />
-                      Justera
+                      <Sliders className="w-4 h-4" />
                     </Button>
                     <Button
+                      size="icon"
                       variant="outline"
+                      title="Beskär"
                       onClick={() => {
                         setEditingImage({ 
                           id: currentImage.id, 
@@ -543,8 +557,7 @@ export default function Index() {
                         setPreviewImage(null);
                       }}
                     >
-                      <Scissors className="w-4 h-4 mr-2" />
-                      Beskär
+                      <Scissors className="w-4 h-4" />
                     </Button>
                   </div>
                   
