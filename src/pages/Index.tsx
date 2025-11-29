@@ -4,7 +4,7 @@ import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
 import { LogoManager } from '@/components/LogoManager';
 import { ProjectGallery } from '@/components/ProjectGallery';
-import { UploadedImage, SceneMetadata, ExportSettings } from '@/types/scene';
+import { UploadedImage, SceneMetadata, ExportSettings, CarAdjustments } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { CarAdjustmentPanel } from '@/components/CarAdjustmentPanel';
+import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -25,6 +26,7 @@ export default function Index() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [editingImage, setEditingImage] = useState<{ id: string; finalUrl: string; fileName: string; type: 'crop' | 'adjust' } | null>(null);
+  const [editingOriginal, setEditingOriginal] = useState<{ id: string; url: string; name: string; type: 'crop' | 'adjust' } | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [registrationNumber, setRegistrationNumber] = useState('');
@@ -92,7 +94,17 @@ export default function Index() {
           );
 
           const formData = new FormData();
-          formData.append('image', image.file);
+          
+          // Use cropped/adjusted image if available, otherwise use original
+          if (image.croppedUrl) {
+            const response = await fetch(image.croppedUrl);
+            const blob = await response.blob();
+            const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '_edited.png';
+            formData.append('image', blob, fileName);
+          } else {
+            formData.append('image', image.file);
+          }
+          
           formData.append('scene', JSON.stringify(selectedScene));
           
           const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:')
@@ -255,6 +267,55 @@ export default function Index() {
     });
   };
 
+  const handleEditOriginalImage = (imageId: string, type: 'crop' | 'adjust') => {
+    const image = uploadedImages.find(img => img.id === imageId);
+    if (!image) return;
+    
+    setEditingOriginal({
+      id: imageId,
+      url: image.croppedUrl || image.preview,
+      name: image.file.name,
+      type
+    });
+  };
+
+  const handleOriginalCropSave = (imageId: string, croppedUrl: string) => {
+    setUploadedImages(prev =>
+      prev.map(img =>
+        img.id === imageId ? { ...img, croppedUrl } : img
+      )
+    );
+    setEditingOriginal(null);
+    toast.success('Beskärning sparad');
+  };
+
+  const handleOriginalAdjustmentsSave = (imageId: string, adjustedUrl: string, adjustments: CarAdjustments) => {
+    // Convert the adjusted data URL to a blob and then to a file
+    fetch(adjustedUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        const image = uploadedImages.find(img => img.id === imageId);
+        if (!image) return;
+        
+        // Create new preview URL from adjusted image
+        const newPreviewUrl = URL.createObjectURL(blob);
+        
+        setUploadedImages(prev =>
+          prev.map(img =>
+            img.id === imageId ? { 
+              ...img, 
+              preview: newPreviewUrl,
+              croppedUrl: adjustedUrl,
+              carAdjustments: adjustments 
+            } : img
+          )
+        );
+        
+        setEditingOriginal(null);
+        toast.success('Justeringar sparade');
+      });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -300,9 +361,14 @@ export default function Index() {
                 </div>
               </div>
               <ImageUploader
-                onImagesUploaded={setUploadedImages}
+                onImagesUploaded={(newImages) => {
+                  setUploadedImages(prev => [...prev, ...newImages]);
+                }}
                 registrationNumber={registrationNumber}
                 onRegistrationNumberChange={setRegistrationNumber}
+                uploadedImages={uploadedImages}
+                onEditImage={handleEditOriginalImage}
+                onClearAll={() => setUploadedImages([])}
               />
             </section>
 
@@ -621,6 +687,31 @@ export default function Index() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Original Image Crop Editor Dialog */}
+      <Dialog open={editingOriginal?.type === 'crop'} onOpenChange={() => setEditingOriginal(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          {editingOriginal?.type === 'crop' && (
+            <ImageCropEditor
+              image={{ id: editingOriginal.id, finalUrl: editingOriginal.url, fileName: editingOriginal.name }}
+              onClose={() => setEditingOriginal(null)}
+              onSave={(imageId, croppedUrl) => handleOriginalCropSave(imageId, croppedUrl)}
+              aspectRatio={aspectRatio}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Original Image Adjustment Editor Dialog */}
+      {editingOriginal?.type === 'adjust' && (
+        <OriginalImageEditor
+          imageUrl={editingOriginal.url}
+          imageName={editingOriginal.name}
+          open={true}
+          onClose={() => setEditingOriginal(null)}
+          onSave={(adjustedUrl, adjustments) => handleOriginalAdjustmentsSave(editingOriginal.id, adjustedUrl, adjustments)}
+        />
+      )}
     </div>
   );
 }

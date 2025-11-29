@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Scissors, Sliders } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UploadedImage } from '@/types/scene';
@@ -13,12 +13,23 @@ interface ImageUploaderProps {
   onClearAll?: () => void;
   registrationNumber?: string;
   onRegistrationNumberChange?: (value: string) => void;
+  uploadedImages: UploadedImage[];
+  onEditImage?: (imageId: string, type: 'crop' | 'adjust') => void;
 }
 
-export const ImageUploader = ({ onImagesUploaded, onClearAll, registrationNumber, onRegistrationNumberChange }: ImageUploaderProps) => {
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+export const ImageUploader = ({ 
+  onImagesUploaded, 
+  onClearAll, 
+  registrationNumber, 
+  onRegistrationNumberChange,
+  uploadedImages: propUploadedImages,
+  onEditImage
+}: ImageUploaderProps) => {
+  const [localImages, setLocalImages] = useState<UploadedImage[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  const uploadedImages = propUploadedImages || localImages;
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     // Require login to upload
@@ -40,7 +51,7 @@ export const ImageUploader = ({ onImagesUploaded, onClearAll, registrationNumber
       status: 'pending' as const,
     }));
 
-    setUploadedImages((prev) => [...prev, ...newImages]);
+    setLocalImages((prev) => [...prev, ...newImages]);
     onImagesUploaded(newImages);
     toast.success(`${acceptedFiles.length} bilder uppladdade`);
     
@@ -62,7 +73,7 @@ export const ImageUploader = ({ onImagesUploaded, onClearAll, registrationNumber
   });
 
   const removeImage = (id: string) => {
-    setUploadedImages((prev) => {
+    setLocalImages((prev) => {
       const updated = prev.filter((img) => img.id !== id);
       const removed = prev.find((img) => img.id === id);
       if (removed) {
@@ -124,7 +135,7 @@ export const ImageUploader = ({ onImagesUploaded, onClearAll, registrationNumber
                 size="sm"
                 onClick={() => {
                   uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
-                  setUploadedImages([]);
+                  setLocalImages([]);
                   onClearAll?.();
                 }}
               >
@@ -179,6 +190,34 @@ export const ImageUploader = ({ onImagesUploaded, onClearAll, registrationNumber
                   <div className={`absolute inset-0 bg-black/60 transition-opacity flex items-center justify-center gap-2 ${
                     image.status === 'processing' ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
                   }`}>
+                    {onEditImage && image.status !== 'processing' && (
+                      <>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="rounded-full shadow-lg hover-scale"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditImage(image.id, 'crop');
+                          }}
+                          title="Beskär"
+                        >
+                          <Scissors className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="rounded-full shadow-lg hover-scale"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditImage(image.id, 'adjust');
+                          }}
+                          title="Redigera"
+                        >
+                          <Sliders className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                     {image.finalUrl && (
                       <Button
                         variant="secondary"
