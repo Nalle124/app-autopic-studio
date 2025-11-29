@@ -55,11 +55,11 @@ export const ImageUploader = ({
     onImagesUploaded(newImages);
     toast.success(`${acceptedFiles.length} bilder uppladdade`);
     
-    // Auto-scroll to uploaded images section
+    // Auto-scroll to uploaded images section (closer to top)
     setTimeout(() => {
       const uploadedSection = document.getElementById('uploaded-images');
       if (uploadedSection) {
-        uploadedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        uploadedSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 300);
   }, [onImagesUploaded, user, navigate]);
@@ -129,19 +129,35 @@ export const ImageUploader = ({
                 />
               )}
             </div>
-            {uploadedImages.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
-                  setLocalImages([]);
-                  onClearAll?.();
-                }}
-              >
-                Rensa alla
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {uploadedImages.length > 0 && onEditImage && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (uploadedImages.length > 0) {
+                      onEditImage(uploadedImages[0].id, 'adjust');
+                    }
+                  }}
+                >
+                  <Sliders className="w-4 h-4 mr-2" />
+                  Redigera
+                </Button>
+              )}
+              {uploadedImages.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
+                    setLocalImages([]);
+                    onClearAll?.();
+                  }}
+                >
+                  Rensa alla
+                </Button>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

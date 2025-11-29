@@ -252,6 +252,15 @@ export default function Index() {
     );
     setAspectRatio(newAspectRatio);
     setEditingImage(null);
+    
+    // Return to preview gallery after crop
+    const completedImages = uploadedImages.filter(img => img.status === 'completed');
+    const index = completedImages.findIndex(img => img.id === imageId);
+    if (index !== -1) {
+      setGalleryIndex(index);
+      setPreviewImage(croppedUrl);
+    }
+    
     toast.success('Beskärning sparad');
   };
 
@@ -314,6 +323,85 @@ export default function Index() {
         setEditingOriginal(null);
         toast.success('Justeringar sparade');
       });
+  };
+
+  const handleApplyAdjustmentsToAllOriginals = (adjustments: CarAdjustments) => {
+    // This stores the adjustments to be applied on generation
+    uploadedImages.forEach(img => {
+      fetch(img.preview)
+        .then(res => res.blob())
+        .then(async blob => {
+          const image = new Image();
+          image.src = URL.createObjectURL(blob);
+          await image.decode();
+          
+          // Apply adjustments to create adjusted preview
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          
+          canvas.width = image.width;
+          canvas.height = image.height;
+          ctx.drawImage(image, 0, 0);
+          
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          
+          const brightnessFactor = 1 + (adjustments.brightness / 100);
+          const contrastFactor = (adjustments.contrast + 100) / 100;
+          const warmthFactor = adjustments.warmth / 100;
+          const shadowsFactor = adjustments.shadows / 100;
+          
+          for (let i = 0; i < data.length; i += 4) {
+            let r = data[i];
+            let g = data[i + 1];
+            let b = data[i + 2];
+            
+            r *= brightnessFactor;
+            g *= brightnessFactor;
+            b *= brightnessFactor;
+            
+            r = ((r - 128) * contrastFactor) + 128;
+            g = ((g - 128) * contrastFactor) + 128;
+            b = ((b - 128) * contrastFactor) + 128;
+            
+            if (warmthFactor > 0) {
+              r += warmthFactor * 30;
+              g += warmthFactor * 15;
+              b -= warmthFactor * 20;
+            } else if (warmthFactor < 0) {
+              r += warmthFactor * 20;
+              g += warmthFactor * 10;
+              b -= warmthFactor * 30;
+            }
+            
+            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+            if (luminance < 128) {
+              const shadowAdjustment = shadowsFactor * (128 - luminance) / 128;
+              r += shadowAdjustment * 50;
+              g += shadowAdjustment * 50;
+              b += shadowAdjustment * 50;
+            }
+            
+            data[i] = Math.max(0, Math.min(255, r));
+            data[i + 1] = Math.max(0, Math.min(255, g));
+            data[i + 2] = Math.max(0, Math.min(255, b));
+          }
+          
+          ctx.putImageData(imageData, 0, 0);
+          const adjustedUrl = canvas.toDataURL('image/png');
+          
+          setUploadedImages(prev =>
+            prev.map(prevImg =>
+              prevImg.id === img.id ? { 
+                ...prevImg, 
+                croppedUrl: adjustedUrl,
+                carAdjustments: adjustments 
+              } : prevImg
+            )
+          );
+        });
+    });
   };
 
   return (
@@ -422,15 +510,15 @@ export default function Index() {
             {/* Step 4: Results Gallery */}
             {uploadedImages.some((img) => img.status === 'completed') && (
               <section id="results-section" className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <span className="text-lg font-bold text-primary">4</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-foreground">Redigera och ladda ner</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">Redigera och ladda ner</h2>
                   </div>
                   
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="select-all"
@@ -446,7 +534,7 @@ export default function Index() {
                       />
                       <label
                         htmlFor="select-all"
-                        className="text-sm text-muted-foreground cursor-pointer"
+                        className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap"
                       >
                         Markera alla
                       </label>
@@ -457,28 +545,28 @@ export default function Index() {
                       size="icon"
                       title="Redigera"
                       onClick={() => {
-                        if (selectedImages.size === 0) {
-                          toast.error('Välj minst en bild');
-                          return;
-                        }
-                        const firstSelected = uploadedImages.find(img => selectedImages.has(img.id) && img.status === 'completed');
-                        if (firstSelected) {
-                          const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                          setGalleryIndex(completedImages.findIndex(img => img.id === firstSelected.id));
-                          setPreviewImage(firstSelected.croppedUrl || firstSelected.finalUrl!);
-                        }
+                        const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                        if (completedImages.length === 0) return;
+                        
+                        // Open gallery on first image
+                        setGalleryIndex(0);
+                        setPreviewImage(completedImages[0].croppedUrl || completedImages[0].finalUrl!);
                       }}
                     >
                       <Sliders className="w-4 h-4" />
                     </Button>
                     
-                    <Button onClick={() => {
-                      if (selectedImages.size === 0) {
-                        toast.error('Välj minst en bild');
-                        return;
-                      }
-                      handleShareSelected();
-                    }}>
+                    <Button 
+                      size="sm"
+                      onClick={() => {
+                        if (selectedImages.size === 0) {
+                          toast.error('Välj minst en bild');
+                          return;
+                        }
+                        handleShareSelected();
+                      }}
+                      className="flex-1 sm:flex-none"
+                    >
                       <Share2 className="w-4 h-4 mr-2" />
                       Dela
                     </Button>
@@ -590,8 +678,8 @@ export default function Index() {
                   </div>
                 </div>
                 
-                {/* Action Buttons */}
-                <div className="p-4 bg-background border-t flex items-center justify-between gap-3">
+                {/* Action Buttons - Always visible */}
+                <div className="p-4 bg-background border-t flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                   <div className="flex gap-2">
                     <Button
                       size="icon"
@@ -604,7 +692,6 @@ export default function Index() {
                           fileName: currentImage.file.name, 
                           type: 'adjust' 
                         });
-                        setPreviewImage(null);
                       }}
                     >
                       <Sliders className="w-4 h-4" />
@@ -620,17 +707,19 @@ export default function Index() {
                           fileName: currentImage.file.name, 
                           type: 'crop' 
                         });
-                        setPreviewImage(null);
                       }}
                     >
                       <Scissors className="w-4 h-4" />
                     </Button>
                   </div>
                   
-                  <Button onClick={() => handleDownload(
-                    currentImage.croppedUrl || currentImage.finalUrl!, 
-                    `${registrationNumber}_${currentImage.id}.jpg`
-                  )}>
+                  <Button 
+                    className="w-full sm:w-auto"
+                    onClick={() => handleDownload(
+                      currentImage.croppedUrl || currentImage.finalUrl!, 
+                      `${registrationNumber}_${currentImage.id}.jpg`
+                    )}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Ladda ner
                   </Button>
@@ -710,6 +799,7 @@ export default function Index() {
           open={true}
           onClose={() => setEditingOriginal(null)}
           onSave={(adjustedUrl, adjustments) => handleOriginalAdjustmentsSave(editingOriginal.id, adjustedUrl, adjustments)}
+          onApplyToAll={handleApplyAdjustmentsToAllOriginals}
         />
       )}
     </div>
