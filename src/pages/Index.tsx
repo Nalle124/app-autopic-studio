@@ -107,8 +107,32 @@ export default function Index() {
           // Use cropped/adjusted image if available, otherwise use original
           if (image.croppedUrl) {
             const response = await fetch(image.croppedUrl);
-            const blob = await response.blob();
-            const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '_edited.png';
+            let blob = await response.blob();
+            
+            // Compress if blob is too large (>5MB)
+            if (blob.size > 5 * 1024 * 1024) {
+              console.log(`Compressing large image: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+              const img = new Image();
+              img.src = image.croppedUrl;
+              await new Promise((resolve) => { img.onload = resolve; });
+              
+              const canvas = document.createElement('canvas');
+              const maxDim = 2048;
+              const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+              canvas.width = img.width * scale;
+              canvas.height = img.height * scale;
+              
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                blob = await new Promise<Blob>((resolve) => 
+                  canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.85)
+                );
+                console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+              }
+            }
+            
+            const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg';
             formData.append('image', blob, fileName);
           } else {
             formData.append('image', image.file);

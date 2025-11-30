@@ -105,8 +105,8 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
       // Put adjusted image data back
       ctx.putImageData(imageData, 0, 0);
       
-      // Update preview
-      setPreviewUrl(canvas.toDataURL('image/png'));
+      // Update preview - use JPEG for smaller file size
+      setPreviewUrl(canvas.toDataURL('image/jpeg', 0.9));
     };
     
     img.src = imageUrl;
