@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
-import { LogoManager } from '@/components/LogoManager';
+import { LogoDesigner, LogoDesign } from '@/components/LogoDesigner';
 import { ProjectGallery } from '@/components/ProjectGallery';
 import { UploadedImage, SceneMetadata, ExportSettings, CarAdjustments } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,10 +32,19 @@ export default function Index() {
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [activeTab, setActiveTab] = useState<'new' | 'history'>('new');
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [logoPosition, setLogoPosition] = useState<'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'>('bottom-right');
-  const [logoEnabled, setLogoEnabled] = useState(false);
-  const [logoSize, setLogoSize] = useState(0.2);
+  const [logoDesign, setLogoDesign] = useState<LogoDesign>({
+    enabled: false,
+    logoUrl: null,
+    logoX: 50,
+    logoY: 50,
+    logoSize: 0.2,
+    bannerEnabled: false,
+    bannerX: 10,
+    bannerY: 50,
+    bannerHeight: 80,
+    bannerColor: '#000000',
+    bannerOpacity: 70,
+  });
 
   useEffect(() => {
     if (selectedScene) {
@@ -491,17 +500,9 @@ export default function Index() {
                     onExport={handleExport}
                     isProcessing={isProcessing}
                   />
-                  <LogoManager
-                    logoUrl={logoUrl}
-                    logoPosition={logoPosition}
-                    logoEnabled={logoEnabled}
-                    logoSize={logoSize}
-                    onLogoChange={(url, position, enabled, size) => {
-                      setLogoUrl(url);
-                      setLogoPosition(position);
-                      setLogoEnabled(enabled);
-                      setLogoSize(size);
-                    }}
+                  <LogoDesigner
+                    design={logoDesign}
+                    onDesignChange={setLogoDesign}
                   />
                 </div>
               </section>
