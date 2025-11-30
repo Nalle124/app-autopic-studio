@@ -173,10 +173,10 @@ export const ProjectGallery = () => {
 
       {/* Project Detail Dialog */}
       <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           {selectedProject && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
                 <h2 className="text-2xl font-bold">{selectedProject.registration_number}</h2>
                 <Button onClick={() => handleDownloadAll(selectedProject)}>
                   <Download className="w-4 h-4 mr-2" />
@@ -184,18 +184,32 @@ export const ProjectGallery = () => {
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {selectedProject.jobs
-                  .filter(j => j.final_url)
-                  .map((job) => (
-                    <div key={job.id} className="aspect-[4/3] bg-muted rounded-lg overflow-hidden">
-                      <img
-                        src={job.final_url!}
-                        alt={`${selectedProject.registration_number}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {selectedProject.jobs
+                    .filter(j => j.final_url)
+                    .map((job) => (
+                      <div key={job.id} className="aspect-[4/3] bg-muted rounded-lg overflow-hidden group relative cursor-pointer">
+                        <img
+                          src={job.final_url!}
+                          alt={`${selectedProject.registration_number}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            onClick={() => {
+                              // Preview functionality can be added here
+                              toast.info('Redigeringsfunktioner kommer snart i galleriet');
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
           )}

@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
@@ -42,9 +42,12 @@ export default function Index() {
     bannerX: 10,
     bannerY: 50,
     bannerHeight: 80,
+    bannerWidth: 100,
     bannerColor: '#000000',
     bannerOpacity: 70,
+    bannerRotation: 0,
   });
+  const [logoDesignOpen, setLogoDesignOpen] = useState(false);
 
   useEffect(() => {
     if (selectedScene) {
@@ -524,10 +527,16 @@ export default function Index() {
                     onExport={handleExport}
                     isProcessing={isProcessing}
                   />
-                  <LogoDesigner
-                    design={logoDesign}
-                    onDesignChange={setLogoDesign}
-                  />
+                  <Card className="p-6">
+                    <Button
+                      onClick={() => setLogoDesignOpen(true)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      {logoDesign.enabled ? 'Redigera Logo Design' : 'Lägg till Logo Design (valfritt)'}
+                    </Button>
+                  </Card>
                 </div>
               </section>
             )}
@@ -827,6 +836,17 @@ export default function Index() {
           onApplyToAll={handleApplyAdjustmentsToAllOriginals}
         />
       )}
+
+      {/* Logo Designer Dialog */}
+      <Dialog open={logoDesignOpen} onOpenChange={setLogoDesignOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <LogoDesigner
+            design={logoDesign}
+            onDesignChange={setLogoDesign}
+            previewImage={uploadedImages.find(img => img.status === 'completed')?.finalUrl}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

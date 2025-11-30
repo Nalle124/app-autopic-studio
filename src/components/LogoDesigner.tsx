@@ -1,17 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, Image as ImageIcon, ChevronDown, Sun, Moon, Move, Star, Copy } from 'lucide-react';
+import { Upload, Sun, Moon, RotateCw, Copy, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
@@ -26,24 +18,26 @@ export interface LogoDesign {
   bannerX: number;  // 0-100 percentage
   bannerY: number;  // 0-100 percentage
   bannerHeight: number;  // 20-100 percentage of image height
+  bannerWidth: number;  // 20-100 percentage of image width
   bannerColor: string;
   bannerOpacity: number;  // 0-100
+  bannerRotation: number; // 0 or 90
 }
 
 interface LogoDesignerProps {
   onDesignChange: (design: LogoDesign) => void;
   design: LogoDesign;
+  previewImage?: string;
 }
 
-export const LogoDesigner = ({ onDesignChange, design }: LogoDesignerProps) => {
+export const LogoDesigner = ({ onDesignChange, design, previewImage }: LogoDesignerProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [logoLight, setLogoLight] = useState<string | null>(null);
   const [logoDark, setLogoDark] = useState<string | null>(null);
   const [activeVariant, setActiveVariant] = useState<'light' | 'dark' | 'custom'>('custom');
-  const [dragMode, setDragMode] = useState<'logo' | 'banner' | null>(null);
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
+  const [isDraggingBanner, setIsDraggingBanner] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,7 +62,7 @@ export const LogoDesigner = ({ onDesignChange, design }: LogoDesignerProps) => {
         
         if (data.logo_light && !design.logoUrl) {
           setActiveVariant('light');
-          onDesignChange({ ...design, logoUrl: data.logo_light });
+          onDesignChange({ ...design, logoUrl: data.logo_light, enabled: true });
         }
       }
     } catch (error) {
@@ -86,7 +80,7 @@ export const LogoDesigner = ({ onDesignChange, design }: LogoDesignerProps) => {
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setActiveVariant('custom');
-      onDesignChange({ ...design, logoUrl: result });
+      onDesignChange({ ...design, logoUrl: result, enabled: true });
       toast.success('Logo uppladdad');
     };
     reader.readAsDataURL(file);
@@ -96,7 +90,7 @@ export const LogoDesigner = ({ onDesignChange, design }: LogoDesignerProps) => {
     const selectedLogo = variant === 'light' ? logoLight : logoDark;
     if (selectedLogo) {
       setActiveVariant(variant);
-      onDesignChange({ ...design, logoUrl: selectedLogo });
+      onDesignChange({ ...design, logoUrl: selectedLogo, enabled: true });
       toast.success(`${variant === 'light' ? 'Ljus' : 'Mörk'} logo vald`);
     }
   };
@@ -120,25 +114,38 @@ export const LogoDesigner = ({ onDesignChange, design }: LogoDesignerProps) => {
     setIsDragging(false);
   };
 
-  const handlePreviewClick = (e: React.MouseEvent<HTMLDivElement>, mode: 'logo' | 'banner') => {
+  const handleCanvasDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleCanvasDrop = (e: React.DragEvent, type: 'logo' | 'banner') => {
+    e.preventDefault();
     if (!previewRef.current) return;
     
     const rect = previewRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     
-    if (mode === 'logo') {
+    if (type === 'logo') {
       onDesignChange({ ...design, logoX: x, logoY: y });
+      setIsDraggingLogo(false);
+      toast.success('Logo placerad');
     } else {
       onDesignChange({ ...design, bannerX: x, bannerY: y });
+      setIsDraggingBanner(false);
+      toast.success('Banner placerad');
     }
-    
-    setDragMode(null);
-    toast.success(mode === 'logo' ? 'Logo placerad' : 'Banner placerad');
   };
 
-  const content = (
-    <div className="space-y-4">
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold mb-2">Logo Design</h2>
+        <p className="text-sm text-muted-foreground">
+          Designa din logo-layout med full kontroll över placering och utseende
+        </p>
+      </div>
+
       {/* Logo Variants Selection */}
       {(logoLight || logoDark) && (
         <div className="space-y-3">
@@ -168,20 +175,20 @@ export const LogoDesigner = ({ onDesignChange, design }: LogoDesignerProps) => {
         </div>
       )}
 
-      {/* Logo Upload */}
+      {/* Compact Logo Upload */}
       <div>
-        <Label className="text-sm font-medium mb-2 block">Eller ladda upp egen</Label>
+        <Label className="text-sm font-medium mb-2 block">Eller ladda upp egen logo</Label>
         <div
-          className={`border-2 border-dashed rounded-lg p-4 md:p-6 transition-colors ${
+          className={`border-2 border-dashed rounded-lg p-3 transition-colors ${
             isDragging ? 'border-primary bg-primary/5' : 'border-border'
-          } ${activeVariant === 'custom' && design.logoUrl ? 'border-primary' : ''}`}
+          }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
         >
           {design.logoUrl && activeVariant === 'custom' ? (
-            <div className="flex flex-col items-center gap-3">
-              <img src={design.logoUrl} alt="Logo" className="max-h-16 md:max-h-20 object-contain" />
+            <div className="flex items-center gap-3">
+              <img src={design.logoUrl} alt="Logo" className="h-12 w-12 object-contain" />
               <Button
                 variant="outline"
                 size="sm"
@@ -191,11 +198,10 @@ export const LogoDesigner = ({ onDesignChange, design }: LogoDesignerProps) => {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-3 text-center">
-              <Upload className="w-6 h-6 md:w-8 md:h-8 text-muted-foreground" />
-              <div>
-                <p className="text-xs md:text-sm font-medium text-foreground">Dra och släpp din logo här</p>
-                <p className="text-xs text-muted-foreground">eller klicka för att välja</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Dra och släpp eller</span>
               </div>
               <Button
                 variant="outline"
@@ -221,250 +227,194 @@ export const LogoDesigner = ({ onDesignChange, design }: LogoDesignerProps) => {
 
       {design.logoUrl && (
         <>
-          {/* Enable/Disable Logo */}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="enable-logo"
-              checked={design.enabled}
-              onCheckedChange={(checked) => onDesignChange({ ...design, enabled: checked as boolean })}
-            />
-            <Label htmlFor="enable-logo" className="text-sm font-medium cursor-pointer">
-              Lägg till logo på bilderna
-            </Label>
+          {/* Interactive Preview with Drag & Drop */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Förhandsvisning - Dra elementen för att placera</Label>
+            <div 
+              ref={previewRef}
+              className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden border-2 border-border"
+              onDragOver={handleCanvasDragOver}
+              onDrop={(e) => {
+                if (isDraggingLogo) handleCanvasDrop(e, 'logo');
+                if (isDraggingBanner) handleCanvasDrop(e, 'banner');
+              }}
+            >
+              {/* Background - actual generated image or gradient */}
+              {previewImage ? (
+                <img src={previewImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20" />
+              )}
+              
+              {/* Banner */}
+              {design.bannerEnabled && (
+                <div
+                  className="absolute cursor-move"
+                  draggable
+                  onDragStart={() => setIsDraggingBanner(true)}
+                  onDragEnd={() => setIsDraggingBanner(false)}
+                  style={{
+                    left: `${design.bannerX}%`,
+                    top: `${design.bannerY}%`,
+                    transform: `translate(-50%, -50%) rotate(${design.bannerRotation}deg)`,
+                    width: design.bannerRotation === 0 ? `${design.bannerWidth}%` : `${design.bannerHeight}%`,
+                    height: design.bannerRotation === 0 ? `${design.bannerHeight}%` : `${design.bannerWidth}%`,
+                    backgroundColor: design.bannerColor,
+                    opacity: design.bannerOpacity / 100,
+                  }}
+                />
+              )}
+              
+              {/* Logo */}
+              <div
+                className="absolute cursor-move"
+                draggable
+                onDragStart={() => setIsDraggingLogo(true)}
+                onDragEnd={() => setIsDraggingLogo(false)}
+                style={{
+                  left: `${design.logoX}%`,
+                  top: `${design.logoY}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${design.logoSize * 100}%`,
+                }}
+              >
+                <img src={design.logoUrl} alt="Logo" className="w-full h-auto object-contain pointer-events-none" />
+              </div>
+              
+              {(isDraggingLogo || isDraggingBanner) && (
+                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center pointer-events-none">
+                  <p className="text-sm font-medium text-foreground bg-background/90 px-4 py-2 rounded-full">
+                    Släpp för att placera {isDraggingLogo ? 'logo' : 'banner'}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {design.enabled && (
-            <>
-              {/* Interactive Preview */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Förhandsvisning & Placering</Label>
-                <div 
-                  ref={previewRef}
-                  className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden border-2 border-border cursor-crosshair"
-                  onClick={(e) => dragMode && handlePreviewClick(e, dragMode)}
-                >
-                  {/* Sample background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20" />
-                  
-                  {/* Banner */}
-                  {design.bannerEnabled && (
-                    <div
-                      className="absolute"
-                      style={{
-                        left: `${design.bannerX}%`,
-                        top: `${design.bannerY}%`,
-                        transform: 'translate(-50%, -50%)',
-                        width: '15%',
-                        height: `${design.bannerHeight}%`,
-                        backgroundColor: design.bannerColor,
-                        opacity: design.bannerOpacity / 100,
-                        pointerEvents: 'none'
-                      }}
+          {/* Logo Size Slider */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Logo storlek</Label>
+              <span className="text-xs text-muted-foreground">{Math.round(design.logoSize * 100)}%</span>
+            </div>
+            <Slider
+              value={[design.logoSize * 100]}
+              onValueChange={(value) => onDesignChange({ ...design, logoSize: value[0] / 100 })}
+              min={10}
+              max={50}
+              step={5}
+              className="w-full"
+            />
+          </div>
+
+          {/* Banner Controls */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Banner/Band</Label>
+              <Button
+                variant={design.bannerEnabled ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => onDesignChange({ ...design, bannerEnabled: !design.bannerEnabled })}
+              >
+                {design.bannerEnabled ? 'Aktiverad' : 'Lägg till'}
+              </Button>
+            </div>
+
+            {design.bannerEnabled && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Färg</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={design.bannerColor}
+                      onChange={(e) => onDesignChange({ ...design, bannerColor: e.target.value })}
+                      className="h-10 w-20"
                     />
-                  )}
-                  
-                  {/* Logo */}
-                  {design.logoUrl && (
-                    <div
-                      className="absolute"
-                      style={{
-                        left: `${design.logoX}%`,
-                        top: `${design.logoY}%`,
-                        transform: 'translate(-50%, -50%)',
-                        width: `${design.logoSize * 100}%`,
-                        pointerEvents: 'none'
-                      }}
-                    >
-                      <img src={design.logoUrl} alt="Logo" className="w-full h-auto object-contain" />
-                    </div>
-                  )}
-                  
-                  {dragMode && (
-                    <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                      <p className="text-sm font-medium text-foreground bg-background/90 px-4 py-2 rounded-full">
-                        Klicka för att placera {dragMode === 'logo' ? 'logo' : 'banner'}
-                      </p>
-                    </div>
-                  )}
+                    <Input
+                      type="text"
+                      value={design.bannerColor}
+                      onChange={(e) => onDesignChange({ ...design, bannerColor: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant={dragMode === 'logo' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setDragMode(dragMode === 'logo' ? null : 'logo')}
-                  >
-                    <Move className="w-4 h-4 mr-2" />
-                    {dragMode === 'logo' ? 'Avbryt' : 'Flytta logo'}
-                  </Button>
-                  {design.bannerEnabled && (
-                    <Button
-                      variant={dragMode === 'banner' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setDragMode(dragMode === 'banner' ? null : 'banner')}
-                    >
-                      <Move className="w-4 h-4 mr-2" />
-                      {dragMode === 'banner' ? 'Avbryt' : 'Flytta banner'}
-                    </Button>
-                  )}
-                </div>
-              </div>
 
-              {/* Logo Size Slider */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Logo storlek</Label>
-                  <span className="text-xs text-muted-foreground">{Math.round(design.logoSize * 100)}%</span>
-                </div>
-                <Slider
-                  value={[design.logoSize * 100]}
-                  onValueChange={(value) => onDesignChange({ ...design, logoSize: value[0] / 100 })}
-                  min={10}
-                  max={50}
-                  step={5}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Banner Controls */}
-              <div className="space-y-3 pt-2 border-t">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="enable-banner"
-                    checked={design.bannerEnabled}
-                    onCheckedChange={(checked) => onDesignChange({ ...design, bannerEnabled: checked as boolean })}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">
+                      {design.bannerRotation === 0 ? 'Bredd' : 'Höjd'} (täcker bilden)
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{design.bannerWidth}%</span>
+                  </div>
+                  <Slider
+                    value={[design.bannerWidth]}
+                    onValueChange={(value) => onDesignChange({ ...design, bannerWidth: value[0] })}
+                    min={20}
+                    max={100}
+                    step={5}
+                    className="w-full"
                   />
-                  <Label htmlFor="enable-banner" className="text-sm font-medium cursor-pointer">
-                    Lägg till banner/band
-                  </Label>
                 </div>
 
-                {design.bannerEnabled && (
-                  <>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Bandfärg</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={design.bannerColor}
-                          onChange={(e) => onDesignChange({ ...design, bannerColor: e.target.value })}
-                          className="h-10 w-20"
-                        />
-                        <Input
-                          type="text"
-                          value={design.bannerColor}
-                          onChange={(e) => onDesignChange({ ...design, bannerColor: e.target.value })}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">
+                      {design.bannerRotation === 0 ? 'Höjd' : 'Bredd'} (tjocklek)
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{design.bannerHeight}%</span>
+                  </div>
+                  <Slider
+                    value={[design.bannerHeight]}
+                    onValueChange={(value) => onDesignChange({ ...design, bannerHeight: value[0] })}
+                    min={5}
+                    max={40}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Bandhöjd</Label>
-                        <span className="text-xs text-muted-foreground">{design.bannerHeight}%</span>
-                      </div>
-                      <Slider
-                        value={[design.bannerHeight]}
-                        onValueChange={(value) => onDesignChange({ ...design, bannerHeight: value[0] })}
-                        min={20}
-                        max={100}
-                        step={5}
-                        className="w-full"
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Transparens</Label>
+                    <span className="text-xs text-muted-foreground">{design.bannerOpacity}%</span>
+                  </div>
+                  <Slider
+                    value={[design.bannerOpacity]}
+                    onValueChange={(value) => onDesignChange({ ...design, bannerOpacity: value[0] })}
+                    min={10}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Transparens</Label>
-                        <span className="text-xs text-muted-foreground">{design.bannerOpacity}%</span>
-                      </div>
-                      <Slider
-                        value={[design.bannerOpacity]}
-                        onValueChange={(value) => onDesignChange({ ...design, bannerOpacity: value[0] })}
-                        min={10}
-                        max={100}
-                        step={5}
-                        className="w-full"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Copy className="w-4 h-4 mr-2" />
-                  Applicera på alla
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Star className="w-4 h-4 mr-2" />
-                  Spara favorit
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDesignChange({ ...design, bannerRotation: design.bannerRotation === 0 ? 90 : 0 })}
+                  className="w-full"
+                >
+                  <RotateCw className="w-4 h-4 mr-2" />
+                  Rotera {design.bannerRotation === 0 ? '90°' : 'tillbaka'}
                 </Button>
               </div>
-            </>
-          )}
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-4 border-t">
+            <Button variant="outline" size="sm" className="flex-1">
+              <Copy className="w-4 h-4 mr-2" />
+              Applicera på alla
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1">
+              <Star className="w-4 h-4 mr-2" />
+              Spara favorit
+            </Button>
+          </div>
         </>
       )}
     </div>
-  );
-
-  if (isMobile) {
-    return (
-      <Card className="p-3 md:p-4">
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full flex items-center justify-between p-0 hover:bg-transparent"
-            >
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <ImageIcon className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-sm md:text-base font-bold text-foreground">Logo Design (valfritt)</h3>
-                  {design.enabled && <p className="text-xs text-muted-foreground">Aktiverad</p>}
-                </div>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-4">
-            {content}
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="p-4 md:p-6">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            className="w-full flex items-center justify-between p-0 hover:bg-transparent mb-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <ImageIcon className="w-6 h-6 text-primary" />
-              </div>
-              <div className="text-left">
-                <h3 className="text-lg font-bold text-foreground">Logo Design (valfritt)</h3>
-                <p className="text-sm text-muted-foreground">
-                  {design.enabled ? 'Aktiverad' : 'Designa din logo-layout'}
-                </p>
-              </div>
-            </div>
-            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          {content}
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
   );
 };
