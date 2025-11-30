@@ -131,18 +131,32 @@ export const ImageUploader = ({
             </div>
             <div className="flex gap-2">
               {uploadedImages.length > 0 && onEditImage && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (uploadedImages.length > 0) {
-                      onEditImage(uploadedImages[0].id, 'adjust');
-                    }
-                  }}
-                >
-                  <Sliders className="w-4 h-4 mr-2" />
-                  Redigera
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    title="Beskär"
+                    onClick={() => {
+                      if (uploadedImages.length > 0) {
+                        onEditImage(uploadedImages[0].id, 'crop');
+                      }
+                    }}
+                  >
+                    <Scissors className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    title="Redigera"
+                    onClick={() => {
+                      if (uploadedImages.length > 0) {
+                        onEditImage(uploadedImages[0].id, 'adjust');
+                      }
+                    }}
+                  >
+                    <Sliders className="w-4 h-4" />
+                  </Button>
+                </>
               )}
               {uploadedImages.length > 0 && (
                 <Button
@@ -165,48 +179,14 @@ export const ImageUploader = ({
               <Card key={image.id} className="group relative overflow-hidden">
                 <div className="aspect-square relative">
                   <img
-                    src={image.finalUrl || image.preview}
-                    alt={image.status === 'completed' ? 'Bearbetad bild' : 'Original bild'}
-                    className={`w-full h-full object-cover transition-all duration-700 ${
-                      image.status === 'processing' 
-                        ? 'blur-md animate-pulse scale-105' 
-                        : 'blur-0'
-                    }`}
+                    src={image.croppedUrl || image.preview}
+                    alt="Original bild"
+                    className="w-full h-full object-cover"
                   />
                   
-                  {/* Processing overlay with pulsing effect */}
-                  {image.status === 'processing' && (
-                    <div className="absolute inset-0 bg-primary/20 animate-pulse flex items-center justify-center">
-                      <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-primary/50">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
-                          <span className="text-sm font-medium text-foreground">Bearbetar...</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Status badge */}
-                  {image.status === 'completed' && (
-                    <div className="absolute top-2 right-2 px-3 py-1 rounded-full bg-green-500 text-white text-xs font-medium shadow-lg animate-fade-in flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      Klar
-                    </div>
-                  )}
-                  
-                  {image.status === 'failed' && (
-                    <div className="absolute top-2 right-2 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-medium shadow-lg">
-                      ✗ Misslyckades
-                    </div>
-                  )}
-                  
                   {/* Hover overlay with actions */}
-                  <div className={`absolute inset-0 bg-black/60 transition-opacity flex items-center justify-center gap-2 ${
-                    image.status === 'processing' ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
-                  }`}>
-                    {onEditImage && image.status !== 'processing' && (
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    {onEditImage && (
                       <>
                         <Button
                           variant="secondary"
@@ -233,25 +213,6 @@ export const ImageUploader = ({
                           <Sliders className="w-4 h-4" />
                         </Button>
                       </>
-                    )}
-                    {image.finalUrl && (
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="rounded-full shadow-lg hover-scale"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = image.finalUrl!;
-                          link.download = `${image.file.name.split('.')[0]}-${image.sceneId}.png`;
-                          link.click();
-                        }}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                          <polyline points="7 10 12 15 17 10"/>
-                          <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                      </Button>
                     )}
                     <Button
                       variant="destructive"

@@ -62,10 +62,10 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
-  const [localAspectRatio, setLocalAspectRatio] = useState<'landscape' | 'portrait'>(aspectRatio);
+  const [localAspectRatio, setLocalAspectRatio] = useState<'landscape' | 'portrait' | 'free'>(aspectRatio);
   const [isAutoCropping, setIsAutoCropping] = useState(false);
 
-  const aspectRatioValue = localAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
+  const aspectRatioValue = localAspectRatio === 'free' ? undefined : localAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
 
   const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -107,8 +107,16 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
     if (!image || !croppedAreaPixels) return;
 
     try {
-      const targetWidth = localAspectRatio === 'landscape' ? 1920 : 1080;
-      const targetHeight = localAspectRatio === 'landscape' ? 1080 : 1920;
+      let targetWidth, targetHeight;
+      
+      if (localAspectRatio === 'free') {
+        // Use actual cropped dimensions for free mode
+        targetWidth = croppedAreaPixels.width;
+        targetHeight = croppedAreaPixels.height;
+      } else {
+        targetWidth = localAspectRatio === 'landscape' ? 1920 : 1080;
+        targetHeight = localAspectRatio === 'landscape' ? 1080 : 1920;
+      }
       
       const croppedImage = await getCroppedImg(
         image.finalUrl,
@@ -117,7 +125,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
         targetHeight
       );
 
-      onSave(image.id, croppedImage, localAspectRatio);
+      onSave(image.id, croppedImage, localAspectRatio as 'landscape' | 'portrait');
       toast.success('Beskärning sparad');
       onClose();
     } catch (e) {
@@ -167,7 +175,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
             {/* Aspect Ratio */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Format</Label>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 <Button
                   variant={localAspectRatio === 'landscape' ? 'default' : 'outline'}
                   size="sm"
@@ -185,6 +193,14 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
                 >
                   <Maximize2 className="w-3 h-3 rotate-90" />
                   9:16
+                </Button>
+                <Button
+                  variant={localAspectRatio === 'free' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setLocalAspectRatio('free')}
+                  className="gap-1 h-8 text-xs"
+                >
+                  Fri
                 </Button>
               </div>
             </div>
