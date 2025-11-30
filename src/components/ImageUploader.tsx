@@ -49,6 +49,7 @@ export const ImageUploader = ({
       file,
       preview: URL.createObjectURL(file),
       status: 'pending' as const,
+      isOriginal: true
     }));
 
     setLocalImages((prev) => [...prev, ...newImages]);
@@ -116,7 +117,7 @@ export const ImageUploader = ({
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-2">
                 <ImageIcon className="w-5 h-5" />
-                Uppladdade bilder ({uploadedImages.length})
+                Uppladdade bilder ({uploadedImages.filter(img => img.isOriginal).length})
               </h3>
               {onRegistrationNumberChange && (
                 <input
@@ -175,7 +176,7 @@ export const ImageUploader = ({
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {uploadedImages.map((image) => (
+            {uploadedImages.filter(img => img.isOriginal).map((image) => (
               <Card key={image.id} className="group relative overflow-hidden">
                 <div className="aspect-square relative">
                   <img

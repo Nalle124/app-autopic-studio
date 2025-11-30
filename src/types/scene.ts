@@ -55,6 +55,7 @@ export interface UploadedImage {
   sceneId?: string;
   carAnalysis?: CarAnalysis;
   carAdjustments?: CarAdjustments;
+  isOriginal?: boolean; // Flag to distinguish original uploads from generated results
 }
 
 export interface ExportSettings {
