@@ -55,7 +55,8 @@ async function getCroppedImg(
     targetHeight
   );
 
-  return canvas.toDataURL('image/png');
+  // Use JPEG with quality 0.9 for much smaller file size
+  return canvas.toDataURL('image/jpeg', 0.9);
 }
 
 export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCropEditorProps) => {
