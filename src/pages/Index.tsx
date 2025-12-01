@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
-import { LogoDesigner, LogoDesign } from '@/components/LogoDesigner';
+import { BrandKitDesigner, LogoDesign } from '@/components/BrandKitDesigner';
 import { ProjectGallery } from '@/components/ProjectGallery';
 import { UploadedImage, SceneMetadata, ExportSettings, CarAdjustments } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
@@ -841,16 +841,14 @@ export default function Index() {
         />
       )}
 
-      {/* Logo Designer Dialog */}
-      <Dialog open={logoDesignOpen} onOpenChange={setLogoDesignOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <LogoDesigner
-            design={logoDesign}
-            onDesignChange={setLogoDesign}
-            previewImage={uploadedImages.find(img => img.status === 'completed')?.finalUrl}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Brand Kit Designer Modal */}
+      <BrandKitDesigner
+        open={logoDesignOpen}
+        onClose={() => setLogoDesignOpen(false)}
+        design={logoDesign}
+        onDesignChange={setLogoDesign}
+        previewImage={uploadedImages.find(img => img.status === 'completed')?.finalUrl}
+      />
     </div>
   );
 }
