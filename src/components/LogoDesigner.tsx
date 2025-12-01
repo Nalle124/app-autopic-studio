@@ -175,54 +175,42 @@ export const LogoDesigner = ({ onDesignChange, design, previewImage }: LogoDesig
         </div>
       )}
 
-      {/* Compact Logo Upload */}
-      <div>
-        <Label className="text-sm font-medium mb-2 block">Eller ladda upp egen logo</Label>
-        <div
-          className={`border-2 border-dashed rounded-lg p-3 transition-colors ${
-            isDragging ? 'border-primary bg-primary/5' : 'border-border'
-          }`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-        >
-          {design.logoUrl && activeVariant === 'custom' ? (
-            <div className="flex items-center gap-3">
-              <img src={design.logoUrl} alt="Logo" className="h-12 w-12 object-contain" />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => document.getElementById('logo-upload')?.click()}
-              >
-                Byt logo
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Upload className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Dra och släpp eller</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => document.getElementById('logo-upload')?.click()}
-              >
-                Välj logo
-              </Button>
-            </div>
-          )}
-          <input
-            id="logo-upload"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileSelect(file);
-            }}
-          />
-        </div>
+      {/* Compact Logo Upload - smaller and minimal */}
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Eller ladda upp egen</Label>
+        {design.logoUrl && activeVariant === 'custom' ? (
+          <div className="flex items-center gap-2 p-2 border rounded-lg">
+            <img src={design.logoUrl} alt="Logo" className="h-8 w-8 object-contain" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => document.getElementById('logo-upload')?.click()}
+            >
+              Byt
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs"
+            onClick={() => document.getElementById('logo-upload')?.click()}
+          >
+            <Upload className="w-3 h-3 mr-1" />
+            Välj fil
+          </Button>
+        )}
+        <input
+          id="logo-upload"
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileSelect(file);
+          }}
+        />
       </div>
 
       {design.logoUrl && (
