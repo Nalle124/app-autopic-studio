@@ -107,37 +107,38 @@ export default function Index() {
 
           const formData = new FormData();
           
-          // Use cropped/adjusted image if available, otherwise use original
+          // CRITICAL: Use original file if no edits, or croppedUrl if edited
+          // This ensures we send the correct image for processing
           if (image.croppedUrl) {
+            console.log(`Processing edited image: ${image.file.name}`);
             const response = await fetch(image.croppedUrl);
             let blob = await response.blob();
             
-            // Compress if blob is too large (>5MB)
-            if (blob.size > 5 * 1024 * 1024) {
-              console.log(`Compressing large image: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
-              const img = new Image();
-              img.src = image.croppedUrl;
-              await new Promise((resolve) => { img.onload = resolve; });
-              
-              const canvas = document.createElement('canvas');
-              const maxDim = 2048;
-              const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-              canvas.width = img.width * scale;
-              canvas.height = img.height * scale;
-              
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                blob = await new Promise<Blob>((resolve) => 
-                  canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.85)
-                );
-                console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
-              }
+            // Always convert to JPEG and compress edited images
+            console.log(`Converting edited image to JPEG: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+            const img = new Image();
+            img.src = image.croppedUrl;
+            await new Promise((resolve) => { img.onload = resolve; });
+            
+            const canvas = document.createElement('canvas');
+            const maxDim = 2048;
+            const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              blob = await new Promise<Blob>((resolve) => 
+                canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9)
+              );
+              console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
             }
             
             const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg';
             formData.append('image', blob, fileName);
           } else {
+            console.log(`Processing original image: ${image.file.name}`);
             formData.append('image', image.file);
           }
           
@@ -164,6 +165,8 @@ export default function Index() {
 
           if (result.success) {
             successCount++;
+            // CRITICAL: Update the image with finalUrl but keep it as the SAME image
+            // Don't add new images, just update the existing one
             setUploadedImages(prev =>
               prev.map(img =>
                 img.id === image.id
@@ -172,6 +175,7 @@ export default function Index() {
                       status: 'completed',
                       finalUrl: result.finalUrl,
                       sceneId: selectedScene.id,
+                      isOriginal: false, // Mark as generated
                       carAdjustments: { brightness: 0, contrast: 0, warmth: 0, shadows: 0 }
                     }
                   : img
