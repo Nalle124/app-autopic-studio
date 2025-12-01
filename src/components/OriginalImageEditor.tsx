@@ -200,27 +200,27 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
             </div>
 
             <div className="flex flex-col gap-2 pt-4">
-              {hasChanges && onApplyToAll && (
-                <Button 
-                  variant="secondary" 
-                  onClick={() => {
-                    onApplyToAll(adjustments);
-                    toast.success('Inställningar kommer appliceras på alla bilder vid generering');
-                  }} 
-                  className="w-full"
-                >
-                  Applicera på alla bilder
+              {hasChanges && (
+                <Button variant="outline" onClick={handleReset} className="w-full">
+                  Återställ
                 </Button>
               )}
               <div className="flex gap-2">
-                {hasChanges && (
-                  <Button variant="outline" onClick={handleReset} className="flex-1">
-                    Återställ
-                  </Button>
-                )}
                 <Button onClick={handleSave} className="flex-1">
                   Spara
                 </Button>
+                {onApplyToAll && (
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => {
+                      onApplyToAll(adjustments);
+                      toast.success('Inställningar kommer appliceras på alla bilder');
+                    }} 
+                    className="flex-1"
+                  >
+                    Applicera på alla
+                  </Button>
+                )}
               </div>
             </div>
           </div>
