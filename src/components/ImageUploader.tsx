@@ -84,7 +84,7 @@ export const ImageUploader = ({
     });
   };
   return <div className="space-y-6">
-      <Card className="">
+      <Card {...getRootProps()} className="cursor-pointer hover:border-primary/80 transition-colors">
         <input {...getInputProps()} />
         <div className="p-12 text-center shadow-none border-primary border border-dashed">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
