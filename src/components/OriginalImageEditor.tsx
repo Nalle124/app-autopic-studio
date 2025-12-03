@@ -13,7 +13,7 @@ interface OriginalImageEditorProps {
   open: boolean;
   onClose: () => void;
   onSave: (adjustedUrl: string, adjustments: CarAdjustments) => void;
-  onApplyToAll?: (adjustments: CarAdjustments) => void;
+  onApplyToAll?: (adjustments: CarAdjustments, isCleanBoost?: boolean) => void;
 }
 
 const defaultAdjustments: CarAdjustments = {
@@ -246,14 +246,14 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
                   variant="outline" 
                   className="w-full gap-2 bg-gradient-to-r from-green-500/10 to-green-600/10 border-green-500/30 hover:bg-green-500/20 text-green-700 dark:text-green-400"
                   onClick={() => {
-                    // Apply clean boost to all images
+                    // Apply clean boost to all images with animation flag
                     const cleanBoost: CarAdjustments = {
                       brightness: 10,
                       contrast: 10,
                       warmth: -10,
                       shadows: -10,
                     };
-                    onApplyToAll(cleanBoost);
+                    onApplyToAll(cleanBoost, true);
                     onClose();
                   }}
                 >

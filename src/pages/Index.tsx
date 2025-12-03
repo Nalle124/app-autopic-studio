@@ -46,6 +46,7 @@ export default function Index() {
   const [activeTab, setActiveTab] = useState<'new' | 'history'>('new');
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
   const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());
+  const [animatingImages, setAnimatingImages] = useState<Set<string>>(new Set());
   const [logoDesign, setLogoDesign] = useState<LogoDesign>({
     enabled: false,
     logoUrl: null,
@@ -357,7 +358,17 @@ export default function Index() {
       toast.success('Justeringar sparade');
     });
   };
-  const handleApplyAdjustmentsToAllOriginals = (adjustments: CarAdjustments) => {
+  const handleApplyAdjustmentsToAllOriginals = (adjustments: CarAdjustments, showAnimation?: boolean) => {
+    // Trigger animation if requested
+    if (showAnimation) {
+      const allIds = new Set(uploadedImages.map(img => img.id));
+      setAnimatingImages(allIds);
+      // Clear animation after it completes
+      setTimeout(() => {
+        setAnimatingImages(new Set());
+      }, 1500);
+    }
+    
     // This stores the adjustments to be applied on generation
     uploadedImages.forEach(img => {
       fetch(img.preview).then(res => res.blob()).then(async blob => {
@@ -493,7 +504,8 @@ export default function Index() {
                 onRegistrationNumberChange={setRegistrationNumber} 
                 uploadedImages={uploadedImages} 
                 onEditImage={handleEditOriginalImage} 
-                onClearAll={() => setUploadedImages([])} 
+                onClearAll={() => setUploadedImages([])}
+                animatingImages={animatingImages}
               />
             </section>
 
@@ -709,14 +721,89 @@ export default function Index() {
                     <Button size="sm" variant="outline" title="Regenerera" onClick={async () => {
                   if (!selectedScene || !currentImage) return;
                   setPreviewImage(null);
+                  
+                  // Only regenerate this single image
                   setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
                     ...img,
-                    status: 'pending' as const,
+                    status: 'processing' as const,
                     finalUrl: undefined,
-                    isOriginal: true
                   } : img));
                   toast.info('Regenererar bild...');
-                  handleExport({ format: 'png', quality: 90, aspectRatio: 'original', includeTransparency: false });
+                  
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) {
+                      toast.error('Du måste vara inloggad');
+                      return;
+                    }
+                    
+                    const formData = new FormData();
+                    
+                    // Use croppedUrl if available, otherwise original
+                    if (currentImage.croppedUrl) {
+                      const response = await fetch(currentImage.croppedUrl);
+                      let blob = await response.blob();
+                      const img = new Image();
+                      img.src = currentImage.croppedUrl;
+                      await new Promise(resolve => { img.onload = resolve; });
+                      
+                      const canvas = document.createElement('canvas');
+                      const maxDim = 2048;
+                      const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+                      canvas.width = img.width * scale;
+                      canvas.height = img.height * scale;
+                      const ctx = canvas.getContext('2d');
+                      if (ctx) {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.9));
+                      }
+                      formData.append('image', blob, currentImage.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg');
+                    } else {
+                      formData.append('image', currentImage.file);
+                    }
+                    
+                    formData.append('scene', JSON.stringify(selectedScene));
+                    const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') 
+                      ? selectedScene.fullResUrl 
+                      : `${window.location.origin}${selectedScene.fullResUrl}`;
+                    formData.append('backgroundUrl', backgroundUrl);
+                    formData.append('userId', user.id);
+                    if (currentProjectId) {
+                      formData.append('projectId', currentProjectId);
+                    }
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 90000);
+                    
+                    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+                      method: 'POST',
+                      body: formData,
+                      signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                      setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
+                        ...img,
+                        status: 'completed',
+                        finalUrl: result.finalUrl,
+                        sceneId: selectedScene.id,
+                      } : img));
+                      toast.success('Bild regenererad!');
+                    } else {
+                      throw new Error(result.error || 'Processing failed');
+                    }
+                  } catch (error: any) {
+                    console.error('Error regenerating:', error);
+                    toast.error(`Fel: ${error.message || 'Okänt fel'}`);
+                    setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
+                      ...img,
+                      status: 'failed',
+                    } : img));
+                  }
                 }}>
                       <RefreshCw className="w-4 h-4" />
                       <span className="hidden sm:inline ml-1">Regenerera</span>
@@ -791,20 +878,19 @@ export default function Index() {
               setPreviewImage(croppedUrl);
             }
           }}
-          onApplyToAll={async (croppedUrl, newAspectRatio) => {
+          onApplyToAll={async (croppedUrl, newAspectRatio, cropSettings) => {
             if (!editingImage) return;
             
             // Get all completed images
             const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
-            const targetRatio = newAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
-            const targetWidth = newAspectRatio === 'landscape' ? 1920 : 1080;
-            const targetHeight = newAspectRatio === 'landscape' ? 1080 : 1920;
+            const targetWidth = cropSettings?.targetWidth || (newAspectRatio === 'landscape' ? 1920 : 1080);
+            const targetHeight = cropSettings?.targetHeight || (newAspectRatio === 'landscape' ? 1080 : 1920);
             
             // Collect all updates first
             const updates: Map<string, string> = new Map();
             updates.set(editingImage.id, croppedUrl);
             
-            // Apply same aspect ratio crop to all OTHER completed images
+            // Apply SAME crop settings to all OTHER completed images
             for (const img of completedImages) {
               if (img.id === editingImage.id) continue; // Skip current (already cropped)
               
@@ -817,22 +903,32 @@ export default function Index() {
                   image.onerror = reject;
                 });
                 
-                // Calculate center crop with target aspect ratio
-                const imgRatio = image.width / image.height;
-                let cropWidth, cropHeight, cropX, cropY;
+                // Use the same crop percent settings from the original crop
+                const cropAreaPercent = cropSettings?.croppedAreaPercent;
+                let cropX, cropY, cropWidth, cropHeight;
                 
-                if (imgRatio > targetRatio) {
-                  // Image is wider - crop sides
-                  cropHeight = image.height;
-                  cropWidth = cropHeight * targetRatio;
-                  cropX = (image.width - cropWidth) / 2;
-                  cropY = 0;
+                if (cropAreaPercent) {
+                  // Apply the same percentage-based crop
+                  cropX = (cropAreaPercent.x / 100) * image.width;
+                  cropY = (cropAreaPercent.y / 100) * image.height;
+                  cropWidth = (cropAreaPercent.width / 100) * image.width;
+                  cropHeight = (cropAreaPercent.height / 100) * image.height;
                 } else {
-                  // Image is taller - crop top/bottom
-                  cropWidth = image.width;
-                  cropHeight = cropWidth / targetRatio;
-                  cropX = 0;
-                  cropY = (image.height - cropHeight) / 2;
+                  // Fallback to center crop
+                  const targetRatio = targetWidth / targetHeight;
+                  const imgRatio = image.width / image.height;
+                  
+                  if (imgRatio > targetRatio) {
+                    cropHeight = image.height;
+                    cropWidth = cropHeight * targetRatio;
+                    cropX = (image.width - cropWidth) / 2;
+                    cropY = 0;
+                  } else {
+                    cropWidth = image.width;
+                    cropHeight = cropWidth / targetRatio;
+                    cropX = 0;
+                    cropY = (image.height - cropHeight) / 2;
+                  }
                 }
                 
                 // Create cropped image
@@ -935,7 +1031,7 @@ export default function Index() {
       </Dialog>
 
       {/* Original Image Adjustment Editor Dialog */}
-      {editingOriginal?.type === 'adjust' && <OriginalImageEditor imageUrl={editingOriginal.url} imageName={editingOriginal.name} open={true} onClose={() => setEditingOriginal(null)} onSave={(adjustedUrl, adjustments) => handleOriginalAdjustmentsSave(editingOriginal.id, adjustedUrl, adjustments)} onApplyToAll={handleApplyAdjustmentsToAllOriginals} />}
+      {editingOriginal?.type === 'adjust' && <OriginalImageEditor imageUrl={editingOriginal.url} imageName={editingOriginal.name} open={true} onClose={() => setEditingOriginal(null)} onSave={(adjustedUrl, adjustments) => handleOriginalAdjustmentsSave(editingOriginal.id, adjustedUrl, adjustments)} onApplyToAll={(adjustments, isCleanBoost) => handleApplyAdjustmentsToAllOriginals(adjustments, isCleanBoost)} />}
 
       {/* Brand Kit Designer Modal */}
       <BrandKitDesigner 
