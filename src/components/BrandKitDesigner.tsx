@@ -43,6 +43,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
   const [activeVariant, setActiveVariant] = useState<'light' | 'dark' | 'custom'>('custom');
   const [saveWithoutLogo, setSaveWithoutLogo] = useState(false);
   const [appliedToAll, setAppliedToAll] = useState(false);
+  const [loadingLogos, setLoadingLogos] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const [isDraggingBanner, setIsDraggingBanner] = useState(false);
   const [isDraggingLogo, setIsDraggingLogo] = useState(false);
@@ -62,6 +63,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
 
   const loadProfileLogos = async () => {
     try {
+      setLoadingLogos(true);
       const { data, error } = await supabase
         .from('profiles')
         .select('logo_light, logo_dark')
@@ -76,6 +78,8 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
       }
     } catch (error) {
       console.error('Error loading profile logos:', error);
+    } finally {
+      setLoadingLogos(false);
     }
   };
 
@@ -90,7 +94,6 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
       const result = e.target?.result as string;
       setActiveVariant('custom');
       onDesignChange({ ...design, logoUrl: result, enabled: true });
-      toast.success('Logo uppladdad');
     };
     reader.readAsDataURL(file);
   };
@@ -106,7 +109,6 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
   const handleRemoveLogo = () => {
     onDesignChange({ ...design, logoUrl: null, enabled: false });
     setActiveVariant('custom');
-    toast.success('Logo borttagen');
   };
 
   const handleRemoveDesign = () => {
@@ -127,7 +129,6 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
     });
     setActiveVariant('custom');
     setAppliedToAll(false);
-    toast.success('Design raderad');
   };
 
   const handleToggleBanner = () => {
@@ -141,17 +142,14 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
 
   const handleRemoveBanner = () => {
     onDesignChange({ ...design, bannerEnabled: false });
-    toast.success('Banner borttagen');
   };
 
   const handleApplyToAllToggle = () => {
     if (appliedToAll) {
       setAppliedToAll(false);
-      toast.success('Applicering på alla bilder avaktiverad');
     } else {
       onApplyToAll?.();
       setAppliedToAll(true);
-      toast.success('Design applicerad på alla bilder');
     }
   };
 
@@ -213,7 +211,12 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
             <div className="space-y-3">
               <Label className="text-sm font-medium">Logo</Label>
               
-              {(logoLight || logoDark) && (
+              {loadingLogos ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="h-8 bg-muted animate-pulse rounded" />
+                  <div className="h-8 bg-muted animate-pulse rounded" />
+                </div>
+              ) : (logoLight || logoDark) && (
                 <div className="grid grid-cols-2 gap-2">
                   {logoLight && (
                     <Button
@@ -222,7 +225,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                       onClick={() => handleVariantSelect('light')}
                       className="text-xs"
                     >
-                      Ljus
+                      Mörk bakgrund
                     </Button>
                   )}
                   {logoDark && (
@@ -232,7 +235,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                       onClick={() => handleVariantSelect('dark')}
                       className="text-xs"
                     >
-                      Mörk
+                      Ljus bakgrund
                     </Button>
                   )}
                 </div>
@@ -473,7 +476,6 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                   onClick={() => {
                     onSave?.(true, saveWithoutLogo);
                     onClose();
-                    toast.success(saveWithoutLogo ? 'Sparade med och utan logo' : 'Design sparad');
                   }}
                   disabled={!design.logoUrl && !design.bannerEnabled}
                 >
