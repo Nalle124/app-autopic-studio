@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 interface ImageUploaderProps {
   onImagesUploaded: (images: UploadedImage[]) => void;
   onClearAll?: () => void;
+  onRemoveImage?: (imageId: string) => void;
   registrationNumber?: string;
   onRegistrationNumberChange?: (value: string) => void;
   uploadedImages: UploadedImage[];
@@ -18,6 +19,7 @@ interface ImageUploaderProps {
 export const ImageUploader = ({
   onImagesUploaded,
   onClearAll,
+  onRemoveImage,
   registrationNumber,
   onRegistrationNumberChange,
   uploadedImages: propUploadedImages,
@@ -74,14 +76,18 @@ export const ImageUploader = ({
     maxFiles: 50
   });
   const removeImage = (id: string) => {
-    setLocalImages(prev => {
-      const updated = prev.filter(img => img.id !== id);
-      const removed = prev.find(img => img.id === id);
-      if (removed) {
-        URL.revokeObjectURL(removed.preview);
-      }
-      return updated;
-    });
+    const removed = uploadedImages.find(img => img.id === id);
+    if (removed) {
+      URL.revokeObjectURL(removed.preview);
+    }
+    
+    // Update local state
+    setLocalImages(prev => prev.filter(img => img.id !== id));
+    
+    // Notify parent to update its state
+    if (onRemoveImage) {
+      onRemoveImage(id);
+    }
   };
   return <div className="space-y-6">
       <Card {...getRootProps()} className="cursor-pointer hover:border-primary/80 transition-colors">

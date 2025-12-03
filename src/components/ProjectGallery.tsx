@@ -17,8 +17,16 @@ interface Project {
   }[];
 }
 
+interface OrphanJob {
+  id: string;
+  final_url: string | null;
+  scene_id: string;
+  created_at: string;
+}
+
 export const ProjectGallery = () => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [orphanJobs, setOrphanJobs] = useState<OrphanJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -34,7 +42,8 @@ export const ProjectGallery = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: projectsData, error } = await supabase
+      // Load projects with their jobs
+      const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select(`
           id,
@@ -49,9 +58,21 @@ export const ProjectGallery = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (projectsError) throw projectsError;
+
+      // Load orphan jobs (jobs without project_id)
+      const { data: orphanData, error: orphanError } = await supabase
+        .from('processing_jobs')
+        .select('id, final_url, scene_id, created_at')
+        .eq('user_id', user.id)
+        .is('project_id', null)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false });
+
+      if (orphanError) throw orphanError;
 
       setProjects(projectsData as any);
+      setOrphanJobs(orphanData || []);
     } catch (error) {
       console.error('Error loading projects:', error);
       toast.error('Kunde inte ladda projekt');
@@ -108,7 +129,7 @@ export const ProjectGallery = () => {
     );
   }
 
-  if (projects.length === 0) {
+  if (projects.length === 0 && orphanJobs.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Inga projekt ännu. Skapa ditt första!</p>
@@ -119,12 +140,23 @@ export const ProjectGallery = () => {
   const completedJobs = selectedProject?.jobs.filter(j => j.final_url) || [];
   const currentJob = completedJobs[previewIndex];
 
+  // Create virtual project for orphan jobs
+  const orphanProject: Project | null = orphanJobs.length > 0 ? {
+    id: 'orphan',
+    registration_number: 'Utan projekt',
+    created_at: orphanJobs[0]?.created_at || new Date().toISOString(),
+    jobs: orphanJobs.map(j => ({ id: j.id, final_url: j.final_url, scene_id: j.scene_id }))
+  } : null;
+
+  const allProjects = orphanProject ? [orphanProject, ...projects] : projects;
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map((project) => {
+        {allProjects.map((project) => {
           const projectJobs = project.jobs.filter(j => j.final_url);
           const firstImage = projectJobs[0];
+          const isOrphan = project.id === 'orphan';
 
           return (
             <Card 
@@ -178,23 +210,25 @@ export const ProjectGallery = () => {
                   >
                     <Download className="w-4 h-4" />
                   </Button>
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteProject(project.id);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {!isOrphan && (
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteProject(project.id);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
 
               {/* Project Info */}
               <div className="p-4">
                 <h3 className="font-semibold text-lg mb-1">
-                  {project.registration_number}
+                  {isOrphan ? 'Utan registreringsnummer' : project.registration_number}
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {projectJobs.length} bilder • {new Date(project.created_at).toLocaleDateString('sv-SE')}
