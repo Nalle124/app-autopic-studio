@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
@@ -538,9 +538,9 @@ export default function Index() {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {uploadedImages.filter(img => img.status === 'completed').map((image, idx) => <Card key={image.id} className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''}`} onClick={() => toggleImageSelection(image.id)}>
-                        {/* Image Preview */}
+                        {/* Image Preview - ALWAYS show finalUrl for generated images */}
                         <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                          <img src={image.croppedUrl || image.finalUrl} alt={image.file.name} className="w-full h-full object-cover" />
+                          <img src={image.finalUrl} alt={image.file.name} className="w-full h-full object-cover" />
                           
                           {/* Selection indicator */}
                           {selectedImages.has(image.id) && <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
@@ -553,7 +553,7 @@ export default function Index() {
                     e.stopPropagation();
                     const completedImages = uploadedImages.filter(img => img.status === 'completed');
                     setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
-                    setPreviewImage(image.croppedUrl || image.finalUrl!);
+                    setPreviewImage(image.finalUrl!);
                   }} title="Förhandsgranska">
                               <Eye className="w-4 h-4" />
                             </Button>
@@ -572,23 +572,23 @@ export default function Index() {
           const completedImages = uploadedImages.filter(img => img.status === 'completed');
           const currentImage = completedImages[galleryIndex];
           return <div className="flex flex-col h-full">
-                {/* Image Display */}
+                {/* Image Display - Always show finalUrl for generated images */}
                 <div className="relative flex-1 bg-black">
-                  <img src={currentImage?.croppedUrl || currentImage?.finalUrl || previewImage} alt="Preview" className="w-full h-full object-contain" />
+                  <img src={currentImage?.finalUrl || previewImage} alt="Preview" className="w-full h-full object-contain" />
                   
                   {/* Navigation Arrows */}
                   {completedImages.length > 1 && <>
                       <Button size="icon" variant="secondary" className="absolute left-4 top-1/2 -translate-y-1/2" onClick={() => {
                   const newIndex = galleryIndex > 0 ? galleryIndex - 1 : completedImages.length - 1;
                   setGalleryIndex(newIndex);
-                  setPreviewImage(completedImages[newIndex].croppedUrl || completedImages[newIndex].finalUrl!);
+                  setPreviewImage(completedImages[newIndex].finalUrl!);
                 }}>
                         <ChevronLeft className="w-6 h-6" />
                       </Button>
                       <Button size="icon" variant="secondary" className="absolute right-4 top-1/2 -translate-y-1/2" onClick={() => {
                   const newIndex = galleryIndex < completedImages.length - 1 ? galleryIndex + 1 : 0;
                   setGalleryIndex(newIndex);
-                  setPreviewImage(completedImages[newIndex].croppedUrl || completedImages[newIndex].finalUrl!);
+                  setPreviewImage(completedImages[newIndex].finalUrl!);
                 }}>
                         <ChevronRight className="w-6 h-6" />
                       </Button>
@@ -603,6 +603,22 @@ export default function Index() {
                 {/* Action Buttons - Always visible */}
                 <div className="p-4 bg-background border-t flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                   <div className="flex gap-2">
+                    <Button size="icon" variant="outline" title="Regenerera" onClick={async () => {
+                  if (!selectedScene || !currentImage) return;
+                  setPreviewImage(null);
+                  // Reset status to pending for regeneration
+                  setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
+                    ...img,
+                    status: 'pending' as const,
+                    finalUrl: undefined,
+                    isOriginal: true
+                  } : img));
+                  toast.info('Regenererar bild...');
+                  // Trigger export for this single image
+                  handleExport({ format: 'png', quality: 90, aspectRatio: 'original', includeTransparency: false });
+                }}>
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
                     <Button size="icon" variant="outline" title="Justera" onClick={() => {
                   setEditingImage({
                     id: currentImage.id,
@@ -625,7 +641,7 @@ export default function Index() {
                     </Button>
                   </div>
                   
-                  <Button className="w-full sm:w-auto" onClick={() => handleDownload(currentImage.croppedUrl || currentImage.finalUrl!, `${registrationNumber}_${currentImage.id}.jpg`)}>
+                  <Button className="w-full sm:w-auto" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber}_${currentImage.id}.jpg`)}>
                     <Download className="w-4 h-4 mr-2" />
                     Ladda ner
                   </Button>
