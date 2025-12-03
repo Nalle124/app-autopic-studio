@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Sparkles } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -155,6 +156,24 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
 
           {/* Controls */}
           <div className="space-y-6">
+            {/* Clean Boost Preset */}
+            <Button 
+              variant="outline" 
+              className="w-full gap-2 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30 hover:bg-primary/20"
+              onClick={() => {
+                setAdjustments({
+                  brightness: 10,
+                  contrast: 10,
+                  warmth: -10,
+                  shadows: -10,
+                });
+                toast.success('Clean Boost applicerad');
+              }}
+            >
+              <Sparkles className="w-4 h-4" />
+              Clean Boost
+            </Button>
+
             <div className="space-y-2">
               <Label>Ljusstyrka ({adjustments.brightness})</Label>
               <Slider
@@ -209,12 +228,12 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
                 <Button onClick={handleSave} className="flex-1">
                   Spara
                 </Button>
-                {onApplyToAll && (
+              {onApplyToAll && (
                   <Button 
                     variant="secondary" 
                     onClick={() => {
                       onApplyToAll(adjustments);
-                      toast.success('Inställningar kommer appliceras på alla bilder');
+                      onClose();
                     }} 
                     className="flex-1"
                   >
@@ -222,6 +241,26 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
                   </Button>
                 )}
               </div>
+              {onApplyToAll && (
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 bg-gradient-to-r from-green-500/10 to-green-600/10 border-green-500/30 hover:bg-green-500/20 text-green-700 dark:text-green-400"
+                  onClick={() => {
+                    // Apply clean boost to all images
+                    const cleanBoost: CarAdjustments = {
+                      brightness: 10,
+                      contrast: 10,
+                      warmth: -10,
+                      shadows: -10,
+                    };
+                    onApplyToAll(cleanBoost);
+                    onClose();
+                  }}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Clean Boost på alla bilder
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
@@ -18,7 +18,11 @@ import { CarAdjustmentPanel } from '@/components/CarAdjustmentPanel';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 export default function Index() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,6 +45,7 @@ export default function Index() {
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [activeTab, setActiveTab] = useState<'new' | 'history'>('new');
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
+  const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());
   const [logoDesign, setLogoDesign] = useState<LogoDesign>({
     enabled: false,
     logoUrl: null,
@@ -419,18 +424,31 @@ export default function Index() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-foreground font-serif text-xl font-medium">Reflekt Studio</h1>
           
-          <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'new' | 'history')} className="w-auto">
-            <TabsList className="bg-background/80 backdrop-blur-sm">
-              <TabsTrigger value="new" className="gap-2">
-                <Plus className="w-4 h-4" />
-                Nytt Projekt
-              </TabsTrigger>
-              <TabsTrigger value="history" className="gap-2">
-                <History className="w-4 h-4" />
-                Galleri
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-3">
+            <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'new' | 'history')} className="w-auto">
+              <TabsList className="bg-background/80 backdrop-blur-sm">
+                <TabsTrigger value="new" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Nytt Projekt
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-2">
+                  <History className="w-4 h-4" />
+                  Galleri
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            {user && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/profil')}
+                title="Profil"
+              >
+                <User className="w-5 h-5" />
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -511,21 +529,35 @@ export default function Index() {
                         variant="ghost" 
                         size="sm" 
                         className="w-full text-muted-foreground"
-                        onClick={() => setLogoDesign({
-                          enabled: false,
-                          logoUrl: null,
-                          logoX: 85,
-                          logoY: 85,
-                          logoSize: 0.15,
-                          bannerEnabled: false,
-                          bannerX: 50,
-                          bannerY: 90,
-                          bannerHeight: 10,
-                          bannerWidth: 100,
-                          bannerColor: '#000000',
-                          bannerOpacity: 80,
-                          bannerRotation: 0
-                        })}
+                        onClick={() => {
+                          // Restore original images if we have them stored
+                          if (originalImagesBeforeLogo.size > 0) {
+                            setUploadedImages(prev => prev.map(img => {
+                              const original = originalImagesBeforeLogo.get(img.id);
+                              if (original) {
+                                return { ...img, finalUrl: original };
+                              }
+                              return img;
+                            }));
+                            setOriginalImagesBeforeLogo(new Map());
+                            toast.success('Originalbilder återställda');
+                          }
+                          setLogoDesign({
+                            enabled: false,
+                            logoUrl: null,
+                            logoX: 85,
+                            logoY: 85,
+                            logoSize: 0.15,
+                            bannerEnabled: false,
+                            bannerX: 50,
+                            bannerY: 90,
+                            bannerHeight: 10,
+                            bannerWidth: 100,
+                            bannerColor: '#000000',
+                            bannerOpacity: 80,
+                            bannerRotation: 0
+                          });
+                        }}
                       >
                         <X className="w-4 h-4 mr-2" />
                         Ta bort logo design
@@ -569,6 +601,22 @@ export default function Index() {
                 setPreviewImage(completedImages[0].croppedUrl || completedImages[0].finalUrl!);
               }}>
                       <Sliders className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button variant="outline" size="icon" title="Beskär" onClick={() => {
+                const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                if (completedImages.length === 0) return;
+
+                // Open crop editor on first image
+                const firstImage = completedImages[0];
+                setEditingImage({
+                  id: firstImage.id,
+                  finalUrl: firstImage.finalUrl!,
+                  fileName: firstImage.file.name,
+                  type: 'crop'
+                });
+              }}>
+                      <Scissors className="w-4 h-4" />
                     </Button>
                     
                     <Button size="sm" onClick={() => {
@@ -752,10 +800,9 @@ export default function Index() {
             const targetWidth = newAspectRatio === 'landscape' ? 1920 : 1080;
             const targetHeight = newAspectRatio === 'landscape' ? 1080 : 1920;
             
-            // Apply crop to current image first
-            setUploadedImages(prev => prev.map(img => 
-              img.id === editingImage.id ? { ...img, finalUrl: croppedUrl } : img
-            ));
+            // Collect all updates first
+            const updates: Map<string, string> = new Map();
+            updates.set(editingImage.id, croppedUrl);
             
             // Apply same aspect ratio crop to all OTHER completed images
             for (const img of completedImages) {
@@ -802,14 +849,17 @@ export default function Index() {
                 );
                 
                 const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                
-                setUploadedImages(prev => prev.map(prevImg => 
-                  prevImg.id === img.id ? { ...prevImg, finalUrl: croppedDataUrl } : prevImg
-                ));
+                updates.set(img.id, croppedDataUrl);
               } catch (error) {
                 console.error('Error cropping image:', error);
               }
             }
+            
+            // Apply all updates in one batch
+            setUploadedImages(prev => prev.map(img => {
+              const newUrl = updates.get(img.id);
+              return newUrl ? { ...img, finalUrl: newUrl } : img;
+            }));
             
             setAspectRatio(newAspectRatio);
             setEditingImage(null);
@@ -819,7 +869,7 @@ export default function Index() {
               setGalleryIndex(0);
               setPreviewImage(croppedUrl);
             }
-            toast.success('Beskärning applicerad på alla bilder');
+            toast.success(`Beskärning applicerad på ${updates.size} bilder`);
           }}
           aspectRatio={aspectRatio} 
         />
@@ -898,6 +948,17 @@ export default function Index() {
           // Apply logo design to all completed images
           const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
           
+          // Store original URLs before applying logo (for undo functionality)
+          const originals = new Map<string, string>();
+          completedImages.forEach(img => {
+            if (img.finalUrl && !originalImagesBeforeLogo.has(img.id)) {
+              originals.set(img.id, img.finalUrl);
+            }
+          });
+          if (originals.size > 0) {
+            setOriginalImagesBeforeLogo(prev => new Map([...prev, ...originals]));
+          }
+          
           for (const img of completedImages) {
             try {
               // Create canvas to composite logo
@@ -945,19 +1006,48 @@ export default function Index() {
 
               const withLogoUrl = canvas.toDataURL('image/jpeg', 0.9);
               
-              // Update image with logo version
-              setUploadedImages(prev => prev.map(prevImg => 
-                prevImg.id === img.id 
-                  ? { ...prevImg, finalUrl: withLogoUrl }
-                  : prevImg
-              ));
+              if (withoutLogo) {
+                // Keep original AND add new image with logo
+                // Create a new image entry for the logo version
+                const newImageId = `${img.id}_logo`;
+                setUploadedImages(prev => {
+                  // Check if logo version already exists
+                  const exists = prev.some(p => p.id === newImageId);
+                  if (exists) {
+                    // Update existing logo version
+                    return prev.map(prevImg => 
+                      prevImg.id === newImageId 
+                        ? { ...prevImg, finalUrl: withLogoUrl }
+                        : prevImg
+                    );
+                  }
+                  // Add new image entry for logo version after the original
+                  const originalIndex = prev.findIndex(p => p.id === img.id);
+                  const newImage: UploadedImage = {
+                    ...img,
+                    id: newImageId,
+                    finalUrl: withLogoUrl,
+                    isOriginal: false,
+                  };
+                  const newArray = [...prev];
+                  newArray.splice(originalIndex + 1, 0, newImage);
+                  return newArray;
+                });
+              } else {
+                // Update image with logo version (replace original)
+                setUploadedImages(prev => prev.map(prevImg => 
+                  prevImg.id === img.id 
+                    ? { ...prevImg, finalUrl: withLogoUrl }
+                    : prevImg
+                ));
+              }
 
             } catch (error) {
               console.error('Error applying logo:', error);
             }
           }
           
-          toast.success('Logo design sparad på alla bilder');
+          toast.success(withoutLogo ? 'Sparade med och utan logo' : 'Logo design sparad på alla bilder');
         }}
         onApplyToAll={() => {
           toast.success('Design kommer appliceras vid sparning');
