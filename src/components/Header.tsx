@@ -37,14 +37,6 @@ export const Header = () => {
           </button>
           
           <nav className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/exempel')}
-              className="text-sm font-medium hover:text-primary"
-            >
-              Exempel
-            </Button>
-            
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
