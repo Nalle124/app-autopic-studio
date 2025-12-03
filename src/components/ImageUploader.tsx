@@ -107,7 +107,7 @@ export const ImageUploader = ({
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-2">
                 <ImageIcon className="w-5 h-5" />
-                Uppladdade bilder ({uploadedImages.filter(img => img.isOriginal).length})
+                Uppladdade bilder ({uploadedImages.filter(img => img.isOriginal !== false).length})
               </h3>
               {onRegistrationNumberChange && <input type="text" placeholder="Registreringsnummer (valfritt)" value={registrationNumber || ''} onChange={e => onRegistrationNumberChange(e.target.value.toUpperCase())} className="text-sm px-3 py-1.5 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 max-w-[200px]" maxLength={10} />}
             </div>
@@ -139,9 +139,22 @@ export const ImageUploader = ({
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {uploadedImages.filter(img => img.isOriginal).map(image => <Card key={image.id} className="group relative overflow-hidden">
+            {uploadedImages.filter(img => img.isOriginal !== false).map(image => <Card key={image.id} className="group relative overflow-hidden">
                 <div className="aspect-square relative">
                   <img src={image.croppedUrl || image.preview} alt="Original bild" className="w-full h-full object-cover" />
+                  
+                  {/* Status badge */}
+                  <div className="absolute top-2 left-2">
+                    {image.status === 'completed' ? (
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-500/90 text-white font-medium">Klar</span>
+                    ) : image.status === 'processing' ? (
+                      <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/90 text-white font-medium animate-pulse">Bearbetar...</span>
+                    ) : image.status === 'failed' ? (
+                      <span className="text-xs px-2 py-1 rounded-full bg-red-500/90 text-white font-medium">Misslyckades</span>
+                    ) : (
+                      <span className="text-xs px-2 py-1 rounded-full bg-muted/90 text-foreground font-medium">Uppladdad</span>
+                    )}
+                  </div>
                   
                   {/* Hover overlay with actions */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">

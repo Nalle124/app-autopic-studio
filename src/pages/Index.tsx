@@ -169,15 +169,14 @@ export default function Index() {
             const result = await response.json();
             if (result.success) {
               successCount++;
-              // CRITICAL: Update the image with finalUrl but keep it as the SAME image
-              // Don't add new images, just update the existing one
+              // CRITICAL: Update the image with finalUrl but keep it visible in uploads
+              // The image stays in uploads section with status badge showing "Klar"
               setUploadedImages(prev => prev.map(img => img.id === image.id ? {
                 ...img,
                 status: 'completed',
                 finalUrl: result.finalUrl,
                 sceneId: selectedScene.id,
-                isOriginal: false,
-                // Mark as generated
+                // Keep isOriginal true so it stays visible in uploads
                 carAdjustments: {
                   brightness: 0,
                   contrast: 0,
@@ -567,46 +566,17 @@ export default function Index() {
 
       {/* Gallery Preview Dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
           {previewImage && (() => {
           const completedImages = uploadedImages.filter(img => img.status === 'completed');
           const currentImage = completedImages[galleryIndex];
-          return <div className="flex flex-col h-full">
-                {/* Image Display - Always show finalUrl for generated images */}
-                <div className="relative flex-1 bg-black">
-                  <img src={currentImage?.finalUrl || previewImage} alt="Preview" className="w-full h-full object-contain" />
-                  
-                  {/* Navigation Arrows */}
-                  {completedImages.length > 1 && <>
-                      <Button size="icon" variant="secondary" className="absolute left-4 top-1/2 -translate-y-1/2" onClick={() => {
-                  const newIndex = galleryIndex > 0 ? galleryIndex - 1 : completedImages.length - 1;
-                  setGalleryIndex(newIndex);
-                  setPreviewImage(completedImages[newIndex].finalUrl!);
-                }}>
-                        <ChevronLeft className="w-6 h-6" />
-                      </Button>
-                      <Button size="icon" variant="secondary" className="absolute right-4 top-1/2 -translate-y-1/2" onClick={() => {
-                  const newIndex = galleryIndex < completedImages.length - 1 ? galleryIndex + 1 : 0;
-                  setGalleryIndex(newIndex);
-                  setPreviewImage(completedImages[newIndex].finalUrl!);
-                }}>
-                        <ChevronRight className="w-6 h-6" />
-                      </Button>
-                    </>}
-                  
-                  {/* Counter */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                    {galleryIndex + 1} / {completedImages.length}
-                  </div>
-                </div>
-                
-                {/* Action Buttons - Always visible */}
-                <div className="p-4 bg-background border-t flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          return <div className="flex flex-col h-full max-h-[90vh]">
+                {/* Action Buttons - At top for visibility */}
+                <div className="p-3 bg-background border-b flex flex-wrap items-center justify-between gap-2">
                   <div className="flex gap-2">
-                    <Button size="icon" variant="outline" title="Regenerera" onClick={async () => {
+                    <Button size="sm" variant="outline" title="Regenerera" onClick={async () => {
                   if (!selectedScene || !currentImage) return;
                   setPreviewImage(null);
-                  // Reset status to pending for regeneration
                   setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
                     ...img,
                     status: 'pending' as const,
@@ -614,12 +584,13 @@ export default function Index() {
                     isOriginal: true
                   } : img));
                   toast.info('Regenererar bild...');
-                  // Trigger export for this single image
                   handleExport({ format: 'png', quality: 90, aspectRatio: 'original', includeTransparency: false });
                 }}>
-                      <RefreshCw className="w-4 h-4" />
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      Regenerera
                     </Button>
-                    <Button size="icon" variant="outline" title="Justera" onClick={() => {
+                    <Button size="sm" variant="outline" title="Justera" onClick={() => {
+                  setPreviewImage(null);
                   setEditingImage({
                     id: currentImage.id,
                     finalUrl: currentImage.finalUrl!,
@@ -627,9 +598,11 @@ export default function Index() {
                     type: 'adjust'
                   });
                 }}>
-                      <Sliders className="w-4 h-4" />
+                      <Sliders className="w-4 h-4 mr-1" />
+                      Justera
                     </Button>
-                    <Button size="icon" variant="outline" title="Beskär" onClick={() => {
+                    <Button size="sm" variant="outline" title="Beskär" onClick={() => {
+                  setPreviewImage(null);
                   setEditingImage({
                     id: currentImage.id,
                     finalUrl: currentImage.finalUrl!,
@@ -637,14 +610,43 @@ export default function Index() {
                     type: 'crop'
                   });
                 }}>
-                      <Scissors className="w-4 h-4" />
+                      <Scissors className="w-4 h-4 mr-1" />
+                      Beskär
                     </Button>
                   </div>
                   
-                  <Button className="w-full sm:w-auto" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber}_${currentImage.id}.jpg`)}>
-                    <Download className="w-4 h-4 mr-2" />
+                  <Button size="sm" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber}_${currentImage.id}.jpg`)}>
+                    <Download className="w-4 h-4 mr-1" />
                     Ladda ner
                   </Button>
+                </div>
+                
+                {/* Image Display */}
+                <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
+                  <img src={currentImage?.finalUrl || previewImage} alt="Preview" className="max-w-full max-h-[calc(90vh-120px)] object-contain" />
+                  
+                  {/* Navigation Arrows */}
+                  {completedImages.length > 1 && <>
+                      <Button size="icon" variant="secondary" className="absolute left-2 top-1/2 -translate-y-1/2" onClick={() => {
+                  const newIndex = galleryIndex > 0 ? galleryIndex - 1 : completedImages.length - 1;
+                  setGalleryIndex(newIndex);
+                  setPreviewImage(completedImages[newIndex].finalUrl!);
+                }}>
+                        <ChevronLeft className="w-5 h-5" />
+                      </Button>
+                      <Button size="icon" variant="secondary" className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => {
+                  const newIndex = galleryIndex < completedImages.length - 1 ? galleryIndex + 1 : 0;
+                  setGalleryIndex(newIndex);
+                  setPreviewImage(completedImages[newIndex].finalUrl!);
+                }}>
+                        <ChevronRight className="w-5 h-5" />
+                      </Button>
+                    </>}
+                  
+                  {/* Counter */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                    {galleryIndex + 1} / {completedImages.length}
+                  </div>
                 </div>
               </div>;
         })()}
@@ -662,32 +664,53 @@ export default function Index() {
         </DialogContent>
       </Dialog>
 
-      {/* Adjustment Editor Dialog */}
-      <Dialog open={editingImage?.type === 'adjust'} onOpenChange={() => setEditingImage(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          {editingImage?.type === 'adjust' && <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Justera bilens ljus</h2>
-              
-              <CarAdjustmentPanel adjustments={uploadedImages.find(img => img.id === editingImage.id)?.carAdjustments || {
-            brightness: 0,
-            contrast: 0,
-            warmth: 0,
-            shadows: 0
-          }} onAdjustmentsChange={adj => handleAdjustmentsChange(editingImage.id, adj)} onApplyToAll={() => {
-            const currentImage = uploadedImages.find(img => img.id === editingImage.id);
-            if (currentImage?.carAdjustments) {
-              handleApplyAdjustmentsToAll(currentImage.carAdjustments);
+      {/* Adjustment Editor Dialog - using OriginalImageEditor for generated images */}
+      {editingImage?.type === 'adjust' && (
+        <OriginalImageEditor
+          imageUrl={editingImage.finalUrl}
+          imageName={editingImage.fileName}
+          open={true}
+          onClose={() => {
+            setEditingImage(null);
+            // Return to preview gallery
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            const index = completedImages.findIndex(img => img.id === editingImage.id);
+            if (index !== -1) {
+              setGalleryIndex(index);
+              setPreviewImage(completedImages[index].finalUrl!);
             }
-          }} />
-
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setEditingImage(null)}>
-                  Stäng
-                </Button>
-              </div>
-            </div>}
-        </DialogContent>
-      </Dialog>
+          }}
+          onSave={(adjustedUrl, adjustments) => {
+            // Update the finalUrl with the adjusted image
+            setUploadedImages(prev => prev.map(img => 
+              img.id === editingImage.id 
+                ? { ...img, finalUrl: adjustedUrl, carAdjustments: adjustments }
+                : img
+            ));
+            setEditingImage(null);
+            // Return to preview gallery with updated image
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            const index = completedImages.findIndex(img => img.id === editingImage.id);
+            if (index !== -1) {
+              setGalleryIndex(index);
+              setPreviewImage(adjustedUrl);
+            }
+            toast.success('Justeringar sparade');
+          }}
+          onApplyToAll={(adjustments) => {
+            // Apply adjustments to all completed images
+            uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).forEach(async (img) => {
+              const result = await applyCarAdjustments(img.finalUrl!, adjustments);
+              setUploadedImages(prev => prev.map(prevImg => 
+                prevImg.id === img.id 
+                  ? { ...prevImg, finalUrl: result, carAdjustments: adjustments }
+                  : prevImg
+              ));
+            });
+            toast.success('Justeringar applicerade på alla bilder');
+          }}
+        />
+      )}
 
       {/* Original Image Crop Editor Dialog */}
       <Dialog open={editingOriginal?.type === 'crop'} onOpenChange={() => setEditingOriginal(null)}>
@@ -704,6 +727,80 @@ export default function Index() {
       {editingOriginal?.type === 'adjust' && <OriginalImageEditor imageUrl={editingOriginal.url} imageName={editingOriginal.name} open={true} onClose={() => setEditingOriginal(null)} onSave={(adjustedUrl, adjustments) => handleOriginalAdjustmentsSave(editingOriginal.id, adjustedUrl, adjustments)} onApplyToAll={handleApplyAdjustmentsToAllOriginals} />}
 
       {/* Brand Kit Designer Modal */}
-      <BrandKitDesigner open={logoDesignOpen} onClose={() => setLogoDesignOpen(false)} design={logoDesign} onDesignChange={setLogoDesign} previewImage={uploadedImages.find(img => img.status === 'completed')?.finalUrl} />
+      <BrandKitDesigner 
+        open={logoDesignOpen} 
+        onClose={() => setLogoDesignOpen(false)} 
+        design={logoDesign} 
+        onDesignChange={setLogoDesign} 
+        previewImage={uploadedImages.find(img => img.status === 'completed')?.finalUrl}
+        onSave={async (withLogo, withoutLogo) => {
+          // Apply logo design to all completed images
+          const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
+          
+          for (const img of completedImages) {
+            try {
+              // Create canvas to composite logo
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              if (!ctx) continue;
+
+              const baseImg = new Image();
+              baseImg.crossOrigin = 'anonymous';
+              baseImg.src = img.finalUrl!;
+              await new Promise(resolve => { baseImg.onload = resolve; });
+
+              canvas.width = baseImg.width;
+              canvas.height = baseImg.height;
+              ctx.drawImage(baseImg, 0, 0);
+
+              // Draw banner if enabled
+              if (logoDesign.bannerEnabled) {
+                ctx.save();
+                ctx.globalAlpha = logoDesign.bannerOpacity / 100;
+                ctx.fillStyle = logoDesign.bannerColor;
+                const bx = (logoDesign.bannerX / 100) * canvas.width;
+                const by = (logoDesign.bannerY / 100) * canvas.height;
+                const bw = (logoDesign.bannerWidth / 100) * canvas.width;
+                const bh = (logoDesign.bannerHeight / 100) * canvas.height;
+                ctx.translate(bx, by);
+                ctx.rotate((logoDesign.bannerRotation * Math.PI) / 180);
+                ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+                ctx.restore();
+              }
+
+              // Draw logo if present
+              if (logoDesign.logoUrl) {
+                const logoImg = new Image();
+                logoImg.crossOrigin = 'anonymous';
+                logoImg.src = logoDesign.logoUrl;
+                await new Promise(resolve => { logoImg.onload = resolve; });
+
+                const logoW = canvas.width * logoDesign.logoSize;
+                const logoH = (logoImg.height / logoImg.width) * logoW;
+                const logoX = (logoDesign.logoX / 100) * canvas.width - logoW / 2;
+                const logoY = (logoDesign.logoY / 100) * canvas.height - logoH / 2;
+                ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+              }
+
+              const withLogoUrl = canvas.toDataURL('image/jpeg', 0.9);
+              
+              // Update image with logo version
+              setUploadedImages(prev => prev.map(prevImg => 
+                prevImg.id === img.id 
+                  ? { ...prevImg, finalUrl: withLogoUrl }
+                  : prevImg
+              ));
+
+            } catch (error) {
+              console.error('Error applying logo:', error);
+            }
+          }
+          
+          toast.success('Logo design sparad på alla bilder');
+        }}
+        onApplyToAll={() => {
+          toast.success('Design kommer appliceras vid sparning');
+        }}
+      />
     </div>;
 }
