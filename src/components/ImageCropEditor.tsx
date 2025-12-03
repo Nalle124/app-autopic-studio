@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Crop, Save, X, Maximize2 } from 'lucide-react';
+import { Crop, Save, X, Maximize2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ImageCropEditorProps {
@@ -62,7 +62,8 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [localAspectRatio, setLocalAspectRatio] = useState<'landscape' | 'portrait' | 'free'>(aspectRatio);
-  const [isSaving, setIsSaving] = useState(false);
+const [isSaving, setIsSaving] = useState(false);
+  const [appliedToAll, setAppliedToAll] = useState(false);
 
   // For free mode, don't set aspect - allow any shape
   const aspectRatioValue = localAspectRatio === 'free' ? undefined : localAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
@@ -139,6 +140,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
         : localAspectRatio;
 
       onApplyToAll(croppedImage, outputRatio as 'landscape' | 'portrait');
+      setAppliedToAll(true);
       toast.success('Beskärning applicerad på alla bilder');
     } catch (e) {
       console.error(e);
@@ -248,8 +250,26 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
           </Button>
           <div className="flex-1 flex gap-2">
             {onApplyToAll && (
-              <Button variant="outline" onClick={handleApplyToAll} className="flex-1 h-9 text-sm" disabled={isSaving}>
-                Applicera på alla
+              <Button 
+                variant={appliedToAll ? "default" : "outline"} 
+                onClick={() => {
+                  if (appliedToAll) {
+                    setAppliedToAll(false);
+                  } else {
+                    handleApplyToAll();
+                  }
+                }} 
+                className={`flex-1 h-9 text-sm ${appliedToAll ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`} 
+                disabled={isSaving}
+              >
+                {appliedToAll ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 mr-1.5" />
+                    Applicerat på alla
+                  </>
+                ) : (
+                  'Applicera på alla'
+                )}
               </Button>
             )}
             <Button onClick={handleSave} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 h-9 text-sm" disabled={isSaving}>
