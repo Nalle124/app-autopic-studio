@@ -437,6 +437,17 @@ export default function Index() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {activeTab === 'history' ? <section className="space-y-6">
+            <div className="flex items-center gap-4 mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setActiveTab('new')}
+                className="gap-2"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Tillbaka
+              </Button>
+            </div>
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-2">Dina Projekt</h2>
               <p className="text-muted-foreground">Se och hantera dina tidigare skapade bilgallerier</p>
@@ -453,9 +464,19 @@ export default function Index() {
                   <h2 className="text-foreground font-sans text-xl font-medium">Ladda upp bilder</h2>
                 </div>
               </div>
-              <ImageUploader onImagesUploaded={newImages => {
-            setUploadedImages(prev => [...prev, ...newImages]);
-          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} />
+              <ImageUploader 
+                onImagesUploaded={newImages => {
+                  setUploadedImages(prev => [...prev, ...newImages]);
+                }} 
+                onRemoveImage={(imageId) => {
+                  setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+                }}
+                registrationNumber={registrationNumber} 
+                onRegistrationNumberChange={setRegistrationNumber} 
+                uploadedImages={uploadedImages} 
+                onEditImage={handleEditOriginalImage} 
+                onClearAll={() => setUploadedImages([])} 
+              />
             </section>
 
             {/* Step 2: Scene Selection */}
@@ -721,7 +742,14 @@ export default function Index() {
               setGalleryIndex(index);
               setPreviewImage(croppedUrl);
             }
-          }} 
+          }}
+          onApplyToAll={(croppedUrl, newAspectRatio) => {
+            // Apply same crop settings to all completed images
+            // Note: Since each image has different content, we just store the aspect ratio preference
+            setAspectRatio(newAspectRatio);
+            setEditingImage(null);
+            toast.success('Bildformat applicerat på alla bilder');
+          }}
           aspectRatio={aspectRatio} 
         />
       )}
