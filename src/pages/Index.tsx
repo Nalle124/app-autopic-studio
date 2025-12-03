@@ -744,21 +744,82 @@ export default function Index() {
             }
           }}
           onApplyToAll={async (croppedUrl, newAspectRatio) => {
+            if (!editingImage) return;
+            
+            // Get all completed images
+            const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
+            const targetRatio = newAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
+            const targetWidth = newAspectRatio === 'landscape' ? 1920 : 1080;
+            const targetHeight = newAspectRatio === 'landscape' ? 1080 : 1920;
+            
             // Apply crop to current image first
-            if (editingImage) {
-              setUploadedImages(prev => prev.map(img => 
-                img.id === editingImage.id ? { ...img, finalUrl: croppedUrl } : img
-              ));
+            setUploadedImages(prev => prev.map(img => 
+              img.id === editingImage.id ? { ...img, finalUrl: croppedUrl } : img
+            ));
+            
+            // Apply same aspect ratio crop to all OTHER completed images
+            for (const img of completedImages) {
+              if (img.id === editingImage.id) continue; // Skip current (already cropped)
+              
+              try {
+                const image = new Image();
+                image.crossOrigin = 'anonymous';
+                image.src = img.finalUrl!;
+                await new Promise((resolve, reject) => {
+                  image.onload = resolve;
+                  image.onerror = reject;
+                });
+                
+                // Calculate center crop with target aspect ratio
+                const imgRatio = image.width / image.height;
+                let cropWidth, cropHeight, cropX, cropY;
+                
+                if (imgRatio > targetRatio) {
+                  // Image is wider - crop sides
+                  cropHeight = image.height;
+                  cropWidth = cropHeight * targetRatio;
+                  cropX = (image.width - cropWidth) / 2;
+                  cropY = 0;
+                } else {
+                  // Image is taller - crop top/bottom
+                  cropWidth = image.width;
+                  cropHeight = cropWidth / targetRatio;
+                  cropX = 0;
+                  cropY = (image.height - cropHeight) / 2;
+                }
+                
+                // Create cropped image
+                const canvas = document.createElement('canvas');
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) continue;
+                
+                ctx.drawImage(
+                  image,
+                  cropX, cropY, cropWidth, cropHeight,
+                  0, 0, targetWidth, targetHeight
+                );
+                
+                const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                
+                setUploadedImages(prev => prev.map(prevImg => 
+                  prevImg.id === img.id ? { ...prevImg, finalUrl: croppedDataUrl } : prevImg
+                ));
+              } catch (error) {
+                console.error('Error cropping image:', error);
+              }
             }
+            
             setAspectRatio(newAspectRatio);
             setEditingImage(null);
+            
             // Return to gallery
-            const completedImages = uploadedImages.filter(img => img.status === 'completed');
             if (completedImages.length > 0) {
               setGalleryIndex(0);
               setPreviewImage(croppedUrl);
             }
-            toast.success('Beskärning sparad');
+            toast.success('Beskärning applicerad på alla bilder');
           }}
           aspectRatio={aspectRatio} 
         />
