@@ -150,41 +150,60 @@ export default function Index() {
           formData.append('scene', JSON.stringify(selectedScene));
           const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
           formData.append('backgroundUrl', backgroundUrl);
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
-            method: 'POST',
-            body: formData
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          
+          // Add timeout with AbortController (90 seconds for AI processing)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 90000);
+          
+          try {
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+              method: 'POST',
+              body: formData,
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const result = await response.json();
+            if (result.success) {
+              successCount++;
+              // CRITICAL: Update the image with finalUrl but keep it as the SAME image
+              // Don't add new images, just update the existing one
+              setUploadedImages(prev => prev.map(img => img.id === image.id ? {
+                ...img,
+                status: 'completed',
+                finalUrl: result.finalUrl,
+                sceneId: selectedScene.id,
+                isOriginal: false,
+                // Mark as generated
+                carAdjustments: {
+                  brightness: 0,
+                  contrast: 0,
+                  warmth: 0,
+                  shadows: 0
+                }
+              } : img));
+            } else {
+              throw new Error(result.error || 'Processing failed');
+            }
+          } catch (fetchError: any) {
+            clearTimeout(timeoutId);
+            if (fetchError.name === 'AbortError') {
+              throw new Error('Timeout: AI-bearbetning tog för lång tid');
+            }
+            throw fetchError;
           }
-          const result = await response.json();
-          if (result.success) {
-            successCount++;
-            // CRITICAL: Update the image with finalUrl but keep it as the SAME image
-            // Don't add new images, just update the existing one
-            setUploadedImages(prev => prev.map(img => img.id === image.id ? {
-              ...img,
-              status: 'completed',
-              finalUrl: result.finalUrl,
-              sceneId: selectedScene.id,
-              isOriginal: false,
-              // Mark as generated
-              carAdjustments: {
-                brightness: 0,
-                contrast: 0,
-                warmth: 0,
-                shadows: 0
-              }
-            } : img));
-          } else {
-            throw new Error(result.error || 'Processing failed');
-          }
-        } catch (error) {
+        } catch (error: any) {
           errorCount++;
           console.error('Error processing image:', error);
+          toast.error(`Fel: ${error.message || 'Okänt fel'}`);
+          // Keep isOriginal true so the image remains visible in uploads
           setUploadedImages(prev => prev.map(img => img.id === image.id ? {
             ...img,
-            status: 'failed'
+            status: 'failed',
+            isOriginal: true
           } : img));
         }
       }
