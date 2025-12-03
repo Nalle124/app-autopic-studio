@@ -37,6 +37,8 @@ serve(async (req) => {
     const imageFile = formData.get('image') as File;
     const sceneData = formData.get('scene') as string;
     const backgroundImageUrl = formData.get('backgroundUrl') as string;
+    const projectId = formData.get('projectId') as string | null;
+    const userId = formData.get('userId') as string | null;
     
     if (!imageFile || !sceneData || !backgroundImageUrl) {
       throw new Error('Missing required fields');
@@ -178,11 +180,36 @@ serve(async (req) => {
       .from('processed-cars')
       .remove([uploadFilename]);
 
+    // Save to processing_jobs if user is logged in
+    let jobId: string | null = null;
+    if (userId) {
+      const { data: jobData, error: jobError } = await supabase
+        .from('processing_jobs')
+        .insert({
+          user_id: userId,
+          project_id: projectId || null,
+          original_filename: imageFile.name,
+          scene_id: scene.id,
+          status: 'completed',
+          final_url: finalPublicUrlData.publicUrl,
+          completed_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (jobError) {
+        console.error('Error saving job:', jobError);
+      } else {
+        jobId = jobData.id;
+        console.log('✅ Job saved to database:', jobId);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         finalUrl: finalPublicUrlData.publicUrl,
-        // No carAnalysis needed - Photoroom AI handles everything
+        jobId,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
