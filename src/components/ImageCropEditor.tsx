@@ -61,8 +61,9 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [localAspectRatio, setLocalAspectRatio] = useState<'landscape' | 'portrait' | 'free'>(aspectRatio);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // For free mode, use a very small aspect ratio to allow any shape
+  // For free mode, don't set aspect - allow any shape
   const aspectRatioValue = localAspectRatio === 'free' ? undefined : localAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
 
   const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
@@ -72,13 +73,16 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
   const handleSave = async () => {
     if (!image || !croppedAreaPixels) return;
 
+    setIsSaving(true);
     try {
       let targetWidth, targetHeight;
       
       if (localAspectRatio === 'free') {
-        // Use actual cropped dimensions for free mode
-        targetWidth = croppedAreaPixels.width;
-        targetHeight = croppedAreaPixels.height;
+        // Use actual cropped dimensions for free mode, but cap to reasonable size
+        const maxDim = 1920;
+        const scale = Math.min(maxDim / croppedAreaPixels.width, maxDim / croppedAreaPixels.height, 1);
+        targetWidth = Math.round(croppedAreaPixels.width * scale);
+        targetHeight = Math.round(croppedAreaPixels.height * scale);
       } else {
         targetWidth = localAspectRatio === 'landscape' ? 1920 : 1080;
         targetHeight = localAspectRatio === 'landscape' ? 1080 : 1920;
@@ -91,12 +95,17 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
         targetHeight
       );
 
-      onSave(image.id, croppedImage, localAspectRatio as 'landscape' | 'portrait');
-      toast.success('Beskärning sparad');
-      onClose();
+      // Determine output aspect ratio for free mode
+      const outputRatio = localAspectRatio === 'free' 
+        ? (targetWidth > targetHeight ? 'landscape' : 'portrait')
+        : localAspectRatio;
+
+      onSave(image.id, croppedImage, outputRatio as 'landscape' | 'portrait');
     } catch (e) {
       console.error(e);
       toast.error('Kunde inte spara beskärning');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -194,13 +203,13 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t flex-shrink-0">
-          <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none h-9 text-sm">
+          <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none h-9 text-sm" disabled={isSaving}>
             <X className="w-3.5 h-3.5 mr-1.5" />
             Avbryt
           </Button>
-          <Button onClick={handleSave} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 h-9 text-sm">
+          <Button onClick={handleSave} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 h-9 text-sm" disabled={isSaving}>
             <Save className="w-3.5 h-3.5 mr-1.5" />
-            Spara beskärning
+            {isSaving ? 'Sparar...' : 'Spara beskärning'}
           </Button>
         </div>
       </DialogContent>
