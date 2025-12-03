@@ -44,16 +44,16 @@ export default function Index() {
   const [logoDesign, setLogoDesign] = useState<LogoDesign>({
     enabled: false,
     logoUrl: null,
-    logoX: 50,
-    logoY: 50,
-    logoSize: 0.2,
+    logoX: 85,
+    logoY: 85,
+    logoSize: 0.15,
     bannerEnabled: false,
-    bannerX: 10,
-    bannerY: 50,
-    bannerHeight: 80,
+    bannerX: 50,
+    bannerY: 90,
+    bannerHeight: 10,
     bannerWidth: 100,
     bannerColor: '#000000',
-    bannerOpacity: 70,
+    bannerOpacity: 80,
     bannerRotation: 0
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
@@ -514,16 +514,16 @@ export default function Index() {
                         onClick={() => setLogoDesign({
                           enabled: false,
                           logoUrl: null,
-                          logoX: 50,
-                          logoY: 50,
-                          logoSize: 0.2,
+                          logoX: 85,
+                          logoY: 85,
+                          logoSize: 0.15,
                           bannerEnabled: false,
-                          bannerX: 10,
-                          bannerY: 50,
-                          bannerHeight: 80,
+                          bannerX: 50,
+                          bannerY: 90,
+                          bannerHeight: 10,
                           bannerWidth: 100,
                           bannerColor: '#000000',
-                          bannerOpacity: 70,
+                          bannerOpacity: 80,
                           bannerRotation: 0
                         })}
                       >
@@ -743,12 +743,22 @@ export default function Index() {
               setPreviewImage(croppedUrl);
             }
           }}
-          onApplyToAll={(croppedUrl, newAspectRatio) => {
-            // Apply same crop settings to all completed images
-            // Note: Since each image has different content, we just store the aspect ratio preference
+          onApplyToAll={async (croppedUrl, newAspectRatio) => {
+            // Apply crop to current image first
+            if (editingImage) {
+              setUploadedImages(prev => prev.map(img => 
+                img.id === editingImage.id ? { ...img, finalUrl: croppedUrl } : img
+              ));
+            }
             setAspectRatio(newAspectRatio);
             setEditingImage(null);
-            toast.success('Bildformat applicerat på alla bilder');
+            // Return to gallery
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            if (completedImages.length > 0) {
+              setGalleryIndex(0);
+              setPreviewImage(croppedUrl);
+            }
+            toast.success('Beskärning sparad');
           }}
           aspectRatio={aspectRatio} 
         />
