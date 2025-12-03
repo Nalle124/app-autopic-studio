@@ -4,9 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Crop, Save, X, Maximize2, Sparkles } from 'lucide-react';
+import { Crop, Save, X, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ImageCropEditorProps {
   image: { id: string; finalUrl: string; fileName: string } | null;
@@ -14,8 +13,6 @@ interface ImageCropEditorProps {
   onSave: (imageId: string, croppedImage: string, aspectRatio: 'landscape' | 'portrait') => void;
   aspectRatio: 'landscape' | 'portrait';
 }
-
-type PaddingLevel = 'tight' | 'medium' | 'airy';
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -64,45 +61,13 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [localAspectRatio, setLocalAspectRatio] = useState<'landscape' | 'portrait' | 'free'>(aspectRatio);
-  const [isAutoCropping, setIsAutoCropping] = useState(false);
 
+  // For free mode, use a very small aspect ratio to allow any shape
   const aspectRatioValue = localAspectRatio === 'free' ? undefined : localAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
 
   const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
-
-  const handleAutoCrop = async (paddingLevel: PaddingLevel) => {
-    if (!image) return;
-    
-    setIsAutoCropping(true);
-    toast.info('Analyserar bild med AI...');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('auto-crop-image', {
-        body: { 
-          imageUrl: image.finalUrl,
-          paddingLevel,
-          targetAspectRatio: localAspectRatio
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.crop) {
-        // Apply the AI-suggested crop
-        const { zoom: aiZoom, x, y } = data.crop;
-        setZoom(aiZoom);
-        setCrop({ x, y });
-        toast.success(`Auto-beskärning applicerad (${paddingLevel === 'tight' ? 'Tight' : paddingLevel === 'medium' ? 'Normal' : 'Luftig'})`);
-      }
-    } catch (error) {
-      console.error('Auto-crop error:', error);
-      toast.error('Kunde inte auto-beskära. Använd manuell beskärning.');
-    } finally {
-      setIsAutoCropping(false);
-    }
-  };
 
   const handleSave = async () => {
     if (!image || !croppedAreaPixels) return;
@@ -206,46 +171,6 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
               </div>
             </div>
 
-            {/* Auto Crop */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-accent" />
-                Auto-beskär
-              </Label>
-              <div className="grid grid-cols-3 gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAutoCrop('tight')}
-                  disabled={isAutoCropping}
-                  className="text-xs h-8 px-2"
-                >
-                  Tight
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAutoCrop('medium')}
-                  disabled={isAutoCropping}
-                  className="text-xs h-8 px-2"
-                >
-                  Normal
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAutoCrop('airy')}
-                  disabled={isAutoCropping}
-                  className="text-xs h-8 px-2"
-                >
-                  Luftig
-                </Button>
-              </div>
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                AI centrerar bilen automatiskt
-              </p>
-            </div>
-
             {/* Zoom */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">
@@ -262,7 +187,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, aspectRatio }: ImageCr
             </div>
 
             <p className="text-[10px] text-muted-foreground leading-tight pt-1">
-              Dra bilden för att positionera. Använd zoom eller auto-beskär för bästa resultat.
+              Dra bilden för att positionera. Använd zoom för att justera storlek.
             </p>
           </div>
         </div>

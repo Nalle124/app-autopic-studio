@@ -2,13 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, Star, Copy, Sparkles } from 'lucide-react';
+import { Upload, Star, Copy, Sparkles, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface LogoDesign {
   enabled: boolean;
@@ -110,15 +110,18 @@ interface BrandKitDesignerProps {
   onDesignChange: (design: LogoDesign) => void;
   design: LogoDesign;
   previewImage?: string;
+  onSave?: (withLogo: boolean, withoutLogo: boolean) => void;
+  onApplyToAll?: () => void;
 }
 
-export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previewImage }: BrandKitDesignerProps) => {
+export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previewImage, onSave, onApplyToAll }: BrandKitDesignerProps) => {
   const { user } = useAuth();
   const [logoLight, setLogoLight] = useState<string | null>(null);
   const [logoDark, setLogoDark] = useState<string | null>(null);
   const [activeVariant, setActiveVariant] = useState<'light' | 'dark' | 'custom'>('custom');
   const [selectedPreset, setSelectedPreset] = useState<string>('classic-corner');
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
+  const [saveWithoutLogo, setSaveWithoutLogo] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -430,15 +433,46 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" size="sm" className="flex-1">
-                <Copy className="w-4 h-4 mr-2" />
-                Applicera på alla
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1">
-                <Star className="w-4 h-4 mr-2" />
-                Spara favorit
-              </Button>
+            <div className="space-y-3 pt-2">
+              {/* Save without logo checkbox */}
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="save-without-logo" 
+                  checked={saveWithoutLogo}
+                  onCheckedChange={(checked) => setSaveWithoutLogo(checked === true)}
+                />
+                <label htmlFor="save-without-logo" className="text-xs text-muted-foreground cursor-pointer">
+                  Spara kopia utan logo
+                </label>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => {
+                    onApplyToAll?.();
+                    toast.success('Design applicerad på alla bilder');
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Applicera på alla
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => {
+                    onSave?.(true, saveWithoutLogo);
+                    onClose();
+                    toast.success(saveWithoutLogo ? 'Sparade med och utan logo' : 'Design sparad');
+                  }}
+                  disabled={!design.logoUrl && !design.bannerEnabled}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Spara
+                </Button>
+              </div>
             </div>
           </div>
         </div>
