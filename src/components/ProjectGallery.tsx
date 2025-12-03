@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
@@ -31,6 +32,8 @@ export const ProjectGallery = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   useEffect(() => {
     loadProjects();
@@ -112,6 +115,26 @@ export const ProjectGallery = () => {
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error('Kunde inte ta bort projekt');
+    }
+  };
+
+  const handleRenameProject = async (projectId: string, newName: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ registration_number: newName.trim().toUpperCase() })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      setProjects(projects.map(p => 
+        p.id === projectId ? { ...p, registration_number: newName.trim().toUpperCase() } : p
+      ));
+      setEditingProjectId(null);
+      toast.success('Projektnamn uppdaterat');
+    } catch (error) {
+      console.error('Error renaming project:', error);
+      toast.error('Kunde inte byta namn');
     }
   };
 
@@ -227,9 +250,65 @@ export const ProjectGallery = () => {
 
               {/* Project Info */}
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-1">
-                  {isOrphan ? 'Utan registreringsnummer' : project.registration_number}
-                </h3>
+                {editingProjectId === project.id ? (
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="h-8 text-sm"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleRenameProject(project.id, editingName);
+                        } else if (e.key === 'Escape') {
+                          setEditingProjectId(null);
+                        }
+                      }}
+                    />
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRenameProject(project.id, editingName);
+                      }}
+                    >
+                      <Check className="w-4 h-4 text-green-600" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingProjectId(null);
+                      }}
+                    >
+                      <X className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-lg flex-1">
+                      {isOrphan ? 'Utan registreringsnummer' : project.registration_number}
+                    </h3>
+                    {!isOrphan && (
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-6 w-6 opacity-50 hover:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProjectId(project.id);
+                          setEditingName(project.registration_number);
+                        }}
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground">
                   {projectJobs.length} bilder • {new Date(project.created_at).toLocaleDateString('sv-SE')}
                 </p>
