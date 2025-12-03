@@ -3,13 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import SetupScenes from "./pages/SetupScenes";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import AdminScenes from "./pages/AdminScenes";
-import Examples from "./pages/Examples";
 import { Profile } from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import UploadSceneImages from "./pages/UploadSceneImages";
@@ -29,10 +27,8 @@ function App() {
         <AuthProvider>
           <Sonner />
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/exempel" element={<Examples />} />
-            <Route path="/app" element={<Index />} />
             <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/admin/scener" element={<ProtectedRoute><AdminScenes /></ProtectedRoute>} />
