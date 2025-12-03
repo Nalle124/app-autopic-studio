@@ -83,18 +83,17 @@ export default function Index() {
     try {
       setIsProcessing(true);
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Du måste vara inloggad');
+        setIsProcessing(false);
+        return;
+      }
+
       // Create project if registrationNumber is provided
       let projectId = currentProjectId;
       if (!projectId && registrationNumber.trim()) {
-        const {
-          data: {
-            user
-          }
-        } = await supabase.auth.getUser();
-        if (!user) {
-          toast.error('Du måste vara inloggad');
-          return;
-        }
         const {
           data: project,
           error: projectError
@@ -150,6 +149,10 @@ export default function Index() {
           formData.append('scene', JSON.stringify(selectedScene));
           const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
           formData.append('backgroundUrl', backgroundUrl);
+          formData.append('userId', user.id);
+          if (projectId) {
+            formData.append('projectId', projectId);
+          }
           
           // Add timeout with AbortController (90 seconds for AI processing)
           const controller = new AbortController();
