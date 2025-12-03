@@ -477,11 +477,36 @@ export default function Index() {
                 
                 <div className="max-w-3xl mx-auto space-y-6">
                   <ExportPanel onExport={handleExport} isProcessing={isProcessing} />
-                  <Card className="p-6">
+                  <Card className="p-6 space-y-3">
                     <Button onClick={() => setLogoDesignOpen(true)} variant="outline" className="w-full">
                       <ImageIcon className="w-4 h-4 mr-2" />
                       {logoDesign.enabled ? 'Redigera Logo Design' : 'Lägg till Logo Design (valfritt)'}
                     </Button>
+                    {logoDesign.enabled && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full text-muted-foreground"
+                        onClick={() => setLogoDesign({
+                          enabled: false,
+                          logoUrl: null,
+                          logoX: 50,
+                          logoY: 50,
+                          logoSize: 0.2,
+                          bannerEnabled: false,
+                          bannerX: 10,
+                          bannerY: 50,
+                          bannerHeight: 80,
+                          bannerWidth: 100,
+                          bannerColor: '#000000',
+                          bannerOpacity: 70,
+                          bannerRotation: 0
+                        })}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Ta bort logo design
+                      </Button>
+                    )}
                   </Card>
                 </div>
               </section>}
@@ -523,14 +548,21 @@ export default function Index() {
                     </Button>
                     
                     <Button size="sm" onClick={() => {
-                if (selectedImages.size === 0) {
-                  toast.error('Välj minst en bild');
-                  return;
-                }
-                handleShareSelected();
+                // If no images selected, download all
+                const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                const imagesToDownload = selectedImages.size > 0 
+                  ? completedImages.filter(img => selectedImages.has(img.id))
+                  : completedImages;
+                
+                imagesToDownload.forEach(async (image, idx) => {
+                  await new Promise(resolve => setTimeout(resolve, idx * 300));
+                  handleDownload(image.finalUrl!, `${registrationNumber || 'bild'}_${image.id}.jpg`);
+                });
+                
+                toast.success(`Laddar ner ${imagesToDownload.length} bilder`);
               }} className="flex-1 sm:flex-none">
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Dela
+                      <Download className="w-4 h-4 mr-2" />
+                      Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}
                     </Button>
                   </div>
                 </div>
@@ -571,59 +603,9 @@ export default function Index() {
           const completedImages = uploadedImages.filter(img => img.status === 'completed');
           const currentImage = completedImages[galleryIndex];
           return <div className="flex flex-col h-full max-h-[90vh]">
-                {/* Action Buttons - At top for visibility */}
-                <div className="p-3 bg-background border-b flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" title="Regenerera" onClick={async () => {
-                  if (!selectedScene || !currentImage) return;
-                  setPreviewImage(null);
-                  setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
-                    ...img,
-                    status: 'pending' as const,
-                    finalUrl: undefined,
-                    isOriginal: true
-                  } : img));
-                  toast.info('Regenererar bild...');
-                  handleExport({ format: 'png', quality: 90, aspectRatio: 'original', includeTransparency: false });
-                }}>
-                      <RefreshCw className="w-4 h-4 mr-1" />
-                      Regenerera
-                    </Button>
-                    <Button size="sm" variant="outline" title="Justera" onClick={() => {
-                  setPreviewImage(null);
-                  setEditingImage({
-                    id: currentImage.id,
-                    finalUrl: currentImage.finalUrl!,
-                    fileName: currentImage.file.name,
-                    type: 'adjust'
-                  });
-                }}>
-                      <Sliders className="w-4 h-4 mr-1" />
-                      Justera
-                    </Button>
-                    <Button size="sm" variant="outline" title="Beskär" onClick={() => {
-                  setPreviewImage(null);
-                  setEditingImage({
-                    id: currentImage.id,
-                    finalUrl: currentImage.finalUrl!,
-                    fileName: currentImage.file.name,
-                    type: 'crop'
-                  });
-                }}>
-                      <Scissors className="w-4 h-4 mr-1" />
-                      Beskär
-                    </Button>
-                  </div>
-                  
-                  <Button size="sm" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber}_${currentImage.id}.jpg`)}>
-                    <Download className="w-4 h-4 mr-1" />
-                    Ladda ner
-                  </Button>
-                </div>
-                
                 {/* Image Display */}
                 <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
-                  <img src={currentImage?.finalUrl || previewImage} alt="Preview" className="max-w-full max-h-[calc(90vh-120px)] object-contain" />
+                  <img src={currentImage?.finalUrl || previewImage} alt="Preview" className="max-w-full max-h-[calc(90vh-80px)] object-contain" />
                   
                   {/* Navigation Arrows */}
                   {completedImages.length > 1 && <>
@@ -644,25 +626,102 @@ export default function Index() {
                     </>}
                   
                   {/* Counter */}
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
                     {galleryIndex + 1} / {completedImages.length}
                   </div>
+                </div>
+                
+                {/* Action Buttons - At bottom, mobile responsive */}
+                <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" title="Regenerera" onClick={async () => {
+                  if (!selectedScene || !currentImage) return;
+                  setPreviewImage(null);
+                  setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
+                    ...img,
+                    status: 'pending' as const,
+                    finalUrl: undefined,
+                    isOriginal: true
+                  } : img));
+                  toast.info('Regenererar bild...');
+                  handleExport({ format: 'png', quality: 90, aspectRatio: 'original', includeTransparency: false });
+                }}>
+                      <RefreshCw className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Regenerera</span>
+                    </Button>
+                    <Button size="sm" variant="outline" title="Justera" onClick={() => {
+                  setPreviewImage(null);
+                  setEditingImage({
+                    id: currentImage.id,
+                    finalUrl: currentImage.finalUrl!,
+                    fileName: currentImage.file.name,
+                    type: 'adjust'
+                  });
+                }}>
+                      <Sliders className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Justera</span>
+                    </Button>
+                    <Button size="sm" variant="outline" title="Beskär" onClick={() => {
+                  setPreviewImage(null);
+                  setEditingImage({
+                    id: currentImage.id,
+                    finalUrl: currentImage.finalUrl!,
+                    fileName: currentImage.file.name,
+                    type: 'crop'
+                  });
+                }}>
+                      <Scissors className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Beskär</span>
+                    </Button>
+                  </div>
+                  
+                  <Button size="sm" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber || 'bild'}_${currentImage.id}.jpg`)}>
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Ladda ner</span>
+                  </Button>
                 </div>
               </div>;
         })()}
         </DialogContent>
       </Dialog>
 
-      {/* Crop Editor Dialog */}
-      <Dialog open={editingImage?.type === 'crop'} onOpenChange={() => setEditingImage(null)}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          {editingImage?.type === 'crop' && <ImageCropEditor image={{
-          id: editingImage.id,
-          finalUrl: editingImage.finalUrl,
-          fileName: editingImage.fileName
-        }} onClose={() => setEditingImage(null)} onSave={handleCropSave} aspectRatio={aspectRatio} />}
-        </DialogContent>
-      </Dialog>
+      {/* Crop Editor for Generated Images - ImageCropEditor has its own Dialog */}
+      {editingImage?.type === 'crop' && (
+        <ImageCropEditor 
+          image={{
+            id: editingImage.id,
+            finalUrl: editingImage.finalUrl,
+            fileName: editingImage.fileName
+          }} 
+          onClose={() => {
+            setEditingImage(null);
+            // Return to preview gallery
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            const index = completedImages.findIndex(img => img.id === editingImage.id);
+            if (index !== -1) {
+              setGalleryIndex(index);
+              const updatedImage = uploadedImages.find(img => img.id === editingImage.id);
+              setPreviewImage(updatedImage?.finalUrl || editingImage.finalUrl);
+            }
+          }} 
+          onSave={(imageId, croppedUrl, newAspectRatio) => {
+            // Update finalUrl with cropped version
+            setUploadedImages(prev => prev.map(img => 
+              img.id === imageId ? { ...img, finalUrl: croppedUrl } : img
+            ));
+            setAspectRatio(newAspectRatio);
+            setEditingImage(null);
+            // Return to preview gallery
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            const index = completedImages.findIndex(img => img.id === imageId);
+            if (index !== -1) {
+              setGalleryIndex(index);
+              setPreviewImage(croppedUrl);
+            }
+          }} 
+          aspectRatio={aspectRatio} 
+        />
+      )}
 
       {/* Adjustment Editor Dialog - using OriginalImageEditor for generated images */}
       {editingImage?.type === 'adjust' && (
