@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Project {
   id: string;
@@ -96,8 +97,6 @@ export const ProjectGallery = () => {
         await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
-    
-    toast.success(`Laddar ner ${completedJobs.length} bilder`);
   };
 
   const handleDeleteProject = async (projectId: string) => {
@@ -109,9 +108,8 @@ export const ProjectGallery = () => {
 
       if (error) throw error;
 
-      setProjects(projects.filter(p => p.id !== projectId));
+    setProjects(projects.filter(p => p.id !== projectId));
       setSelectedProject(null);
-      toast.success('Projekt borttaget');
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error('Kunde inte ta bort projekt');
@@ -131,7 +129,6 @@ export const ProjectGallery = () => {
         p.id === projectId ? { ...p, registration_number: newName.trim().toUpperCase() } : p
       ));
       setEditingProjectId(null);
-      toast.success('Projektnamn uppdaterat');
     } catch (error) {
       console.error('Error renaming project:', error);
       toast.error('Kunde inte byta namn');
@@ -146,8 +143,16 @@ export const ProjectGallery = () => {
 
   if (isLoading) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Laddar projekt...</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="overflow-hidden">
+            <Skeleton className="aspect-[4/3] w-full" />
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </Card>
+        ))}
       </div>
     );
   }

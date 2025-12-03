@@ -73,7 +73,6 @@ export default function Index() {
   }, [selectedScene]);
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
-    toast.success(`Scen "${scene.name}" vald`);
     setTimeout(() => {
       document.getElementById('export-section')?.scrollIntoView({
         behavior: 'smooth',
@@ -217,8 +216,6 @@ export default function Index() {
       }
       setIsProcessing(false);
       if (successCount > 0) {
-        toast.success(`${successCount} bilder klara!`);
-
         // Scroll to results section after generation
         setTimeout(() => {
           document.getElementById('results-section')?.scrollIntoView({
@@ -292,7 +289,6 @@ export default function Index() {
       ...img,
       carAdjustments: adjustments
     })));
-    toast.success('Inställningar applicerade på alla bilder');
   };
   const handleCropSave = (imageId: string, croppedUrl: string, newAspectRatio: 'landscape' | 'portrait') => {
     setUploadedImages(prev => prev.map(img => img.id === imageId ? {
@@ -309,7 +305,6 @@ export default function Index() {
       setGalleryIndex(index);
       setPreviewImage(croppedUrl);
     }
-    toast.success('Beskärning sparad');
   };
   const toggleImageSelection = (imageId: string) => {
     setSelectedImages(prev => {
@@ -338,7 +333,6 @@ export default function Index() {
       croppedUrl
     } : img));
     setEditingOriginal(null);
-    toast.success('Beskärning sparad');
   };
   const handleOriginalAdjustmentsSave = (imageId: string, adjustedUrl: string, adjustments: CarAdjustments) => {
     // Convert the adjusted data URL to a blob and then to a file
@@ -355,7 +349,6 @@ export default function Index() {
         carAdjustments: adjustments
       } : img));
       setEditingOriginal(null);
-      toast.success('Justeringar sparade');
     });
   };
   const handleApplyAdjustmentsToAllOriginals = (adjustments: CarAdjustments, showAnimation?: boolean) => {
@@ -642,8 +635,6 @@ export default function Index() {
                   await new Promise(resolve => setTimeout(resolve, idx * 300));
                   handleDownload(image.finalUrl!, `${registrationNumber || 'bild'}_${image.id}.jpg`);
                 });
-                
-                toast.success(`Laddar ner ${imagesToDownload.length} bilder`);
               }} className="flex-1 sm:flex-none">
                       <Download className="w-4 h-4 mr-2" />
                       Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}
@@ -652,27 +643,39 @@ export default function Index() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {uploadedImages.filter(img => img.status === 'completed').map((image, idx) => <Card key={image.id} className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''}`} onClick={() => toggleImageSelection(image.id)}>
+                  {uploadedImages.filter(img => img.status === 'completed' || img.status === 'processing').map((image, idx) => <Card key={image.id} className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''} ${image.status === 'processing' ? 'animate-processing' : ''}`} onClick={() => image.status === 'completed' && toggleImageSelection(image.id)}>
                         {/* Image Preview - ALWAYS show finalUrl for generated images */}
                         <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                          <img src={image.finalUrl} alt={image.file.name} className="w-full h-full object-cover" />
+                          <img src={image.finalUrl || image.preview} alt={image.file.name} className="w-full h-full object-cover" />
+                          
+                          {/* Processing overlay */}
+                          {image.status === 'processing' && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <div className="text-white text-center">
+                                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                                <span className="text-sm">Bearbetas...</span>
+                              </div>
+                            </div>
+                          )}
                           
                           {/* Selection indicator */}
-                          {selectedImages.has(image.id) && <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                          {image.status === 'completed' && selectedImages.has(image.id) && <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                               <Check className="w-4 h-4 text-primary-foreground" />
                             </div>}
                           
                           {/* Preview button overlay */}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button size="icon" variant="secondary" onClick={e => {
-                    e.stopPropagation();
-                    const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                    setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
-                    setPreviewImage(image.finalUrl!);
-                  }} title="Förhandsgranska">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          {image.status === 'completed' && (
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Button size="icon" variant="secondary" onClick={e => {
+                      e.stopPropagation();
+                      const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                      setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
+                      setPreviewImage(image.finalUrl!);
+                    }} title="Förhandsgranska">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </Card>)}
                 </div>
@@ -715,20 +718,24 @@ export default function Index() {
                   </div>
                 </div>
                 
-                {/* Action Buttons - At bottom, mobile responsive */}
                 <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" title="Regenerera" onClick={async () => {
                   if (!selectedScene || !currentImage) return;
+                  
+                  // Close preview dialog
                   setPreviewImage(null);
                   
-                  // Only regenerate this single image
+                  // Keep previous finalUrl for display while processing
+                  const previousFinalUrl = currentImage.finalUrl;
+                  
+                  // Only regenerate this single image - keep finalUrl for display
                   setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
                     ...img,
                     status: 'processing' as const,
-                    finalUrl: undefined,
+                    // Keep the old finalUrl so image stays visible in gallery
+                    finalUrl: previousFinalUrl,
                   } : img));
-                  toast.info('Regenererar bild...');
                   
                   try {
                     const { data: { user } } = await supabase.auth.getUser();
@@ -792,7 +799,6 @@ export default function Index() {
                         finalUrl: result.finalUrl,
                         sceneId: selectedScene.id,
                       } : img));
-                      toast.success('Bild regenererad!');
                     } else {
                       throw new Error(result.error || 'Processing failed');
                     }

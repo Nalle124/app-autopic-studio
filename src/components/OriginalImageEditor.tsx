@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { CarAdjustments } from '@/types/scene';
-import { toast } from 'sonner';
 
 interface OriginalImageEditorProps {
   imageUrl: string;
@@ -167,7 +166,6 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
                   warmth: -10,
                   shadows: -10,
                 });
-                toast.success('Clean Boost applicerad');
               }}
             >
               <Sparkles className="w-4 h-4" />
