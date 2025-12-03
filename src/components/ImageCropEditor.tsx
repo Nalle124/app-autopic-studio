@@ -7,11 +7,20 @@ import { Label } from '@/components/ui/label';
 import { Crop, Save, X, Maximize2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface CropSettings {
+  crop: { x: number; y: number };
+  zoom: number;
+  croppedAreaPercent: { x: number; y: number; width: number; height: number };
+  localAspectRatio: 'landscape' | 'portrait' | 'free';
+  targetWidth: number;
+  targetHeight: number;
+}
+
 interface ImageCropEditorProps {
   image: { id: string; finalUrl: string; fileName: string } | null;
   onClose: () => void;
   onSave: (imageId: string, croppedImage: string, aspectRatio: 'landscape' | 'portrait') => void;
-  onApplyToAll?: (croppedImage: string, aspectRatio: 'landscape' | 'portrait') => void;
+  onApplyToAll?: (croppedImage: string, aspectRatio: 'landscape' | 'portrait', cropSettings?: CropSettings) => void;
   aspectRatio: 'landscape' | 'portrait';
 }
 
@@ -61,15 +70,17 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [croppedAreaPercent, setCroppedAreaPercent] = useState<any>(null);
   const [localAspectRatio, setLocalAspectRatio] = useState<'landscape' | 'portrait' | 'free'>(aspectRatio);
-const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [appliedToAll, setAppliedToAll] = useState(false);
 
   // For free mode, don't set aspect - allow any shape
   const aspectRatioValue = localAspectRatio === 'free' ? undefined : localAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
 
-  const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
+  const onCropComplete = useCallback((croppedAreaPercent: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
+    setCroppedAreaPercent(croppedAreaPercent);
   }, []);
 
   const handleSave = async () => {
@@ -112,7 +123,7 @@ const [isSaving, setIsSaving] = useState(false);
   };
 
   const handleApplyToAll = async () => {
-    if (!image || !croppedAreaPixels || !onApplyToAll) return;
+    if (!image || !croppedAreaPixels || !croppedAreaPercent || !onApplyToAll) return;
 
     setIsSaving(true);
     try {
@@ -139,7 +150,15 @@ const [isSaving, setIsSaving] = useState(false);
         ? (targetWidth > targetHeight ? 'landscape' : 'portrait')
         : localAspectRatio;
 
-      onApplyToAll(croppedImage, outputRatio as 'landscape' | 'portrait');
+      // Pass crop settings (percent-based) so they can be applied to other images
+      onApplyToAll(croppedImage, outputRatio as 'landscape' | 'portrait', {
+        crop,
+        zoom,
+        croppedAreaPercent,
+        localAspectRatio,
+        targetWidth,
+        targetHeight,
+      });
       setAppliedToAll(true);
       toast.success('Beskärning applicerad på alla bilder');
     } catch (e) {
@@ -223,9 +242,24 @@ const [isSaving, setIsSaving] = useState(false);
 
             {/* Zoom */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                Zoom: {Math.round(zoom * 100)}%
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">
+                  Zoom: {Math.round(zoom * 100)}%
+                </Label>
+                {zoom > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setZoom(1);
+                      setCrop({ x: 0, y: 0 });
+                    }}
+                    className="h-6 text-xs px-2"
+                  >
+                    Återställ
+                  </Button>
+                )}
+              </div>
               <Slider
                 value={[zoom]}
                 onValueChange={(value) => setZoom(value[0])}
@@ -237,7 +271,7 @@ const [isSaving, setIsSaving] = useState(false);
             </div>
 
             <p className="text-[10px] text-muted-foreground leading-tight pt-1">
-              Dra bilden för att positionera. Använd zoom för att justera storlek.
+              Dra bilden för att positionera. Zooma ut (100%) för att se hela originalet.
             </p>
           </div>
         </div>

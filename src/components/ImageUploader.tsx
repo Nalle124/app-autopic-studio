@@ -15,6 +15,7 @@ interface ImageUploaderProps {
   onRegistrationNumberChange?: (value: string) => void;
   uploadedImages: UploadedImage[];
   onEditImage?: (imageId: string, type: 'crop' | 'adjust') => void;
+  animatingImages?: Set<string>;
 }
 export const ImageUploader = ({
   onImagesUploaded,
@@ -23,7 +24,8 @@ export const ImageUploader = ({
   registrationNumber,
   onRegistrationNumberChange,
   uploadedImages: propUploadedImages,
-  onEditImage
+  onEditImage,
+  animatingImages
 }: ImageUploaderProps) => {
   const [localImages, setLocalImages] = useState<UploadedImage[]>([]);
   const {
@@ -109,43 +111,56 @@ export const ImageUploader = ({
       </Card>
 
       {uploadedImages.length > 0 && <div id="uploaded-images">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex-1 min-w-0">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-2">
                 <ImageIcon className="w-5 h-5" />
-                Uppladdade bilder ({uploadedImages.filter(img => img.isOriginal !== false).length})
+                <span className="truncate">Uppladdade bilder ({uploadedImages.filter(img => img.isOriginal !== false).length})</span>
               </h3>
-              {onRegistrationNumberChange && <input type="text" placeholder="Registreringsnummer (valfritt)" value={registrationNumber || ''} onChange={e => onRegistrationNumberChange(e.target.value.toUpperCase())} className="text-sm px-3 py-1.5 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 max-w-[200px]" maxLength={10} />}
+              {onRegistrationNumberChange && (
+                <input 
+                  type="text" 
+                  placeholder="Reg.nr (valfritt)" 
+                  value={registrationNumber || ''} 
+                  onChange={e => onRegistrationNumberChange(e.target.value.toUpperCase())} 
+                  className="text-sm px-3 py-1.5 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 w-full sm:max-w-[180px]" 
+                  maxLength={10} 
+                />
+              )}
             </div>
-            <div className="flex gap-2">
-              {uploadedImages.length > 0 && onEditImage && <>
-                  <Button variant="outline" size="icon" title="Beskär" onClick={() => {
-              if (uploadedImages.length > 0) {
-                onEditImage(uploadedImages[0].id, 'crop');
-              }
-            }}>
+            <div className="flex items-center gap-2 flex-wrap">
+              {uploadedImages.length > 0 && onEditImage && (
+                <>
+                  <Button variant="outline" size="icon" className="h-9 w-9" title="Beskär" onClick={() => {
+                    if (uploadedImages.length > 0) {
+                      onEditImage(uploadedImages[0].id, 'crop');
+                    }
+                  }}>
                     <Scissors className="w-4 h-4" />
                   </Button>
-                  <Button variant="outline" size="icon" title="Redigera" onClick={() => {
-              if (uploadedImages.length > 0) {
-                onEditImage(uploadedImages[0].id, 'adjust');
-              }
-            }}>
+                  <Button variant="outline" size="icon" className="h-9 w-9" title="Redigera" onClick={() => {
+                    if (uploadedImages.length > 0) {
+                      onEditImage(uploadedImages[0].id, 'adjust');
+                    }
+                  }}>
                     <Sliders className="w-4 h-4" />
                   </Button>
-                </>}
-              {uploadedImages.length > 0 && <Button variant="outline" size="sm" onClick={() => {
-            uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
-            setLocalImages([]);
-            onClearAll?.();
-          }}>
-                  Rensa alla
-                </Button>}
+                </>
+              )}
+              {uploadedImages.length > 0 && (
+                <Button variant="outline" size="sm" className="h-9 whitespace-nowrap" onClick={() => {
+                  uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
+                  setLocalImages([]);
+                  onClearAll?.();
+                }}>
+                  Rensa
+                </Button>
+              )}
             </div>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {uploadedImages.filter(img => img.isOriginal !== false).map(image => <Card key={image.id} className="group relative overflow-hidden">
+            {uploadedImages.filter(img => img.isOriginal !== false).map(image => <Card key={image.id} className={`group relative overflow-hidden ${animatingImages?.has(image.id) ? 'animate-clean-boost' : ''}`}>
                 <div className="aspect-square relative">
                   <img src={image.croppedUrl || image.preview} alt="Original bild" className="w-full h-full object-cover" />
                   

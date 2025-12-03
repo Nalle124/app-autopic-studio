@@ -395,7 +395,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                 </div>
               )}
               
-              {/* Banner - draggable */}
+              {/* Banner - draggable, extended beyond image bounds for easier positioning */}
               {design.bannerEnabled && (
                 <div
                   className="absolute cursor-move select-none"
@@ -404,8 +404,8 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                     left: `${design.bannerX}%`,
                     top: `${design.bannerY}%`,
                     transform: `translate(-50%, -50%) rotate(${design.bannerRotation}deg)`,
-                    width: design.bannerRotation === 0 ? '100%' : `${design.bannerHeight}%`,
-                    height: design.bannerRotation === 0 ? `${design.bannerHeight}%` : '100%',
+                    width: design.bannerRotation === 0 ? '140%' : `${design.bannerHeight}%`,
+                    height: design.bannerRotation === 0 ? `${design.bannerHeight}%` : '140%',
                     backgroundColor: design.bannerColor,
                     opacity: design.bannerOpacity / 100,
                   }}
