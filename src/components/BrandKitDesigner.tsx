@@ -45,6 +45,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
   const [appliedToAll, setAppliedToAll] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const [isDraggingBanner, setIsDraggingBanner] = useState(false);
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
 
   useEffect(() => {
     if (user?.id && open) {
@@ -118,7 +119,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
       bannerEnabled: false,
       bannerX: 50,
       bannerY: 90,
-      bannerHeight: 15,
+      bannerHeight: 10,
       bannerWidth: 100,
       bannerColor: '#000000',
       bannerOpacity: 80,
@@ -160,19 +161,31 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
     setIsDraggingBanner(true);
   };
 
+  // Logo drag handling
+  const handleLogoMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDraggingLogo(true);
+  };
+
   useEffect(() => {
-    if (!isDraggingBanner) return;
+    if (!isDraggingBanner && !isDraggingLogo) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!previewRef.current) return;
       const rect = previewRef.current.getBoundingClientRect();
       const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
       const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-      onDesignChange({ ...design, bannerX: x, bannerY: y });
+      
+      if (isDraggingBanner) {
+        onDesignChange({ ...design, bannerX: x, bannerY: y });
+      } else if (isDraggingLogo) {
+        onDesignChange({ ...design, logoX: x, logoY: y });
+      }
     };
 
     const handleMouseUp = () => {
       setIsDraggingBanner(false);
+      setIsDraggingLogo(false);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -181,7 +194,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDraggingBanner, design, onDesignChange]);
+  }, [isDraggingBanner, isDraggingLogo, design, onDesignChange]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -346,20 +359,6 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">Längd</Label>
-                      <span className="text-xs text-muted-foreground">{design.bannerWidth}%</span>
-                    </div>
-                    <Slider
-                      value={[design.bannerWidth]}
-                      onValueChange={(value) => onDesignChange({ ...design, bannerWidth: value[0] })}
-                      min={20}
-                      max={100}
-                      step={5}
-                    />
-                  </div>
-
                   <p className="text-[10px] text-muted-foreground">
                     Dra bannern på bilden för att flytta den
                   </p>
@@ -405,18 +404,19 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                     left: `${design.bannerX}%`,
                     top: `${design.bannerY}%`,
                     transform: `translate(-50%, -50%) rotate(${design.bannerRotation}deg)`,
-                    width: design.bannerRotation === 0 ? `${design.bannerWidth}%` : `${design.bannerHeight}%`,
-                    height: design.bannerRotation === 0 ? `${design.bannerHeight}%` : `${design.bannerWidth}%`,
+                    width: design.bannerRotation === 0 ? '100%' : `${design.bannerHeight}%`,
+                    height: design.bannerRotation === 0 ? `${design.bannerHeight}%` : '100%',
                     backgroundColor: design.bannerColor,
                     opacity: design.bannerOpacity / 100,
                   }}
                 />
               )}
               
-              {/* Logo */}
+              {/* Logo - draggable */}
               {design.logoUrl && (
                 <div
-                  className="absolute pointer-events-none"
+                  className="absolute cursor-move select-none"
+                  onMouseDown={handleLogoMouseDown}
                   style={{
                     left: `${design.logoX}%`,
                     top: `${design.logoY}%`,
@@ -428,7 +428,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                   <img 
                     src={design.logoUrl} 
                     alt="Logo" 
-                    className="w-full h-auto object-contain drop-shadow-lg" 
+                    className="w-full h-auto object-contain drop-shadow-lg pointer-events-none" 
                   />
                 </div>
               )}
