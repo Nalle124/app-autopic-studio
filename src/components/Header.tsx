@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import reflektLogo from "@/assets/reflekt-logo.png";
+import autoshotLogo from "@/assets/autoshot-logo.png";
 
 export const Header = () => {
   const { user, isAdmin, signOut } = useAuth();
@@ -22,7 +22,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+    <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <button 
@@ -30,8 +30,8 @@ export const Header = () => {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <img 
-              src={reflektLogo} 
-              alt="Reflekt" 
+              src={autoshotLogo} 
+              alt="AutoShot" 
               className="h-10 w-auto object-contain"
             />
           </button>
@@ -42,13 +42,13 @@ export const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent-orange text-white">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
                         {getInitials(user.email || 'U')}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{user.email}</p>
@@ -86,7 +86,7 @@ export const Header = () => {
                   Logga in
                 </Button>
                 <Button 
-                  className="bg-gradient-to-r from-primary to-accent-orange hover:shadow-glow"
+                  variant="premium"
                   onClick={() => navigate('/auth')}
                 >
                   Prova gratis

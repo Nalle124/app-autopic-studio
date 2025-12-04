@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { Header } from '@/components/Header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, User } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Upload, User, Sun, Moon, Palette } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const Profile = () => {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [logoLight, setLogoLight] = useState<string | null>(null);
   const [logoDark, setLogoDark] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +71,6 @@ export const Profile = () => {
 
     setIsLoading(true);
     try {
-      // Check if profile exists
       const { data: existing } = await supabase
         .from('profiles')
         .select('id')
@@ -76,7 +78,6 @@ export const Profile = () => {
         .single();
 
       if (existing) {
-        // Update existing profile
         const { error } = await supabase
           .from('profiles')
           .update({
@@ -87,7 +88,6 @@ export const Profile = () => {
 
         if (error) throw error;
       } else {
-        // Insert new profile - cast to bypass type check for id field
         const { error } = await supabase
           .from('profiles')
           .insert([{
@@ -98,8 +98,6 @@ export const Profile = () => {
 
         if (error) throw error;
       }
-
-      toast.success('Profil sparad');
     } catch (error) {
       console.error('Error saving profile:', error);
       toast.error('Kunde inte spara profil');
@@ -119,10 +117,10 @@ export const Profile = () => {
   }) => (
     <div className="space-y-3">
       <Label className="text-sm font-semibold">{label}</Label>
-      <div className="border-2 border-dashed rounded-lg p-6 transition-colors border-border hover:border-primary/50">
+      <div className="border border-border rounded-card p-6 transition-colors hover:border-primary/50 bg-secondary/30">
         {logo ? (
           <div className="flex flex-col items-center gap-3">
-            <div className={`p-4 rounded-lg ${type === 'light' ? 'bg-white' : 'bg-gray-900'}`}>
+            <div className={`p-4 rounded-lg ${type === 'light' ? 'bg-white' : 'bg-black'}`}>
               <img src={logo} alt={`Logo ${type}`} className="max-h-20 object-contain" />
             </div>
             <Button
@@ -136,7 +134,7 @@ export const Profile = () => {
         ) : (
           <div className="flex flex-col items-center gap-3 text-center">
             <Upload className="w-8 h-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Ingen logo vald</p>
+            <p className="text-sm text-muted-foreground font-small">Ingen logo vald</p>
             <Button
               variant="outline"
               size="sm"
@@ -157,7 +155,7 @@ export const Profile = () => {
           }}
         />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground font-small">
         {type === 'light' 
           ? 'Används på ljusa bakgrunder (mörk logo rekommenderas)' 
           : 'Används på mörka bakgrunder (ljus logo rekommenderas)'}
@@ -166,32 +164,68 @@ export const Profile = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Header />
       
       <main className="container mx-auto px-6 py-12 max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Profil</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-foreground mb-2 font-heading">Profil</h1>
+          <p className="text-muted-foreground font-small">
             Hantera dina logotyper och inställningar
           </p>
         </div>
 
+        {/* Theme Settings */}
+        <Card className="p-6 mb-6">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Palette className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground font-heading">
+                Utseende
+              </h2>
+              <p className="text-sm text-muted-foreground font-small">Anpassa appens utseende</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? (
+                <Moon className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <Sun className="w-5 h-5 text-muted-foreground" />
+              )}
+              <div>
+                <Label className="text-sm font-medium">Ljust läge</Label>
+                <p className="text-xs text-muted-foreground font-small">
+                  Växla mellan mörkt och ljust tema
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={theme === 'light'}
+              onCheckedChange={(checked) => setTheme(checked ? 'light' : 'dark')}
+            />
+          </div>
+        </Card>
+
+        {/* Logo Settings */}
         <Card className="p-6">
-          <div className="flex items-center gap-4 mb-6 pb-6 border-b">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <User className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">
+              <h2 className="text-lg font-semibold text-foreground font-heading">
                 {user?.email || 'Användare'}
               </h2>
-              <p className="text-sm text-muted-foreground">Standard logotyper</p>
+              <p className="text-sm text-muted-foreground font-small">Standard logotyper</p>
             </div>
           </div>
 
           <div className="space-y-6">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground font-small">
               Ladda upp dina standard-logotyper här. De kommer automatiskt användas när du genererar bilder.
               Du kan alltid välja andra logotyper i genereringsvyn.
             </p>
