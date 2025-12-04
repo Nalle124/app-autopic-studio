@@ -20,6 +20,7 @@ import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import autoshotLogo from '@/assets/autoshot-logo.png';
 export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -422,11 +423,17 @@ export default function Index() {
       });
     });
   };
-  return <div className="min-h-screen bg-background">
+  return <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-foreground font-serif text-xl font-medium">Reflekt Studio</h1>
+      <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <button onClick={() => setActiveTab('new')} className="hover:opacity-80 transition-opacity">
+            <img 
+              src={autoshotLogo} 
+              alt="AutoShot" 
+              className="h-10 w-auto object-contain"
+            />
+          </button>
           
           <div className="flex items-center gap-3">
             <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'new' | 'history')} className="w-auto">
