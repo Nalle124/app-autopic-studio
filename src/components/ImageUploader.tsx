@@ -94,18 +94,18 @@ export const ImageUploader = ({
   return <div className="space-y-6">
       <Card {...getRootProps()} className="cursor-pointer hover:border-primary/80 transition-colors">
         <input {...getInputProps()} />
-        <div className="p-12 text-center shadow-none border-primary border border-dashed">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-            <Upload className="w-8 h-8 text-primary" />
+        <div className="p-6 text-center shadow-none border-primary border border-dashed">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+            <Upload className="w-6 h-6 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
+          <h3 className="text-base font-semibold text-foreground mb-1">
             {isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
           </h3>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-2">
             eller klicka för att välja filer
           </p>
           <p className="text-xs text-muted-foreground">
-            Max 50 bilder • PNG, JPG, JPEG, WEBP • Max 20MB per fil
+            Max 50 bilder • PNG, JPG, JPEG, WEBP
           </p>
         </div>
       </Card>
@@ -118,14 +118,17 @@ export const ImageUploader = ({
                 <span className="truncate">Uppladdade bilder ({uploadedImages.filter(img => img.isOriginal !== false).length})</span>
               </h3>
               {onRegistrationNumberChange && (
-                <input 
-                  type="text" 
-                  placeholder="Reg.nr (valfritt)" 
-                  value={registrationNumber || ''} 
-                  onChange={e => onRegistrationNumberChange(e.target.value.toUpperCase())} 
-                  className="text-sm px-3 py-1.5 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 w-full sm:max-w-[180px]" 
-                  maxLength={10} 
-                />
+                <div className="relative w-full sm:max-w-[180px]">
+                  <div className="absolute -inset-[1px] rounded-lg bg-gradient-to-r from-accent-teal via-accent-orange to-accent-blue opacity-70 blur-[1px]" />
+                  <input 
+                    type="text" 
+                    placeholder="Reg.nr (valfritt)" 
+                    value={registrationNumber || ''} 
+                    onChange={e => onRegistrationNumberChange(e.target.value.toUpperCase())} 
+                    className="relative text-sm px-3 py-1.5 border border-transparent rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none w-full" 
+                    maxLength={10} 
+                  />
+                </div>
               )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">

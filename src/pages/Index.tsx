@@ -610,71 +610,74 @@ export default function Index() {
 
             {/* Step 4: Results Gallery */}
             {uploadedImages.some(img => img.status === 'completed') && <section id="results-section" className="space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-lg font-bold text-primary">4</span>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-lg font-bold text-primary">4</span>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-foreground">Redigera och ladda ner</h2>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">Redigera och ladda ner</h2>
+                    
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                      <Button variant="outline" size="icon" title="Redigera" onClick={() => {
+                  const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                  if (completedImages.length === 0) return;
+
+                  // Open gallery on first image
+                  setGalleryIndex(0);
+                  setPreviewImage(completedImages[0].croppedUrl || completedImages[0].finalUrl!);
+                }}>
+                        <Sliders className="w-4 h-4" />
+                      </Button>
+                      
+                      <Button variant="outline" size="icon" title="Beskär" onClick={() => {
+                  const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                  if (completedImages.length === 0) return;
+
+                  // Open crop editor on first image
+                  const firstImage = completedImages[0];
+                  setEditingImage({
+                    id: firstImage.id,
+                    finalUrl: firstImage.finalUrl!,
+                    fileName: firstImage.file.name,
+                    type: 'crop'
+                  });
+                }}>
+                        <Scissors className="w-4 h-4" />
+                      </Button>
+                      
+                      <Button size="sm" onClick={() => {
+                  // If no images selected, download all
+                  const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                  const imagesToDownload = selectedImages.size > 0 
+                    ? completedImages.filter(img => selectedImages.has(img.id))
+                    : completedImages;
+                  
+                  imagesToDownload.forEach(async (image, idx) => {
+                    await new Promise(resolve => setTimeout(resolve, idx * 300));
+                    handleDownload(image.finalUrl!, `${registrationNumber || 'bild'}_${image.id}.jpg`);
+                  });
+                }} className="flex-1 sm:flex-none">
+                        <Download className="w-4 h-4 mr-2" />
+                        Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}
+                      </Button>
+                    </div>
                   </div>
                   
-                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="select-all" checked={selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length} onCheckedChange={checked => {
-                  const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                  if (checked) {
-                    setSelectedImages(new Set(completedImages.map(img => img.id)));
-                  } else {
-                    setSelectedImages(new Set());
-                  }
-                }} />
-                      <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
-                        Markera alla
-                      </label>
-                    </div>
-                    
-                    <Button variant="outline" size="icon" title="Redigera" onClick={() => {
+                  {/* Select all moved under heading */}
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="select-all" checked={selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length && uploadedImages.filter(img => img.status === 'completed').length > 0} onCheckedChange={checked => {
                 const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                if (completedImages.length === 0) return;
-
-                // Open gallery on first image
-                setGalleryIndex(0);
-                setPreviewImage(completedImages[0].croppedUrl || completedImages[0].finalUrl!);
-              }}>
-                      <Sliders className="w-4 h-4" />
-                    </Button>
-                    
-                    <Button variant="outline" size="icon" title="Beskär" onClick={() => {
-                const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                if (completedImages.length === 0) return;
-
-                // Open crop editor on first image
-                const firstImage = completedImages[0];
-                setEditingImage({
-                  id: firstImage.id,
-                  finalUrl: firstImage.finalUrl!,
-                  fileName: firstImage.file.name,
-                  type: 'crop'
-                });
-              }}>
-                      <Scissors className="w-4 h-4" />
-                    </Button>
-                    
-                    <Button size="sm" onClick={() => {
-                // If no images selected, download all
-                const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                const imagesToDownload = selectedImages.size > 0 
-                  ? completedImages.filter(img => selectedImages.has(img.id))
-                  : completedImages;
-                
-                imagesToDownload.forEach(async (image, idx) => {
-                  await new Promise(resolve => setTimeout(resolve, idx * 300));
-                  handleDownload(image.finalUrl!, `${registrationNumber || 'bild'}_${image.id}.jpg`);
-                });
-              }} className="flex-1 sm:flex-none">
-                      <Download className="w-4 h-4 mr-2" />
-                      Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}
-                    </Button>
+                if (checked) {
+                  setSelectedImages(new Set(completedImages.map(img => img.id)));
+                } else {
+                  setSelectedImages(new Set());
+                }
+              }} />
+                    <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+                      Markera alla ({uploadedImages.filter(img => img.status === 'completed').length} bilder)
+                    </label>
                   </div>
                 </div>
 
@@ -1133,18 +1136,30 @@ export default function Index() {
                 ctx.restore();
               }
 
-              // Draw logo if present
-              if (logoDesign.logoUrl) {
+              // Draw logos if present - support multiple logos
+              const logos = logoDesign.logos || (logoDesign.logoUrl ? [{
+                id: 'legacy',
+                url: logoDesign.logoUrl,
+                x: logoDesign.logoX,
+                y: logoDesign.logoY,
+                size: logoDesign.logoSize,
+                opacity: 100
+              }] : []);
+              
+              for (const logo of logos) {
                 const logoImg = new Image();
                 logoImg.crossOrigin = 'anonymous';
-                logoImg.src = logoDesign.logoUrl;
+                logoImg.src = logo.url;
                 await new Promise(resolve => { logoImg.onload = resolve; });
 
-                const logoW = canvas.width * logoDesign.logoSize;
+                ctx.save();
+                ctx.globalAlpha = logo.opacity / 100;
+                const logoW = canvas.width * logo.size;
                 const logoH = (logoImg.height / logoImg.width) * logoW;
-                const logoX = (logoDesign.logoX / 100) * canvas.width - logoW / 2;
-                const logoY = (logoDesign.logoY / 100) * canvas.height - logoH / 2;
+                const logoX = (logo.x / 100) * canvas.width - logoW / 2;
+                const logoY = (logo.y / 100) * canvas.height - logoH / 2;
                 ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+                ctx.restore();
               }
 
               const withLogoUrl = canvas.toDataURL('image/jpeg', 0.9);

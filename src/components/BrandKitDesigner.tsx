@@ -2,13 +2,22 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, Copy, Sparkles, Save, X, RotateCw, Trash2, Check } from 'lucide-react';
+import { Upload, Copy, Sparkles, Save, X, RotateCw, Trash2, Check, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+
+interface LogoItem {
+  id: string;
+  url: string;
+  x: number;
+  y: number;
+  size: number;
+  opacity: number;
+}
 
 export interface LogoDesign {
   enabled: boolean;
@@ -24,6 +33,8 @@ export interface LogoDesign {
   bannerColor: string;
   bannerOpacity: number;
   bannerRotation: number;
+  // New: multiple logos support
+  logos?: LogoItem[];
 }
 
 interface BrandKitDesignerProps {
@@ -46,7 +57,18 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
   const [loadingLogos, setLoadingLogos] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const [isDraggingBanner, setIsDraggingBanner] = useState(false);
-  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
+  const [draggingLogoId, setDraggingLogoId] = useState<string | null>(null);
+  const [selectedLogoId, setSelectedLogoId] = useState<string | null>(null);
+
+  // Get logos array or create from legacy single logo
+  const logos: LogoItem[] = design.logos || (design.logoUrl ? [{
+    id: 'legacy',
+    url: design.logoUrl,
+    x: design.logoX,
+    y: design.logoY,
+    size: design.logoSize,
+    opacity: 100
+  }] : []);
 
   useEffect(() => {
     if (user?.id && open) {
@@ -58,6 +80,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
   useEffect(() => {
     if (!open) {
       setAppliedToAll(false);
+      setSelectedLogoId(null);
     }
   }, [open]);
 
@@ -83,6 +106,28 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
     }
   };
 
+  const addLogo = (url: string) => {
+    const newLogo: LogoItem = {
+      id: `logo-${Date.now()}`,
+      url,
+      x: 50 + (logos.length * 10) % 30,
+      y: 50 + (logos.length * 10) % 30,
+      size: 0.15,
+      opacity: 100
+    };
+    const updatedLogos = [...logos, newLogo];
+    onDesignChange({ 
+      ...design, 
+      logos: updatedLogos, 
+      enabled: true,
+      logoUrl: url,
+      logoX: newLogo.x,
+      logoY: newLogo.y,
+      logoSize: newLogo.size
+    });
+    setSelectedLogoId(newLogo.id);
+  };
+
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Vänligen välj en bildfil');
@@ -93,7 +138,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setActiveVariant('custom');
-      onDesignChange({ ...design, logoUrl: result, enabled: true });
+      addLogo(result);
     };
     reader.readAsDataURL(file);
   };
@@ -102,13 +147,35 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
     const selectedLogo = variant === 'light' ? logoLight : logoDark;
     if (selectedLogo) {
       setActiveVariant(variant);
-      onDesignChange({ ...design, logoUrl: selectedLogo, enabled: true });
+      addLogo(selectedLogo);
     }
   };
 
-  const handleRemoveLogo = () => {
-    onDesignChange({ ...design, logoUrl: null, enabled: false });
-    setActiveVariant('custom');
+  const handleRemoveLogo = (logoId?: string) => {
+    const idToRemove = logoId || selectedLogoId;
+    if (!idToRemove) return;
+    
+    const updatedLogos = logos.filter(l => l.id !== idToRemove);
+    if (updatedLogos.length === 0) {
+      onDesignChange({ ...design, logos: [], logoUrl: null, enabled: false });
+      setSelectedLogoId(null);
+    } else {
+      onDesignChange({ 
+        ...design, 
+        logos: updatedLogos,
+        logoUrl: updatedLogos[0]?.url || null,
+        enabled: true
+      });
+      setSelectedLogoId(updatedLogos[0]?.id || null);
+    }
+  };
+
+  const updateSelectedLogo = (updates: Partial<LogoItem>) => {
+    if (!selectedLogoId) return;
+    const updatedLogos = logos.map(l => 
+      l.id === selectedLogoId ? { ...l, ...updates } : l
+    );
+    onDesignChange({ ...design, logos: updatedLogos });
   };
 
   const handleRemoveDesign = () => {
@@ -126,9 +193,11 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
       bannerColor: '#000000',
       bannerOpacity: 80,
       bannerRotation: 0,
+      logos: [],
     });
     setActiveVariant('custom');
     setAppliedToAll(false);
+    setSelectedLogoId(null);
   };
 
   const handleToggleBanner = () => {
@@ -160,13 +229,15 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
   };
 
   // Logo drag handling
-  const handleLogoMouseDown = (e: React.MouseEvent) => {
+  const handleLogoMouseDown = (e: React.MouseEvent, logoId: string) => {
     e.preventDefault();
-    setIsDraggingLogo(true);
+    e.stopPropagation();
+    setDraggingLogoId(logoId);
+    setSelectedLogoId(logoId);
   };
 
   useEffect(() => {
-    if (!isDraggingBanner && !isDraggingLogo) return;
+    if (!isDraggingBanner && !draggingLogoId) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!previewRef.current) return;
@@ -176,14 +247,17 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
       
       if (isDraggingBanner) {
         onDesignChange({ ...design, bannerX: x, bannerY: y });
-      } else if (isDraggingLogo) {
-        onDesignChange({ ...design, logoX: x, logoY: y });
+      } else if (draggingLogoId) {
+        const updatedLogos = logos.map(l => 
+          l.id === draggingLogoId ? { ...l, x, y } : l
+        );
+        onDesignChange({ ...design, logos: updatedLogos });
       }
     };
 
     const handleMouseUp = () => {
       setIsDraggingBanner(false);
-      setIsDraggingLogo(false);
+      setDraggingLogoId(null);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -192,7 +266,7 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDraggingBanner, isDraggingLogo, design, onDesignChange]);
+  }, [isDraggingBanner, draggingLogoId, design, onDesignChange, logos]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -241,14 +315,78 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                 </div>
               )}
               
+              {/* Logo list and controls */}
+              {logos.length > 0 && (
+                <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+                  <Label className="text-xs">Placerade logos ({logos.length})</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {logos.map((logo, idx) => (
+                      <Button
+                        key={logo.id}
+                        variant={selectedLogoId === logo.id ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs h-7 px-2"
+                        onClick={() => setSelectedLogoId(logo.id)}
+                      >
+                        Logo {idx + 1}
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  {selectedLogoId && (() => {
+                    const selectedLogo = logos.find(l => l.id === selectedLogoId);
+                    if (!selectedLogo) return null;
+                    return (
+                      <div className="space-y-3 pt-2 border-t border-border/50">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Storlek</Label>
+                            <span className="text-xs text-muted-foreground">{Math.round(selectedLogo.size * 100)}%</span>
+                          </div>
+                          <Slider
+                            value={[selectedLogo.size * 100]}
+                            onValueChange={(value) => updateSelectedLogo({ size: value[0] / 100 })}
+                            min={5}
+                            max={50}
+                            step={1}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Opacitet</Label>
+                            <span className="text-xs text-muted-foreground">{selectedLogo.opacity}%</span>
+                          </div>
+                          <Slider
+                            value={[selectedLogo.opacity]}
+                            onValueChange={(value) => updateSelectedLogo({ opacity: value[0] })}
+                            min={10}
+                            max={100}
+                            step={5}
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs text-destructive hover:text-destructive"
+                          onClick={() => handleRemoveLogo(selectedLogoId)}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Ta bort vald logo
+                        </Button>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+              
               <Button
                 variant="outline"
                 size="sm"
                 className="w-full text-xs"
                 onClick={() => document.getElementById('brand-logo-upload')?.click()}
               >
-                <Upload className="w-3 h-3 mr-1" />
-                {design.logoUrl ? 'Byt logo' : 'Ladda upp logo'}
+                <Plus className="w-3 h-3 mr-1" />
+                {logos.length > 0 ? 'Lägg till fler logos' : 'Ladda upp logo'}
               </Button>
               <input
                 id="brand-logo-upload"
@@ -260,33 +398,6 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                   if (file) handleFileSelect(file);
                 }}
               />
-
-              {design.logoUrl && (
-                <>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">Storlek</Label>
-                      <span className="text-xs text-muted-foreground">{Math.round(design.logoSize * 100)}%</span>
-                    </div>
-                    <Slider
-                      value={[design.logoSize * 100]}
-                      onValueChange={(value) => onDesignChange({ ...design, logoSize: value[0] / 100 })}
-                      min={5}
-                      max={50}
-                      step={1}
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-xs text-destructive hover:text-destructive"
-                    onClick={handleRemoveLogo}
-                  >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Ta bort logo
-                  </Button>
-                </>
-              )}
             </div>
 
             {/* Banner Controls */}
@@ -415,26 +526,28 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
                 />
               )}
               
-              {/* Logo - draggable */}
-              {design.logoUrl && (
+              {/* Logos - draggable */}
+              {logos.map((logo) => (
                 <div
-                  className="absolute cursor-move select-none"
-                  onMouseDown={handleLogoMouseDown}
+                  key={logo.id}
+                  className={`absolute cursor-move select-none ${selectedLogoId === logo.id ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                  onMouseDown={(e) => handleLogoMouseDown(e, logo.id)}
                   style={{
-                    left: `${design.logoX}%`,
-                    top: `${design.logoY}%`,
+                    left: `${logo.x}%`,
+                    top: `${logo.y}%`,
                     transform: 'translate(-50%, -50%)',
-                    width: `${design.logoSize * 100}%`,
+                    width: `${logo.size * 100}%`,
                     maxWidth: '200px',
+                    opacity: logo.opacity / 100,
                   }}
                 >
                   <img 
-                    src={design.logoUrl} 
+                    src={logo.url} 
                     alt="Logo" 
                     className="w-full h-auto object-contain drop-shadow-lg pointer-events-none" 
                   />
                 </div>
-              )}
+              ))}
             </div>
 
             {/* Action Buttons */}
