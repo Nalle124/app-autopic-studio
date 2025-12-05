@@ -3,15 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ImageCropEditor } from '@/components/ImageCropEditor';
+import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 
 interface Project {
   id: string;
   registration_number: string;
   created_at: string;
+  notes: string | null;
   jobs: {
     id: string;
     final_url: string | null;
@@ -26,7 +30,11 @@ interface OrphanJob {
   created_at: string;
 }
 
-export const ProjectGallery = () => {
+interface ProjectGalleryProps {
+  onUseAsNewImage?: (imageUrl: string) => void;
+}
+
+export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [orphanJobs, setOrphanJobs] = useState<OrphanJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +43,12 @@ export const ProjectGallery = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [editingNotes, setEditingNotes] = useState<string | null>(null);
+  const [notesText, setNotesText] = useState('');
+  
+  // Edit states
+  const [editingImage, setEditingImage] = useState<{ jobId: string; url: string; type: 'crop' | 'adjust' } | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -53,6 +67,7 @@ export const ProjectGallery = () => {
           id,
           registration_number,
           created_at,
+          notes,
           jobs:processing_jobs (
             id,
             final_url,
@@ -135,10 +150,77 @@ export const ProjectGallery = () => {
     }
   };
 
+  const handleSaveNotes = async (projectId: string, notes: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ notes: notes.trim() || null })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      setProjects(projects.map(p => 
+        p.id === projectId ? { ...p, notes: notes.trim() || null } : p
+      ));
+      if (selectedProject?.id === projectId) {
+        setSelectedProject({ ...selectedProject, notes: notes.trim() || null });
+      }
+      setEditingNotes(null);
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      toast.error('Kunde inte spara anteckning');
+    }
+  };
+
   const openPreview = (project: Project, index: number) => {
     setSelectedProject(project);
     setPreviewIndex(index);
     setPreviewOpen(true);
+  };
+
+  const handleDownloadSingle = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+  };
+
+  const handleUseAsNew = (imageUrl: string) => {
+    if (onUseAsNewImage) {
+      onUseAsNewImage(imageUrl);
+      setPreviewOpen(false);
+      setSelectedProject(null);
+    }
+  };
+
+  const handleCropSave = (jobId: string, croppedUrl: string) => {
+    // Update the job's final_url in local state
+    setProjects(projects.map(p => ({
+      ...p,
+      jobs: p.jobs.map(j => j.id === jobId ? { ...j, final_url: croppedUrl } : j)
+    })));
+    if (selectedProject) {
+      setSelectedProject({
+        ...selectedProject,
+        jobs: selectedProject.jobs.map(j => j.id === jobId ? { ...j, final_url: croppedUrl } : j)
+      });
+    }
+    setEditingImage(null);
+  };
+
+  const handleAdjustSave = (jobId: string, adjustedUrl: string) => {
+    // Update the job's final_url in local state
+    setProjects(projects.map(p => ({
+      ...p,
+      jobs: p.jobs.map(j => j.id === jobId ? { ...j, final_url: adjustedUrl } : j)
+    })));
+    if (selectedProject) {
+      setSelectedProject({
+        ...selectedProject,
+        jobs: selectedProject.jobs.map(j => j.id === jobId ? { ...j, final_url: adjustedUrl } : j)
+      });
+    }
+    setEditingImage(null);
   };
 
   if (isLoading) {
@@ -173,6 +255,7 @@ export const ProjectGallery = () => {
     id: 'orphan',
     registration_number: 'Utan projekt',
     created_at: orphanJobs[0]?.created_at || new Date().toISOString(),
+    notes: null,
     jobs: orphanJobs.map(j => ({ id: j.id, final_url: j.final_url, scene_id: j.scene_id }))
   } : null;
 
@@ -210,6 +293,13 @@ export const ProjectGallery = () => {
                 {projectJobs.length > 1 && (
                   <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
                     {projectJobs.length} bilder
+                  </div>
+                )}
+                
+                {/* Notes indicator */}
+                {project.notes && (
+                  <div className="absolute top-2 left-2 bg-black/70 text-white p-1.5 rounded-full" title={project.notes}>
+                    <StickyNote className="w-3 h-3" />
                   </div>
                 )}
                 
@@ -328,18 +418,61 @@ export const ProjectGallery = () => {
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           {selectedProject && (
             <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border-b flex-shrink-0 gap-3">
                 <h2 className="text-2xl font-bold">{selectedProject.registration_number}</h2>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" onClick={() => handleDownloadAll(selectedProject)}>
                     <Download className="w-4 h-4 mr-2" />
                     Ladda ner alla
                   </Button>
-                  <Button variant="destructive" size="icon" onClick={() => handleDeleteProject(selectedProject.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {selectedProject.id !== 'orphan' && (
+                    <Button variant="destructive" size="icon" onClick={() => handleDeleteProject(selectedProject.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
+              
+              {/* Notes Section */}
+              {selectedProject.id !== 'orphan' && (
+                <div className="px-4 pt-4 pb-2 border-b">
+                  {editingNotes === selectedProject.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={notesText}
+                        onChange={(e) => setNotesText(e.target.value)}
+                        placeholder="Skriv en anteckning..."
+                        className="min-h-[80px] text-sm"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleSaveNotes(selectedProject.id, notesText)}>
+                          <Check className="w-4 h-4 mr-1" />
+                          Spara
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingNotes(null)}>
+                          Avbryt
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      className="flex items-start gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-lg -m-2 transition-colors"
+                      onClick={() => {
+                        setEditingNotes(selectedProject.id);
+                        setNotesText(selectedProject.notes || '');
+                      }}
+                    >
+                      <StickyNote className="w-4 h-4 mt-0.5 text-muted-foreground" />
+                      {selectedProject.notes ? (
+                        <p className="text-sm flex-1">{selectedProject.notes}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">Klicka för att lägga till anteckning...</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -381,15 +514,44 @@ export const ProjectGallery = () => {
                     Tillbaka
                   </Button>
                 </div>
-                <Button size="sm" onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = currentJob.final_url!;
-                  link.download = `${selectedProject.registration_number}_${currentJob.id}.jpg`;
-                  link.click();
-                }}>
-                  <Download className="w-4 h-4 mr-1" />
-                  Ladda ner
-                </Button>
+                <div className="flex gap-2 flex-wrap justify-end">
+                  {onUseAsNewImage && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleUseAsNew(currentJob.final_url!)}
+                      title="Använd som ny bild"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Generera igen</span>
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setEditingImage({ jobId: currentJob.id, url: currentJob.final_url!, type: 'adjust' })}
+                    title="Justera"
+                  >
+                    <Sliders className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Justera</span>
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setEditingImage({ jobId: currentJob.id, url: currentJob.final_url!, type: 'crop' })}
+                    title="Beskär"
+                  >
+                    <Scissors className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Beskär</span>
+                  </Button>
+                  <Button size="sm" onClick={() => handleDownloadSingle(
+                    currentJob.final_url!, 
+                    `${selectedProject.registration_number}_${currentJob.id}.jpg`
+                  )}>
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Ladda ner</span>
+                  </Button>
+                </div>
               </div>
               
               {/* Image Display */}
@@ -431,6 +593,37 @@ export const ProjectGallery = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Crop Editor */}
+      {editingImage?.type === 'crop' && (
+        <ImageCropEditor
+          image={{
+            id: editingImage.jobId,
+            finalUrl: editingImage.url,
+            fileName: 'image.jpg'
+          }}
+          onClose={() => {
+            setEditingImage(null);
+          }}
+          onSave={(imageId, croppedUrl) => {
+            handleCropSave(imageId, croppedUrl);
+          }}
+          aspectRatio="landscape"
+        />
+      )}
+
+      {/* Adjustment Editor */}
+      {editingImage?.type === 'adjust' && (
+        <OriginalImageEditor
+          imageUrl={editingImage.url}
+          imageName="image.jpg"
+          open={true}
+          onClose={() => setEditingImage(null)}
+          onSave={(adjustedUrl) => {
+            handleAdjustSave(editingImage.jobId, adjustedUrl);
+          }}
+        />
+      )}
     </>
   );
 };

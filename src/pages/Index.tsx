@@ -481,7 +481,36 @@ export default function Index() {
               <h2 className="text-3xl font-bold text-foreground mb-2">Dina Projekt</h2>
               <p className="text-muted-foreground">Se och hantera dina tidigare skapade bilgallerier</p>
             </div>
-            <ProjectGallery />
+            <ProjectGallery onUseAsNewImage={async (imageUrl) => {
+              try {
+                // Fetch the image and create a File object
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                const file = new File([blob], `gallery_image_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                
+                // Create preview URL
+                const preview = URL.createObjectURL(blob);
+                
+                // Add as new uploaded image
+                const newImage: UploadedImage = {
+                  id: `gallery_${Date.now()}`,
+                  file,
+                  preview,
+                  status: 'pending'
+                };
+                
+                setUploadedImages(prev => [...prev, newImage]);
+                setActiveTab('new');
+                
+                // Scroll to upload section
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 100);
+              } catch (error) {
+                console.error('Error using image:', error);
+                toast.error('Kunde inte använda bilden');
+              }
+            }} />
           </section> : <div className="space-y-12">
             {/* Step 1: Upload */}
             <section className="space-y-4">
@@ -1084,15 +1113,20 @@ export default function Index() {
               canvas.height = baseImg.height;
               ctx.drawImage(baseImg, 0, 0);
 
-              // Draw banner if enabled
+              // Draw banner if enabled - use 140% width to match preview
               if (logoDesign.bannerEnabled) {
                 ctx.save();
                 ctx.globalAlpha = logoDesign.bannerOpacity / 100;
                 ctx.fillStyle = logoDesign.bannerColor;
                 const bx = (logoDesign.bannerX / 100) * canvas.width;
                 const by = (logoDesign.bannerY / 100) * canvas.height;
-                const bw = (logoDesign.bannerWidth / 100) * canvas.width;
-                const bh = (logoDesign.bannerHeight / 100) * canvas.height;
+                // Use 140% for width when horizontal (rotation 0) to match preview
+                const bw = logoDesign.bannerRotation === 0 
+                  ? canvas.width * 1.4 
+                  : (logoDesign.bannerHeight / 100) * canvas.width;
+                const bh = logoDesign.bannerRotation === 0 
+                  ? (logoDesign.bannerHeight / 100) * canvas.height 
+                  : canvas.height * 1.4;
                 ctx.translate(bx, by);
                 ctx.rotate((logoDesign.bannerRotation * Math.PI) / 180);
                 ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
