@@ -6,6 +6,8 @@ import { Sparkles, Zap, Settings2, ChevronDown } from 'lucide-react';
 import { ExportSettings } from '@/types/scene';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import auraGradient from '@/assets/aura-gradient-step3.jpg';
+
 interface ExportPanelProps {
   onExport: (settings: ExportSettings) => void;
   isProcessing: boolean;
@@ -24,14 +26,19 @@ export const ExportPanel = ({
   const handleExport = () => {
     onExport(settings);
   };
-  return <Card className="relative overflow-hidden bg-gradient-to-br from-card via-background to-muted/20">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-accent-orange/10 via-accent-pink/5 to-accent-blue/10 opacity-60" />
+  return <Card className="relative overflow-hidden">
+      {/* Aura gradient background */}
+      <div 
+        className="absolute inset-0 opacity-40"
+        style={{
+          backgroundImage: `url(${auraGradient})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
       
-      {/* Texture overlay */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-      backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-    }} />
+      {/* Dark overlay for contrast */}
+      <div className="absolute inset-0 bg-background/60" />
 
       <div className="relative p-6 space-y-6">
         {/* Header */}
@@ -129,7 +136,7 @@ export const ExportPanel = ({
 
         {/* Generate Button */}
         <div className="pt-2">
-          <Button onClick={handleExport} disabled={isProcessing} className="w-full h-14 text-base font-bold bg-gradient-to-r from-primary via-accent-orange to-accent-yellow hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-3 relative overflow-hidden group bg-destructive">
+          <Button onClick={handleExport} disabled={isProcessing} className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-3 relative overflow-hidden group">
             {/* Shimmer effect */}
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             
