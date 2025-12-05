@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Zap, Settings2, ChevronDown } from 'lucide-react';
+import { Sparkles, Settings2, ChevronDown } from 'lucide-react';
 import { ExportSettings } from '@/types/scene';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -29,7 +29,7 @@ export const ExportPanel = ({
   return <Card className="relative overflow-hidden">
       {/* Aura gradient background */}
       <div 
-        className="absolute inset-0 opacity-40"
+        className="absolute inset-0 opacity-80"
         style={{
           backgroundImage: `url(${auraGradient})`,
           backgroundSize: 'cover',
@@ -38,7 +38,7 @@ export const ExportPanel = ({
       />
       
       {/* Dark overlay for contrast */}
-      <div className="absolute inset-0 bg-background/60" />
+      <div className="absolute inset-0 bg-background/30" />
 
       <div className="relative p-6 space-y-6">
         {/* Header */}
@@ -48,9 +48,8 @@ export const ExportPanel = ({
             <div className="absolute inset-0 bg-gradient-to-br from-accent-pink/20 to-transparent animate-pulse" />
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-foreground mb-1">
               AI-Generering
-              <Zap className="w-4 h-4 text-primary animate-pulse" />
             </h3>
             <p className="text-sm text-muted-foreground">
               Välj dina inställningar och starta den magiska processen
