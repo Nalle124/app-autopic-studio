@@ -42,19 +42,13 @@ export const ExportPanel = ({
 
       <div className="relative p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary via-accent-orange to-accent-yellow flex items-center justify-center shadow-glow relative overflow-hidden">
-            <Sparkles className="w-7 h-7 text-primary-foreground relative z-10" />
-            <div className="absolute inset-0 bg-gradient-to-br from-accent-pink/20 to-transparent animate-pulse" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-foreground mb-1">
-              AI-Generering
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Välj dina inställningar och starta den magiska processen
-            </p>
-          </div>
+        <div>
+          <h3 className="text-xl font-bold text-foreground mb-1">
+            AI-Generering
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Välj dina inställningar och starta den magiska processen
+          </p>
         </div>
 
         {/* Settings Collapsible */}
