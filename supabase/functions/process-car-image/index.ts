@@ -64,6 +64,63 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Check and deduct credits if user is logged in
+    if (userId) {
+      console.log(`Checking credits for user: ${userId}`);
+      
+      // Get current credits
+      const { data: creditsData, error: creditsError } = await supabase
+        .from('user_credits')
+        .select('credits')
+        .eq('user_id', userId)
+        .single();
+
+      if (creditsError) {
+        console.error('Error fetching credits:', creditsError);
+        throw new Error('Kunde inte hämta credits. Försök igen.');
+      }
+
+      const currentCredits = creditsData?.credits || 0;
+      console.log(`Current credits: ${currentCredits}`);
+
+      if (currentCredits < 1) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'insufficient_credits',
+            message: 'Du har inga credits kvar. Köp fler credits för att fortsätta.',
+          }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Deduct 1 credit
+      const newBalance = currentCredits - 1;
+      const { error: updateError } = await supabase
+        .from('user_credits')
+        .update({ credits: newBalance, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error deducting credit:', updateError);
+        throw new Error('Kunde inte dra credit. Försök igen.');
+      }
+
+      // Log the transaction
+      await supabase.from('credit_transactions').insert({
+        user_id: userId,
+        amount: -1,
+        balance_after: newBalance,
+        transaction_type: 'generation',
+        description: `Bildgenerering: ${scene.name}`,
+      });
+
+      console.log(`Credit deducted. New balance: ${newBalance}`);
+    }
+
     // Step 1: Upload original image to storage to get a URL
     const imageBuffer = await imageFile.arrayBuffer();
     const uploadFilename = `temp/${crypto.randomUUID()}-original.${imageFile.name.split('.').pop()}`;
