@@ -133,6 +133,7 @@ export type Database = {
           horizon_y: number
           id: string
           name: string
+          photoroom_shadow_mode: string | null
           reflection_enabled: boolean
           reflection_fade: number
           reflection_opacity: number
@@ -156,6 +157,7 @@ export type Database = {
           horizon_y?: number
           id: string
           name: string
+          photoroom_shadow_mode?: string | null
           reflection_enabled?: boolean
           reflection_fade?: number
           reflection_opacity?: number
@@ -179,6 +181,7 @@ export type Database = {
           horizon_y?: number
           id?: string
           name?: string
+          photoroom_shadow_mode?: string | null
           reflection_enabled?: boolean
           reflection_fade?: number
           reflection_opacity?: number

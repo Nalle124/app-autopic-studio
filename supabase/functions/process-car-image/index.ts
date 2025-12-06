@@ -25,7 +25,11 @@ interface SceneMetadata {
     fade: number;
   };
   aiPrompt?: string;
+  photoroomShadowMode?: string; // 'none', 'ai.soft', 'ai.hard', 'ai.floating'
 }
+
+// Fixed seed for consistent results across generations (PhotoRoom recommended)
+const PHOTOROOM_SEED = 117879368;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -52,6 +56,8 @@ serve(async (req) => {
     }
 
     console.log(`Processing image for scene: ${scene.name}`);
+    console.log(`Shadow mode: ${scene.photoroomShadowMode || 'none'}`);
+    console.log(`AI Prompt: ${scene.aiPrompt || 'default'}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -81,31 +87,42 @@ serve(async (req) => {
     const originalImageUrl = publicUrlData.publicUrl;
     console.log('Original image uploaded:', originalImageUrl);
 
-    // Step 2: Process with Photoroom's AI Background API using reference image
-    console.log('Processing with Photoroom AI Background with reference URL...');
+    // Step 2: Process with Photoroom's AI Background API
+    console.log('Processing with Photoroom Studio model...');
     
-    // Use background.guidance.imageUrl instead of uploading the file
-    // This avoids any content-type issues
     const photoroomFormData = new FormData();
     photoroomFormData.append('imageFile', new Blob([imageBuffer], { type: imageFile.type }));
     
-    // Use AI background with reference/guidance image URL
+    // Use reference/guidance image for background
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    // Set guidance to MAXIMUM strength - AI must follow reference exactly
-    photoroomFormData.append('background.guidance.scale', '1.0');
-    photoroomFormData.append('background.guidance.strength', '1.0');
+    photoroomFormData.append('background.guidance.scale', '1.0'); // Maximum adherence to reference
     
-    // CRITICAL: Be very specific about indoor placement to avoid rooftop placement
-    photoroomFormData.append('background.prompt', 
-      'Place the vehicle INSIDE the interior space shown in the reference image. ' +
-      'The vehicle must be positioned ON THE FLOOR inside this indoor environment. ' +
-      'Maintain the exact interior walls, ceiling, lighting, and doors from the reference. ' +
-      'This is an indoor scene - the vehicle should be parked inside the building, not on top of it. ' +
-      'Match the perspective and scale to fit naturally inside the interior space.'
+    // Fixed seed for consistent results
+    photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
+    
+    // Scene-specific AI prompt (or default if not provided)
+    const prompt = scene.aiPrompt || 
+      `Place this vehicle naturally in the scene. The car should be positioned on the ground level, ` +
+      `centered in the frame, with proper perspective matching the environment. ` +
+      `Maintain realistic lighting and scale.`;
+    
+    photoroomFormData.append('background.prompt', prompt);
+    console.log('Using prompt:', prompt);
+    
+    // Negative prompt to prevent common issues
+    photoroomFormData.append('background.negativePrompt', 
+      'floating car, flying car, car on roof, car in sky, distorted, blurry, unrealistic scale, ' +
+      'wrong perspective, car too small, car too large, multiple cars'
     );
-    console.log('Using reference image:', backgroundImageUrl);
     
-    // Add padding to create natural spacing around the vehicle (10% on all sides)
+    // Add PhotoRoom AI shadow if specified
+    const shadowMode = scene.photoroomShadowMode || 'none';
+    if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
+      photoroomFormData.append('shadow.mode', shadowMode);
+      console.log('Adding PhotoRoom shadow:', shadowMode);
+    }
+    
+    // Add padding to create natural spacing around the vehicle
     photoroomFormData.append('padding', '0.1');
     
     // Set positioning to fit the vehicle naturally within the frame
@@ -115,7 +132,10 @@ serve(async (req) => {
     // Request high quality output in landscape format (3:2 ratio)
     photoroomFormData.append('outputSize', '3072x2048');
     
-    console.log('Photoroom request prepared with guidance URL:', backgroundImageUrl);
+    console.log('Photoroom request prepared:');
+    console.log('- Reference URL:', backgroundImageUrl);
+    console.log('- Seed:', PHOTOROOM_SEED);
+    console.log('- Shadow mode:', shadowMode);
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
@@ -129,9 +149,8 @@ serve(async (req) => {
 
     if (!editResponse.ok) {
       const errorText = await editResponse.text();
-      console.error('Photoroom AI background error:', errorText);
+      console.error('Photoroom error:', editResponse.status, errorText);
       
-      // Handle specific error codes
       if (editResponse.status === 402) {
         throw new Error(`Photoroom: Out of API credits. Visit https://app.photoroom.com/api-dashboard to upgrade.`);
       }
@@ -143,18 +162,18 @@ serve(async (req) => {
     }
 
     const finalImageBuffer = await editResponse.arrayBuffer();
-    console.log('✅ Photoroom AI processed successfully with reference background!');
+    console.log('✅ Photoroom processed successfully!');
 
-    // Step 3: Save final image (no AI analysis needed - Photoroom does it all!)
-    console.log('Uploading final AI-processed image...');
+    // Step 3: Save final image
+    console.log('Uploading final image...');
     
-    // Sanitize scene ID to remove special characters (Swedish letters etc.)
+    // Sanitize scene ID for filename
     const sanitizedSceneId = scene.id
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-      .replace(/[^a-z0-9-]/gi, '-')     // Replace non-alphanumeric with dash
-      .replace(/-+/g, '-')              // Replace multiple dashes with single
-      .replace(/^-|-$/g, '');           // Remove leading/trailing dashes
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9-]/gi, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
     
     const finalFilename = `${crypto.randomUUID()}-${sanitizedSceneId}.png`;
     const { data: finalUploadData, error: finalUploadError } = await supabase.storage
@@ -201,7 +220,7 @@ serve(async (req) => {
         console.error('Error saving job:', jobError);
       } else {
         jobId = jobData.id;
-        console.log('✅ Job saved to database:', jobId);
+        console.log('✅ Job saved:', jobId);
       }
     }
 
