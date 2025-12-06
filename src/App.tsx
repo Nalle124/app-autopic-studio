@@ -11,6 +11,8 @@ import Admin from "./pages/Admin";
 import AdminScenes from "./pages/AdminScenes";
 import { Profile } from "./pages/Profile";
 import { Onboarding } from "./pages/Onboarding";
+import Pricing from "./pages/Pricing";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 import UploadSceneImages from "./pages/UploadSceneImages";
 
@@ -34,6 +36,8 @@ function App() {
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/admin/scener" element={<ProtectedRoute><AdminScenes /></ProtectedRoute>} />
               <Route path="/setup-scenes" element={<ProtectedRoute><SetupScenes /></ProtectedRoute>} />
