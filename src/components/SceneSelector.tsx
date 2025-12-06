@@ -164,7 +164,7 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
       }`}
     >
       {/* Gradient overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category]?.gradient || categoryConfig['studios'].gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category]?.gradient || 'from-accent-orange/20 via-accent-pink/10 to-background/5'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
       
       {/* Favorite button */}
       <Button
