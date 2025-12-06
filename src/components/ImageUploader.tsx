@@ -122,7 +122,7 @@ export const ImageUploader = ({
                   <div className="absolute -inset-[1px] rounded-lg bg-gradient-to-r from-accent-teal via-accent-orange to-accent-blue opacity-70 blur-[1px]" />
                   <input 
                     type="text" 
-                    placeholder="Reg.nr (valfritt)" 
+                    placeholder="Reg.nr" 
                     value={registrationNumber || ''} 
                     onChange={e => onRegistrationNumberChange(e.target.value.toUpperCase())} 
                     className="relative text-sm px-3 py-1.5 border border-transparent rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none w-full" 

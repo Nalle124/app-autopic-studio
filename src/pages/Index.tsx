@@ -466,16 +466,23 @@ export default function Index() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {activeTab === 'history' ? <section className="space-y-6">
-            <div className="flex items-center gap-4 mb-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setActiveTab('new')}
-                className="gap-2"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Tillbaka
-              </Button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setActiveTab('new')}
+                  className="gap-2"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Tillbaka
+                </Button>
+                {uploadedImages.length > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    Du har ett aktivt projekt med {uploadedImages.length} bilder
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-2">Dina Projekt</h2>
@@ -563,7 +570,7 @@ export default function Index() {
                   <Card className="p-6 space-y-3">
                     <Button onClick={() => setLogoDesignOpen(true)} variant="outline" className="w-full">
                       <ImageIcon className="w-4 h-4 mr-2" />
-                      {logoDesign.enabled ? 'Redigera Logo Design' : 'Lägg till Logo Design (valfritt)'}
+                      {logoDesign.enabled ? 'Redigera Logo Design' : 'Lägg till Logo Design'}
                     </Button>
                     {logoDesign.enabled && (
                       <Button 
@@ -757,132 +764,138 @@ export default function Index() {
                   </div>
                 </div>
                 
-                <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" title="Regenerera" onClick={async () => {
-                  if (!selectedScene || !currentImage) return;
-                  
-                  // Close preview dialog
-                  setPreviewImage(null);
-                  
-                  // Keep previous finalUrl for display while processing
-                  const previousFinalUrl = currentImage.finalUrl;
-                  
-                  // Only regenerate this single image - keep finalUrl for display
-                  setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
-                    ...img,
-                    status: 'processing' as const,
-                    // Keep the old finalUrl so image stays visible in gallery
-                    finalUrl: previousFinalUrl,
-                  } : img));
-                  
-                  try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) {
-                      toast.error('Du måste vara inloggad');
-                      return;
-                    }
+                {/* Bottom action bar */}
+                <div className="p-3 bg-background border-t flex flex-col gap-3">
+                  {/* Regenerate button - prominent below image */}
+                  <Button size="sm" variant="outline" className="w-full" onClick={async () => {
+                    if (!selectedScene || !currentImage) return;
                     
-                    const formData = new FormData();
+                    // Close preview dialog
+                    setPreviewImage(null);
                     
-                    // Use croppedUrl if available, otherwise original
-                    if (currentImage.croppedUrl) {
-                      const response = await fetch(currentImage.croppedUrl);
-                      let blob = await response.blob();
-                      const img = new Image();
-                      img.src = currentImage.croppedUrl;
-                      await new Promise(resolve => { img.onload = resolve; });
-                      
-                      const canvas = document.createElement('canvas');
-                      const maxDim = 2048;
-                      const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-                      canvas.width = img.width * scale;
-                      canvas.height = img.height * scale;
-                      const ctx = canvas.getContext('2d');
-                      if (ctx) {
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.9));
-                      }
-                      formData.append('image', blob, currentImage.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg');
-                    } else {
-                      formData.append('image', currentImage.file);
-                    }
+                    // Keep previous finalUrl for display while processing
+                    const previousFinalUrl = currentImage.finalUrl;
                     
-                    formData.append('scene', JSON.stringify(selectedScene));
-                    const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') 
-                      ? selectedScene.fullResUrl 
-                      : `${window.location.origin}${selectedScene.fullResUrl}`;
-                    formData.append('backgroundUrl', backgroundUrl);
-                    formData.append('userId', user.id);
-                    if (currentProjectId) {
-                      formData.append('projectId', currentProjectId);
-                    }
-                    
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 90000);
-                    
-                    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
-                      method: 'POST',
-                      body: formData,
-                      signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
-                    
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    
-                    const result = await response.json();
-                    if (result.success) {
-                      setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
-                        ...img,
-                        status: 'completed',
-                        finalUrl: result.finalUrl,
-                        sceneId: selectedScene.id,
-                      } : img));
-                    } else {
-                      throw new Error(result.error || 'Processing failed');
-                    }
-                  } catch (error: any) {
-                    console.error('Error regenerating:', error);
-                    toast.error(`Fel: ${error.message || 'Okänt fel'}`);
+                    // Only regenerate this single image - keep finalUrl for display
                     setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
                       ...img,
-                      status: 'failed',
+                      status: 'processing' as const,
+                      // Keep the old finalUrl so image stays visible in gallery
+                      finalUrl: previousFinalUrl,
                     } : img));
-                  }
-                }}>
-                      <RefreshCw className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">Regenerera</span>
-                    </Button>
-                    <Button size="sm" variant="outline" title="Justera" onClick={() => {
-                  setPreviewImage(null);
-                  setEditingImage({
-                    id: currentImage.id,
-                    finalUrl: currentImage.finalUrl!,
-                    fileName: currentImage.file.name,
-                    type: 'adjust'
-                  });
-                }}>
-                      <Sliders className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">Justera</span>
-                    </Button>
-                    <Button size="sm" variant="outline" title="Beskär" onClick={() => {
-                  setPreviewImage(null);
-                  setEditingImage({
-                    id: currentImage.id,
-                    finalUrl: currentImage.finalUrl!,
-                    fileName: currentImage.file.name,
-                    type: 'crop'
-                  });
-                }}>
-                      <Scissors className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">Beskär</span>
+                    
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) {
+                        toast.error('Du måste vara inloggad');
+                        return;
+                      }
+                      
+                      const formData = new FormData();
+                      
+                      // Use croppedUrl if available, otherwise original
+                      if (currentImage.croppedUrl) {
+                        const response = await fetch(currentImage.croppedUrl);
+                        let blob = await response.blob();
+                        const img = new Image();
+                        img.src = currentImage.croppedUrl;
+                        await new Promise(resolve => { img.onload = resolve; });
+                        
+                        const canvas = document.createElement('canvas');
+                        const maxDim = 2048;
+                        const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+                        canvas.width = img.width * scale;
+                        canvas.height = img.height * scale;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                          blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.9));
+                        }
+                        formData.append('image', blob, currentImage.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg');
+                      } else {
+                        formData.append('image', currentImage.file);
+                      }
+                      
+                      formData.append('scene', JSON.stringify(selectedScene));
+                      const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') 
+                        ? selectedScene.fullResUrl 
+                        : `${window.location.origin}${selectedScene.fullResUrl}`;
+                      formData.append('backgroundUrl', backgroundUrl);
+                      formData.append('userId', user.id);
+                      if (currentProjectId) {
+                        formData.append('projectId', currentProjectId);
+                      }
+                      
+                      const controller = new AbortController();
+                      const timeoutId = setTimeout(() => controller.abort(), 90000);
+                      
+                      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+                        method: 'POST',
+                        body: formData,
+                        signal: controller.signal
+                      });
+                      clearTimeout(timeoutId);
+                      
+                      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                      
+                      const result = await response.json();
+                      if (result.success) {
+                        setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
+                          ...img,
+                          status: 'completed',
+                          finalUrl: result.finalUrl,
+                          sceneId: selectedScene.id,
+                        } : img));
+                      } else {
+                        throw new Error(result.error || 'Processing failed');
+                      }
+                    } catch (error: any) {
+                      console.error('Error regenerating:', error);
+                      toast.error(`Fel: ${error.message || 'Okänt fel'}`);
+                      setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
+                        ...img,
+                        status: 'failed',
+                      } : img));
+                    }
+                  }}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Generera igen
+                  </Button>
+                  
+                  {/* Edit and share buttons */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" title="Justera" onClick={() => {
+                        setPreviewImage(null);
+                        setEditingImage({
+                          id: currentImage.id,
+                          finalUrl: currentImage.finalUrl!,
+                          fileName: currentImage.file.name,
+                          type: 'adjust'
+                        });
+                      }}>
+                        <Sliders className="w-4 h-4" />
+                        <span className="hidden sm:inline ml-1">Justera</span>
+                      </Button>
+                      <Button size="sm" variant="outline" title="Beskär" onClick={() => {
+                        setPreviewImage(null);
+                        setEditingImage({
+                          id: currentImage.id,
+                          finalUrl: currentImage.finalUrl!,
+                          fileName: currentImage.file.name,
+                          type: 'crop'
+                        });
+                      }}>
+                        <Scissors className="w-4 h-4" />
+                        <span className="hidden sm:inline ml-1">Beskär</span>
+                      </Button>
+                    </div>
+                    
+                    <Button size="sm" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber || 'bild'}_${currentImage.id}.jpg`)}>
+                      <Share2 className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Dela</span>
                     </Button>
                   </div>
-                  
-                  <Button size="sm" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber || 'bild'}_${currentImage.id}.jpg`)}>
-                    <Download className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Ladda ner</span>
-                  </Button>
                 </div>
               </div>;
         })()}
