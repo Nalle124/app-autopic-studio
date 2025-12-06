@@ -1,106 +1,84 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload, Check } from 'lucide-react';
 
 const UploadSceneImages = () => {
   const [uploading, setUploading] = useState(false);
+  const [sceneId, setSceneId] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const uploadSceneImage = async (sceneId: string, localPath: string) => {
-    // Fetch the image as a blob from the public folder
-    const response = await fetch(localPath);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image from ${localPath}`);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setUploadedUrl(null);
     }
-    
-    const blob = await response.blob();
-    const fileExt = localPath.split('.').pop();
-    const fileName = `${sceneId}.${fileExt}`;
-    const filePath = `scenes/${fileName}`;
-
-    console.log('Uploading to Storage:', filePath);
-
-    // Upload directly to Supabase Storage from client
-    const { data, error } = await supabase.storage
-      .from('processed-cars')
-      .upload(filePath, blob, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: blob.type
-      });
-
-    if (error) throw error;
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('processed-cars')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
   };
 
-  const handleUploadAll = async () => {
+  const handleUpload = async () => {
+    if (!sceneId.trim()) {
+      toast.error('Ange ett scene ID');
+      return;
+    }
+    if (!selectedFile) {
+      toast.error('Välj en bildfil');
+      return;
+    }
+
     setUploading(true);
     try {
-      // Upload vinter-frost
-      const vinterUrl = await uploadSceneImage('vinter-frost', '/scenes/vinter-frost.jpg');
-      console.log('Vinter Frost uploaded:', vinterUrl);
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${sceneId}.${fileExt}`;
+      const filePath = `scenes/${fileName}`;
 
-      // Upload nordisk-dagsljus
-      const nordiskUrl = await uploadSceneImage('nordisk-dagsljus', '/scenes/nordisk-dagsljus.jpg');
-      console.log('Nordisk Dagsljus uploaded:', nordiskUrl);
+      console.log('Uploading to Storage:', filePath);
 
-      // Insert into database with correct URLs
-      const { error: insertError } = await supabase.from('scenes').insert([
-        {
-          id: 'vinter-frost',
-          name: 'Vinter Frost',
-          description: 'Nordisk vinterlandskap med solnedgång och fruset landskap',
-          category: 'utomhus',
-          thumbnail_url: vinterUrl,
-          full_res_url: vinterUrl,
-          horizon_y: 48,
-          baseline_y: 70,
-          default_scale: 0.6,
-          shadow_enabled: true,
-          shadow_strength: 0.4,
-          shadow_blur: 30,
-          shadow_offset_x: 2,
-          shadow_offset_y: 3,
-          reflection_enabled: false,
-          reflection_opacity: 0,
-          reflection_fade: 0,
-          ai_prompt: 'Place the vehicle on the snowy asphalt road in the foreground of this Nordic winter landscape. The vehicle must be positioned on the ground level road with the frozen lake and birch trees in the background. Maintain the cold winter atmosphere with the warm sunset glow. The car should appear as if parked on this winter road at sunset.',
-          sort_order: 100
-        },
-        {
-          id: 'nordisk-dagsljus',
-          name: 'Nordiskt Dagsljus',
-          description: 'Nordisk vinterlandskap med klar blå himmel och dagsljus',
-          category: 'utomhus',
-          thumbnail_url: nordiskUrl,
-          full_res_url: nordiskUrl,
-          horizon_y: 48,
-          baseline_y: 70,
-          default_scale: 0.6,
-          shadow_enabled: true,
-          shadow_strength: 0.4,
-          shadow_blur: 30,
-          shadow_offset_x: 2,
-          shadow_offset_y: 3,
-          reflection_enabled: false,
-          reflection_opacity: 0,
-          reflection_fade: 0,
-          ai_prompt: 'Place the vehicle on the asphalt road in this bright Nordic daylight scene. The vehicle must be positioned on the ground level road with the frozen lake and forest in the background under clear blue skies. Maintain the natural daytime lighting and the peaceful winter landscape atmosphere. The car should be positioned as if parked on this scenic road during daytime.',
-          sort_order: 101
-        }
-      ]);
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('processed-cars')
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: selectedFile.type
+        });
 
-      if (insertError) throw insertError;
+      if (error) throw error;
 
-      toast.success('Alla scener uppladdade och sparade!');
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('processed-cars')
+        .getPublicUrl(filePath);
+
+      setUploadedUrl(publicUrl);
+
+      // Update the scene in database with new URLs
+      const { error: updateError } = await supabase
+        .from('scenes')
+        .update({
+          thumbnail_url: publicUrl,
+          full_res_url: publicUrl,
+        })
+        .eq('id', sceneId);
+
+      if (updateError) {
+        console.error('Failed to update scene in database:', updateError);
+        toast.error(`Bild uppladdad men kunde inte uppdatera databasen: ${updateError.message}`);
+      } else {
+        toast.success(`Bild uppladdad och scene "${sceneId}" uppdaterad!`);
+      }
+
+      // Reset form
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(`Fel vid uppladdning: ${error.message}`);
@@ -113,21 +91,79 @@ const UploadSceneImages = () => {
     <div className="min-h-screen bg-background p-8">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Ladda upp scenbilder till Storage</CardTitle>
+          <CardTitle>Ladda upp scenbild till Storage</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="mb-4 text-muted-foreground">
-            Klicka på knappen nedan för att ladda upp de två nya scenbilderna till Supabase Storage
-            och skapa databasposterna med korrekta URLs.
+        <CardContent className="space-y-6">
+          <p className="text-muted-foreground">
+            Ladda upp en bakgrundsbild för en befintlig scene. Bilden sparas i Supabase Storage
+            och scenens URLs uppdateras automatiskt.
           </p>
-          <Button 
-            onClick={handleUploadAll} 
-            disabled={uploading}
-            className="w-full"
-          >
-            {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {uploading ? 'Laddar upp...' : 'Ladda upp scener'}
-          </Button>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="sceneId">Scene ID</Label>
+              <Input
+                id="sceneId"
+                placeholder="t.ex. vintervag, nordisk-dagsljus"
+                value={sceneId}
+                onChange={(e) => setSceneId(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Måste matcha ett befintligt scene ID i databasen
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="imageFile">Bildfil</Label>
+              <Input
+                id="imageFile"
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+              />
+              {selectedFile && (
+                <p className="text-sm text-muted-foreground">
+                  Vald fil: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+
+            <Button 
+              onClick={handleUpload} 
+              disabled={uploading || !sceneId || !selectedFile}
+              className="w-full"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Laddar upp...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Ladda upp och uppdatera scene
+                </>
+              )}
+            </Button>
+
+            {uploadedUrl && (
+              <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg space-y-2">
+                <div className="flex items-center gap-2 text-green-500">
+                  <Check className="w-4 h-4" />
+                  <span className="font-medium">Uppladdning klar!</span>
+                </div>
+                <p className="text-xs text-muted-foreground break-all">
+                  URL: {uploadedUrl}
+                </p>
+                <img 
+                  src={uploadedUrl} 
+                  alt="Uploaded scene" 
+                  className="w-full max-w-md rounded-lg border"
+                />
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

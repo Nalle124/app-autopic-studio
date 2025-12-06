@@ -117,6 +117,7 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
           fade: Number(scene.reflection_fade),
         },
         aiPrompt: scene.ai_prompt || undefined,
+        photoroomShadowMode: (scene as any).photoroom_shadow_mode || 'none',
       }));
 
       setScenes(scenesData);

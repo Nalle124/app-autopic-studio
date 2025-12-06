@@ -23,6 +23,7 @@ export interface SceneMetadata {
   };
   aiPrompt?: string; // Optional AI prompt for specific scene requirements
   category?: string; // Category for organizing scenes
+  photoroomShadowMode?: 'none' | 'ai.soft' | 'ai.hard' | 'ai.floating'; // PhotoRoom AI shadow type
 }
 
 export interface CarAnalysis {
