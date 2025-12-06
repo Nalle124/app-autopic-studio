@@ -41,13 +41,16 @@ export const Header = () => {
           <nav className="flex items-center gap-4">
             {user ? (
               <>
-                {/* Credits Display */}
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                {/* Credits Display - clickable to pricing */}
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
+                >
                   <Coins className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium text-foreground">
                     {creditsLoading ? '...' : credits}
                   </span>
-                </div>
+                </button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
