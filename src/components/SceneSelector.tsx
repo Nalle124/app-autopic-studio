@@ -14,30 +14,20 @@ interface SceneSelectorProps {
 
 // Category order and descriptions
 const categoryConfig: Record<string, { order: number; description: string; gradient: string }> = {
-  'studios': { 
+  'studio': { 
     order: 1, 
     description: 'Professionella studiomiljöer för rena produktbilder',
     gradient: 'from-accent-orange/20 via-accent-pink/10 to-background/5'
   },
-  'utomhus': { 
+  'outdoor': { 
     order: 2, 
-    description: 'Naturliga utomhusmiljöer',
+    description: 'Utomhusmiljöer och lantliga scener',
     gradient: 'from-accent-blue/20 via-accent-green/10 to-background/5'
   },
-  'lantligt': { 
-    order: 3, 
-    description: 'Svenska lantliga miljöer',
-    gradient: 'from-accent-green/20 via-accent-yellow/10 to-background/5'
-  },
   'premium': { 
-    order: 4, 
+    order: 3, 
     description: 'Exklusiva miljöer för lyxbilar',
     gradient: 'from-accent-pink/20 via-primary/10 to-background/5'
-  },
-  'skoj': { 
-    order: 5, 
-    description: 'Kreativa och roliga miljöer',
-    gradient: 'from-accent-yellow/20 via-accent-orange/10 to-background/5'
   },
 };
 
@@ -147,11 +137,9 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
   const getCategoryDisplayName = (category: string) => {
     const names: Record<string, string> = {
       'favorites': 'Favoriter',
-      'studios': 'Studios',
-      'utomhus': 'Utomhus',
-      'lantligt': 'Lantligt',
+      'studio': 'Studios',
+      'outdoor': 'Utomhus',
       'premium': 'Premium',
-      'skoj': 'Skoj'
     };
     return names[category] || category;
   };
