@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       processing_jobs: {
         Row: {
           completed_at: string | null
@@ -66,30 +96,51 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
+          city: string | null
+          company_name: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
           logo_dark: string | null
           logo_light: string | null
+          onboarding_completed: boolean
+          organization_number: string | null
+          phone: string | null
+          postal_code: string | null
           updated_at: string
         }
         Insert: {
+          address?: string | null
+          city?: string | null
+          company_name?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
           logo_dark?: string | null
           logo_light?: string | null
+          onboarding_completed?: boolean
+          organization_number?: string | null
+          phone?: string | null
+          postal_code?: string | null
           updated_at?: string
         }
         Update: {
+          address?: string | null
+          city?: string | null
+          company_name?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
           logo_dark?: string | null
           logo_light?: string | null
+          onboarding_completed?: boolean
+          organization_number?: string | null
+          phone?: string | null
+          postal_code?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -193,6 +244,30 @@ export type Database = {
           sort_order?: number
           thumbnail_url?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_credits: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

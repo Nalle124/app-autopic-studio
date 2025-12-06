@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     if (!error) {
       toast.success('Konto skapat! Du är nu inloggad.');
-      navigate('/');
+      navigate('/onboarding');
     }
     
     return { error };
