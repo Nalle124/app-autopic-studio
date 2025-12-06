@@ -245,12 +245,12 @@ export const Profile = () => {
               <LogoUploadSection 
                 type="light" 
                 logo={logoLight} 
-                label="Logo för ljusa bakgrunder" 
+                label="Logo ljus" 
               />
               <LogoUploadSection 
                 type="dark" 
                 logo={logoDark} 
-                label="Logo för mörka bakgrunder" 
+                label="Logo mörk" 
               />
             </div>
           </div>
