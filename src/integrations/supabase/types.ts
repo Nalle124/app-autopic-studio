@@ -100,6 +100,7 @@ export type Database = {
           city: string | null
           company_name: string | null
           created_at: string
+          customer_type: string | null
           email: string
           full_name: string | null
           id: string
@@ -116,6 +117,7 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           created_at?: string
+          customer_type?: string | null
           email: string
           full_name?: string | null
           id: string
@@ -132,6 +134,7 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           created_at?: string
+          customer_type?: string | null
           email?: string
           full_name?: string | null
           id?: string

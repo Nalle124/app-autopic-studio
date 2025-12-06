@@ -5,19 +5,46 @@ import { Header } from '@/components/Header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Upload, User, Sun, Moon, Palette, ArrowLeft } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ArrowLeft, Building2, Phone, MapPin, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserCredits } from '@/hooks/useUserCredits';
+
+interface ProfileData {
+  full_name: string | null;
+  company_name: string | null;
+  organization_number: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  postal_code: string | null;
+  customer_type: string | null;
+  logo_light: string | null;
+  logo_dark: string | null;
+}
 
 export const Profile = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
-  const [logoLight, setLogoLight] = useState<string | null>(null);
-  const [logoDark, setLogoDark] = useState<string | null>(null);
+  const { credits } = useUserCredits();
+  const [profileData, setProfileData] = useState<ProfileData>({
+    full_name: null,
+    company_name: null,
+    organization_number: null,
+    phone: null,
+    address: null,
+    city: null,
+    postal_code: null,
+    customer_type: null,
+    logo_light: null,
+    logo_dark: null,
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -26,21 +53,66 @@ export const Profile = () => {
   }, [user]);
 
   const loadProfile = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('logo_light, logo_dark')
+        .select('*')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
 
       if (data) {
-        setLogoLight(data.logo_light);
-        setLogoDark(data.logo_dark);
+        setProfileData({
+          full_name: data.full_name,
+          company_name: data.company_name,
+          organization_number: data.organization_number,
+          phone: data.phone,
+          address: data.address,
+          city: data.city,
+          postal_code: data.postal_code,
+          customer_type: data.customer_type,
+          logo_light: data.logo_light,
+          logo_dark: data.logo_dark,
+        });
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (field: keyof ProfileData, value: string) => {
+    setProfileData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+    setIsSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profileData.full_name,
+          company_name: profileData.company_name,
+          organization_number: profileData.organization_number,
+          phone: profileData.phone,
+          address: profileData.address,
+          city: profileData.city,
+          postal_code: profileData.postal_code,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      toast.success('Profil sparad');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error('Kunde inte spara profil');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -54,59 +126,35 @@ export const Profile = () => {
     reader.onload = async (e) => {
       const result = e.target?.result as string;
       
-      if (type === 'light') {
-        setLogoLight(result);
-      } else {
-        setLogoDark(result);
-      }
+      setProfileData(prev => ({
+        ...prev,
+        [type === 'light' ? 'logo_light' : 'logo_dark']: result
+      }));
       
-      await saveProfile(
-        type === 'light' ? result : logoLight,
-        type === 'dark' ? result : logoDark
-      );
+      await saveLogo(type, result);
     };
     reader.readAsDataURL(file);
   };
 
-  const saveProfile = async (light: string | null, dark: string | null) => {
+  const saveLogo = async (type: 'light' | 'dark', url: string) => {
     if (!user?.id) return;
 
-    setIsLoading(true);
     try {
-      const { data: existing } = await supabase
+      const { error } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
+        .update({
+          [type === 'light' ? 'logo_light' : 'logo_dark']: url,
+        })
+        .eq('id', user.id);
 
-      if (existing) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            logo_light: light,
-            logo_dark: dark,
-          })
-          .eq('id', user.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('profiles')
-          .insert([{
-            id: user.id,
-            logo_light: light,
-            logo_dark: dark,
-          } as any]);
-
-        if (error) throw error;
-      }
+      if (error) throw error;
     } catch (error) {
-      console.error('Error saving profile:', error);
-      toast.error('Kunde inte spara profil');
-    } finally {
-      setIsLoading(false);
+      console.error('Error saving logo:', error);
+      toast.error('Kunde inte spara logo');
     }
   };
+
+  const isCompany = profileData.customer_type === 'company';
 
   const LogoUploadSection = ({ 
     type, 
@@ -157,13 +205,21 @@ export const Profile = () => {
           }}
         />
       </div>
-      <p className="text-xs text-muted-foreground font-small">
-        {type === 'light' 
-          ? 'Används på ljusa bakgrunder (mörk logo rekommenderas)' 
-          : 'Används på mörka bakgrunder (ljus logo rekommenderas)'}
-      </p>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="container mx-auto px-6 py-12 max-w-4xl">
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -182,9 +238,142 @@ export const Profile = () => {
           </Button>
           <h1 className="text-3xl font-bold text-foreground mb-2 font-heading">Profil</h1>
           <p className="text-muted-foreground font-small">
-            Hantera dina logotyper och inställningar
+            Hantera dina uppgifter och inställningar
           </p>
         </div>
+
+        {/* Credits Card */}
+        <Card className="p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Coins className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground font-heading">
+                  Dina credits
+                </h2>
+                <p className="text-sm text-muted-foreground font-small">
+                  {credits} credits kvar
+                </p>
+              </div>
+            </div>
+            <Button variant="premium">
+              Köp credits
+            </Button>
+          </div>
+        </Card>
+
+        {/* Customer Info */}
+        <Card className="p-6 mb-6">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              {isCompany ? (
+                <Building2 className="w-6 h-6 text-primary" />
+              ) : (
+                <User className="w-6 h-6 text-primary" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground font-heading">
+                {isCompany ? 'Företagsuppgifter' : 'Kontaktuppgifter'}
+              </h2>
+              <p className="text-sm text-muted-foreground font-small">
+                {isCompany ? 'Ditt företags information' : 'Din personliga information'}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {isCompany ? (
+              <>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company_name">Företagsnamn</Label>
+                    <Input
+                      id="company_name"
+                      value={profileData.company_name || ''}
+                      onChange={(e) => handleChange('company_name', e.target.value)}
+                      placeholder="Ditt företag AB"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="organization_number">Org.nummer</Label>
+                    <Input
+                      id="organization_number"
+                      value={profileData.organization_number || ''}
+                      onChange={(e) => handleChange('organization_number', e.target.value)}
+                      placeholder="556677-8899"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Namn</Label>
+                <Input
+                  id="full_name"
+                  value={profileData.full_name || ''}
+                  onChange={(e) => handleChange('full_name', e.target.value)}
+                  placeholder="Ditt namn"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                Telefon
+              </Label>
+              <Input
+                id="phone"
+                value={profileData.phone || ''}
+                onChange={(e) => handleChange('phone', e.target.value)}
+                placeholder="070-123 45 67"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address" className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                Adress
+              </Label>
+              <Input
+                id="address"
+                value={profileData.address || ''}
+                onChange={(e) => handleChange('address', e.target.value)}
+                placeholder="Gatan 1"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="postal_code">Postnummer</Label>
+                <Input
+                  id="postal_code"
+                  value={profileData.postal_code || ''}
+                  onChange={(e) => handleChange('postal_code', e.target.value)}
+                  placeholder="123 45"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Ort</Label>
+                <Input
+                  id="city"
+                  value={profileData.city || ''}
+                  onChange={(e) => handleChange('city', e.target.value)}
+                  placeholder="Stockholm"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Sparar...' : 'Spara ändringar'}
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {/* Theme Settings */}
         <Card className="p-6 mb-6">
@@ -225,31 +414,30 @@ export const Profile = () => {
         <Card className="p-6">
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-6 h-6 text-primary" />
+              <Upload className="w-6 h-6 text-primary" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground font-heading">
-                {user?.email || 'Användare'}
+                Logotyper
               </h2>
-              <p className="text-sm text-muted-foreground font-small">Standard logotyper</p>
+              <p className="text-sm text-muted-foreground font-small">Dina standard-logotyper för bilder</p>
             </div>
           </div>
 
           <div className="space-y-6">
             <p className="text-sm text-muted-foreground font-small">
               Ladda upp dina standard-logotyper här. De kommer automatiskt användas när du genererar bilder.
-              Du kan alltid välja andra logotyper i genereringsvyn.
             </p>
 
             <div className="grid md:grid-cols-2 gap-6">
               <LogoUploadSection 
                 type="light" 
-                logo={logoLight} 
+                logo={profileData.logo_light} 
                 label="Logo ljus" 
               />
               <LogoUploadSection 
                 type="dark" 
-                logo={logoDark} 
+                logo={profileData.logo_dark} 
                 label="Logo mörk" 
               />
             </div>

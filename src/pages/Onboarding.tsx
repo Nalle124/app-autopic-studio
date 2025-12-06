@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,12 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Building2, Upload, ChevronRight, ChevronLeft, Check, ImageIcon, X, Sparkles } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Building2, Upload, ChevronRight, ChevronLeft, Check, ImageIcon, X, Sparkles, UserCircle, Plus } from 'lucide-react';
 import autoshotLogo from '@/assets/autoshot-logo.png';
 
-type OnboardingStep = 'company' | 'logos';
+type OnboardingStep = 'type' | 'info' | 'logos';
+type CustomerType = 'company' | 'private';
 
-interface CompanyInfo {
+interface CustomerInfo {
+  full_name: string;
   company_name: string;
   organization_number: string;
   phone: string;
@@ -25,9 +28,11 @@ interface CompanyInfo {
 export const Onboarding = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('company');
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('type');
+  const [customerType, setCustomerType] = useState<CustomerType>('company');
   const [loading, setLoading] = useState(false);
-  const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    full_name: '',
     company_name: '',
     organization_number: '',
     phone: '',
@@ -35,36 +40,32 @@ export const Onboarding = () => {
     city: '',
     postal_code: '',
   });
-  const [logoLight, setLogoLight] = useState<string | null>(null);
-  const [logoDark, setLogoDark] = useState<string | null>(null);
-  const [uploadingLight, setUploadingLight] = useState(false);
-  const [uploadingDark, setUploadingDark] = useState(false);
-  const lightInputRef = useRef<HTMLInputElement>(null);
-  const darkInputRef = useRef<HTMLInputElement>(null);
+  const [logos, setLogos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [showSecondLogo, setShowSecondLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const secondLogoInputRef = useRef<HTMLInputElement>(null);
 
   const steps = [
-    { id: 'company', label: 'Företagsinfo', icon: Building2 },
-    { id: 'logos', label: 'Logotyper', icon: ImageIcon },
+    { id: 'type', label: 'Kundtyp', icon: UserCircle },
+    { id: 'info', label: 'Uppgifter', icon: Building2 },
+    { id: 'logos', label: 'Logotyp', icon: ImageIcon },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
-  const handleCompanyChange = (field: keyof CompanyInfo, value: string) => {
-    setCompanyInfo(prev => ({ ...prev, [field]: value }));
+  const handleInfoChange = (field: keyof CustomerInfo, value: string) => {
+    setCustomerInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleLogoUpload = async (file: File, type: 'light' | 'dark') => {
+  const handleLogoUpload = async (file: File, index: number) => {
     if (!user) return;
-
-    const setUploading = type === 'light' ? setUploadingLight : setUploadingDark;
-    const setLogo = type === 'light' ? setLogoLight : setLogoDark;
-
     setUploading(true);
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${type}-logo-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/logo-${index}-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('processed-cars')
@@ -76,7 +77,11 @@ export const Onboarding = () => {
         .from('processed-cars')
         .getPublicUrl(fileName);
 
-      setLogo(publicUrl);
+      setLogos(prev => {
+        const newLogos = [...prev];
+        newLogos[index] = publicUrl;
+        return newLogos;
+      });
     } catch (error) {
       console.error('Error uploading logo:', error);
       toast.error('Kunde inte ladda upp logotypen');
@@ -85,26 +90,52 @@ export const Onboarding = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'light' | 'dark') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleLogoUpload(file, type);
+      handleLogoUpload(file, index);
     }
   };
 
-  const handleNext = () => {
-    if (currentStep === 'company') {
-      if (!companyInfo.company_name.trim()) {
+  const removeLogo = (index: number) => {
+    setLogos(prev => prev.filter((_, i) => i !== index));
+    if (index === 1) setShowSecondLogo(false);
+  };
+
+  const validateInfoStep = (): boolean => {
+    if (customerType === 'company') {
+      if (!customerInfo.company_name.trim()) {
         toast.error('Företagsnamn krävs');
-        return;
+        return false;
       }
-      setCurrentStep('logos');
+    } else {
+      if (!customerInfo.full_name.trim()) {
+        toast.error('Namn krävs');
+        return false;
+      }
+    }
+    if (!customerInfo.phone.trim()) {
+      toast.error('Telefonnummer krävs');
+      return false;
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (currentStep === 'type') {
+      setCurrentStep('info');
+    } else if (currentStep === 'info') {
+      if (validateInfoStep()) {
+        setCurrentStep('logos');
+      }
     }
   };
 
   const handleBack = () => {
-    if (currentStep === 'logos') {
-      setCurrentStep('company');
+    if (currentStep === 'info') {
+      setCurrentStep('type');
+    } else if (currentStep === 'logos') {
+      setCurrentStep('info');
     }
   };
 
@@ -113,15 +144,19 @@ export const Onboarding = () => {
     setLoading(true);
 
     try {
-      const logoField = logoLight ? 'logo_light' : null;
-      const logoFieldDark = logoDark ? 'logo_dark' : null;
-
       const { error } = await supabase
         .from('profiles')
         .update({
-          ...companyInfo,
-          logo_light: logoLight,
-          logo_dark: logoDark,
+          customer_type: customerType,
+          full_name: customerInfo.full_name || null,
+          company_name: customerInfo.company_name || null,
+          organization_number: customerInfo.organization_number || null,
+          phone: customerInfo.phone || null,
+          address: customerInfo.address || null,
+          city: customerInfo.city || null,
+          postal_code: customerInfo.postal_code || null,
+          logo_light: logos[0] || null,
+          logo_dark: logos[1] || null,
           onboarding_completed: true,
         })
         .eq('id', user.id);
@@ -132,27 +167,6 @@ export const Onboarding = () => {
     } catch (error) {
       console.error('Error completing onboarding:', error);
       toast.error('Kunde inte spara uppgifterna');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSkip = async () => {
-    if (!user) return;
-    setLoading(true);
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ onboarding_completed: true })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      navigate('/');
-    } catch (error) {
-      console.error('Error skipping onboarding:', error);
-      toast.error('Något gick fel');
     } finally {
       setLoading(false);
     }
@@ -172,7 +186,7 @@ export const Onboarding = () => {
             Välkommen till AutoShot
           </h1>
           <p className="text-muted-foreground">
-            Låt oss ställa in ditt konto på några sekunder
+            Låt oss ställa in ditt konto
           </p>
         </div>
 
@@ -207,55 +221,144 @@ export const Onboarding = () => {
 
         {/* Content */}
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-          {currentStep === 'company' && (
+          {currentStep === 'type' && (
             <>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-primary" />
-                  Företagsinformation
+                  <UserCircle className="w-5 h-5 text-primary" />
+                  Typ av kund
                 </CardTitle>
                 <CardDescription>
-                  Fyll i dina företagsuppgifter för att komma igång
+                  Är du privatperson eller företag?
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={customerType}
+                  onValueChange={(value) => setCustomerType(value as CustomerType)}
+                  className="space-y-3"
+                >
+                  <label
+                    htmlFor="company"
+                    className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      customerType === 'company' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="company" id="company" />
+                    <div className="flex-1">
+                      <div className="font-medium">Företag</div>
+                      <div className="text-sm text-muted-foreground">
+                        Bilhandlare, verkstad eller annat företag
+                      </div>
+                    </div>
+                    <Building2 className="w-5 h-5 text-muted-foreground" />
+                  </label>
+                  
+                  <label
+                    htmlFor="private"
+                    className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      customerType === 'private' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="private" id="private" />
+                    <div className="flex-1">
+                      <div className="font-medium">Privatperson</div>
+                      <div className="text-sm text-muted-foreground">
+                        Säljer enstaka bilar privat
+                      </div>
+                    </div>
+                    <UserCircle className="w-5 h-5 text-muted-foreground" />
+                  </label>
+                </RadioGroup>
+              </CardContent>
+            </>
+          )}
+
+          {currentStep === 'info' && (
+            <>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  {customerType === 'company' ? (
+                    <Building2 className="w-5 h-5 text-primary" />
+                  ) : (
+                    <UserCircle className="w-5 h-5 text-primary" />
+                  )}
+                  {customerType === 'company' ? 'Företagsuppgifter' : 'Dina uppgifter'}
+                </CardTitle>
+                <CardDescription>
+                  {customerType === 'company' 
+                    ? 'Fyll i dina företagsuppgifter' 
+                    : 'Fyll i dina kontaktuppgifter'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="company_name">Företagsnamn *</Label>
-                  <Input
-                    id="company_name"
-                    value={companyInfo.company_name}
-                    onChange={(e) => handleCompanyChange('company_name', e.target.value)}
-                    placeholder="Ditt företag AB"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="organization_number">Org.nummer</Label>
-                    <Input
-                      id="organization_number"
-                      value={companyInfo.organization_number}
-                      onChange={(e) => handleCompanyChange('organization_number', e.target.value)}
-                      placeholder="556677-8899"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefon</Label>
-                    <Input
-                      id="phone"
-                      value={companyInfo.phone}
-                      onChange={(e) => handleCompanyChange('phone', e.target.value)}
-                      placeholder="070-123 45 67"
-                    />
-                  </div>
-                </div>
+                {customerType === 'company' ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="company_name">Företagsnamn *</Label>
+                      <Input
+                        id="company_name"
+                        value={customerInfo.company_name}
+                        onChange={(e) => handleInfoChange('company_name', e.target.value)}
+                        placeholder="Ditt företag AB"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="organization_number">Org.nummer</Label>
+                        <Input
+                          id="organization_number"
+                          value={customerInfo.organization_number}
+                          onChange={(e) => handleInfoChange('organization_number', e.target.value)}
+                          placeholder="556677-8899"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Telefon *</Label>
+                        <Input
+                          id="phone"
+                          value={customerInfo.phone}
+                          onChange={(e) => handleInfoChange('phone', e.target.value)}
+                          placeholder="070-123 45 67"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="full_name">Namn *</Label>
+                      <Input
+                        id="full_name"
+                        value={customerInfo.full_name}
+                        onChange={(e) => handleInfoChange('full_name', e.target.value)}
+                        placeholder="Ditt fullständiga namn"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefon *</Label>
+                      <Input
+                        id="phone"
+                        value={customerInfo.phone}
+                        onChange={(e) => handleInfoChange('phone', e.target.value)}
+                        placeholder="070-123 45 67"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="address">Adress</Label>
                   <Input
                     id="address"
-                    value={companyInfo.address}
-                    onChange={(e) => handleCompanyChange('address', e.target.value)}
+                    value={customerInfo.address}
+                    onChange={(e) => handleInfoChange('address', e.target.value)}
                     placeholder="Gatan 1"
                   />
                 </div>
@@ -265,8 +368,8 @@ export const Onboarding = () => {
                     <Label htmlFor="postal_code">Postnummer</Label>
                     <Input
                       id="postal_code"
-                      value={companyInfo.postal_code}
-                      onChange={(e) => handleCompanyChange('postal_code', e.target.value)}
+                      value={customerInfo.postal_code}
+                      onChange={(e) => handleInfoChange('postal_code', e.target.value)}
                       placeholder="123 45"
                     />
                   </div>
@@ -274,8 +377,8 @@ export const Onboarding = () => {
                     <Label htmlFor="city">Ort</Label>
                     <Input
                       id="city"
-                      value={companyInfo.city}
-                      onChange={(e) => handleCompanyChange('city', e.target.value)}
+                      value={customerInfo.city}
+                      onChange={(e) => handleInfoChange('city', e.target.value)}
                       placeholder="Stockholm"
                     />
                   </div>
@@ -289,90 +392,95 @@ export const Onboarding = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-primary" />
-                  Dina logotyper
+                  Din logotyp
                 </CardTitle>
                 <CardDescription>
-                  Ladda upp din logotyp i ljus och mörk version för att använda på bilarna
+                  Ladda upp din logotyp för att använda på bilderna
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Light Logo */}
-                <div className="space-y-2">
-                  <Label>Logo ljus</Label>
-                  <p className="text-xs text-muted-foreground">För mörka bakgrunder</p>
-                  <input
-                    ref={lightInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleFileChange(e, 'light')}
-                  />
-                  {logoLight ? (
-                    <div className="relative bg-zinc-800 rounded-lg p-4 flex items-center justify-center min-h-[100px]">
-                      <img src={logoLight} alt="Light logo" className="max-h-16 object-contain" />
-                      <button
-                        onClick={() => setLogoLight(null)}
-                        className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
+              <CardContent className="space-y-4">
+                {/* Primary Logo */}
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e, 0)}
+                />
+                
+                {logos[0] ? (
+                  <div className="relative bg-muted rounded-lg p-6 flex items-center justify-center min-h-[120px]">
+                    <img src={logos[0]} alt="Logo" className="max-h-20 object-contain" />
                     <button
-                      onClick={() => lightInputRef.current?.click()}
-                      disabled={uploadingLight}
-                      className="w-full border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors"
+                      onClick={() => removeLogo(0)}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 hover:bg-background border border-border"
                     >
-                      {uploadingLight ? (
-                        <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
-                      ) : (
-                        <>
-                          <Upload className="w-6 h-6 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Ladda upp ljus logo</span>
-                        </>
-                      )}
+                      <X className="w-4 h-4" />
                     </button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full border-2 border-dashed border-border rounded-lg p-8 flex flex-col items-center justify-center gap-3 hover:border-primary/50 transition-colors"
+                  >
+                    {uploading ? (
+                      <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Klicka för att ladda upp logotyp</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
-                {/* Dark Logo */}
-                <div className="space-y-2">
-                  <Label>Logo mörk</Label>
-                  <p className="text-xs text-muted-foreground">För ljusa bakgrunder</p>
-                  <input
-                    ref={darkInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleFileChange(e, 'dark')}
-                  />
-                  {logoDark ? (
-                    <div className="relative bg-zinc-200 rounded-lg p-4 flex items-center justify-center min-h-[100px]">
-                      <img src={logoDark} alt="Dark logo" className="max-h-16 object-contain" />
-                      <button
-                        onClick={() => setLogoDark(null)}
-                        className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => darkInputRef.current?.click()}
-                      disabled={uploadingDark}
-                      className="w-full border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors"
-                    >
-                      {uploadingDark ? (
-                        <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+                {/* Second Logo (optional, discrete) */}
+                {logos[0] && !showSecondLogo && !logos[1] && (
+                  <button
+                    onClick={() => setShowSecondLogo(true)}
+                    className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 mx-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Lägg till ytterligare en logo
+                  </button>
+                )}
+
+                {(showSecondLogo || logos[1]) && (
+                  <>
+                    <input
+                      ref={secondLogoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(e, 1)}
+                    />
+                    
+                    <div className="pt-2">
+                      <Label className="text-sm text-muted-foreground mb-2 block">Alternativ logo</Label>
+                      {logos[1] ? (
+                        <div className="relative bg-muted rounded-lg p-4 flex items-center justify-center min-h-[80px]">
+                          <img src={logos[1]} alt="Logo 2" className="max-h-12 object-contain" />
+                          <button
+                            onClick={() => removeLogo(1)}
+                            className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background border border-border"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       ) : (
-                        <>
-                          <Upload className="w-6 h-6 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Ladda upp mörk logo</span>
-                        </>
+                        <button
+                          onClick={() => secondLogoInputRef.current?.click()}
+                          disabled={uploading}
+                          className="w-full border border-dashed border-border rounded-lg p-4 flex items-center justify-center gap-2 hover:border-primary/50 transition-colors text-sm text-muted-foreground"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Ladda upp
+                        </button>
                       )}
-                    </button>
-                  )}
-                </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </>
           )}
@@ -380,11 +488,7 @@ export const Onboarding = () => {
           {/* Actions */}
           <div className="p-6 pt-0 flex items-center justify-between">
             <div>
-              {currentStep === 'company' ? (
-                <Button variant="ghost" onClick={handleSkip} disabled={loading}>
-                  Hoppa över
-                </Button>
-              ) : (
+              {currentStep !== 'type' && (
                 <Button variant="ghost" onClick={handleBack} disabled={loading}>
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Tillbaka
@@ -392,7 +496,13 @@ export const Onboarding = () => {
               )}
             </div>
             
-            <div>
+            <div className="flex items-center gap-2">
+              {currentStep === 'logos' && (
+                <Button variant="ghost" onClick={handleComplete} disabled={loading}>
+                  Hoppa över
+                </Button>
+              )}
+              
               {currentStep === 'logos' ? (
                 <Button onClick={handleComplete} disabled={loading}>
                   {loading ? (
