@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Upload, User, Sun, Moon, Palette } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export const Profile = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
   const [logoLight, setLogoLight] = useState<string | null>(null);
   const [logoDark, setLogoDark] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -169,6 +171,15 @@ export const Profile = () => {
       
       <main className="container mx-auto px-6 py-12 max-w-4xl">
         <div className="mb-8">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/')}
+            className="mb-4 gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Tillbaka till projekt
+          </Button>
           <h1 className="text-3xl font-bold text-foreground mb-2 font-heading">Profil</h1>
           <p className="text-muted-foreground font-small">
             Hantera dina logotyper och inställningar

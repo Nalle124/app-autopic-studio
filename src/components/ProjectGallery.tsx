@@ -153,11 +153,108 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
 
       if (error) throw error;
 
-    setProjects(projects.filter(p => p.id !== projectId));
+      setProjects(projects.filter(p => p.id !== projectId));
       setSelectedProject(null);
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error('Kunde inte ta bort projekt');
+    }
+  };
+
+  const handleDeleteOrphanJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase
+        .from('processing_jobs')
+        .delete()
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      // Update orphan jobs list
+      const newOrphanJobs = orphanJobs.filter(j => j.id !== jobId);
+      setOrphanJobs(newOrphanJobs);
+      
+      // Update selected project if viewing orphans
+      if (selectedProject?.id === 'orphan') {
+        const updatedJobs = selectedProject.jobs.filter(j => j.id !== jobId);
+        if (updatedJobs.length === 0) {
+          setSelectedProject(null);
+        } else {
+          setSelectedProject({
+            ...selectedProject,
+            jobs: updatedJobs
+          });
+          // Adjust preview index if needed
+          if (previewIndex >= updatedJobs.length) {
+            setPreviewIndex(Math.max(0, updatedJobs.length - 1));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      toast.error('Kunde inte ta bort bilden');
+    }
+  };
+
+  const handleDeleteAllOrphanJobs = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('processing_jobs')
+        .delete()
+        .eq('user_id', user.id)
+        .is('project_id', null);
+
+      if (error) throw error;
+
+      setOrphanJobs([]);
+      if (selectedProject?.id === 'orphan') {
+        setSelectedProject(null);
+      }
+    } catch (error) {
+      console.error('Error deleting all orphan jobs:', error);
+      toast.error('Kunde inte ta bort bilderna');
+    }
+  };
+
+  const handleDeleteSingleJob = async (projectId: string, jobId: string) => {
+    try {
+      const { error } = await supabase
+        .from('processing_jobs')
+        .delete()
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      // Update project's jobs in state
+      setProjects(projects.map(p => {
+        if (p.id === projectId) {
+          return { ...p, jobs: p.jobs.filter(j => j.id !== jobId) };
+        }
+        return p;
+      }));
+
+      // Update selected project if viewing it
+      if (selectedProject?.id === projectId) {
+        const updatedJobs = selectedProject.jobs.filter(j => j.id !== jobId);
+        if (updatedJobs.length === 0) {
+          setSelectedProject(null);
+        } else {
+          setSelectedProject({
+            ...selectedProject,
+            jobs: updatedJobs
+          });
+          // Adjust preview index if needed
+          if (previewIndex >= updatedJobs.length) {
+            setPreviewIndex(Math.max(0, updatedJobs.length - 1));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      toast.error('Kunde inte ta bort bilden');
     }
   };
 
@@ -358,18 +455,20 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                   >
                     <Download className="w-4 h-4" />
                   </Button>
-                  {!isOrphan && (
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteProject(project.id);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isOrphan) {
+                      handleDeleteAllOrphanJobs();
+                    } else {
+                      handleDeleteProject(project.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
                 </div>
               </div>
 
@@ -464,11 +563,19 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       Ladda ner alla
                     </Button>
                   )}
-                  {selectedProject.id !== 'orphan' && (
-                    <Button variant="destructive" size="icon" onClick={() => handleDeleteProject(selectedProject.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    onClick={() => {
+                      if (selectedProject.id === 'orphan') {
+                        handleDeleteAllOrphanJobs();
+                      } else {
+                        handleDeleteProject(selectedProject.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
               
