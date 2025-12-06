@@ -4,12 +4,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote } from 'lucide-react';
+import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Project {
   id: string;
@@ -49,6 +50,35 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   // Edit states
   const [editingImage, setEditingImage] = useState<{ jobId: string; url: string; type: 'crop' | 'adjust' } | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+
+  const toggleJobSelection = (jobId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedJobIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(jobId)) {
+        newSet.delete(jobId);
+      } else {
+        newSet.add(jobId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDownloadSelected = async () => {
+    if (!selectedProject) return;
+    const selectedJobs = selectedProject.jobs.filter(j => j.final_url && selectedJobIds.has(j.id));
+    
+    for (const job of selectedJobs) {
+      if (job.final_url) {
+        const link = document.createElement('a');
+        link.href = job.final_url;
+        link.download = `${selectedProject.registration_number}_${job.id}.jpg`;
+        link.click();
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+  };
 
   useEffect(() => {
     loadProjects();
@@ -414,17 +444,26 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
       </div>
 
       {/* Project Detail Dialog */}
-      <Dialog open={!!selectedProject && !previewOpen} onOpenChange={() => setSelectedProject(null)}>
+      <Dialog open={!!selectedProject && !previewOpen} onOpenChange={() => { setSelectedProject(null); setSelectedJobIds(new Set()); }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-          {selectedProject && (
+          {selectedProject && (() => {
+            const completedJobsList = selectedProject.jobs.filter(j => j.final_url);
+            return (
             <div className="flex flex-col h-full">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border-b flex-shrink-0 gap-3">
                 <h2 className="text-2xl font-bold">{selectedProject.registration_number}</h2>
                 <div className="flex gap-2 flex-wrap">
-                  <Button variant="outline" onClick={() => handleDownloadAll(selectedProject)}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Ladda ner alla
-                  </Button>
+                  {selectedJobIds.size > 0 ? (
+                    <Button variant="outline" onClick={handleDownloadSelected}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Ladda ner valda ({selectedJobIds.size})
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={() => handleDownloadAll(selectedProject)}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Ladda ner alla
+                    </Button>
+                  )}
                   {selectedProject.id !== 'orphan' && (
                     <Button variant="destructive" size="icon" onClick={() => handleDeleteProject(selectedProject.id)}>
                       <Trash2 className="w-4 h-4" />
@@ -433,9 +472,27 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                 </div>
               </div>
               
+              {/* Selection controls */}
+              <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+                <Checkbox 
+                  id="select-all-gallery" 
+                  checked={selectedJobIds.size === completedJobsList.length && completedJobsList.length > 0}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedJobIds(new Set(completedJobsList.map(j => j.id)));
+                    } else {
+                      setSelectedJobIds(new Set());
+                    }
+                  }}
+                />
+                <label htmlFor="select-all-gallery" className="text-sm text-muted-foreground cursor-pointer">
+                  Markera alla ({completedJobsList.length} bilder)
+                </label>
+              </div>
+              
               {/* Notes Section */}
               {selectedProject.id !== 'orphan' && (
-                <div className="px-4 pt-4 pb-2 border-b">
+                <div className="px-4 pt-2 pb-2 border-b">
                   {editingNotes === selectedProject.id ? (
                     <div className="space-y-2">
                       <Textarea
@@ -476,12 +533,10 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
               
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {selectedProject.jobs
-                    .filter(j => j.final_url)
-                    .map((job, idx) => (
+                  {completedJobsList.map((job, idx) => (
                       <div 
                         key={job.id} 
-                        className="aspect-[4/3] bg-muted rounded-lg overflow-hidden group relative cursor-pointer"
+                        className={`aspect-[4/3] bg-muted rounded-lg overflow-hidden group relative cursor-pointer transition-all ${selectedJobIds.has(job.id) ? 'ring-2 ring-primary' : ''}`}
                         onClick={() => openPreview(selectedProject, idx)}
                       >
                         <img
@@ -489,6 +544,24 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                           alt={`${selectedProject.registration_number}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
+                        
+                        {/* Selection checkbox */}
+                        <div 
+                          className="absolute top-2 left-2 z-10"
+                          onClick={(e) => toggleJobSelection(job.id, e)}
+                        >
+                          <Checkbox 
+                            checked={selectedJobIds.has(job.id)}
+                            className="bg-background/80 border-border"
+                          />
+                        </div>
+                        
+                        {selectedJobIds.has(job.id) && (
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="w-4 h-4 text-primary-foreground" />
+                          </div>
+                        )}
+                        
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Eye className="w-8 h-8 text-white" />
                         </div>
@@ -497,7 +570,8 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                 </div>
               </div>
             </div>
-          )}
+          );
+          })()}
         </DialogContent>
       </Dialog>
 
@@ -506,60 +580,12 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
           {selectedProject && currentJob?.final_url && (
             <div className="flex flex-col h-full max-h-[90vh]">
-              {/* Action Buttons */}
-              <div className="p-3 bg-background border-b flex items-center justify-between gap-2">
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setPreviewOpen(false)}>
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Tillbaka
-                  </Button>
-                </div>
-                <div className="flex gap-2 flex-wrap justify-end">
-                  {onUseAsNewImage && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => handleUseAsNew(currentJob.final_url!)}
-                      title="Använd som ny bild"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">Generera igen</span>
-                    </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => setEditingImage({ jobId: currentJob.id, url: currentJob.final_url!, type: 'adjust' })}
-                    title="Justera"
-                  >
-                    <Sliders className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Justera</span>
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => setEditingImage({ jobId: currentJob.id, url: currentJob.final_url!, type: 'crop' })}
-                    title="Beskär"
-                  >
-                    <Scissors className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Beskär</span>
-                  </Button>
-                  <Button size="sm" onClick={() => handleDownloadSingle(
-                    currentJob.final_url!, 
-                    `${selectedProject.registration_number}_${currentJob.id}.jpg`
-                  )}>
-                    <Download className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Ladda ner</span>
-                  </Button>
-                </div>
-              </div>
-              
               {/* Image Display */}
               <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
                 <img 
                   src={currentJob.final_url} 
                   alt="Preview" 
-                  className="max-w-full max-h-[calc(90vh-100px)] object-contain" 
+                  className="max-w-full max-h-[calc(90vh-150px)] object-contain" 
                 />
                 
                 {/* Navigation Arrows */}
@@ -585,8 +611,60 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                 )}
                 
                 {/* Counter */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
                   {previewIndex + 1} / {completedJobs.length}
+                </div>
+              </div>
+              
+              {/* Bottom action bar */}
+              <div className="p-3 bg-background border-t flex flex-col gap-3">
+                {/* Regenerate button - prominent below image */}
+                {onUseAsNewImage && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => handleUseAsNew(currentJob.final_url!)}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Generera igen
+                  </Button>
+                )}
+                
+                {/* Edit and share buttons */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setPreviewOpen(false)}>
+                      <ChevronLeft className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Tillbaka</span>
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => setEditingImage({ jobId: currentJob.id, url: currentJob.final_url!, type: 'adjust' })}
+                      title="Justera"
+                    >
+                      <Sliders className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Justera</span>
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => setEditingImage({ jobId: currentJob.id, url: currentJob.final_url!, type: 'crop' })}
+                      title="Beskär"
+                    >
+                      <Scissors className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Beskär</span>
+                    </Button>
+                  </div>
+                  
+                  <Button size="sm" onClick={() => handleDownloadSingle(
+                    currentJob.final_url!, 
+                    `${selectedProject.registration_number}_${currentJob.id}.jpg`
+                  )}>
+                    <Share2 className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Dela</span>
+                  </Button>
                 </div>
               </div>
             </div>

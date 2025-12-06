@@ -222,14 +222,14 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
     }
   };
 
-  // Banner drag handling
-  const handleBannerMouseDown = (e: React.MouseEvent) => {
+  // Banner drag handling - supports both mouse and touch
+  const handleBannerMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     setIsDraggingBanner(true);
   };
 
-  // Logo drag handling
-  const handleLogoMouseDown = (e: React.MouseEvent, logoId: string) => {
+  // Logo drag handling - supports both mouse and touch
+  const handleLogoMouseDown = (e: React.MouseEvent | React.TouchEvent, logoId: string) => {
     e.preventDefault();
     e.stopPropagation();
     setDraggingLogoId(logoId);
@@ -239,11 +239,11 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
   useEffect(() => {
     if (!isDraggingBanner && !draggingLogoId) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (clientX: number, clientY: number) => {
       if (!previewRef.current) return;
       const rect = previewRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+      const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
       
       if (isDraggingBanner) {
         onDesignChange({ ...design, bannerX: x, bannerY: y });
@@ -255,16 +255,27 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    const handleEnd = () => {
       setIsDraggingBanner(false);
       setDraggingLogoId(null);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleEnd);
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleEnd);
     };
   }, [isDraggingBanner, draggingLogoId, design, onDesignChange, logos]);
 
@@ -512,8 +523,9 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
               {/* Banner - draggable, extended beyond image bounds for easier positioning */}
               {design.bannerEnabled && (
                 <div
-                  className="absolute cursor-move select-none"
+                  className="absolute cursor-move select-none touch-none"
                   onMouseDown={handleBannerMouseDown}
+                  onTouchStart={handleBannerMouseDown}
                   style={{
                     left: `${design.bannerX}%`,
                     top: `${design.bannerY}%`,
@@ -530,8 +542,9 @@ export const BrandKitDesigner = ({ open, onClose, onDesignChange, design, previe
               {logos.map((logo) => (
                 <div
                   key={logo.id}
-                  className={`absolute cursor-move select-none ${selectedLogoId === logo.id ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                  className={`absolute cursor-move select-none touch-none ${selectedLogoId === logo.id ? 'ring-2 ring-primary ring-offset-2' : ''}`}
                   onMouseDown={(e) => handleLogoMouseDown(e, logo.id)}
+                  onTouchStart={(e) => handleLogoMouseDown(e, logo.id)}
                   style={{
                     left: `${logo.x}%`,
                     top: `${logo.y}%`,

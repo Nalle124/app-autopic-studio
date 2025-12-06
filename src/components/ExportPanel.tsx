@@ -40,14 +40,14 @@ export const ExportPanel = ({
       {/* Dark overlay for contrast */}
       <div className="absolute inset-0 bg-background/30" />
 
-      <div className="relative p-6 space-y-6">
+      <div className="relative p-4 space-y-4">
         {/* Header */}
         <div>
-          <h3 className="text-xl font-bold text-foreground mb-1">
+          <h3 className="text-lg font-bold text-foreground mb-0.5">
             AI-Generering
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Välj dina inställningar och starta den magiska processen
+          <p className="text-xs text-muted-foreground">
+            Välj inställningar och starta genereringen
           </p>
         </div>
 
@@ -128,25 +128,17 @@ export const ExportPanel = ({
         </Collapsible>
 
         {/* Generate Button */}
-        <div className="pt-2">
-          <Button onClick={handleExport} disabled={isProcessing} className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-3 relative overflow-hidden group">
+        <div>
+          <Button onClick={handleExport} disabled={isProcessing} className="w-full h-12 text-sm font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group">
             {/* Shimmer effect */}
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             
-            <Sparkles className={`w-5 h-5 relative z-10 ${isProcessing ? 'animate-spin' : 'animate-pulse'}`} />
+            <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? 'animate-spin' : 'animate-pulse'}`} />
             <span className="relative z-10">
-              {isProcessing ? 'Genererar magiskt...' : 'Starta AI-generering'}
+              {isProcessing ? 'Genererar...' : 'Starta AI-generering'}
             </span>
-            <Sparkles className={`w-5 h-5 relative z-10 ${isProcessing ? 'animate-spin' : 'animate-pulse'}`} />
+            <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? 'animate-spin' : 'animate-pulse'}`} />
           </Button>
-        </div>
-
-        {/* Info text */}
-        <div className="text-center">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            AI bearbetar dina bilder med vald bakgrund och applicerar <br />
-            professionella effekter automatiskt
-          </p>
         </div>
       </div>
     </Card>;
