@@ -440,7 +440,7 @@ export default function Index() {
               <TabsList className="bg-background/80 backdrop-blur-sm">
                 <TabsTrigger value="new" className="gap-2">
                   <Plus className="w-4 h-4" />
-                  Nytt Projekt
+                  Projekt
                 </TabsTrigger>
                 <TabsTrigger value="history" className="gap-2">
                   <History className="w-4 h-4" />
