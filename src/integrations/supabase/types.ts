@@ -300,6 +300,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_credits: {
+        Args: { amount: number; description: string; target_user_id: string }
+        Returns: number
+      }
       admin_get_all_users: {
         Args: never
         Returns: {
@@ -317,6 +321,19 @@ export type Database = {
           failed_jobs: number
           total_jobs: number
           total_users: number
+        }[]
+      }
+      admin_get_users_with_credits: {
+        Args: never
+        Returns: {
+          company_name: string
+          created_at: string
+          credits: number
+          customer_type: string
+          email: string
+          full_name: string
+          id: string
+          roles: string[]
         }[]
       }
       has_role: {
