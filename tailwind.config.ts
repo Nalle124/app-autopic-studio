@@ -48,9 +48,7 @@ export default {
           foreground: 'hsl(var(--accent-foreground))',
           blue: 'hsl(var(--accent-blue))',
           orange: 'hsl(var(--accent-orange))',
-          teal: 'hsl(var(--accent-teal))',
-          green: 'hsl(var(--accent-green))',
-          pink: 'hsl(var(--accent-pink))'
+          teal: 'hsl(var(--accent-teal))'
         },
         popover: {
           DEFAULT: 'hsl(var(--popover))',
