@@ -2,10 +2,18 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, Star, LayoutGrid, GalleryHorizontal } from 'lucide-react';
+import { Check, Star, LayoutGrid, GalleryHorizontal, ChevronDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SceneSelectorProps {
   selectedSceneId: string | null;
@@ -14,21 +22,49 @@ interface SceneSelectorProps {
 
 // Category order and descriptions
 const categoryConfig: Record<string, { order: number; description: string; gradient: string }> = {
-  'studio': { 
+  'studio-light': { 
     order: 1, 
-    description: 'Professionella studiomiljöer för rena produktbilder',
+    description: 'Ljusa studiomiljöer med rena ytor',
     gradient: 'from-accent-orange/20 via-accent-pink/10 to-background/5'
   },
-  'outdoor': { 
+  'studio-dark': { 
     order: 2, 
-    description: 'Utomhusmiljöer och lantliga scener',
+    description: 'Mörka studios med dramatisk belysning',
+    gradient: 'from-primary/20 via-accent-pink/10 to-background/5'
+  },
+  'autumn': { 
+    order: 3, 
+    description: 'Höstmiljöer med varma färger',
+    gradient: 'from-accent-orange/30 via-primary/10 to-background/5'
+  },
+  'winter': { 
+    order: 4, 
+    description: 'Vintermiljöer med nordisk känsla',
+    gradient: 'from-accent-blue/20 via-white/10 to-background/5'
+  },
+  'outdoor': { 
+    order: 5, 
+    description: 'Utomhusmiljöer och naturliga scener',
     gradient: 'from-accent-blue/20 via-accent-green/10 to-background/5'
   },
   'premium': { 
-    order: 3, 
+    order: 6, 
     description: 'Exklusiva miljöer för lyxbilar',
     gradient: 'from-accent-pink/20 via-primary/10 to-background/5'
   },
+};
+
+const getCategoryDisplayName = (category: string) => {
+  const names: Record<string, string> = {
+    'favorites': 'Favoriter',
+    'studio-light': 'Ljusa Studios',
+    'studio-dark': 'Mörka Studios',
+    'autumn': 'Höst',
+    'winter': 'Vinter',
+    'outdoor': 'Utomhus',
+    'premium': 'Premium',
+  };
+  return names[category] || category;
 };
 
 export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorProps) => {
@@ -36,7 +72,9 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('slideshow');
+  const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('grid');
+  const [activeCategory, setActiveCategory] = useState<string>('');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadScenes();
@@ -121,6 +159,11 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
         return orderA - orderB;
       });
       setCategories(['favorites', ...sortedCategories]);
+      
+      // Set default active category
+      if (!activeCategory) {
+        setActiveCategory(favorites.size > 0 ? 'favorites' : sortedCategories[0] || 'studio-light');
+      }
     } catch (error) {
       console.error('Error loading scenes:', error);
     } finally {
@@ -135,14 +178,11 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
     return scenes.filter((scene) => scene.category === category);
   };
 
-  const getCategoryDisplayName = (category: string) => {
-    const names: Record<string, string> = {
-      'favorites': 'Favoriter',
-      'studio': 'Studios',
-      'outdoor': 'Utomhus',
-      'premium': 'Premium',
-    };
-    return names[category] || category;
+  const getVisibleCategories = () => {
+    return categories.filter(category => {
+      if (category === 'favorites') return favorites.size > 0;
+      return getScenesByCategory(category).length > 0;
+    });
   };
 
   if (isLoading) {
@@ -214,87 +254,109 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
     </Card>
   );
 
+  const visibleCategories = getVisibleCategories();
+  const categoryScenes = getScenesByCategory(activeCategory);
+
   return (
     <div className="space-y-6">
-      <Tabs defaultValue={favorites.size > 0 ? "favorites" : categories[1]} className="w-full">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <TabsList className="flex-1 justify-start gap-2 bg-background/50 backdrop-blur-sm p-2 rounded-xl border border-border/50 overflow-x-auto">
-            {categories.map((category) => {
-              const categoryScenes = getScenesByCategory(category);
-              if (category !== 'favorites' && categoryScenes.length === 0) return null;
-              if (category === 'favorites' && favorites.size === 0) return null;
-              
-              return (
-                <TabsTrigger
-                  key={category}
-                  value={category}
-                  className="px-4 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow transition-all whitespace-nowrap"
-                >
+      <div className="flex items-center justify-between gap-4 mb-4">
+        {/* Mobile: Dropdown select for categories */}
+        {isMobile ? (
+          <Select value={activeCategory} onValueChange={setActiveCategory}>
+            <SelectTrigger className="flex-1 bg-background/50 backdrop-blur-sm border-border/50">
+              <SelectValue>
+                {activeCategory === 'favorites' ? (
+                  <span className="flex items-center gap-2">
+                    <Star className="w-4 h-4 fill-current" />
+                    Favoriter
+                  </span>
+                ) : (
+                  getCategoryDisplayName(activeCategory)
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-background border-border z-50">
+              {visibleCategories.map((category) => (
+                <SelectItem key={category} value={category}>
                   {category === 'favorites' ? (
                     <span className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-current" />
                       Favoriter
                     </span>
                   ) : (
-                    <span className="font-medium">{getCategoryDisplayName(category)}</span>
+                    getCategoryDisplayName(category)
                   )}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-          
-          {/* View toggle */}
-          <ToggleGroup 
-            type="single" 
-            value={viewMode} 
-            onValueChange={(value) => value && setViewMode(value as 'slideshow' | 'grid')}
-            className="bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border/50"
-          >
-            <ToggleGroupItem value="slideshow" aria-label="Slideshow vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-              <GalleryHorizontal className="w-4 h-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="grid" aria-label="Grid vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-              <LayoutGrid className="w-4 h-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          /* Desktop: Tab buttons */
+          <div className="flex-1 flex gap-2 bg-background/50 backdrop-blur-sm p-2 rounded-xl border border-border/50 overflow-x-auto">
+            {visibleCategories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap font-medium text-sm ${
+                  activeCategory === category
+                    ? 'bg-primary text-primary-foreground shadow-glow'
+                    : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {category === 'favorites' ? (
+                  <span className="flex items-center gap-2">
+                    <Star className="w-4 h-4 fill-current" />
+                    Favoriter
+                  </span>
+                ) : (
+                  getCategoryDisplayName(category)
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+        
+        {/* View toggle */}
+        <ToggleGroup 
+          type="single" 
+          value={viewMode} 
+          onValueChange={(value) => value && setViewMode(value as 'slideshow' | 'grid')}
+          className="bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border/50"
+        >
+          <ToggleGroupItem value="slideshow" aria-label="Slideshow vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+            <GalleryHorizontal className="w-4 h-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="grid" aria-label="Grid vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+            <LayoutGrid className="w-4 h-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      {/* Category description */}
+      {activeCategory !== 'favorites' && categoryConfig[activeCategory]?.description && (
+        <div className="text-center mb-6">
+          <p className="text-sm text-muted-foreground">
+            {categoryConfig[activeCategory].description}
+          </p>
         </div>
-
-        {categories.map((category) => {
-          const categoryScenes = getScenesByCategory(category);
-          if (category !== 'favorites' && categoryScenes.length === 0) return null;
-          if (category === 'favorites' && favorites.size === 0) return null;
-
-          return (
-            <TabsContent key={category} value={category} className="mt-6">
-              {category !== 'favorites' && categoryConfig[category]?.description && (
-                <div className="text-center mb-6">
-                  <p className="text-sm text-muted-foreground">
-                    {categoryConfig[category].description}
-                  </p>
-                </div>
-              )}
-              
-              {viewMode === 'slideshow' ? (
-                /* Horizontal scrolling gallery */
-                <div className="relative">
-                  <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
-                    {categoryScenes.map((scene) => (
-                      <SceneCard key={scene.id} scene={scene} />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                /* Grid view */
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {categoryScenes.map((scene) => (
-                    <SceneCard key={scene.id} scene={scene} isGrid />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          );
-        })}
-      </Tabs>
+      )}
+      
+      {/* Scene cards */}
+      {viewMode === 'slideshow' ? (
+        <div className="relative">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+            {categoryScenes.map((scene) => (
+              <SceneCard key={scene.id} scene={scene} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {categoryScenes.map((scene) => (
+            <SceneCard key={scene.id} scene={scene} isGrid />
+          ))}
+        </div>
+      )}
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
