@@ -25,6 +25,8 @@
     --accent-blue: 195 70% 45%;
     --accent-orange: 30 90% 55%;
     --accent-teal: 175 60% 40%;
+    --accent-green: 145 60% 40%;
+    --accent-pink: 340 70% 55%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 85%;
@@ -95,6 +97,8 @@
     --accent-blue: 195 70% 50%;
     --accent-orange: 30 90% 60%;
     --accent-teal: 175 60% 45%;
+    --accent-green: 145 60% 45%;
+    --accent-pink: 340 70% 60%;
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 18%;
