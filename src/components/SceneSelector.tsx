@@ -108,6 +108,7 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
         },
         aiPrompt: scene.ai_prompt || undefined,
         photoroomShadowMode: (scene as any).photoroom_shadow_mode || 'none',
+        referenceScale: (scene as any).reference_scale ? Number((scene as any).reference_scale) : 1.0,
       }));
 
       setScenes(scenesData);

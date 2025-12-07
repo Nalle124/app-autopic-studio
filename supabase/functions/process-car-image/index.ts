@@ -26,6 +26,7 @@ interface SceneMetadata {
   };
   aiPrompt?: string;
   photoroomShadowMode?: string; // 'none', 'ai.soft', 'ai.hard', 'ai.floating'
+  referenceScale?: number; // How closely to match the reference image (0.0-1.0, default 1.0)
 }
 
 // Fixed seed for consistent results across generations (PhotoRoom recommended)
@@ -152,7 +153,9 @@ serve(async (req) => {
     
     // Use reference/guidance image for background
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    photoroomFormData.append('background.guidance.scale', '1.0'); // Maximum adherence to reference
+    const referenceScale = scene.referenceScale ?? 1.0;
+    photoroomFormData.append('background.guidance.scale', referenceScale.toString());
+    console.log('Reference scale:', referenceScale);
     
     // Fixed seed for consistent results
     photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
