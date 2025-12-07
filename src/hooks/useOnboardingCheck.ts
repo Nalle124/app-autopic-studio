@@ -22,7 +22,7 @@ export const useOnboardingCheck = () => {
           .from('profiles')
           .select('onboarding_completed')
           .eq('id', user.id)
-          .maybeSingle();
+          .single();
 
         if (error) {
           console.error('Error checking onboarding:', error);
