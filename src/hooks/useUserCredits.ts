@@ -25,7 +25,7 @@ export const useUserCredits = (): UserCredits => {
         .from('user_credits')
         .select('credits')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching credits:', error);
