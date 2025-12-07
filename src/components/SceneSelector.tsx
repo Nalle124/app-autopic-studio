@@ -17,17 +17,17 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
   'studio': { 
     order: 1, 
     description: 'Professionella studiomiljöer för rena produktbilder',
-    gradient: 'from-accent-orange/20 via-accent-pink/10 to-background/5'
+    gradient: 'from-accent-orange/20 via-primary/10 to-background/5'
   },
   'outdoor': { 
     order: 2, 
     description: 'Utomhusmiljöer och lantliga scener',
-    gradient: 'from-accent-blue/20 via-accent-green/10 to-background/5'
+    gradient: 'from-accent-blue/20 via-accent-teal/10 to-background/5'
   },
   'premium': { 
     order: 3, 
     description: 'Exklusiva miljöer för lyxbilar',
-    gradient: 'from-accent-pink/20 via-primary/10 to-background/5'
+    gradient: 'from-primary/20 via-accent-orange/10 to-background/5'
   },
 };
 
@@ -164,7 +164,7 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
       }`}
     >
       {/* Gradient overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category]?.gradient || 'from-accent-orange/20 via-accent-pink/10 to-background/5'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category]?.gradient || 'from-accent-orange/20 via-primary/10 to-background/5'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
       
       {/* Favorite button */}
       <Button
