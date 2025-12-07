@@ -32,33 +32,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         // Check admin status when user logs in
         if (session?.user) {
-          setTimeout(async () => {
-            try {
-              const { data, error } = await supabase.rpc('is_admin', {
-                _user_id: session.user.id
-              });
-              if (!error) {
-                setIsAdmin(data || false);
-              }
-            } catch (err) {
-              console.error('Error checking admin status:', err);
-            }
-          }, 0);
-        } else {
-          setIsAdmin(false);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(async () => {
           try {
             const { data, error } = await supabase.rpc('is_admin', {
               _user_id: session.user.id
@@ -69,7 +42,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           } catch (err) {
             console.error('Error checking admin status:', err);
           }
-        }, 0);
+        } else {
+          setIsAdmin(false);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        try {
+          const { data, error } = await supabase.rpc('is_admin', {
+            _user_id: session.user.id
+          });
+          if (!error) {
+            setIsAdmin(data || false);
+          }
+        } catch (err) {
+          console.error('Error checking admin status:', err);
+        }
       }
       
       setLoading(false);
