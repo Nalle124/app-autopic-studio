@@ -188,6 +188,7 @@ export type Database = {
           id: string
           name: string
           photoroom_shadow_mode: string | null
+          reference_scale: number
           reflection_enabled: boolean
           reflection_fade: number
           reflection_opacity: number
@@ -212,6 +213,7 @@ export type Database = {
           id: string
           name: string
           photoroom_shadow_mode?: string | null
+          reference_scale?: number
           reflection_enabled?: boolean
           reflection_fade?: number
           reflection_opacity?: number
@@ -236,6 +238,7 @@ export type Database = {
           id?: string
           name?: string
           photoroom_shadow_mode?: string | null
+          reference_scale?: number
           reflection_enabled?: boolean
           reflection_fade?: number
           reflection_opacity?: number
