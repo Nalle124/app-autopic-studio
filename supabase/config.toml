@@ -10,7 +10,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.upload-scene-images]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-checkout]
 verify_jwt = true
