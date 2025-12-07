@@ -11,3 +11,18 @@ verify_jwt = false
 
 [functions.upload-scene-images]
 verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.cleanup-old-images]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
+[functions.verify-payment]
+verify_jwt = false
