@@ -14,9 +14,9 @@ const logStep = (step: string, details?: any) => {
 
 // Product to credits mapping
 const PRODUCT_CREDITS: Record<string, number> = {
-  "prod_TYcMOi23KMqOh6": 100, // Starter
-  "prod_TYcNnx01K8TR0F": 300, // Professional
-  "prod_TYcO3bE3Ec2Amv": 600, // Business
+  "prod_TYctfRKGdxjyIo": 100, // Starter
+  "prod_TYcu2RNAGGthF9": 300, // Professional
+  "prod_TYcuc2xBrRbgIR": 600, // Business
 };
 
 serve(async (req) => {

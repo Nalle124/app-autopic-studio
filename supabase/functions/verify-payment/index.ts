@@ -14,10 +14,10 @@ const logStep = (step: string, details?: any) => {
 
 // Product to credits mapping
 const PRODUCT_CREDITS: Record<string, number> = {
-  "prod_TYcMOi23KMqOh6": 100, // Starter subscription
-  "prod_TYcNnx01K8TR0F": 300, // Professional subscription
-  "prod_TYcO3bE3Ec2Amv": 600, // Business subscription
-  "prod_TYcOcv9ORqRLYH": 30,  // One-time credit pack
+  "prod_TYctfRKGdxjyIo": 100, // Starter subscription
+  "prod_TYcu2RNAGGthF9": 300, // Professional subscription
+  "prod_TYcuc2xBrRbgIR": 600, // Business subscription
+  "prod_TYcuBp46lGYZDL": 30,  // One-time credit pack
 };
 
 serve(async (req) => {
