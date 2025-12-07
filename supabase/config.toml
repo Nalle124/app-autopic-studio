@@ -1,13 +1,28 @@
 project_id = "cfsyxrokdemwkklqflnb"
 
 [functions.process-car-image]
-verify_jwt = false
+verify_jwt = true
 
 [functions.analyze-scene]
-verify_jwt = false
+verify_jwt = true
 
 [functions.auto-crop-image]
-verify_jwt = false
+verify_jwt = true
 
 [functions.upload-scene-images]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.verify-payment]
+verify_jwt = true
+
+[functions.cleanup-old-images]
 verify_jwt = false
