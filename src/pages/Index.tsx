@@ -49,6 +49,7 @@ export default function Index() {
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
   const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());
   const [animatingImages, setAnimatingImages] = useState<Set<string>>(new Set());
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set()); // For "apply to all" loading state
   const [logoDesign, setLogoDesign] = useState<LogoDesign>({
     enabled: false,
     logoUrl: null,
@@ -690,41 +691,77 @@ export default function Index() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {uploadedImages.filter(img => img.status === 'completed' || img.status === 'processing').map((image, idx) => <Card key={image.id} className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''} ${image.status === 'processing' ? 'animate-processing' : ''}`} onClick={() => image.status === 'completed' && toggleImageSelection(image.id)}>
-                        {/* Image Preview - ALWAYS show finalUrl for generated images */}
-                        <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                          <img src={image.finalUrl || image.preview} alt={image.file.name} className="w-full h-full object-cover" />
-                          
-                          {/* Processing overlay */}
-                          {image.status === 'processing' && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                              <div className="text-white text-center">
+                  {/* Show placeholders for all pending/processing images */}
+                  {uploadedImages.filter(img => img.status === 'pending' && selectedScene).map((image) => (
+                    <Card key={`pending-${image.id}`} className="relative overflow-hidden">
+                      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                        {/* Blurred preview as placeholder */}
+                        <img 
+                          src={image.preview} 
+                          alt={image.file.name} 
+                          className="w-full h-full object-cover blur-sm opacity-50" 
+                        />
+                        <div className="absolute inset-0 bg-background/30 animate-pulse flex items-center justify-center">
+                          <div className="text-muted-foreground text-center text-xs">
+                            Väntar...
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  
+                  {uploadedImages.filter(img => img.status === 'completed' || img.status === 'processing').map((image, idx) => (
+                    <Card 
+                      key={image.id} 
+                      className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''}`} 
+                      onClick={() => image.status === 'completed' && !loadingImages.has(image.id) && toggleImageSelection(image.id)}
+                    >
+                      {/* Image Preview - ALWAYS show finalUrl for generated images */}
+                      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                        {/* Show blurred placeholder while processing */}
+                        {image.status === 'processing' ? (
+                          <>
+                            <img 
+                              src={image.preview} 
+                              alt={image.file.name} 
+                              className="w-full h-full object-cover blur-sm opacity-60" 
+                            />
+                            <div className="absolute inset-0 bg-background/20 flex items-center justify-center">
+                              <div className="text-foreground text-center">
                                 <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                                <span className="text-sm">Bearbetas...</span>
+                                <span className="text-xs">Bearbetas...</span>
                               </div>
                             </div>
-                          )}
-                          
-                          {/* Selection indicator */}
-                          {image.status === 'completed' && selectedImages.has(image.id) && <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                              <Check className="w-4 h-4 text-primary-foreground" />
-                            </div>}
-                          
-                          {/* Preview button overlay */}
-                          {image.status === 'completed' && (
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Button size="icon" variant="secondary" onClick={e => {
-                      e.stopPropagation();
-                      const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                      setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
-                      setPreviewImage(image.finalUrl!);
-                    }} title="Förhandsgranska">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </Card>)}
+                            {/* Pulsing overlay effect */}
+                            <div className="absolute inset-0 bg-primary/10 animate-pulse" />
+                          </>
+                        ) : (
+                          <img src={image.finalUrl || image.preview} alt={image.file.name} className="w-full h-full object-cover" />
+                        )}
+                        
+                        {/* Selection indicator */}
+                        {image.status === 'completed' && selectedImages.has(image.id) && (
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="w-4 h-4 text-primary-foreground" />
+                          </div>
+                        )}
+                        
+                        {/* Preview button overlay - only show if NOT in select mode and not loading */}
+                        {image.status === 'completed' && selectedImages.size === 0 && !loadingImages.has(image.id) && (
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button size="icon" variant="secondary" onClick={e => {
+                              e.stopPropagation();
+                              const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                              setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
+                              setPreviewImage(image.finalUrl!);
+                            }} title="Förhandsgranska">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               </section>}
           </div>}
@@ -1075,17 +1112,28 @@ export default function Index() {
             }
             toast.success('Justeringar sparade');
           }}
-          onApplyToAll={(adjustments) => {
+          onApplyToAll={async (adjustments) => {
+            // Mark all completed images as loading
+            const completedIds = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).map(img => img.id);
+            setLoadingImages(new Set(completedIds));
+            
             // Apply adjustments to all completed images
-            uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).forEach(async (img) => {
+            const promises = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).map(async (img) => {
               const result = await applyCarAdjustments(img.finalUrl!, adjustments);
               setUploadedImages(prev => prev.map(prevImg => 
                 prevImg.id === img.id 
                   ? { ...prevImg, finalUrl: result, carAdjustments: adjustments }
                   : prevImg
               ));
+              // Remove from loading set
+              setLoadingImages(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(img.id);
+                return newSet;
+              });
             });
-            toast.success('Justeringar applicerade på alla bilder');
+            
+            await Promise.all(promises);
           }}
         />
       )}

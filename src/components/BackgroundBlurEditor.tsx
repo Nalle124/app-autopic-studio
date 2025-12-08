@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Focus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,31 +15,28 @@ interface BackgroundBlurEditorProps {
 interface BlurSettings {
   blurAmount: number; // 0-20 pixels
   ovalSize: number; // 40-100% of image
-  ovalY: number; // 30-70% vertical position
+  ovalX: number; // 0-100% horizontal position
+  ovalY: number; // 0-100% vertical position
 }
 
 const defaultSettings: BlurSettings = {
-  blurAmount: 6,
-  ovalSize: 75,
-  ovalY: 55,
+  blurAmount: 8,
+  ovalSize: 70,
+  ovalX: 50,
+  ovalY: 50,
 };
 
 export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: BackgroundBlurEditorProps) => {
   const [settings, setSettings] = useState<BlurSettings>(defaultSettings);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (open) {
       setSettings(defaultSettings);
       setProcessedUrl(null);
-      // Load image to get dimensions
-      const img = new Image();
-      img.onload = () => {
-        setImageDimensions({ width: img.width, height: img.height });
-      };
-      img.src = imageUrl;
     }
   }, [imageUrl, open]);
 
@@ -67,7 +64,7 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
       canvas.height = img.height;
       
       // Calculate oval dimensions
-      const centerX = canvas.width / 2;
+      const centerX = (settings.ovalX / 100) * canvas.width;
       const centerY = (settings.ovalY / 100) * canvas.height;
       const radiusX = (settings.ovalSize / 100) * canvas.width / 2;
       const radiusY = (settings.ovalSize / 100) * canvas.height / 2;
@@ -105,11 +102,11 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
       
       // Create elliptical gradient mask
       const gradient = ctx.createRadialGradient(
-        centerX, centerY, Math.min(radiusX, radiusY) * 0.6, // Inner circle (fully sharp)
+        centerX, centerY, Math.min(radiusX, radiusY) * 0.5, // Inner circle (fully sharp)
         centerX, centerY, Math.max(radiusX, radiusY) // Outer circle (transition to blur)
       );
       gradient.addColorStop(0, 'rgba(0,0,0,1)');
-      gradient.addColorStop(0.7, 'rgba(0,0,0,0.8)');
+      gradient.addColorStop(0.6, 'rgba(0,0,0,0.9)');
       gradient.addColorStop(1, 'rgba(0,0,0,0)');
       
       // Apply the gradient as a mask to the sharp image
@@ -138,7 +135,7 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
     
     const timeoutId = setTimeout(() => {
       applyBlur();
-    }, 150);
+    }, 100);
 
     return () => clearTimeout(timeoutId);
   }, [settings, applyBlur, open]);
@@ -152,17 +149,61 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
     onClose();
   };
 
+  // Handle drag for oval position
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    updateOvalPosition(e);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    updateOvalPosition(e);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    updateOvalPositionTouch(e.touches[0]);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault();
+    updateOvalPositionTouch(e.touches[0]);
+  };
+
+  const updateOvalPosition = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setSettings(prev => ({ ...prev, ovalX: x, ovalY: y }));
+  };
+
+  const updateOvalPositionTouch = (touch: React.Touch) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((touch.clientY - rect.top) / rect.height) * 100));
+    setSettings(prev => ({ ...prev, ovalX: x, ovalY: y }));
+  };
+
   // Calculate oval overlay dimensions for preview
   const ovalStyle = {
     width: `${settings.ovalSize}%`,
-    height: `${settings.ovalSize}%`,
-    left: `${50 - settings.ovalSize / 2}%`,
-    top: `${settings.ovalY - settings.ovalSize / 2}%`,
+    height: `${settings.ovalSize * 0.6}%`, // Slightly shorter than wide for natural bokeh
+    left: `${settings.ovalX - settings.ovalSize / 2}%`,
+    top: `${settings.ovalY - (settings.ovalSize * 0.6) / 2}%`,
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-2 sm:p-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Focus className="w-5 h-5" />
@@ -170,28 +211,39 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          {/* Preview with oval overlay */}
-          <div className="relative aspect-[3/2] bg-black rounded-lg overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-4 min-h-0">
+          {/* Preview with draggable oval overlay */}
+          <div 
+            ref={containerRef}
+            className="flex-1 relative aspect-[3/2] bg-black rounded-lg overflow-hidden cursor-crosshair select-none"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleMouseUp}
+          >
             <img
               src={processedUrl || imageUrl}
               alt="Preview"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain pointer-events-none"
+              draggable={false}
             />
             
-            {/* Visual oval overlay - only show when adjusting */}
-            {settings.blurAmount > 0 && !processedUrl && (
+            {/* Visual oval overlay - always show when blur is active */}
+            {settings.blurAmount > 0 && (
               <div 
-                className="absolute border-2 border-dashed border-white/60 rounded-[50%] pointer-events-none"
+                className="absolute border-2 border-dashed border-white/70 rounded-[50%] pointer-events-none transition-all duration-75"
                 style={ovalStyle}
               />
             )}
             
-            {/* Show oval guide while not processing */}
-            {settings.blurAmount > 0 && processedUrl && (
+            {/* Drag indicator */}
+            {settings.blurAmount > 0 && (
               <div 
-                className="absolute border-2 border-white/30 rounded-[50%] pointer-events-none transition-opacity hover:opacity-0"
-                style={ovalStyle}
+                className="absolute w-4 h-4 bg-white rounded-full border-2 border-primary shadow-lg pointer-events-none transform -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${settings.ovalX}%`, top: `${settings.ovalY}%` }}
               />
             )}
             
@@ -200,12 +252,16 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             )}
+            
+            <p className="absolute bottom-2 left-2 text-xs text-white/70 bg-black/50 px-2 py-1 rounded">
+              Klicka och dra för att flytta fokusområdet
+            </p>
           </div>
 
-          {/* Simplified Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Side Panel Controls - same layout as edit panel */}
+          <div className="lg:w-[240px] flex flex-col gap-4 flex-shrink-0">
             <div className="space-y-2">
-              <Label className="text-sm">Styrka ({settings.blurAmount}px)</Label>
+              <Label className="text-sm font-semibold">Styrka ({settings.blurAmount}px)</Label>
               <Slider
                 value={[settings.blurAmount]}
                 onValueChange={([value]) => setSettings(prev => ({ ...prev, blurAmount: value }))}
@@ -216,44 +272,37 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm">Ovalstorlek ({settings.ovalSize}%)</Label>
+              <Label className="text-sm font-semibold">Ovalstorlek ({settings.ovalSize}%)</Label>
               <Slider
                 value={[settings.ovalSize]}
                 onValueChange={([value]) => setSettings(prev => ({ ...prev, ovalSize: value }))}
-                min={40}
-                max={100}
+                min={30}
+                max={120}
                 step={5}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm">Position ({settings.ovalY}%)</Label>
-              <Slider
-                value={[settings.ovalY]}
-                onValueChange={([value]) => setSettings(prev => ({ ...prev, ovalY: value }))}
-                min={35}
-                max={65}
-                step={1}
-              />
-            </div>
-          </div>
+            <p className="text-xs text-muted-foreground">
+              Dra direkt på bilden för att positionera fokusområdet. Allt utanför ovalen blir blurrat.
+            </p>
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setSettings(defaultSettings)} 
-              className="flex-1"
-            >
-              Återställ
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              className="flex-1" 
-              disabled={isProcessing}
-            >
-              {settings.blurAmount > 0 ? 'Spara med blur' : 'Stäng'}
-            </Button>
+            {/* Actions */}
+            <div className="flex flex-col gap-2 pt-2 mt-auto">
+              <Button 
+                variant="outline" 
+                onClick={() => setSettings(defaultSettings)} 
+                className="w-full"
+              >
+                Återställ
+              </Button>
+              <Button 
+                onClick={handleSave} 
+                className="w-full" 
+                disabled={isProcessing}
+              >
+                {settings.blurAmount > 0 ? 'Spara med blur' : 'Stäng'}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

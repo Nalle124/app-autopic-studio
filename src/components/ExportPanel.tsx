@@ -26,10 +26,10 @@ export const ExportPanel = ({
   const handleExport = () => {
     onExport(settings);
   };
-  return <Card className="relative overflow-hidden">
-      {/* Aura gradient background */}
+  return <Card className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.3))' }}>
+      {/* Aura gradient background - inline fallback gradient + lazy loaded image */}
       <div 
-        className="absolute inset-0 opacity-80"
+        className="absolute inset-0 opacity-80 transition-opacity duration-500"
         style={{
           backgroundImage: `url(${auraGradient})`,
           backgroundSize: 'cover',
