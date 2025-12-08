@@ -22,9 +22,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import autoshotLogo from '@/assets/autoshot-logo.png';
+
 export default function Index() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
   // Initialize uploaded images from localStorage for persistence
   // Only restore images with valid finalUrl (completed images from Supabase)
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(() => {
@@ -664,8 +686,8 @@ export default function Index() {
                 </div>
               </section>}
 
-            {/* Step 4: Results Gallery */}
-            {uploadedImages.some(img => img.status === 'completed') && <section id="results-section" className="space-y-6">
+            {/* Step 4: Results Gallery - show when any image is processing or completed */}
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
