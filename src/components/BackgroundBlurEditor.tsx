@@ -57,6 +57,7 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    img.src = imageUrl;
     
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -132,8 +133,6 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
       console.error('Failed to load image for blur');
       setIsProcessing(false);
     };
-    
-    img.src = imageUrl;
   }, [imageUrl, open, settings]);
 
   // Apply blur when settings change
