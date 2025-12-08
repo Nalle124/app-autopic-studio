@@ -4,13 +4,14 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote, Share2 } from 'lucide-react';
+import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote, Share2, Focus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import { Checkbox } from '@/components/ui/checkbox';
+import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 
 interface Project {
   id: string;
@@ -48,7 +49,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const [notesText, setNotesText] = useState('');
   
   // Edit states
-  const [editingImage, setEditingImage] = useState<{ jobId: string; url: string; type: 'crop' | 'adjust' } | null>(null);
+  const [editingImage, setEditingImage] = useState<{ jobId: string; url: string; type: 'crop' | 'adjust' | 'blur' } | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
 
@@ -350,6 +351,20 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     setEditingImage(null);
   };
 
+  const handleBlurSave = (jobId: string, blurredUrl: string) => {
+    setProjects(projects.map(p => ({
+      ...p,
+      jobs: p.jobs.map(j => j.id === jobId ? { ...j, final_url: blurredUrl } : j)
+    })));
+    if (selectedProject) {
+      setSelectedProject({
+        ...selectedProject,
+        jobs: selectedProject.jobs.map(j => j.id === jobId ? { ...j, final_url: blurredUrl } : j)
+      });
+    }
+    setEditingImage(null);
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -409,6 +424,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                     src={firstImage.final_url}
                     alt={project.registration_number}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -650,6 +666,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                           src={job.final_url!}
                           alt={`${selectedProject.registration_number}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          loading="lazy"
                         />
                         
                         {/* Selection checkbox */}
@@ -763,6 +780,15 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       <Scissors className="w-4 h-4" />
                       <span className="hidden sm:inline ml-1">Beskär</span>
                     </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => setEditingImage({ jobId: currentJob.id, url: currentJob.final_url!, type: 'blur' })}
+                      title="Bakgrundsoskärpa"
+                    >
+                      <Focus className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Blur</span>
+                    </Button>
                   </div>
                   
                   <Button size="sm" onClick={() => handleDownloadSingle(
@@ -806,6 +832,18 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
           onClose={() => setEditingImage(null)}
           onSave={(adjustedUrl) => {
             handleAdjustSave(editingImage.jobId, adjustedUrl);
+          }}
+        />
+      )}
+
+      {/* Background Blur Editor */}
+      {editingImage?.type === 'blur' && (
+        <BackgroundBlurEditor
+          imageUrl={editingImage.url}
+          open={true}
+          onClose={() => setEditingImage(null)}
+          onSave={(blurredUrl) => {
+            handleBlurSave(editingImage.jobId, blurredUrl);
           }}
         />
       )}
