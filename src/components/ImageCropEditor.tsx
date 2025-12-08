@@ -1,17 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Cropper from 'react-easy-crop';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Crop, Save, X, Maximize2, Check } from 'lucide-react';
+import { Save, X, Check, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CropSettings {
   crop: { x: number; y: number };
   zoom: number;
   croppedAreaPercent: { x: number; y: number; width: number; height: number };
-  localAspectRatio: 'landscape' | 'portrait' | 'free';
+  localAspectRatio: 'original' | 'landscape' | 'portrait' | 'free';
   targetWidth: number;
   targetHeight: number;
 }
@@ -71,18 +71,59 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [croppedAreaPercent, setCroppedAreaPercent] = useState<any>(null);
-  const [localAspectRatio, setLocalAspectRatio] = useState<'landscape' | 'portrait' | 'free'>(aspectRatio);
+  const [localAspectRatio, setLocalAspectRatio] = useState<'original' | 'landscape' | 'portrait' | 'free'>('original');
+  const [originalAspect, setOriginalAspect] = useState<number>(16/9);
   const [isSaving, setIsSaving] = useState(false);
   const [appliedToAll, setAppliedToAll] = useState(false);
+  const [history, setHistory] = useState<{ crop: { x: number; y: number }; zoom: number }[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // For free mode, don't set aspect - allow any shape
-  // For other modes, use fixed aspect ratios
-  const aspectRatioValue = localAspectRatio === 'free' ? undefined : localAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
+  // Get original image aspect ratio
+  useEffect(() => {
+    if (image?.finalUrl) {
+      const img = new Image();
+      img.onload = () => {
+        setOriginalAspect(img.width / img.height);
+      };
+      img.src = image.finalUrl;
+    }
+  }, [image?.finalUrl]);
+
+  // Calculate aspect ratio value based on selection
+  const getAspectRatioValue = () => {
+    switch (localAspectRatio) {
+      case 'original':
+        return originalAspect;
+      case 'landscape':
+        return 16 / 9;
+      case 'portrait':
+        return 9 / 16;
+      case 'free':
+        return undefined;
+      default:
+        return originalAspect;
+    }
+  };
+
+  const aspectRatioValue = getAspectRatioValue();
 
   const onCropComplete = useCallback((croppedAreaPercent: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
     setCroppedAreaPercent(croppedAreaPercent);
   }, []);
+
+  const handleUndo = () => {
+    if (history.length > 0) {
+      const lastState = history[history.length - 1];
+      setCrop(lastState.crop);
+      setZoom(lastState.zoom);
+      setHistory(prev => prev.slice(0, -1));
+    }
+  };
+
+  const saveToHistory = () => {
+    setHistory(prev => [...prev, { crop, zoom }]);
+  };
 
   const handleSave = async () => {
     if (!image || !croppedAreaPixels) return;
@@ -98,8 +139,8 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
         targetWidth = Math.round(croppedAreaPixels.width * scale);
         targetHeight = Math.round(croppedAreaPixels.height * scale);
       } else {
-        targetWidth = localAspectRatio === 'landscape' ? 1920 : 1080;
-        targetHeight = localAspectRatio === 'landscape' ? 1080 : 1920;
+        targetWidth = localAspectRatio === 'portrait' ? 1080 : 1920;
+        targetHeight = localAspectRatio === 'portrait' ? 1920 : 1080;
       }
       
       const croppedImage = await getCroppedImg(
@@ -112,7 +153,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
       // Determine output aspect ratio for free mode
       const outputRatio = localAspectRatio === 'free' 
         ? (targetWidth > targetHeight ? 'landscape' : 'portrait')
-        : localAspectRatio;
+        : (localAspectRatio === 'portrait' ? 'portrait' : 'landscape');
 
       onSave(image.id, croppedImage, outputRatio as 'landscape' | 'portrait');
     } catch (e) {
@@ -136,8 +177,8 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
         targetWidth = Math.round(croppedAreaPixels.width * scale);
         targetHeight = Math.round(croppedAreaPixels.height * scale);
       } else {
-        targetWidth = localAspectRatio === 'landscape' ? 1920 : 1080;
-        targetHeight = localAspectRatio === 'landscape' ? 1080 : 1920;
+        targetWidth = localAspectRatio === 'portrait' ? 1080 : 1920;
+        targetHeight = localAspectRatio === 'portrait' ? 1920 : 1080;
       }
       
       const croppedImage = await getCroppedImg(
@@ -149,7 +190,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
 
       const outputRatio = localAspectRatio === 'free' 
         ? (targetWidth > targetHeight ? 'landscape' : 'portrait')
-        : localAspectRatio;
+        : (localAspectRatio === 'portrait' ? 'portrait' : 'landscape');
 
       // Pass crop settings (percent-based) so they can be applied to other images
       onApplyToAll(croppedImage, outputRatio as 'landscape' | 'portrait', {
@@ -161,7 +202,6 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
         targetHeight,
       });
       setAppliedToAll(true);
-      toast.success('Beskärning applicerad på alla bilder');
     } catch (e) {
       console.error(e);
       toast.error('Kunde inte applicera beskärning');
@@ -170,31 +210,88 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
     }
   };
 
+  // Handle pinch-to-zoom on mobile
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let initialDistance = 0;
+    let initialZoom = zoom;
+
+    const getDistance = (touches: TouchList) => {
+      if (touches.length < 2) return 0;
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        initialDistance = getDistance(e.touches);
+        initialZoom = zoom;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const currentDistance = getDistance(e.touches);
+        if (initialDistance > 0) {
+          const scale = currentDistance / initialDistance;
+          const newZoom = Math.max(0.5, Math.min(3, initialZoom * scale));
+          setZoom(newZoom);
+        }
+      }
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [zoom]);
+
 
   if (!image) return null;
 
   return (
     <Dialog open={!!image} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-6xl max-h-[96vh] flex flex-col p-2 sm:p-4 overflow-hidden">
-        <DialogHeader className="pb-2 flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
-            <Crop className="w-4 h-4" />
-            <span className="truncate text-sm">{image.fileName}</span>
-          </DialogTitle>
-        </DialogHeader>
+        {/* Header with undo */}
+        <div className="flex items-center justify-between pb-2">
+          <h2 className="font-heading text-xl italic text-center flex-1">Beskär</h2>
+          {history.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleUndo}
+              className="absolute top-3 right-12"
+              title="Ångra"
+            >
+              <Undo2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
 
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 overflow-hidden">
           {/* Crop Area */}
-          <div className="flex-1 relative bg-background rounded-lg overflow-hidden min-h-[300px] sm:min-h-[400px]">
+          <div 
+            ref={containerRef}
+            className="flex-1 relative bg-background rounded-lg overflow-hidden min-h-[300px] sm:min-h-[400px] touch-none"
+          >
             <Cropper
               image={image.finalUrl}
               crop={crop}
               zoom={zoom}
               aspect={aspectRatioValue}
-              onCropChange={setCrop}
+              onCropChange={(newCrop) => {
+                setCrop(newCrop);
+              }}
               onCropComplete={onCropComplete}
               onZoomChange={setZoom}
-              restrictPosition={false}
+              restrictPosition={localAspectRatio !== 'free'}
               minZoom={0.5}
               maxZoom={3}
               style={{
@@ -214,30 +311,48 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
             {/* Aspect Ratio */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Format</Label>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
+                <Button
+                  variant={localAspectRatio === 'original' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    saveToHistory();
+                    setLocalAspectRatio('original');
+                  }}
+                  className="h-8 text-xs"
+                >
+                  Original
+                </Button>
                 <Button
                   variant={localAspectRatio === 'landscape' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setLocalAspectRatio('landscape')}
-                  className="gap-1 h-8 text-xs"
+                  onClick={() => {
+                    saveToHistory();
+                    setLocalAspectRatio('landscape');
+                  }}
+                  className="h-8 text-xs"
                 >
-                  <Maximize2 className="w-3 h-3" />
                   16:9
                 </Button>
                 <Button
                   variant={localAspectRatio === 'portrait' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setLocalAspectRatio('portrait')}
-                  className="gap-1 h-8 text-xs"
+                  onClick={() => {
+                    saveToHistory();
+                    setLocalAspectRatio('portrait');
+                  }}
+                  className="h-8 text-xs"
                 >
-                  <Maximize2 className="w-3 h-3 rotate-90" />
                   9:16
                 </Button>
                 <Button
                   variant={localAspectRatio === 'free' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setLocalAspectRatio('free')}
-                  className="gap-1 h-8 text-xs"
+                  onClick={() => {
+                    saveToHistory();
+                    setLocalAspectRatio('free');
+                  }}
+                  className="h-8 text-xs"
                 >
                   Fri
                 </Button>
@@ -255,6 +370,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
                     variant="ghost"
                     size="sm"
                     onClick={() => {
+                      saveToHistory();
                       setZoom(1);
                       setCrop({ x: 0, y: 0 });
                     }}
@@ -270,12 +386,12 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
                 min={0.5}
                 max={3}
                 step={0.05}
-                className="w-full"
+                className="w-full h-8"
               />
             </div>
 
             <p className="text-[10px] text-muted-foreground leading-tight pt-1">
-              Dra bilden för att positionera. I fri-läge kan du beskära helt fritt. Zooma ut för att se mer av bilden.
+              Dra bilden för att positionera. Nyp med två fingrar för att zooma på mobil.
             </p>
           </div>
         </div>

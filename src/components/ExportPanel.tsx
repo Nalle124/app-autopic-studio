@@ -46,7 +46,7 @@ export const ExportPanel = ({
           <h3 className="text-lg font-bold text-foreground mb-0.5">
             AI-Generering
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-foreground/70">
             Välj inställningar och starta genereringen
           </p>
         </div>
@@ -54,7 +54,7 @@ export const ExportPanel = ({
         {/* Settings Collapsible */}
         <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
           <CollapsibleTrigger asChild>
-            <Button variant="outline" className="w-full justify-between" size="sm">
+            <Button variant="outline" className="w-full justify-between border-border/50" size="sm">
               <div className="flex items-center gap-2">
                 <Settings2 className="w-4 h-4" />
                 <span>Inställningar</span>
