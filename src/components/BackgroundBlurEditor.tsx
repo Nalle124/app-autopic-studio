@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Focus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,37 +13,39 @@ interface BackgroundBlurEditorProps {
 }
 
 interface BlurSettings {
-  blurAmount: number; // 0-30 pixels
-  focusX: number; // 0-100% horizontal position
-  focusY: number; // 0-100% vertical position
-  focusWidth: number; // 20-100% width of focus area
-  focusHeight: number; // 20-100% height of focus area
-  featherAmount: number; // 10-50% gradient softness
+  blurAmount: number; // 0-20 pixels
+  ovalSize: number; // 40-100% of image
+  ovalY: number; // 30-70% vertical position
 }
 
 const defaultSettings: BlurSettings = {
-  blurAmount: 8,
-  focusX: 50,
-  focusY: 55, // Slightly lower for cars
-  focusWidth: 70,
-  focusHeight: 60,
-  featherAmount: 30,
+  blurAmount: 6,
+  ovalSize: 75,
+  ovalY: 55,
 };
 
 export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: BackgroundBlurEditorProps) => {
   const [settings, setSettings] = useState<BlurSettings>(defaultSettings);
-  const [previewUrl, setPreviewUrl] = useState<string>(imageUrl);
+  const [processedUrl, setProcessedUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    setPreviewUrl(imageUrl);
-    setSettings(defaultSettings);
-  }, [imageUrl]);
+    if (open) {
+      setSettings(defaultSettings);
+      setProcessedUrl(null);
+      // Load image to get dimensions
+      const img = new Image();
+      img.onload = () => {
+        setImageDimensions({ width: img.width, height: img.height });
+      };
+      img.src = imageUrl;
+    }
+  }, [imageUrl, open]);
 
   const applyBlur = useCallback(() => {
     if (!open || settings.blurAmount === 0) {
-      setPreviewUrl(imageUrl);
+      setProcessedUrl(null);
       return;
     }
 
@@ -64,19 +66,30 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
       canvas.width = img.width;
       canvas.height = img.height;
       
-      // Step 1: Draw blurred version
-      ctx.filter = `blur(${settings.blurAmount}px)`;
-      ctx.drawImage(img, 0, 0);
-      ctx.filter = 'none';
+      // Calculate oval dimensions
+      const centerX = canvas.width / 2;
+      const centerY = (settings.ovalY / 100) * canvas.height;
+      const radiusX = (settings.ovalSize / 100) * canvas.width / 2;
+      const radiusY = (settings.ovalSize / 100) * canvas.height / 2;
       
-      // Step 2: Create radial gradient mask for focus area
-      const centerX = (settings.focusX / 100) * canvas.width;
-      const centerY = (settings.focusY / 100) * canvas.height;
-      const radiusX = (settings.focusWidth / 100) * canvas.width / 2;
-      const radiusY = (settings.focusHeight / 100) * canvas.height / 2;
-      const feather = settings.featherAmount / 100;
+      // Step 1: Draw the blurred background
+      const blurCanvas = document.createElement('canvas');
+      blurCanvas.width = canvas.width;
+      blurCanvas.height = canvas.height;
+      const blurCtx = blurCanvas.getContext('2d');
       
-      // Create a temporary canvas for the mask
+      if (!blurCtx) {
+        setIsProcessing(false);
+        return;
+      }
+      
+      blurCtx.filter = `blur(${settings.blurAmount}px)`;
+      blurCtx.drawImage(img, 0, 0);
+      
+      // Step 2: Draw blurred image as base
+      ctx.drawImage(blurCanvas, 0, 0);
+      
+      // Step 3: Create gradient mask and draw sharp center
       const maskCanvas = document.createElement('canvas');
       maskCanvas.width = canvas.width;
       maskCanvas.height = canvas.height;
@@ -87,175 +100,160 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
         return;
       }
       
-      // Draw original (sharp) image on mask canvas
+      // Draw sharp image
       maskCtx.drawImage(img, 0, 0);
       
-      // Create elliptical gradient for smooth transition
-      // We'll use globalCompositeOperation to blend
-      ctx.save();
-      
-      // Create elliptical path for the focus area
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-      
-      // Create radial gradient for feathering
+      // Create elliptical gradient mask
       const gradient = ctx.createRadialGradient(
-        centerX, centerY, Math.min(radiusX, radiusY) * (1 - feather),
-        centerX, centerY, Math.max(radiusX, radiusY)
+        centerX, centerY, Math.min(radiusX, radiusY) * 0.6, // Inner circle (fully sharp)
+        centerX, centerY, Math.max(radiusX, radiusY) // Outer circle (transition to blur)
       );
-      gradient.addColorStop(0, 'rgba(255,255,255,1)');
-      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(0.7, 'rgba(0,0,0,0.8)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
       
-      // Apply gradient mask to composite sharp image over blur
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = gradient;
-      ctx.fill();
-      ctx.restore();
+      // Apply the gradient as a mask to the sharp image
+      maskCtx.globalCompositeOperation = 'destination-in';
+      maskCtx.fillStyle = gradient;
+      maskCtx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Draw sharp original with gradient mask
-      ctx.globalCompositeOperation = 'destination-over';
-      ctx.drawImage(img, 0, 0);
-      ctx.globalCompositeOperation = 'source-over';
+      // Draw the masked sharp image over the blurred background
+      ctx.drawImage(maskCanvas, 0, 0);
       
-      setPreviewUrl(canvas.toDataURL('image/jpeg', 0.92));
+      setProcessedUrl(canvas.toDataURL('image/jpeg', 0.92));
       setIsProcessing(false);
     };
 
     img.onerror = () => {
+      console.error('Failed to load image for blur');
       setIsProcessing(false);
     };
     
     img.src = imageUrl;
   }, [imageUrl, open, settings]);
 
+  // Apply blur when settings change
   useEffect(() => {
     if (!open) return;
     
     const timeoutId = setTimeout(() => {
       applyBlur();
-    }, 200);
+    }, 150);
 
     return () => clearTimeout(timeoutId);
   }, [settings, applyBlur, open]);
 
   const handleSave = () => {
-    onSave(previewUrl);
+    if (processedUrl) {
+      onSave(processedUrl);
+    } else {
+      onSave(imageUrl);
+    }
     onClose();
   };
 
-  const handleReset = () => {
-    setSettings(defaultSettings);
+  // Calculate oval overlay dimensions for preview
+  const ovalStyle = {
+    width: `${settings.ovalSize}%`,
+    height: `${settings.ovalSize}%`,
+    left: `${50 - settings.ovalSize / 2}%`,
+    top: `${settings.ovalY - settings.ovalSize / 2}%`,
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Focus className="w-5 h-5" />
-            Bakgrundsoskärpa
+            Bokeh-effekt
           </DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-[70vh]">
-          {/* Preview */}
-          <div className="space-y-4">
-            <Label>Förhandsgranskning</Label>
-            <div className="relative aspect-[3/2] bg-muted rounded-lg overflow-hidden">
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="w-full h-full object-contain"
+        <div className="space-y-4">
+          {/* Preview with oval overlay */}
+          <div className="relative aspect-[3/2] bg-black rounded-lg overflow-hidden">
+            <img
+              src={processedUrl || imageUrl}
+              alt="Preview"
+              className="w-full h-full object-contain"
+            />
+            
+            {/* Visual oval overlay - only show when adjusting */}
+            {settings.blurAmount > 0 && !processedUrl && (
+              <div 
+                className="absolute border-2 border-dashed border-white/60 rounded-[50%] pointer-events-none"
+                style={ovalStyle}
               />
-              {isProcessing && (
-                <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Fokusområdet förblir skarpt medan bakgrunden blir oskarp - skapar ett professionellt djupskärpa-utseende.
-            </p>
+            )}
+            
+            {/* Show oval guide while not processing */}
+            {settings.blurAmount > 0 && processedUrl && (
+              <div 
+                className="absolute border-2 border-white/30 rounded-[50%] pointer-events-none transition-opacity hover:opacity-0"
+                style={ovalStyle}
+              />
+            )}
+            
+            {isProcessing && (
+              <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
           </div>
 
-          {/* Controls */}
-          <div className="space-y-5">
+          {/* Simplified Controls */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Oskärpa ({settings.blurAmount}px)</Label>
+              <Label className="text-sm">Styrka ({settings.blurAmount}px)</Label>
               <Slider
                 value={[settings.blurAmount]}
                 onValueChange={([value]) => setSettings(prev => ({ ...prev, blurAmount: value }))}
                 min={0}
-                max={30}
+                max={20}
                 step={1}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Fokus horisontell ({settings.focusX}%)</Label>
+              <Label className="text-sm">Ovalstorlek ({settings.ovalSize}%)</Label>
               <Slider
-                value={[settings.focusX]}
-                onValueChange={([value]) => setSettings(prev => ({ ...prev, focusX: value }))}
-                min={20}
-                max={80}
-                step={1}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Fokus vertikal ({settings.focusY}%)</Label>
-              <Slider
-                value={[settings.focusY]}
-                onValueChange={([value]) => setSettings(prev => ({ ...prev, focusY: value }))}
-                min={20}
-                max={80}
-                step={1}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Fokusbredd ({settings.focusWidth}%)</Label>
-              <Slider
-                value={[settings.focusWidth]}
-                onValueChange={([value]) => setSettings(prev => ({ ...prev, focusWidth: value }))}
-                min={30}
+                value={[settings.ovalSize]}
+                onValueChange={([value]) => setSettings(prev => ({ ...prev, ovalSize: value }))}
+                min={40}
                 max={100}
-                step={1}
+                step={5}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Fokushöjd ({settings.focusHeight}%)</Label>
+              <Label className="text-sm">Position ({settings.ovalY}%)</Label>
               <Slider
-                value={[settings.focusHeight]}
-                onValueChange={([value]) => setSettings(prev => ({ ...prev, focusHeight: value }))}
-                min={30}
-                max={100}
+                value={[settings.ovalY]}
+                onValueChange={([value]) => setSettings(prev => ({ ...prev, ovalY: value }))}
+                min={35}
+                max={65}
                 step={1}
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Övergång ({settings.featherAmount}%)</Label>
-              <Slider
-                value={[settings.featherAmount]}
-                onValueChange={([value]) => setSettings(prev => ({ ...prev, featherAmount: value }))}
-                min={10}
-                max={60}
-                step={1}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2 pt-4 border-t">
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleReset} className="flex-1">
-                  Återställ
-                </Button>
-                <Button onClick={handleSave} className="flex-1" disabled={isProcessing}>
-                  Spara
-                </Button>
-              </div>
-            </div>
+          {/* Actions */}
+          <div className="flex gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setSettings(defaultSettings)} 
+              className="flex-1"
+            >
+              Återställ
+            </Button>
+            <Button 
+              onClick={handleSave} 
+              className="flex-1" 
+              disabled={isProcessing}
+            >
+              {settings.blurAmount > 0 ? 'Spara med blur' : 'Stäng'}
+            </Button>
           </div>
         </div>
       </DialogContent>
