@@ -26,37 +26,50 @@ export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
   // Initialize uploaded images from localStorage for persistence
+  // Only restore images with valid finalUrl (completed images from Supabase)
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(() => {
     try {
       const saved = localStorage.getItem('autoshot_uploaded_images');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Restore images - note: File objects can't be serialized, so we create placeholder files
-        return parsed.map((img: any) => ({
-          ...img,
-          file: new File([], img.fileName || 'restored.jpg', { type: 'image/jpeg' }),
-        }));
+        // Only restore completed images with valid finalUrl (not base64)
+        return parsed
+          .filter((img: any) => img.finalUrl && img.status === 'completed')
+          .map((img: any) => ({
+            ...img,
+            preview: img.finalUrl, // Use finalUrl as preview since original is lost
+            file: new File([], img.fileName || 'restored.jpg', { type: 'image/jpeg' }),
+          }));
       }
     } catch (e) {
       console.error('Error restoring images:', e);
+      localStorage.removeItem('autoshot_uploaded_images'); // Clear corrupted data
     }
     return [];
   });
   
-  // Persist uploaded images to localStorage
+  // Persist uploaded images to localStorage - only store URLs, not base64 data
   useEffect(() => {
     if (uploadedImages.length > 0) {
-      const toSave = uploadedImages.map(img => ({
-        id: img.id,
-        preview: img.preview,
-        croppedUrl: img.croppedUrl,
-        finalUrl: img.finalUrl,
-        status: img.status,
-        fileName: img.file?.name,
-        sceneId: img.sceneId,
-        carAdjustments: img.carAdjustments,
-      }));
-      localStorage.setItem('autoshot_uploaded_images', JSON.stringify(toSave));
+      try {
+        // Only store metadata and URLs that are NOT base64 (to avoid quota errors)
+        const toSave = uploadedImages.map(img => ({
+          id: img.id,
+          // Only store preview if it's a URL, not base64
+          preview: img.preview?.startsWith('blob:') || img.preview?.startsWith('data:') ? null : img.preview,
+          // Only store croppedUrl if it's a URL, not base64
+          croppedUrl: img.croppedUrl?.startsWith('data:') ? null : img.croppedUrl,
+          finalUrl: img.finalUrl,
+          status: img.status,
+          fileName: img.file?.name,
+          sceneId: img.sceneId,
+          carAdjustments: img.carAdjustments,
+        }));
+        localStorage.setItem('autoshot_uploaded_images', JSON.stringify(toSave));
+      } catch (e) {
+        // If storage fails (quota exceeded), just skip persistence
+        console.warn('Could not persist images to localStorage:', e);
+      }
     } else {
       localStorage.removeItem('autoshot_uploaded_images');
     }
