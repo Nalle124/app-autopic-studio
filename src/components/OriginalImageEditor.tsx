@@ -222,47 +222,47 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
         </div>
         
         <div className="flex flex-col lg:flex-row gap-4 min-h-0">
-          {/* Preview - constrained on desktop */}
-          <div className="flex-1 lg:flex-none lg:w-[calc(100%-280px)] relative bg-muted rounded-lg overflow-hidden max-h-[50vh] lg:max-h-[60vh]">
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="w-full h-full object-contain"
-            />
-            
-            {/* Navigation arrows */}
-            {onPrevious && totalCount && totalCount > 1 && (
+          {/* Preview with navigation outside */}
+          <div className="flex-1 lg:flex-none lg:w-[calc(100%-280px)] flex items-center gap-2">
+            {/* Left arrow - desktop only */}
+            {totalCount && totalCount > 1 && (
               <Button 
                 size="icon" 
                 variant="secondary" 
-                className="absolute left-2 top-1/2 -translate-y-1/2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPrevious();
-                }}
+                className="hidden sm:flex flex-shrink-0"
+                onClick={() => onPrevious?.()}
+                disabled={!onPrevious}
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
             )}
-            {onNext && totalCount && totalCount > 1 && (
+            
+            <div className="flex-1 relative bg-muted rounded-lg overflow-hidden max-h-[50vh] lg:max-h-[60vh]">
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-full h-full object-contain"
+              />
+              
+              {/* Counter */}
+              {currentIndex !== undefined && totalCount && totalCount > 1 && (
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                  {currentIndex + 1} / {totalCount}
+                </div>
+              )}
+            </div>
+            
+            {/* Right arrow - desktop only */}
+            {totalCount && totalCount > 1 && (
               <Button 
                 size="icon" 
                 variant="secondary" 
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNext();
-                }}
+                className="hidden sm:flex flex-shrink-0"
+                onClick={() => onNext?.()}
+                disabled={!onNext}
               >
                 <ChevronRight className="w-5 h-5" />
               </Button>
-            )}
-            
-            {/* Counter */}
-            {currentIndex !== undefined && totalCount && totalCount > 1 && (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                {currentIndex + 1} / {totalCount}
-              </div>
             )}
           </div>
 
@@ -359,6 +359,28 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
 
           {/* Bottom actions */}
           <div className="flex gap-2 border-t pt-3">
+            {/* Mobile navigation */}
+            {totalCount && totalCount > 1 && (
+              <>
+                <Button 
+                  size="icon" 
+                  variant="secondary" 
+                  onClick={() => onPrevious?.()}
+                  disabled={!onPrevious}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <Button 
+                  size="icon" 
+                  variant="secondary" 
+                  onClick={() => onNext?.()}
+                  disabled={!onNext}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </>
+            )}
+            
             <Button 
               variant="outline" 
               size="sm"
@@ -366,11 +388,10 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
               onClick={handleCleanBoost}
             >
               <Sparkles className="w-4 h-4" />
-              Boost
             </Button>
             
             {onApplyToAll && (
-              <div className="flex items-center gap-2 flex-1">
+              <div className="flex items-center gap-2">
                 <Checkbox 
                   id="apply-to-all-mobile" 
                   checked={applyToAllChecked}

@@ -243,7 +243,7 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-2 sm:p-4">
+      <DialogContent className="max-w-5xl max-h-[95vh] p-2 sm:p-4 overflow-y-auto">
         {/* Header with undo */}
         <div className="flex items-center justify-between pb-2">
           <h2 className="font-heading text-xl italic text-center flex-1">Bakgrundsblur</h2>
@@ -260,11 +260,25 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
           )}
         </div>
         
-        <div className="flex flex-col lg:flex-row gap-4 min-h-0">
+        {/* Navigation arrows - outside image container */}
+        <div className="flex items-center gap-2">
+          {/* Left arrow */}
+          {totalCount && totalCount > 1 && (
+            <Button 
+              size="icon" 
+              variant="secondary" 
+              className="hidden sm:flex flex-shrink-0"
+              onClick={() => onPrevious?.()}
+              disabled={!onPrevious}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+          )}
+          
           {/* Preview with draggable oval overlay */}
           <div 
             ref={containerRef}
-            className="flex-1 relative aspect-[3/2] bg-black rounded-lg overflow-hidden cursor-crosshair select-none"
+            className="flex-1 relative aspect-[3/2] max-h-[50vh] sm:max-h-[55vh] bg-black rounded-lg overflow-hidden cursor-crosshair select-none"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -296,34 +310,6 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
               />
             )}
             
-            {/* Navigation arrows */}
-            {onPrevious && totalCount && totalCount > 1 && (
-              <Button 
-                size="icon" 
-                variant="secondary" 
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPrevious();
-                }}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-            )}
-            {onNext && totalCount && totalCount > 1 && (
-              <Button 
-                size="icon" 
-                variant="secondary" 
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNext();
-                }}
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-            )}
-            
             {/* Counter */}
             {currentIndex !== undefined && totalCount && totalCount > 1 && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm z-10">
@@ -341,9 +327,24 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
               Klicka och dra för att flytta fokusområdet
             </p>
           </div>
+          
+          {/* Right arrow */}
+          {totalCount && totalCount > 1 && (
+            <Button 
+              size="icon" 
+              variant="secondary" 
+              className="hidden sm:flex flex-shrink-0"
+              onClick={() => onNext?.()}
+              disabled={!onNext}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
 
-          {/* Side Panel Controls - same layout as edit panel */}
-          <div className="lg:w-[240px] flex flex-col gap-4 flex-shrink-0">
+        {/* Controls - below image */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <div className="flex-1 space-y-3">
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Styrka ({settings.blurAmount}px)</Label>
               <Slider
@@ -367,31 +368,40 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
                 className="h-8"
               />
             </div>
+          </div>
 
-            <p className="text-xs text-muted-foreground">
-              Dra direkt på bilden för att positionera fokusområdet. Allt utanför ovalen blir blurrat.
-            </p>
-
-            {/* Actions */}
-            <div className="flex flex-col gap-2 pt-2 mt-auto">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setHistory([defaultSettings]);
-                  setSettings(defaultSettings);
-                }} 
-                className="w-full"
-              >
-                Återställ
-              </Button>
-              <Button 
-                onClick={handleSave} 
-                className="w-full" 
-                disabled={isProcessing}
-              >
-                {settings.blurAmount > 0 ? 'Spara med blur' : 'Stäng'}
-              </Button>
+          <div className="flex sm:flex-col gap-2 sm:w-auto">
+            {/* Mobile navigation */}
+            <div className="flex sm:hidden gap-2">
+              {totalCount && totalCount > 1 && (
+                <>
+                  <Button 
+                    size="icon" 
+                    variant="secondary" 
+                    onClick={() => onPrevious?.()}
+                    disabled={!onPrevious}
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+                  <Button 
+                    size="icon" 
+                    variant="secondary" 
+                    onClick={() => onNext?.()}
+                    disabled={!onNext}
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                </>
+              )}
             </div>
+            
+            <Button 
+              onClick={handleSave} 
+              className="flex-1 sm:flex-none" 
+              disabled={isProcessing}
+            >
+              {settings.blurAmount > 0 ? 'Spara' : 'Stäng'}
+            </Button>
           </div>
         </div>
       </DialogContent>
