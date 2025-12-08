@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Upload, User, Sun, Moon, Palette, ArrowLeft, Building2, Phone, MapPin, Coins } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import autoshotLogo from '@/assets/autoshot-logo.png';
 
 interface ProfileData {
   full_name: string | null;
@@ -211,7 +212,34 @@ export const Profile = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen">
-        <Header />
+        {/* Header matching Index.tsx */}
+        <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
+              <img src={autoshotLogo} alt="AutoShot" className="h-10 w-auto object-contain" />
+            </button>
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Tillbaka">
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <Tabs value="profile" className="w-auto">
+                <TabsList className="bg-background/80 backdrop-blur-sm">
+                  <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
+                    <Plus className="w-4 h-4" />
+                    Projekt
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/')}>
+                    <History className="w-4 h-4" />
+                    Galleri
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Button variant="ghost" size="icon" className="bg-primary/10">
+                <User className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+        </header>
         <main className="container mx-auto px-6 py-12 max-w-4xl">
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
@@ -223,22 +251,48 @@ export const Profile = () => {
 
   return (
     <div className="min-h-screen">
-      <Header />
-      
-      <main className="container mx-auto px-6 py-12 max-w-4xl">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
+      {/* Header matching Index.tsx layout */}
+      <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
+            <img src={autoshotLogo} alt="AutoShot" className="h-10 w-auto object-contain" />
+          </button>
+          
+          <div className="flex items-center gap-3">
+            {/* Back button inline with tabs */}
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => navigate('/')}
               title="Tillbaka"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-3xl font-bold text-foreground font-heading">Profil</h1>
+            
+            <Tabs value="profile" className="w-auto">
+              <TabsList className="bg-background/80 backdrop-blur-sm">
+                <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
+                  <Plus className="w-4 h-4" />
+                  Projekt
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/')}>
+                  <History className="w-4 h-4" />
+                  Galleri
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <Button variant="ghost" size="icon" className="bg-primary/10">
+              <User className="w-5 h-5" />
+            </Button>
           </div>
-          <p className="text-muted-foreground font-small">
+        </div>
+      </header>
+      
+      <main className="container mx-auto px-6 py-12 max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground font-heading">Profil</h1>
+          <p className="text-muted-foreground font-small mt-2">
             Hantera dina uppgifter och inställningar
           </p>
         </div>
