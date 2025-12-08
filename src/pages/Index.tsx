@@ -10,12 +10,13 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { CarAdjustmentPanel } from '@/components/CarAdjustmentPanel';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
+import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
@@ -33,7 +34,7 @@ export default function Index() {
     id: string;
     finalUrl: string;
     fileName: string;
-    type: 'crop' | 'adjust';
+    type: 'crop' | 'adjust' | 'blur';
   } | null>(null);
   const [editingOriginal, setEditingOriginal] = useState<{
     id: string;
@@ -889,6 +890,18 @@ export default function Index() {
                         <Scissors className="w-4 h-4" />
                         <span className="hidden sm:inline ml-1">Beskär</span>
                       </Button>
+                      <Button size="sm" variant="outline" title="Bokeh-effekt" onClick={() => {
+                        setPreviewImage(null);
+                        setEditingImage({
+                          id: currentImage.id,
+                          finalUrl: currentImage.finalUrl!,
+                          fileName: currentImage.file.name,
+                          type: 'blur'
+                        });
+                      }}>
+                        <Focus className="w-4 h-4" />
+                        <span className="hidden sm:inline ml-1">Blur</span>
+                      </Button>
                     </div>
                     
                     <Button size="sm" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber || 'bild'}_${currentImage.id}.jpg`)}>
@@ -1091,7 +1104,37 @@ export default function Index() {
       {/* Original Image Adjustment Editor Dialog */}
       {editingOriginal?.type === 'adjust' && <OriginalImageEditor imageUrl={editingOriginal.url} imageName={editingOriginal.name} open={true} onClose={() => setEditingOriginal(null)} onSave={(adjustedUrl, adjustments) => handleOriginalAdjustmentsSave(editingOriginal.id, adjustedUrl, adjustments)} onApplyToAll={(adjustments, isCleanBoost) => handleApplyAdjustmentsToAllOriginals(adjustments, isCleanBoost)} />}
 
-      {/* Brand Kit Designer Modal */}
+      {/* Background Blur Editor for Generated Images */}
+      {editingImage?.type === 'blur' && (
+        <BackgroundBlurEditor
+          imageUrl={editingImage.finalUrl}
+          open={true}
+          onClose={() => {
+            setEditingImage(null);
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            const index = completedImages.findIndex(img => img.id === editingImage.id);
+            if (index !== -1) {
+              setGalleryIndex(index);
+              setPreviewImage(completedImages[index].finalUrl!);
+            }
+          }}
+          onSave={(blurredUrl) => {
+            setUploadedImages(prev => prev.map(img => 
+              img.id === editingImage.id 
+                ? { ...img, finalUrl: blurredUrl }
+                : img
+            ));
+            setEditingImage(null);
+            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+            const index = completedImages.findIndex(img => img.id === editingImage.id);
+            if (index !== -1) {
+              setGalleryIndex(index);
+              setPreviewImage(blurredUrl);
+            }
+          }}
+        />
+      )}
+
       <BrandKitDesigner 
         open={logoDesignOpen} 
         onClose={() => setLogoDesignOpen(false)} 
