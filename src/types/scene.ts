@@ -44,6 +44,7 @@ export interface CarAdjustments {
   contrast: number; // -100 to 100
   warmth: number; // -100 to 100 (temperature)
   shadows: number; // -100 to 100 (crush blacks)
+  saturation: number; // -100 to 100
 }
 
 export interface UploadedImage {

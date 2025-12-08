@@ -7,6 +7,8 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CarAdjustments } from '@/types/scene';
 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 interface OriginalImageEditorProps {
   imageUrl: string;
   imageName: string;
@@ -14,6 +16,11 @@ interface OriginalImageEditorProps {
   onClose: () => void;
   onSave: (adjustedUrl: string, adjustments: CarAdjustments) => void;
   onApplyToAll?: (adjustments: CarAdjustments, isCleanBoost?: boolean) => void;
+  // Navigation props for gallery mode
+  onPrevious?: () => void;
+  onNext?: () => void;
+  currentIndex?: number;
+  totalCount?: number;
 }
 
 const defaultAdjustments: CarAdjustments = {
@@ -21,6 +28,7 @@ const defaultAdjustments: CarAdjustments = {
   contrast: 0,
   warmth: 0,
   shadows: 0,
+  saturation: 0,
 };
 
 const cleanBoostAdjustments: CarAdjustments = {
@@ -28,18 +36,20 @@ const cleanBoostAdjustments: CarAdjustments = {
   contrast: 10,
   warmth: -10,
   shadows: -10,
+  saturation: 5,
 };
 
-type AdjustmentType = 'brightness' | 'contrast' | 'warmth' | 'shadows';
+type AdjustmentType = 'brightness' | 'contrast' | 'warmth' | 'shadows' | 'saturation';
 
 const adjustmentConfig: { key: AdjustmentType; icon: typeof Sun; label: string }[] = [
   { key: 'brightness', icon: Sun, label: 'Ljus' },
   { key: 'contrast', icon: Contrast, label: 'Kontrast' },
   { key: 'warmth', icon: Thermometer, label: 'Värme' },
   { key: 'shadows', icon: Moon, label: 'Skuggor' },
+  { key: 'saturation', icon: Sparkles, label: 'Mättnad' },
 ];
 
-export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave, onApplyToAll }: OriginalImageEditorProps) => {
+export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave, onApplyToAll, onPrevious, onNext, currentIndex, totalCount }: OriginalImageEditorProps) => {
   const [adjustments, setAdjustments] = useState<CarAdjustments>(defaultAdjustments);
   const [previewUrl, setPreviewUrl] = useState<string>(imageUrl);
   const [applyToAllChecked, setApplyToAllChecked] = useState(false);
@@ -86,6 +96,7 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
       const contrastFactor = (adjustments.contrast + 100) / 100;
       const warmthFactor = adjustments.warmth / 100;
       const shadowsFactor = adjustments.shadows / 100;
+      const saturationFactor = 1 + (adjustments.saturation / 100);
       
       // Apply adjustments pixel by pixel
       for (let i = 0; i < data.length; i += 4) {
@@ -122,6 +133,12 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
           g += shadowAdjustment * 50;
           b += shadowAdjustment * 50;
         }
+        
+        // Apply saturation
+        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        r = gray + (r - gray) * saturationFactor;
+        g = gray + (g - gray) * saturationFactor;
+        b = gray + (b - gray) * saturationFactor;
         
         // Clamp values
         data[i] = Math.max(0, Math.min(255, r));
@@ -212,6 +229,41 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
               alt="Preview"
               className="w-full h-full object-contain"
             />
+            
+            {/* Navigation arrows */}
+            {onPrevious && totalCount && totalCount > 1 && (
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="absolute left-2 top-1/2 -translate-y-1/2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrevious();
+                }}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+            )}
+            {onNext && totalCount && totalCount > 1 && (
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext();
+                }}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            )}
+            
+            {/* Counter */}
+            {currentIndex !== undefined && totalCount && totalCount > 1 && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                {currentIndex + 1} / {totalCount}
+              </div>
+            )}
           </div>
 
           {/* Desktop Controls - Side Panel */}
