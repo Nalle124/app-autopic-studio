@@ -438,6 +438,18 @@ export default function Index() {
           </button>
           
           <div className="flex items-center gap-3">
+            {/* Back button - only show when on history tab or coming from somewhere */}
+            {activeTab === 'history' && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setActiveTab('new')}
+                title="Tillbaka"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+            )}
+            
             <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'new' | 'history')} className="w-auto">
               <TabsList className="bg-background/80 backdrop-blur-sm">
                 <TabsTrigger value="new" className="gap-2">
@@ -468,27 +480,14 @@ export default function Index() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {activeTab === 'history' ? <section className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setActiveTab('new')}
-                  className="gap-2"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Tillbaka
-                </Button>
-                {uploadedImages.length > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    Du har ett aktivt projekt med {uploadedImages.length} bilder
-                  </span>
-                )}
-              </div>
-            </div>
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-2">Dina Projekt</h2>
               <p className="text-muted-foreground">Se och hantera dina tidigare skapade bilgallerier</p>
+              {uploadedImages.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Du har ett aktivt projekt med {uploadedImages.length} bilder
+                </p>
+              )}
             </div>
             <ProjectGallery onUseAsNewImage={async (imageUrl) => {
               try {

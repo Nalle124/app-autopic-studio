@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Focus } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Undo2 } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -32,11 +32,13 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
   const [isProcessing, setIsProcessing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [history, setHistory] = useState<BlurSettings[]>([defaultSettings]);
 
   useEffect(() => {
     if (open) {
       setSettings(defaultSettings);
       setProcessedUrl(null);
+      setHistory([defaultSettings]);
     }
   }, [imageUrl, open]);
 
@@ -149,6 +151,21 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
     onClose();
   };
 
+  const handleUndo = () => {
+    if (history.length > 1) {
+      const newHistory = [...history];
+      newHistory.pop();
+      const previousState = newHistory[newHistory.length - 1];
+      setSettings(previousState);
+      setHistory(newHistory);
+    }
+  };
+
+  const updateSettings = (newSettings: Partial<BlurSettings>) => {
+    setHistory(prev => [...prev, settings]);
+    setSettings(prev => ({ ...prev, ...newSettings }));
+  };
+
   // Handle drag for oval position
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
@@ -158,7 +175,7 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !containerRef.current) return;
-    updateOvalPosition(e);
+    updateOvalPositionDirect(e);
   };
 
   const handleMouseUp = () => {
@@ -174,10 +191,18 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || !containerRef.current) return;
     e.preventDefault();
-    updateOvalPositionTouch(e.touches[0]);
+    updateOvalPositionTouchDirect(e.touches[0]);
   };
 
   const updateOvalPosition = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    updateSettings({ ovalX: x, ovalY: y });
+  };
+
+  const updateOvalPositionDirect = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
@@ -186,6 +211,14 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
   };
 
   const updateOvalPositionTouch = (touch: React.Touch) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((touch.clientY - rect.top) / rect.height) * 100));
+    updateSettings({ ovalX: x, ovalY: y });
+  };
+
+  const updateOvalPositionTouchDirect = (touch: React.Touch) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(100, ((touch.clientX - rect.left) / rect.width) * 100));
@@ -201,15 +234,26 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
     top: `${settings.ovalY - (settings.ovalSize * 0.6) / 2}%`,
   };
 
+  const canUndo = history.length > 1;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-2 sm:p-4">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Focus className="w-5 h-5" />
-            Bokeh-effekt
-          </DialogTitle>
-        </DialogHeader>
+        {/* Header with undo */}
+        <div className="flex items-center justify-between pb-2">
+          <h2 className="font-heading text-xl italic text-center flex-1">Bakgrundsblur</h2>
+          {canUndo && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleUndo}
+              className="absolute top-3 right-12"
+              title="Ångra"
+            >
+              <Undo2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
         
         <div className="flex flex-col lg:flex-row gap-4 min-h-0">
           {/* Preview with draggable oval overlay */}
@@ -264,10 +308,11 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
               <Label className="text-sm font-semibold">Styrka ({settings.blurAmount}px)</Label>
               <Slider
                 value={[settings.blurAmount]}
-                onValueChange={([value]) => setSettings(prev => ({ ...prev, blurAmount: value }))}
+                onValueChange={([value]) => updateSettings({ blurAmount: value })}
                 min={0}
                 max={20}
                 step={1}
+                className="h-8"
               />
             </div>
 
@@ -275,10 +320,11 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
               <Label className="text-sm font-semibold">Ovalstorlek ({settings.ovalSize}%)</Label>
               <Slider
                 value={[settings.ovalSize]}
-                onValueChange={([value]) => setSettings(prev => ({ ...prev, ovalSize: value }))}
+                onValueChange={([value]) => updateSettings({ ovalSize: value })}
                 min={30}
                 max={120}
                 step={5}
+                className="h-8"
               />
             </div>
 
@@ -290,7 +336,10 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
             <div className="flex flex-col gap-2 pt-2 mt-auto">
               <Button 
                 variant="outline" 
-                onClick={() => setSettings(defaultSettings)} 
+                onClick={() => {
+                  setHistory([defaultSettings]);
+                  setSettings(defaultSettings);
+                }} 
                 className="w-full"
               >
                 Återställ

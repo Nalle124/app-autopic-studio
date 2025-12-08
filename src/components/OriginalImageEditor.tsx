@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Sparkles } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sparkles, Sun, Contrast, Thermometer, Moon, Undo2 } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -30,15 +30,27 @@ const cleanBoostAdjustments: CarAdjustments = {
   shadows: -10,
 };
 
+type AdjustmentType = 'brightness' | 'contrast' | 'warmth' | 'shadows';
+
+const adjustmentConfig: { key: AdjustmentType; icon: typeof Sun; label: string }[] = [
+  { key: 'brightness', icon: Sun, label: 'Ljus' },
+  { key: 'contrast', icon: Contrast, label: 'Kontrast' },
+  { key: 'warmth', icon: Thermometer, label: 'Värme' },
+  { key: 'shadows', icon: Moon, label: 'Skuggor' },
+];
+
 export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave, onApplyToAll }: OriginalImageEditorProps) => {
   const [adjustments, setAdjustments] = useState<CarAdjustments>(defaultAdjustments);
   const [previewUrl, setPreviewUrl] = useState<string>(imageUrl);
   const [applyToAllChecked, setApplyToAllChecked] = useState(false);
+  const [selectedParam, setSelectedParam] = useState<AdjustmentType>('brightness');
+  const [history, setHistory] = useState<CarAdjustments[]>([defaultAdjustments]);
 
   useEffect(() => {
     setPreviewUrl(imageUrl);
     setAdjustments(defaultAdjustments);
     setApplyToAllChecked(false);
+    setHistory([defaultAdjustments]);
   }, [imageUrl]);
 
   // Debounced preview update
@@ -142,36 +154,63 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
 
   const handleReset = () => {
     setAdjustments(defaultAdjustments);
+    setHistory([defaultAdjustments]);
   };
 
   const handleCleanBoost = () => {
+    setHistory(prev => [...prev, adjustments]);
     setAdjustments(cleanBoostAdjustments);
   };
 
+  const handleUndo = () => {
+    if (history.length > 1) {
+      const newHistory = [...history];
+      newHistory.pop();
+      const previousState = newHistory[newHistory.length - 1];
+      setAdjustments(previousState);
+      setHistory(newHistory);
+    }
+  };
+
+  const handleAdjustmentChange = (key: AdjustmentType, value: number) => {
+    setHistory(prev => [...prev, adjustments]);
+    setAdjustments(prev => ({ ...prev, [key]: value }));
+  };
+
   const hasChanges = Object.values(adjustments).some(val => val !== 0);
+  const canUndo = history.length > 1;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Redigera bild - {imageName}</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-2 sm:p-4">
+        {/* Header with undo */}
+        <div className="flex items-center justify-between pb-2">
+          <h2 className="font-heading text-xl italic text-center flex-1">Redigera</h2>
+          {canUndo && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleUndo}
+              className="absolute top-3 right-12"
+              title="Ångra"
+            >
+              <Undo2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-[70vh]">
+        <div className="flex flex-col lg:flex-row gap-4 min-h-0">
           {/* Preview */}
-          <div className="space-y-4">
-            <Label>Förhandsgranskning</Label>
-            <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden">
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="w-full h-full object-contain"
-              />
-            </div>
+          <div className="flex-1 relative aspect-[4/3] bg-muted rounded-lg overflow-hidden">
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="w-full h-full object-contain"
+            />
           </div>
 
-          {/* Controls */}
-          <div className="space-y-6">
+          {/* Desktop Controls - Side Panel */}
+          <div className="hidden lg:flex lg:w-[240px] flex-col gap-4">
             {/* Clean Boost Preset */}
             <Button 
               variant="outline" 
@@ -182,51 +221,20 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
               Clean Boost
             </Button>
 
-            <div className="space-y-2">
-              <Label>Ljusstyrka ({adjustments.brightness})</Label>
-              <Slider
-                value={[adjustments.brightness]}
-                onValueChange={([value]) => setAdjustments(prev => ({ ...prev, brightness: value }))}
-                min={-100}
-                max={100}
-                step={1}
-              />
-            </div>
+            {adjustmentConfig.map(({ key, label }) => (
+              <div key={key} className="space-y-2">
+                <Label>{label} ({adjustments[key]})</Label>
+                <Slider
+                  value={[adjustments[key]]}
+                  onValueChange={([value]) => handleAdjustmentChange(key, value)}
+                  min={-100}
+                  max={100}
+                  step={1}
+                />
+              </div>
+            ))}
 
-            <div className="space-y-2">
-              <Label>Kontrast ({adjustments.contrast})</Label>
-              <Slider
-                value={[adjustments.contrast]}
-                onValueChange={([value]) => setAdjustments(prev => ({ ...prev, contrast: value }))}
-                min={-100}
-                max={100}
-                step={1}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Värme ({adjustments.warmth})</Label>
-              <Slider
-                value={[adjustments.warmth]}
-                onValueChange={([value]) => setAdjustments(prev => ({ ...prev, warmth: value }))}
-                min={-100}
-                max={100}
-                step={1}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Skuggor ({adjustments.shadows})</Label>
-              <Slider
-                value={[adjustments.shadows]}
-                onValueChange={([value]) => setAdjustments(prev => ({ ...prev, shadows: value }))}
-                min={-100}
-                max={100}
-                step={1}
-              />
-            </div>
-
-            <div className="flex flex-col gap-3 pt-4">
+            <div className="flex flex-col gap-3 pt-4 mt-auto">
               {hasChanges && (
                 <Button variant="outline" onClick={handleReset} className="w-full">
                   Återställ
@@ -251,6 +259,75 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
                 Spara{applyToAllChecked ? ' (alla bilder)' : ''}
               </Button>
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Controls - Bottom Panel like reference image */}
+        <div className="lg:hidden flex flex-col gap-3 pt-3 border-t">
+          {/* Active parameter slider */}
+          <div className="px-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium capitalize">
+                {adjustmentConfig.find(a => a.key === selectedParam)?.label}
+              </span>
+              <span className="text-sm text-muted-foreground">{adjustments[selectedParam]}</span>
+            </div>
+            <Slider
+              value={[adjustments[selectedParam]]}
+              onValueChange={([value]) => handleAdjustmentChange(selectedParam, value)}
+              min={-100}
+              max={100}
+              step={1}
+              className="h-8"
+            />
+          </div>
+
+          {/* Parameter selector icons */}
+          <div className="flex justify-around border-t pt-3">
+            {adjustmentConfig.map(({ key, icon: Icon, label }) => (
+              <button
+                key={key}
+                onClick={() => setSelectedParam(key)}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
+                  selectedParam === key 
+                    ? 'bg-primary/10 text-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-[10px]">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Bottom actions */}
+          <div className="flex gap-2 border-t pt-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="gap-1"
+              onClick={handleCleanBoost}
+            >
+              <Sparkles className="w-4 h-4" />
+              Boost
+            </Button>
+            
+            {onApplyToAll && (
+              <div className="flex items-center gap-2 flex-1">
+                <Checkbox 
+                  id="apply-to-all-mobile" 
+                  checked={applyToAllChecked}
+                  onCheckedChange={(checked) => setApplyToAllChecked(checked === true)}
+                />
+                <label htmlFor="apply-to-all-mobile" className="text-xs text-muted-foreground">
+                  Alla
+                </label>
+              </div>
+            )}
+            
+            <Button onClick={handleSave} size="sm" className="flex-1">
+              Spara
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -227,16 +227,17 @@ export const Profile = () => {
       
       <main className="container mx-auto px-6 py-12 max-w-4xl">
         <div className="mb-8">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/')}
-            className="mb-4 gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Tillbaka till projekt
-          </Button>
-          <h1 className="text-3xl font-bold text-foreground mb-2 font-heading">Profil</h1>
+          <div className="flex items-center gap-3 mb-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/')}
+              title="Tillbaka"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-3xl font-bold text-foreground font-heading">Profil</h1>
+          </div>
           <p className="text-muted-foreground font-small">
             Hantera dina uppgifter och inställningar
           </p>
