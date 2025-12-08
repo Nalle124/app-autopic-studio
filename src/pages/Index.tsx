@@ -1027,24 +1027,50 @@ export default function Index() {
       </Dialog>
 
       {/* Crop Editor for Generated Images - ImageCropEditor has its own Dialog */}
-      {editingImage?.type === 'crop' && (
-        <ImageCropEditor 
-          image={{
-            id: editingImage.id,
-            finalUrl: editingImage.finalUrl,
-            fileName: editingImage.fileName
-          }} 
-          onClose={() => {
-            setEditingImage(null);
-            // Return to preview gallery
-            const completedImages = uploadedImages.filter(img => img.status === 'completed');
-            const index = completedImages.findIndex(img => img.id === editingImage.id);
-            if (index !== -1) {
-              setGalleryIndex(index);
-              const updatedImage = uploadedImages.find(img => img.id === editingImage.id);
-              setPreviewImage(updatedImage?.finalUrl || editingImage.finalUrl);
-            }
-          }} 
+      {editingImage?.type === 'crop' && (() => {
+        const completedImages = uploadedImages.filter(img => img.status === 'completed');
+        const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
+        return (
+          <ImageCropEditor 
+            image={{
+              id: editingImage.id,
+              finalUrl: editingImage.finalUrl,
+              fileName: editingImage.fileName
+            }} 
+            onClose={() => {
+              setEditingImage(null);
+              // Return to preview gallery
+              const idx = completedImages.findIndex(img => img.id === editingImage.id);
+              if (idx !== -1) {
+                setGalleryIndex(idx);
+                const updatedImage = uploadedImages.find(img => img.id === editingImage.id);
+                setPreviewImage(updatedImage?.finalUrl || editingImage.finalUrl);
+              }
+            }}
+            currentIndex={currentIdx}
+            totalCount={completedImages.length}
+            onPrevious={() => {
+              if (currentIdx > 0) {
+                const prevImg = completedImages[currentIdx - 1];
+                setEditingImage({
+                  id: prevImg.id,
+                  finalUrl: prevImg.finalUrl!,
+                  fileName: prevImg.file.name,
+                  type: 'crop'
+                });
+              }
+            }}
+            onNext={() => {
+              if (currentIdx < completedImages.length - 1) {
+                const nextImg = completedImages[currentIdx + 1];
+                setEditingImage({
+                  id: nextImg.id,
+                  finalUrl: nextImg.finalUrl!,
+                  fileName: nextImg.file.name,
+                  type: 'crop'
+                });
+              }
+            }}
           onSave={(imageId, croppedUrl, newAspectRatio) => {
             // Update finalUrl with cropped version
             setUploadedImages(prev => prev.map(img => 
@@ -1149,27 +1175,54 @@ export default function Index() {
             }
             toast.success(`Beskärning applicerad på ${updates.size} bilder`);
           }}
-          aspectRatio={aspectRatio} 
-        />
-      )}
+            aspectRatio={aspectRatio} 
+          />
+        );
+      })()}
 
       {/* Adjustment Editor Dialog - using OriginalImageEditor for generated images */}
-      {editingImage?.type === 'adjust' && (
-        <OriginalImageEditor
-          imageUrl={editingImage.finalUrl}
-          imageName={editingImage.fileName}
-          open={true}
-          onClose={() => {
-            setEditingImage(null);
-            // Return to preview gallery
-            const completedImages = uploadedImages.filter(img => img.status === 'completed');
-            const index = completedImages.findIndex(img => img.id === editingImage.id);
-            if (index !== -1) {
-              setGalleryIndex(index);
-              setPreviewImage(completedImages[index].finalUrl!);
-            }
-          }}
-          onSave={(adjustedUrl, adjustments) => {
+      {editingImage?.type === 'adjust' && (() => {
+        const completedImages = uploadedImages.filter(img => img.status === 'completed');
+        const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
+        return (
+          <OriginalImageEditor
+            imageUrl={editingImage.finalUrl}
+            imageName={editingImage.fileName}
+            open={true}
+            onClose={() => {
+              setEditingImage(null);
+              // Return to preview gallery
+              const idx = completedImages.findIndex(img => img.id === editingImage.id);
+              if (idx !== -1) {
+                setGalleryIndex(idx);
+                setPreviewImage(completedImages[idx].finalUrl!);
+              }
+            }}
+            currentIndex={currentIdx}
+            totalCount={completedImages.length}
+            onPrevious={() => {
+              if (currentIdx > 0) {
+                const prevImg = completedImages[currentIdx - 1];
+                setEditingImage({
+                  id: prevImg.id,
+                  finalUrl: prevImg.finalUrl!,
+                  fileName: prevImg.file.name,
+                  type: 'adjust'
+                });
+              }
+            }}
+            onNext={() => {
+              if (currentIdx < completedImages.length - 1) {
+                const nextImg = completedImages[currentIdx + 1];
+                setEditingImage({
+                  id: nextImg.id,
+                  finalUrl: nextImg.finalUrl!,
+                  fileName: nextImg.file.name,
+                  type: 'adjust'
+                });
+              }
+            }}
+            onSave={(adjustedUrl, adjustments) => {
             // Update the finalUrl with the adjusted image
             setUploadedImages(prev => prev.map(img => 
               img.id === editingImage.id 
@@ -1209,8 +1262,9 @@ export default function Index() {
             
             await Promise.all(promises);
           }}
-        />
-      )}
+          />
+        );
+      })()}
 
       {/* Original Image Crop Editor Dialog */}
       <Dialog open={editingOriginal?.type === 'crop'} onOpenChange={() => setEditingOriginal(null)}>
@@ -1227,35 +1281,61 @@ export default function Index() {
       {editingOriginal?.type === 'adjust' && <OriginalImageEditor imageUrl={editingOriginal.url} imageName={editingOriginal.name} open={true} onClose={() => setEditingOriginal(null)} onSave={(adjustedUrl, adjustments) => handleOriginalAdjustmentsSave(editingOriginal.id, adjustedUrl, adjustments)} onApplyToAll={(adjustments, isCleanBoost) => handleApplyAdjustmentsToAllOriginals(adjustments, isCleanBoost)} />}
 
       {/* Background Blur Editor for Generated Images */}
-      {editingImage?.type === 'blur' && (
-        <BackgroundBlurEditor
-          imageUrl={editingImage.finalUrl}
-          open={true}
-          onClose={() => {
-            setEditingImage(null);
-            const completedImages = uploadedImages.filter(img => img.status === 'completed');
-            const index = completedImages.findIndex(img => img.id === editingImage.id);
-            if (index !== -1) {
-              setGalleryIndex(index);
-              setPreviewImage(completedImages[index].finalUrl!);
-            }
-          }}
-          onSave={(blurredUrl) => {
-            setUploadedImages(prev => prev.map(img => 
-              img.id === editingImage.id 
-                ? { ...img, finalUrl: blurredUrl }
-                : img
-            ));
-            setEditingImage(null);
-            const completedImages = uploadedImages.filter(img => img.status === 'completed');
-            const index = completedImages.findIndex(img => img.id === editingImage.id);
-            if (index !== -1) {
-              setGalleryIndex(index);
-              setPreviewImage(blurredUrl);
-            }
-          }}
-        />
-      )}
+      {editingImage?.type === 'blur' && (() => {
+        const completedImages = uploadedImages.filter(img => img.status === 'completed');
+        const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
+        return (
+          <BackgroundBlurEditor
+            imageUrl={editingImage.finalUrl}
+            open={true}
+            onClose={() => {
+              setEditingImage(null);
+              const idx = completedImages.findIndex(img => img.id === editingImage.id);
+              if (idx !== -1) {
+                setGalleryIndex(idx);
+                setPreviewImage(completedImages[idx].finalUrl!);
+              }
+            }}
+            currentIndex={currentIdx}
+            totalCount={completedImages.length}
+            onPrevious={() => {
+              if (currentIdx > 0) {
+                const prevImg = completedImages[currentIdx - 1];
+                setEditingImage({
+                  id: prevImg.id,
+                  finalUrl: prevImg.finalUrl!,
+                  fileName: prevImg.file.name,
+                  type: 'blur'
+                });
+              }
+            }}
+            onNext={() => {
+              if (currentIdx < completedImages.length - 1) {
+                const nextImg = completedImages[currentIdx + 1];
+                setEditingImage({
+                  id: nextImg.id,
+                  finalUrl: nextImg.finalUrl!,
+                  fileName: nextImg.file.name,
+                  type: 'blur'
+                });
+              }
+            }}
+            onSave={(blurredUrl) => {
+              setUploadedImages(prev => prev.map(img => 
+                img.id === editingImage.id 
+                  ? { ...img, finalUrl: blurredUrl }
+                  : img
+              ));
+              setEditingImage(null);
+              const idx = completedImages.findIndex(img => img.id === editingImage.id);
+              if (idx !== -1) {
+                setGalleryIndex(idx);
+                setPreviewImage(blurredUrl);
+              }
+            }}
+          />
+        );
+      })()}
 
       <BrandKitDesigner 
         open={logoDesignOpen} 
