@@ -25,7 +25,42 @@ import autoshotLogo from '@/assets/autoshot-logo.png';
 export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  // Initialize uploaded images from localStorage for persistence
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(() => {
+    try {
+      const saved = localStorage.getItem('autoshot_uploaded_images');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Restore images - note: File objects can't be serialized, so we create placeholder files
+        return parsed.map((img: any) => ({
+          ...img,
+          file: new File([], img.fileName || 'restored.jpg', { type: 'image/jpeg' }),
+        }));
+      }
+    } catch (e) {
+      console.error('Error restoring images:', e);
+    }
+    return [];
+  });
+  
+  // Persist uploaded images to localStorage
+  useEffect(() => {
+    if (uploadedImages.length > 0) {
+      const toSave = uploadedImages.map(img => ({
+        id: img.id,
+        preview: img.preview,
+        croppedUrl: img.croppedUrl,
+        finalUrl: img.finalUrl,
+        status: img.status,
+        fileName: img.file?.name,
+        sceneId: img.sceneId,
+        carAdjustments: img.carAdjustments,
+      }));
+      localStorage.setItem('autoshot_uploaded_images', JSON.stringify(toSave));
+    } else {
+      localStorage.removeItem('autoshot_uploaded_images');
+    }
+  }, [uploadedImages]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);

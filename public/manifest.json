@@ -1,0 +1,17 @@
+{
+  "name": "AutoShot",
+  "short_name": "AutoShot",
+  "description": "Professionella bilbackgrunder på sekunder",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#080808",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -35,9 +35,7 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
 
 async function getCroppedImg(
   imageSrc: string,
-  pixelCrop: { x: number; y: number; width: number; height: number },
-  targetWidth: number,
-  targetHeight: number
+  pixelCrop: { x: number; y: number; width: number; height: number }
 ): Promise<string> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
@@ -47,8 +45,9 @@ async function getCroppedImg(
     throw new Error('No 2d context');
   }
 
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
+  // Use cropped area dimensions directly - no stretching/distortion
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
 
   ctx.drawImage(
     image,
@@ -58,8 +57,8 @@ async function getCroppedImg(
     pixelCrop.height,
     0,
     0,
-    targetWidth,
-    targetHeight
+    pixelCrop.width,
+    pixelCrop.height
   );
 
   // Use JPEG with quality 0.9 for much smaller file size
@@ -77,6 +76,19 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
   const [appliedToAll, setAppliedToAll] = useState(false);
   const [history, setHistory] = useState<{ crop: { x: number; y: number }; zoom: number }[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Reset viewport zoom on close
+  const handleClose = () => {
+    // Reset any viewport zoom that may have occurred
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      setTimeout(() => {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      }, 100);
+    }
+    onClose();
+  };
 
   // Get original image aspect ratio
   useEffect(() => {
@@ -130,32 +142,17 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
 
     setIsSaving(true);
     try {
-      let targetWidth, targetHeight;
-      
-      if (localAspectRatio === 'free') {
-        // Use actual cropped dimensions for free mode, but cap to reasonable size
-        const maxDim = 1920;
-        const scale = Math.min(maxDim / croppedAreaPixels.width, maxDim / croppedAreaPixels.height, 1);
-        targetWidth = Math.round(croppedAreaPixels.width * scale);
-        targetHeight = Math.round(croppedAreaPixels.height * scale);
-      } else {
-        targetWidth = localAspectRatio === 'portrait' ? 1080 : 1920;
-        targetHeight = localAspectRatio === 'portrait' ? 1920 : 1080;
-      }
-      
+      // Get cropped image with original dimensions (no distortion)
       const croppedImage = await getCroppedImg(
         image.finalUrl,
-        croppedAreaPixels,
-        targetWidth,
-        targetHeight
+        croppedAreaPixels
       );
 
-      // Determine output aspect ratio for free mode
-      const outputRatio = localAspectRatio === 'free' 
-        ? (targetWidth > targetHeight ? 'landscape' : 'portrait')
-        : (localAspectRatio === 'portrait' ? 'portrait' : 'landscape');
+      // Determine output aspect ratio based on actual cropped dimensions
+      const outputRatio = croppedAreaPixels.width > croppedAreaPixels.height ? 'landscape' : 'portrait';
 
       onSave(image.id, croppedImage, outputRatio as 'landscape' | 'portrait');
+      handleClose();
     } catch (e) {
       console.error(e);
       toast.error('Kunde inte spara beskärning');
@@ -169,28 +166,12 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
 
     setIsSaving(true);
     try {
-      let targetWidth, targetHeight;
-      
-      if (localAspectRatio === 'free') {
-        const maxDim = 1920;
-        const scale = Math.min(maxDim / croppedAreaPixels.width, maxDim / croppedAreaPixels.height, 1);
-        targetWidth = Math.round(croppedAreaPixels.width * scale);
-        targetHeight = Math.round(croppedAreaPixels.height * scale);
-      } else {
-        targetWidth = localAspectRatio === 'portrait' ? 1080 : 1920;
-        targetHeight = localAspectRatio === 'portrait' ? 1920 : 1080;
-      }
-      
       const croppedImage = await getCroppedImg(
         image.finalUrl,
-        croppedAreaPixels,
-        targetWidth,
-        targetHeight
+        croppedAreaPixels
       );
 
-      const outputRatio = localAspectRatio === 'free' 
-        ? (targetWidth > targetHeight ? 'landscape' : 'portrait')
-        : (localAspectRatio === 'portrait' ? 'portrait' : 'landscape');
+      const outputRatio = croppedAreaPixels.width > croppedAreaPixels.height ? 'landscape' : 'portrait';
 
       // Pass crop settings (percent-based) so they can be applied to other images
       onApplyToAll(croppedImage, outputRatio as 'landscape' | 'portrait', {
@@ -198,8 +179,8 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
         zoom,
         croppedAreaPercent,
         localAspectRatio,
-        targetWidth,
-        targetHeight,
+        targetWidth: croppedAreaPixels.width,
+        targetHeight: croppedAreaPixels.height,
       });
       setAppliedToAll(true);
     } catch (e) {
@@ -257,7 +238,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
   if (!image) return null;
 
   return (
-    <Dialog open={!!image} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={!!image} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-6xl max-h-[96vh] flex flex-col p-2 sm:p-4 overflow-hidden">
         {/* Header with undo */}
         <div className="flex items-center justify-between pb-2">
@@ -276,10 +257,10 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
         </div>
 
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 overflow-hidden">
-          {/* Crop Area */}
+          {/* Crop Area - constrained size on desktop to leave room for controls */}
           <div 
             ref={containerRef}
-            className="flex-1 relative bg-background rounded-lg overflow-hidden min-h-[300px] sm:min-h-[400px] touch-none"
+            className="flex-1 lg:flex-none lg:w-[calc(100%-280px)] relative bg-background rounded-lg overflow-hidden min-h-[300px] sm:min-h-[400px] lg:max-h-[60vh] touch-none"
           >
             <Cropper
               image={image.finalUrl}
@@ -294,6 +275,8 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
               restrictPosition={localAspectRatio !== 'free'}
               minZoom={0.5}
               maxZoom={3}
+              showGrid={true}
+              objectFit="contain"
               style={{
                 containerStyle: {
                   background: 'hsl(var(--muted))',
@@ -398,7 +381,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t flex-shrink-0">
-          <Button variant="outline" onClick={onClose} className="sm:flex-none h-9 text-sm" disabled={isSaving}>
+          <Button variant="outline" onClick={handleClose} className="sm:flex-none h-9 text-sm" disabled={isSaving}>
             <X className="w-3.5 h-3.5 mr-1.5" />
             Avbryt
           </Button>

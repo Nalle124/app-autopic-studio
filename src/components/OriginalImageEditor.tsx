@@ -46,6 +46,18 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
   const [selectedParam, setSelectedParam] = useState<AdjustmentType>('brightness');
   const [history, setHistory] = useState<CarAdjustments[]>([defaultAdjustments]);
 
+  // Reset viewport zoom on close
+  const handleClose = () => {
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      setTimeout(() => {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      }, 100);
+    }
+    onClose();
+  };
+
   useEffect(() => {
     setPreviewUrl(imageUrl);
     setAdjustments(defaultAdjustments);
@@ -149,7 +161,7 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
       onApplyToAll(adjustments, false);
     }
     onSave(previewUrl, adjustments);
-    onClose();
+    handleClose();
   };
 
   const handleReset = () => {
@@ -181,8 +193,8 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
   const canUndo = history.length > 1;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-2 sm:p-4">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-2 sm:p-4">
         {/* Header with undo */}
         <div className="flex items-center justify-between pb-2">
           <h2 className="font-heading text-xl italic text-center flex-1">Redigera</h2>
@@ -200,8 +212,8 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
         </div>
         
         <div className="flex flex-col lg:flex-row gap-4 min-h-0">
-          {/* Preview */}
-          <div className="flex-1 relative aspect-[4/3] bg-muted rounded-lg overflow-hidden">
+          {/* Preview - constrained on desktop */}
+          <div className="flex-1 lg:flex-none lg:w-[calc(100%-280px)] relative bg-muted rounded-lg overflow-hidden max-h-[50vh] lg:max-h-[60vh]">
             <img
               src={previewUrl}
               alt="Preview"
@@ -210,7 +222,7 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
           </div>
 
           {/* Desktop Controls - Side Panel */}
-          <div className="hidden lg:flex lg:w-[240px] flex-col gap-4">
+          <div className="hidden lg:flex lg:w-[260px] flex-col gap-4 overflow-y-auto">
             {/* Clean Boost Preset */}
             <Button 
               variant="outline" 
