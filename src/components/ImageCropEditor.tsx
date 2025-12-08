@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Save, X, Check, Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Save, X, Check, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CropSettings {
@@ -254,22 +254,8 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
         </div>
 
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 overflow-hidden">
-          {/* Navigation arrows - outside crop area on desktop */}
+          {/* Crop Area - no navigation arrows */}
           <div className="flex items-center gap-2 flex-1 lg:flex-none lg:w-[calc(100%-280px)]">
-            {/* Left arrow - desktop only */}
-            {totalCount && totalCount > 1 && (
-              <Button 
-                size="icon" 
-                variant="secondary" 
-                className="hidden sm:flex flex-shrink-0 z-10"
-                onClick={() => onPrevious?.()}
-                disabled={!onPrevious}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-            )}
-            
-            {/* Crop Area */}
             <div 
               ref={containerRef}
               className="flex-1 relative bg-background rounded-lg overflow-hidden min-h-[300px] sm:min-h-[400px] lg:max-h-[60vh] touch-none"
@@ -299,27 +285,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
                   },
                 }}
               />
-              
-              {/* Counter */}
-              {currentIndex !== undefined && totalCount && totalCount > 1 && (
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm z-10">
-                  {currentIndex + 1} / {totalCount}
-                </div>
-              )}
             </div>
-            
-            {/* Right arrow - desktop only */}
-            {totalCount && totalCount > 1 && (
-              <Button 
-                size="icon" 
-                variant="secondary" 
-                className="hidden sm:flex flex-shrink-0 z-10"
-                onClick={() => onNext?.()}
-                disabled={!onNext}
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-            )}
           </div>
 
           {/* Side Panel */}
@@ -414,29 +380,6 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t flex-shrink-0">
-          {/* Mobile navigation */}
-          <div className="flex sm:hidden gap-2 justify-center">
-            {totalCount && totalCount > 1 && (
-              <>
-                <Button 
-                  size="icon" 
-                  variant="secondary" 
-                  onClick={() => onPrevious?.()}
-                  disabled={!onPrevious}
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-                <Button 
-                  size="icon" 
-                  variant="secondary" 
-                  onClick={() => onNext?.()}
-                  disabled={!onNext}
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
-              </>
-            )}
-          </div>
           
           <Button variant="outline" onClick={handleClose} className="sm:flex-none h-9 text-sm" disabled={isSaving}>
             <X className="w-3.5 h-3.5 mr-1.5" />
