@@ -32,23 +32,28 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
     description: 'Mörka studios med dramatisk belysning',
     gradient: 'from-primary/20 via-accent-pink/10 to-background/5'
   },
-  'autumn': { 
+  'studio-colored': { 
     order: 3, 
+    description: 'Färgstarka studios med personlighet',
+    gradient: 'from-accent-green/20 via-accent-orange/10 to-accent-pink/5'
+  },
+  'autumn': { 
+    order: 4, 
     description: 'Höstmiljöer med varma färger',
     gradient: 'from-accent-orange/30 via-primary/10 to-background/5'
   },
   'winter': { 
-    order: 4, 
+    order: 5, 
     description: 'Vintermiljöer med nordisk känsla',
     gradient: 'from-accent-blue/20 via-white/10 to-background/5'
   },
   'outdoor': { 
-    order: 5, 
+    order: 6, 
     description: 'Utomhusmiljöer och naturliga scener',
     gradient: 'from-accent-blue/20 via-accent-green/10 to-background/5'
   },
   'premium': { 
-    order: 6, 
+    order: 7, 
     description: 'Exklusiva miljöer för lyxbilar',
     gradient: 'from-accent-pink/20 via-primary/10 to-background/5'
   },
@@ -59,6 +64,7 @@ const getCategoryDisplayName = (category: string) => {
     'favorites': 'Favoriter',
     'studio-light': 'Ljusa Studios',
     'studio-dark': 'Mörka Studios',
+    'studio-colored': 'Färgade Studios',
     'autumn': 'Höst',
     'winter': 'Vinter',
     'outdoor': 'Utomhus',

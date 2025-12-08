@@ -544,7 +544,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
 
       {/* Project Detail Dialog */}
       <Dialog open={!!selectedProject && !previewOpen} onOpenChange={() => { setSelectedProject(null); setSelectedJobIds(new Set()); }}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col overflow-y-auto">
           {selectedProject && (() => {
             const completedJobsList = selectedProject.jobs.filter(j => j.final_url);
             return (
