@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Save, X, Check, Undo2 } from 'lucide-react';
+import { Save, X, Check, Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CropSettings {
@@ -22,6 +22,11 @@ interface ImageCropEditorProps {
   onSave: (imageId: string, croppedImage: string, aspectRatio: 'landscape' | 'portrait') => void;
   onApplyToAll?: (croppedImage: string, aspectRatio: 'landscape' | 'portrait', cropSettings?: CropSettings) => void;
   aspectRatio: 'landscape' | 'portrait';
+  // Navigation props for gallery mode
+  onPrevious?: () => void;
+  onNext?: () => void;
+  currentIndex?: number;
+  totalCount?: number;
 }
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -65,7 +70,7 @@ async function getCroppedImg(
   return canvas.toDataURL('image/jpeg', 0.9);
 }
 
-export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRatio }: ImageCropEditorProps) => {
+export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRatio, onPrevious, onNext, currentIndex, totalCount }: ImageCropEditorProps) => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
@@ -279,6 +284,41 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
                 },
               }}
             />
+            
+            {/* Navigation arrows */}
+            {onPrevious && totalCount && totalCount > 1 && (
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrevious();
+                }}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+            )}
+            {onNext && totalCount && totalCount > 1 && (
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext();
+                }}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            )}
+            
+            {/* Counter */}
+            {currentIndex !== undefined && totalCount && totalCount > 1 && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm z-10">
+                {currentIndex + 1} / {totalCount}
+              </div>
+            )}
           </div>
 
           {/* Side Panel */}

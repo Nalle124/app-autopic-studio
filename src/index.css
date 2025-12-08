@@ -346,4 +346,42 @@
   .btn-glow:hover {
     box-shadow: 0 0 30px hsl(0 38% 33% / 0.5);
   }
+  
+  /* Pulsing reflection loading animation for AI generation button */
+  .animate-ai-loading {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .animate-ai-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(0 0% 100% / 0.1) 20%,
+      hsl(0 0% 100% / 0.3) 50%,
+      hsl(0 0% 100% / 0.1) 80%,
+      transparent 100%
+    );
+    animation: ai-shimmer 1.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 10;
+  }
+  
+  @keyframes ai-shimmer {
+    0% {
+      left: -100%;
+    }
+    50% {
+      left: 100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
 }

@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import { Sun, Contrast, Thermometer, SunDim, RotateCcw } from 'lucide-react';
+import { Sun, Contrast, Thermometer, SunDim, RotateCcw, Sparkles } from 'lucide-react';
 import { CarAdjustments } from '@/types/scene';
 
 interface CarAdjustmentPanelProps {
@@ -17,6 +17,7 @@ const defaultAdjustments: CarAdjustments = {
   contrast: 0,
   warmth: 0,
   shadows: 0,
+  saturation: 0,
 };
 
 export const CarAdjustmentPanel = ({
@@ -32,7 +33,8 @@ export const CarAdjustmentPanel = ({
     adjustments.brightness !== 0 ||
     adjustments.contrast !== 0 ||
     adjustments.warmth !== 0 ||
-    adjustments.shadows !== 0;
+    adjustments.shadows !== 0 ||
+    adjustments.saturation !== 0;
 
   return (
     <Card className="p-4 space-y-4 bg-gradient-to-br from-card via-card to-muted/30">
@@ -136,6 +138,29 @@ export const CarAdjustmentPanel = ({
             value={[adjustments.shadows]}
             onValueChange={([value]) =>
               onAdjustmentsChange({ ...adjustments, shadows: value })
+            }
+            min={-100}
+            max={100}
+            step={1}
+            className="w-full"
+          />
+        </div>
+
+        {/* Saturation */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-medium flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              Mättnad
+            </Label>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {adjustments.saturation > 0 ? '+' : ''}{adjustments.saturation}
+            </span>
+          </div>
+          <Slider
+            value={[adjustments.saturation]}
+            onValueChange={([value]) =>
+              onAdjustmentsChange({ ...adjustments, saturation: value })
             }
             min={-100}
             max={100}

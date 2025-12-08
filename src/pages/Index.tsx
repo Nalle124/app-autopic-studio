@@ -266,7 +266,8 @@ export default function Index() {
                   brightness: 0,
                   contrast: 0,
                   warmth: 0,
-                  shadows: 0
+                  shadows: 0,
+                  saturation: 0
                 }
               } : img));
             } else {
@@ -501,7 +502,7 @@ export default function Index() {
   };
   return <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-border/30 bg-card/50 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => setActiveTab('new')} className="hover:opacity-80 transition-opacity">
             <img 
@@ -551,8 +552,8 @@ export default function Index() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Main Content - add margin-top for fixed header */}
+      <main className="container mx-auto px-4 py-8 max-w-7xl mt-16">
         {activeTab === 'history' ? <section className="space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-2">Dina Projekt</h2>
@@ -593,15 +594,15 @@ export default function Index() {
                 toast.error('Kunde inte använda bilden');
               }
             }} />
-          </section> : <div className="space-y-12">
+          </section> : <div className="space-y-16">
             {/* Step 1: Upload */}
-            <section className="space-y-4">
+            <section className="space-y-4 pb-8">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">1</span>
+                  <span className="text-lg font-accent italic text-primary">1</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-foreground font-accent italic text-xl font-medium">Ladda upp bilder</h2>
+                  <h2 className="text-2xl font-accent italic text-foreground">Ladda upp bilder</h2>
                 </div>
               </div>
               <ImageUploader 
@@ -621,10 +622,10 @@ export default function Index() {
             </section>
 
             {/* Step 2: Scene Selection */}
-            {uploadedImages.length > 0 && <section id="scene-section" className="space-y-4">
+            {uploadedImages.length > 0 && <section id="scene-section" className="space-y-4 pb-8">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">2</span>
+                    <span className="text-lg font-accent italic text-primary">2</span>
                   </div>
                   <h2 className="text-2xl font-accent italic text-foreground">Välj bakgrund</h2>
                 </div>
@@ -632,16 +633,16 @@ export default function Index() {
               </section>}
 
             {/* Step 3: Generation & Logo */}
-            {selectedScene && <section id="export-section" className="space-y-6">
+            {selectedScene && <section id="export-section" className="space-y-6 pb-8">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary">3</span>
+                    <span className="text-lg font-accent italic text-primary">3</span>
                   </div>
-                  <h2 className="text-foreground font-accent italic text-xl">Generera & Anpassa</h2>
+                  <h2 className="text-2xl font-accent italic text-foreground">Generera & Anpassa</h2>
                 </div>
                 
                 <div className="max-w-3xl mx-auto space-y-6">
-                  <ExportPanel onExport={handleExport} isProcessing={isProcessing} />
+                  <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
                   <Card className="p-6 space-y-3">
                     <Button onClick={() => setLogoDesignOpen(true)} variant="outline" className="w-full">
                       <ImageIcon className="w-4 h-4 mr-2" />
@@ -691,14 +692,14 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="space-y-6">
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="space-y-6 pb-16">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-lg font-bold text-primary">4</span>
+                        <span className="text-lg font-accent italic text-primary">4</span>
                       </div>
-                      <h2 className="text-xl sm:text-2xl font-accent italic text-foreground">Redigera och ladda ner</h2>
+                      <h2 className="text-2xl font-accent italic text-foreground">Redigera och ladda ner</h2>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">

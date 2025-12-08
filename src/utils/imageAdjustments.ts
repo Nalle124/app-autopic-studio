@@ -36,6 +36,7 @@ export const applyCarAdjustments = (
       const contrastFactor = (adjustments.contrast + 100) / 100;
       const warmthFactor = adjustments.warmth / 100;
       const shadowsFactor = adjustments.shadows / 100;
+      const saturationFactor = 1 + ((adjustments.saturation || 0) / 100);
       
       // Apply adjustments pixel by pixel (only to non-transparent pixels)
       for (let i = 0; i < data.length; i += 4) {
@@ -79,6 +80,12 @@ export const applyCarAdjustments = (
             g += shadowAdjustment * 50;
             b += shadowAdjustment * 50;
           }
+          
+          // Apply saturation
+          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          r = gray + (r - gray) * saturationFactor;
+          g = gray + (g - gray) * saturationFactor;
+          b = gray + (b - gray) * saturationFactor;
           
           // Clamp values
           data[i] = Math.max(0, Math.min(255, r));

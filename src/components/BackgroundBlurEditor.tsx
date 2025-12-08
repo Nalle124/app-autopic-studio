@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Undo2 } from 'lucide-react';
+import { Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,11 @@ interface BackgroundBlurEditorProps {
   open: boolean;
   onClose: () => void;
   onSave: (blurredUrl: string) => void;
+  // Navigation props for gallery mode
+  onPrevious?: () => void;
+  onNext?: () => void;
+  currentIndex?: number;
+  totalCount?: number;
 }
 
 interface BlurSettings {
@@ -26,7 +31,7 @@ const defaultSettings: BlurSettings = {
   ovalY: 50,
 };
 
-export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: BackgroundBlurEditorProps) => {
+export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevious, onNext, currentIndex, totalCount }: BackgroundBlurEditorProps) => {
   const [settings, setSettings] = useState<BlurSettings>(defaultSettings);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -289,6 +294,41 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave }: Backgr
                 className="absolute w-4 h-4 bg-white rounded-full border-2 border-primary shadow-lg pointer-events-none transform -translate-x-1/2 -translate-y-1/2"
                 style={{ left: `${settings.ovalX}%`, top: `${settings.ovalY}%` }}
               />
+            )}
+            
+            {/* Navigation arrows */}
+            {onPrevious && totalCount && totalCount > 1 && (
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrevious();
+                }}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+            )}
+            {onNext && totalCount && totalCount > 1 && (
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext();
+                }}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            )}
+            
+            {/* Counter */}
+            {currentIndex !== undefined && totalCount && totalCount > 1 && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm z-10">
+                {currentIndex + 1} / {totalCount}
+              </div>
             )}
             
             {isProcessing && (
