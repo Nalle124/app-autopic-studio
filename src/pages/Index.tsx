@@ -597,7 +597,7 @@ export default function Index() {
                   <span className="text-lg font-bold text-primary">1</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-foreground font-sans text-xl font-medium">Ladda upp bilder</h2>
+                  <h2 className="text-foreground font-accent italic text-xl font-medium">Ladda upp bilder</h2>
                 </div>
               </div>
               <ImageUploader 
@@ -622,7 +622,7 @@ export default function Index() {
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-lg font-bold text-primary">2</span>
                   </div>
-                  <h2 className="text-2xl font-bold text-foreground">Välj bakgrund</h2>
+                  <h2 className="text-2xl font-accent italic text-foreground">Välj bakgrund</h2>
                 </div>
                 <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} />
               </section>}
@@ -631,9 +631,9 @@ export default function Index() {
             {selectedScene && <section id="export-section" className="space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-bold text-primary font-sans">3</span>
+                    <span className="text-lg font-bold text-primary">3</span>
                   </div>
-                  <h2 className="text-foreground text-xl font-medium">Generera & Anpassa</h2>
+                  <h2 className="text-foreground font-accent italic text-xl">Generera & Anpassa</h2>
                 </div>
                 
                 <div className="max-w-3xl mx-auto space-y-6">
@@ -694,7 +694,7 @@ export default function Index() {
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="text-lg font-bold text-primary">4</span>
                       </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-foreground">Redigera och ladda ner</h2>
+                      <h2 className="text-xl sm:text-2xl font-accent italic text-foreground">Redigera och ladda ner</h2>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
