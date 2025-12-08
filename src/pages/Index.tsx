@@ -27,26 +27,7 @@ export default function Index() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
-
-  // Show loading while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // Don't render if not authenticated (will redirect)
-  if (!user) {
-    return null;
-  }
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   // Initialize uploaded images from localStorage for persistence
   // Only restore images with valid finalUrl (completed images from Supabase)
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(() => {
@@ -70,32 +51,6 @@ export default function Index() {
     return [];
   });
   
-  // Persist uploaded images to localStorage - only store URLs, not base64 data
-  useEffect(() => {
-    if (uploadedImages.length > 0) {
-      try {
-        // Only store metadata and URLs that are NOT base64 (to avoid quota errors)
-        const toSave = uploadedImages.map(img => ({
-          id: img.id,
-          // Only store preview if it's a URL, not base64
-          preview: img.preview?.startsWith('blob:') || img.preview?.startsWith('data:') ? null : img.preview,
-          // Only store croppedUrl if it's a URL, not base64
-          croppedUrl: img.croppedUrl?.startsWith('data:') ? null : img.croppedUrl,
-          finalUrl: img.finalUrl,
-          status: img.status,
-          fileName: img.file?.name,
-          sceneId: img.sceneId,
-          carAdjustments: img.carAdjustments,
-        }));
-        localStorage.setItem('autoshot_uploaded_images', JSON.stringify(toSave));
-      } catch (e) {
-        // If storage fails (quota exceeded), just skip persistence
-        console.warn('Could not persist images to localStorage:', e);
-      }
-    } else {
-      localStorage.removeItem('autoshot_uploaded_images');
-    }
-  }, [uploadedImages]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -136,6 +91,41 @@ export default function Index() {
     bannerRotation: 0
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  // Persist uploaded images to localStorage - only store URLs, not base64 data
+  useEffect(() => {
+    if (uploadedImages.length > 0) {
+      try {
+        // Only store metadata and URLs that are NOT base64 (to avoid quota errors)
+        const toSave = uploadedImages.map(img => ({
+          id: img.id,
+          // Only store preview if it's a URL, not base64
+          preview: img.preview?.startsWith('blob:') || img.preview?.startsWith('data:') ? null : img.preview,
+          // Only store croppedUrl if it's a URL, not base64
+          croppedUrl: img.croppedUrl?.startsWith('data:') ? null : img.croppedUrl,
+          finalUrl: img.finalUrl,
+          status: img.status,
+          fileName: img.file?.name,
+          sceneId: img.sceneId,
+          carAdjustments: img.carAdjustments,
+        }));
+        localStorage.setItem('autoshot_uploaded_images', JSON.stringify(toSave));
+      } catch (e) {
+        // If storage fails (quota exceeded), just skip persistence
+        console.warn('Could not persist images to localStorage:', e);
+      }
+    } else {
+      localStorage.removeItem('autoshot_uploaded_images');
+    }
+  }, [uploadedImages]);
+
   useEffect(() => {
     if (selectedScene) {
       document.getElementById('export-section')?.scrollIntoView({
@@ -144,6 +134,20 @@ export default function Index() {
       });
     }
   }, [selectedScene]);
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
     setTimeout(() => {
