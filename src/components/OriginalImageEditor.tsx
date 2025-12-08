@@ -46,15 +46,8 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
   const [selectedParam, setSelectedParam] = useState<AdjustmentType>('brightness');
   const [history, setHistory] = useState<CarAdjustments[]>([defaultAdjustments]);
 
-  // Reset viewport zoom on close
+  // Simple close handler - no viewport manipulation needed
   const handleClose = () => {
-    const viewport = document.querySelector('meta[name="viewport"]');
-    if (viewport) {
-      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-      setTimeout(() => {
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
-      }, 100);
-    }
     onClose();
   };
 

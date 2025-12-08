@@ -424,7 +424,9 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                     src={firstImage.final_url}
                     alt={project.registration_number}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    loading="lazy"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
