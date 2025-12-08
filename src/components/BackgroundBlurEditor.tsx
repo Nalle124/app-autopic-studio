@@ -57,82 +57,90 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = imageUrl;
     
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          setIsProcessing(false);
+          return;
+        }
+        
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Calculate oval dimensions
+        const centerX = (settings.ovalX / 100) * canvas.width;
+        const centerY = (settings.ovalY / 100) * canvas.height;
+        const radiusX = (settings.ovalSize / 100) * canvas.width / 2;
+        const radiusY = (settings.ovalSize / 100) * canvas.height / 2;
+        
+        // Step 1: Draw the blurred background
+        const blurCanvas = document.createElement('canvas');
+        blurCanvas.width = canvas.width;
+        blurCanvas.height = canvas.height;
+        const blurCtx = blurCanvas.getContext('2d');
+        
+        if (!blurCtx) {
+          setIsProcessing(false);
+          return;
+        }
+        
+        blurCtx.filter = `blur(${settings.blurAmount}px)`;
+        blurCtx.drawImage(img, 0, 0);
+        
+        // Step 2: Draw blurred image as base
+        ctx.drawImage(blurCanvas, 0, 0);
+        
+        // Step 3: Create gradient mask and draw sharp center
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = canvas.width;
+        maskCanvas.height = canvas.height;
+        const maskCtx = maskCanvas.getContext('2d');
+        
+        if (!maskCtx) {
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Draw sharp image
+        maskCtx.drawImage(img, 0, 0);
+        
+        // Create elliptical gradient mask
+        const gradient = ctx.createRadialGradient(
+          centerX, centerY, Math.min(radiusX, radiusY) * 0.5,
+          centerX, centerY, Math.max(radiusX, radiusY)
+        );
+        gradient.addColorStop(0, 'rgba(0,0,0,1)');
+        gradient.addColorStop(0.6, 'rgba(0,0,0,0.9)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+        
+        // Apply the gradient as a mask to the sharp image
+        maskCtx.globalCompositeOperation = 'destination-in';
+        maskCtx.fillStyle = gradient;
+        maskCtx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw the masked sharp image over the blurred background
+        ctx.drawImage(maskCanvas, 0, 0);
+        
+        setProcessedUrl(canvas.toDataURL('image/jpeg', 0.92));
         setIsProcessing(false);
-        return;
-      }
-      
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      // Calculate oval dimensions
-      const centerX = (settings.ovalX / 100) * canvas.width;
-      const centerY = (settings.ovalY / 100) * canvas.height;
-      const radiusX = (settings.ovalSize / 100) * canvas.width / 2;
-      const radiusY = (settings.ovalSize / 100) * canvas.height / 2;
-      
-      // Step 1: Draw the blurred background
-      const blurCanvas = document.createElement('canvas');
-      blurCanvas.width = canvas.width;
-      blurCanvas.height = canvas.height;
-      const blurCtx = blurCanvas.getContext('2d');
-      
-      if (!blurCtx) {
+      } catch (err) {
+        console.error('Blur processing error:', err);
         setIsProcessing(false);
-        return;
       }
-      
-      blurCtx.filter = `blur(${settings.blurAmount}px)`;
-      blurCtx.drawImage(img, 0, 0);
-      
-      // Step 2: Draw blurred image as base
-      ctx.drawImage(blurCanvas, 0, 0);
-      
-      // Step 3: Create gradient mask and draw sharp center
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = canvas.width;
-      maskCanvas.height = canvas.height;
-      const maskCtx = maskCanvas.getContext('2d');
-      
-      if (!maskCtx) {
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Draw sharp image
-      maskCtx.drawImage(img, 0, 0);
-      
-      // Create elliptical gradient mask
-      const gradient = ctx.createRadialGradient(
-        centerX, centerY, Math.min(radiusX, radiusY) * 0.5, // Inner circle (fully sharp)
-        centerX, centerY, Math.max(radiusX, radiusY) // Outer circle (transition to blur)
-      );
-      gradient.addColorStop(0, 'rgba(0,0,0,1)');
-      gradient.addColorStop(0.6, 'rgba(0,0,0,0.9)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0)');
-      
-      // Apply the gradient as a mask to the sharp image
-      maskCtx.globalCompositeOperation = 'destination-in';
-      maskCtx.fillStyle = gradient;
-      maskCtx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw the masked sharp image over the blurred background
-      ctx.drawImage(maskCanvas, 0, 0);
-      
-      setProcessedUrl(canvas.toDataURL('image/jpeg', 0.92));
-      setIsProcessing(false);
     };
 
     img.onerror = () => {
       console.error('Failed to load image for blur');
       setIsProcessing(false);
     };
+    
+    // Set src AFTER handlers
+    img.src = imageUrl;
+    
   }, [imageUrl, open, settings]);
 
   // Apply blur when settings change
