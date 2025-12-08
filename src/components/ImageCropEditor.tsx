@@ -76,6 +76,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
   const [appliedToAll, setAppliedToAll] = useState(false);
 
   // For free mode, don't set aspect - allow any shape
+  // For other modes, use fixed aspect ratios
   const aspectRatioValue = localAspectRatio === 'free' ? undefined : localAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
 
   const onCropComplete = useCallback((croppedAreaPercent: any, croppedAreaPixels: any) => {
@@ -193,6 +194,9 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
               onCropChange={setCrop}
               onCropComplete={onCropComplete}
               onZoomChange={setZoom}
+              restrictPosition={false}
+              minZoom={0.5}
+              maxZoom={3}
               style={{
                 containerStyle: {
                   background: 'hsl(var(--muted))',
@@ -246,7 +250,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
                 <Label className="text-xs font-semibold">
                   Zoom: {Math.round(zoom * 100)}%
                 </Label>
-                {zoom > 1 && (
+                {zoom !== 1 && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -263,7 +267,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
               <Slider
                 value={[zoom]}
                 onValueChange={(value) => setZoom(value[0])}
-                min={1}
+                min={0.5}
                 max={3}
                 step={0.05}
                 className="w-full"
@@ -271,7 +275,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
             </div>
 
             <p className="text-[10px] text-muted-foreground leading-tight pt-1">
-              Dra bilden för att positionera. Zooma ut (100%) för att se hela originalet.
+              Dra bilden för att positionera. I fri-läge kan du beskära helt fritt. Zooma ut för att se mer av bilden.
             </p>
           </div>
         </div>

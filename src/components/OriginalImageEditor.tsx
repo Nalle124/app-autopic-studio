@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CarAdjustments } from '@/types/scene';
 
 interface OriginalImageEditorProps {
@@ -22,13 +23,22 @@ const defaultAdjustments: CarAdjustments = {
   shadows: 0,
 };
 
+const cleanBoostAdjustments: CarAdjustments = {
+  brightness: 10,
+  contrast: 10,
+  warmth: -10,
+  shadows: -10,
+};
+
 export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave, onApplyToAll }: OriginalImageEditorProps) => {
   const [adjustments, setAdjustments] = useState<CarAdjustments>(defaultAdjustments);
   const [previewUrl, setPreviewUrl] = useState<string>(imageUrl);
+  const [applyToAllChecked, setApplyToAllChecked] = useState(false);
 
   useEffect(() => {
     setPreviewUrl(imageUrl);
     setAdjustments(defaultAdjustments);
+    setApplyToAllChecked(false);
   }, [imageUrl]);
 
   // Debounced preview update
@@ -123,12 +133,19 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
   }, [adjustments, applyAdjustments, open]);
 
   const handleSave = () => {
+    if (applyToAllChecked && onApplyToAll) {
+      onApplyToAll(adjustments, false);
+    }
     onSave(previewUrl, adjustments);
     onClose();
   };
 
   const handleReset = () => {
     setAdjustments(defaultAdjustments);
+  };
+
+  const handleCleanBoost = () => {
+    setAdjustments(cleanBoostAdjustments);
   };
 
   const hasChanges = Object.values(adjustments).some(val => val !== 0);
@@ -159,14 +176,7 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
             <Button 
               variant="outline" 
               className="w-full gap-2 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30 hover:bg-primary/20"
-              onClick={() => {
-                setAdjustments({
-                  brightness: 10,
-                  contrast: 10,
-                  warmth: -10,
-                  shadows: -10,
-                });
-              }}
+              onClick={handleCleanBoost}
             >
               <Sparkles className="w-4 h-4" />
               Clean Boost
@@ -216,49 +226,30 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
               />
             </div>
 
-            <div className="flex flex-col gap-2 pt-4">
+            <div className="flex flex-col gap-3 pt-4">
               {hasChanges && (
                 <Button variant="outline" onClick={handleReset} className="w-full">
                   Återställ
                 </Button>
               )}
-              <div className="flex gap-2">
-                <Button onClick={handleSave} className="flex-1">
-                  Spara
-                </Button>
+              
+              {/* Apply to all checkbox */}
               {onApplyToAll && (
-                  <Button 
-                    variant="secondary" 
-                    onClick={() => {
-                      onApplyToAll(adjustments);
-                      onClose();
-                    }} 
-                    className="flex-1"
-                  >
-                    Applicera på alla
-                  </Button>
-                )}
-              </div>
-              {onApplyToAll && (
-                <Button 
-                  variant="outline" 
-                  className="w-full gap-2 bg-gradient-to-r from-green-500/10 to-green-600/10 border-green-500/30 hover:bg-green-500/20 text-green-700 dark:text-green-400"
-                  onClick={() => {
-                    // Apply clean boost to all images with animation flag
-                    const cleanBoost: CarAdjustments = {
-                      brightness: 10,
-                      contrast: 10,
-                      warmth: -10,
-                      shadows: -10,
-                    };
-                    onApplyToAll(cleanBoost, true);
-                    onClose();
-                  }}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Clean Boost på alla bilder
-                </Button>
+                <div className="flex items-center gap-2 py-2">
+                  <Checkbox 
+                    id="apply-to-all" 
+                    checked={applyToAllChecked}
+                    onCheckedChange={(checked) => setApplyToAllChecked(checked === true)}
+                  />
+                  <label htmlFor="apply-to-all" className="text-sm text-muted-foreground cursor-pointer">
+                    Applicera på alla bilder
+                  </label>
+                </div>
               )}
+              
+              <Button onClick={handleSave} className="w-full">
+                Spara{applyToAllChecked ? ' (alla bilder)' : ''}
+              </Button>
             </div>
           </div>
         </div>
