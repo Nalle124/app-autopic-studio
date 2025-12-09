@@ -671,7 +671,7 @@ export default function Index() {
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="text-lg font-accent italic text-primary">4</span>
                       </div>
-                      <h2 className="text-2xl font-accent italic text-foreground">Redigera och ladda ner</h2>
+                      <h2 className="not-italic text-foreground font-serif text-lg font-normal">Redigera och ladda ner</h2>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
