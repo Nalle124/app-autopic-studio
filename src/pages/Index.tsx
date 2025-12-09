@@ -22,10 +22,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import autoshotLogo from '@/assets/autoshot-logo.png';
-
 export default function Index() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading
+  } = useAuth();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   // Initialize uploaded images from localStorage for persistence
@@ -36,13 +38,14 @@ export default function Index() {
       if (saved) {
         const parsed = JSON.parse(saved);
         // Only restore completed images with valid finalUrl (not base64)
-        return parsed
-          .filter((img: any) => img.finalUrl && img.status === 'completed')
-          .map((img: any) => ({
-            ...img,
-            preview: img.finalUrl, // Use finalUrl as preview since original is lost
-            file: new File([], img.fileName || 'restored.jpg', { type: 'image/jpeg' }),
-          }));
+        return parsed.filter((img: any) => img.finalUrl && img.status === 'completed').map((img: any) => ({
+          ...img,
+          preview: img.finalUrl,
+          // Use finalUrl as preview since original is lost
+          file: new File([], img.fileName || 'restored.jpg', {
+            type: 'image/jpeg'
+          })
+        }));
       }
     } catch (e) {
       console.error('Error restoring images:', e);
@@ -50,7 +53,6 @@ export default function Index() {
     }
     return [];
   });
-  
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export default function Index() {
           status: img.status,
           fileName: img.file?.name,
           sceneId: img.sceneId,
-          carAdjustments: img.carAdjustments,
+          carAdjustments: img.carAdjustments
         }));
         localStorage.setItem('autoshot_uploaded_images', JSON.stringify(toSave));
       } catch (e) {
@@ -125,7 +127,6 @@ export default function Index() {
       localStorage.removeItem('autoshot_uploaded_images');
     }
   }, [uploadedImages]);
-
   useEffect(() => {
     if (selectedScene) {
       document.getElementById('export-section')?.scrollIntoView({
@@ -137,11 +138,9 @@ export default function Index() {
 
   // Show loading while checking auth
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+    return <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+      </div>;
   }
 
   // Don't render if not authenticated (will redirect)
@@ -166,7 +165,11 @@ export default function Index() {
       setIsProcessing(true);
 
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Du måste vara inloggad');
         setIsProcessing(false);
@@ -235,11 +238,10 @@ export default function Index() {
           if (projectId) {
             formData.append('projectId', projectId);
           }
-          
+
           // Add timeout with AbortController (90 seconds for AI processing)
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 90000);
-          
           try {
             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
               method: 'POST',
@@ -247,7 +249,6 @@ export default function Index() {
               signal: controller.signal
             });
             clearTimeout(timeoutId);
-            
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -439,7 +440,7 @@ export default function Index() {
         setAnimatingImages(new Set());
       }, 1500);
     }
-    
+
     // This stores the adjustments to be applied on generation
     uploadedImages.forEach(img => {
       fetch(img.preview).then(res => res.blob()).then(async blob => {
@@ -505,25 +506,14 @@ export default function Index() {
       <header className="border-b border-border/30 bg-card/50 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => setActiveTab('new')} className="hover:opacity-80 transition-opacity">
-            <img 
-              src={autoshotLogo} 
-              alt="AutoShot" 
-              className="h-10 w-auto object-contain"
-            />
+            <img src={autoshotLogo} alt="AutoShot" className="h-10 w-auto object-contain" />
           </button>
           
           <div className="flex items-center gap-3">
             {/* Back button - only show when on history tab or coming from somewhere */}
-            {activeTab === 'history' && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setActiveTab('new')}
-                title="Tillbaka"
-              >
+            {activeTab === 'history' && <Button variant="ghost" size="icon" onClick={() => setActiveTab('new')} title="Tillbaka">
                 <ChevronLeft className="w-5 h-5" />
-              </Button>
-            )}
+              </Button>}
             
             <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'new' | 'history')} className="w-auto">
               <TabsList className="bg-background/80 backdrop-blur-sm">
@@ -538,16 +528,9 @@ export default function Index() {
               </TabsList>
             </Tabs>
             
-            {user && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/profil')}
-                title="Profil"
-              >
+            {user && <Button variant="ghost" size="icon" onClick={() => navigate('/profil')} title="Profil">
                 <User className="w-5 h-5" />
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
       </header>
@@ -558,42 +541,44 @@ export default function Index() {
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-2">Dina Projekt</h2>
               <p className="text-muted-foreground">Se och hantera dina tidigare skapade bilgallerier</p>
-              {uploadedImages.length > 0 && (
-                <p className="text-sm text-muted-foreground mt-2">
+              {uploadedImages.length > 0 && <p className="text-sm text-muted-foreground mt-2">
                   Du har ett aktivt projekt med {uploadedImages.length} bilder
-                </p>
-              )}
+                </p>}
             </div>
-            <ProjectGallery onUseAsNewImage={async (imageUrl) => {
-              try {
-                // Fetch the image and create a File object
-                const response = await fetch(imageUrl);
-                const blob = await response.blob();
-                const file = new File([blob], `gallery_image_${Date.now()}.jpg`, { type: 'image/jpeg' });
-                
-                // Create preview URL
-                const preview = URL.createObjectURL(blob);
-                
-                // Add as new uploaded image
-                const newImage: UploadedImage = {
-                  id: `gallery_${Date.now()}`,
-                  file,
-                  preview,
-                  status: 'pending'
-                };
-                
-                setUploadedImages(prev => [...prev, newImage]);
-                setActiveTab('new');
-                
-                // Scroll to upload section
-                setTimeout(() => {
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }, 100);
-              } catch (error) {
-                console.error('Error using image:', error);
-                toast.error('Kunde inte använda bilden');
-              }
-            }} />
+            <ProjectGallery onUseAsNewImage={async imageUrl => {
+          try {
+            // Fetch the image and create a File object
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const file = new File([blob], `gallery_image_${Date.now()}.jpg`, {
+              type: 'image/jpeg'
+            });
+
+            // Create preview URL
+            const preview = URL.createObjectURL(blob);
+
+            // Add as new uploaded image
+            const newImage: UploadedImage = {
+              id: `gallery_${Date.now()}`,
+              file,
+              preview,
+              status: 'pending'
+            };
+            setUploadedImages(prev => [...prev, newImage]);
+            setActiveTab('new');
+
+            // Scroll to upload section
+            setTimeout(() => {
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+              });
+            }, 100);
+          } catch (error) {
+            console.error('Error using image:', error);
+            toast.error('Kunde inte använda bilden');
+          }
+        }} />
           </section> : <div className="space-y-16">
             {/* Step 1: Upload */}
             <section className="space-y-4 pb-8">
@@ -602,23 +587,14 @@ export default function Index() {
                   <span className="text-lg font-accent italic text-primary">1</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-accent italic text-foreground">Ladda upp bilder</h2>
+                  <h2 className="not-italic">Ladda upp bilder</h2>
                 </div>
               </div>
-              <ImageUploader 
-                onImagesUploaded={newImages => {
-                  setUploadedImages(prev => [...prev, ...newImages]);
-                }} 
-                onRemoveImage={(imageId) => {
-                  setUploadedImages(prev => prev.filter(img => img.id !== imageId));
-                }}
-                registrationNumber={registrationNumber} 
-                onRegistrationNumberChange={setRegistrationNumber} 
-                uploadedImages={uploadedImages} 
-                onEditImage={handleEditOriginalImage} 
-                onClearAll={() => setUploadedImages([])}
-                animatingImages={animatingImages}
-              />
+              <ImageUploader onImagesUploaded={newImages => {
+            setUploadedImages(prev => [...prev, ...newImages]);
+          }} onRemoveImage={imageId => {
+            setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} />
             </section>
 
             {/* Step 2: Scene Selection */}
@@ -648,45 +624,41 @@ export default function Index() {
                       <ImageIcon className="w-4 h-4 mr-2" />
                       {logoDesign.enabled ? 'Redigera Logo Design' : 'Lägg till Logo Design'}
                     </Button>
-                    {logoDesign.enabled && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full text-muted-foreground"
-                        onClick={() => {
-                          // Restore original images if we have them stored
-                          if (originalImagesBeforeLogo.size > 0) {
-                            setUploadedImages(prev => prev.map(img => {
-                              const original = originalImagesBeforeLogo.get(img.id);
-                              if (original) {
-                                return { ...img, finalUrl: original };
-                              }
-                              return img;
-                            }));
-                            setOriginalImagesBeforeLogo(new Map());
-                            toast.success('Originalbilder återställda');
-                          }
-                          setLogoDesign({
-                            enabled: false,
-                            logoUrl: null,
-                            logoX: 85,
-                            logoY: 85,
-                            logoSize: 0.15,
-                            bannerEnabled: false,
-                            bannerX: 50,
-                            bannerY: 90,
-                            bannerHeight: 10,
-                            bannerWidth: 100,
-                            bannerColor: '#000000',
-                            bannerOpacity: 80,
-                            bannerRotation: 0
-                          });
-                        }}
-                      >
+                    {logoDesign.enabled && <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => {
+                // Restore original images if we have them stored
+                if (originalImagesBeforeLogo.size > 0) {
+                  setUploadedImages(prev => prev.map(img => {
+                    const original = originalImagesBeforeLogo.get(img.id);
+                    if (original) {
+                      return {
+                        ...img,
+                        finalUrl: original
+                      };
+                    }
+                    return img;
+                  }));
+                  setOriginalImagesBeforeLogo(new Map());
+                  toast.success('Originalbilder återställda');
+                }
+                setLogoDesign({
+                  enabled: false,
+                  logoUrl: null,
+                  logoX: 85,
+                  logoY: 85,
+                  logoSize: 0.15,
+                  bannerEnabled: false,
+                  bannerX: 50,
+                  bannerY: 90,
+                  bannerHeight: 10,
+                  bannerWidth: 100,
+                  bannerColor: '#000000',
+                  bannerOpacity: 80,
+                  bannerRotation: 0
+                });
+              }}>
                         <X className="w-4 h-4 mr-2" />
                         Ta bort logo design
-                      </Button>
-                    )}
+                      </Button>}
                   </Card>
                 </div>
               </section>}
@@ -733,10 +705,7 @@ export default function Index() {
                       <Button size="sm" onClick={() => {
                   // If no images selected, download all
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                  const imagesToDownload = selectedImages.size > 0 
-                    ? completedImages.filter(img => selectedImages.has(img.id))
-                    : completedImages;
-                  
+                  const imagesToDownload = selectedImages.size > 0 ? completedImages.filter(img => selectedImages.has(img.id)) : completedImages;
                   imagesToDownload.forEach(async (image, idx) => {
                     await new Promise(resolve => setTimeout(resolve, idx * 300));
                     handleDownload(image.finalUrl!, `${registrationNumber || 'bild'}_${image.id}.jpg`);
@@ -766,40 +735,24 @@ export default function Index() {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {/* Show placeholders for all pending/processing images */}
-                  {uploadedImages.filter(img => img.status === 'pending' && selectedScene).map((image) => (
-                    <Card key={`pending-${image.id}`} className="relative overflow-hidden">
+                  {uploadedImages.filter(img => img.status === 'pending' && selectedScene).map(image => <Card key={`pending-${image.id}`} className="relative overflow-hidden">
                       <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                         {/* Blurred preview as placeholder */}
-                        <img 
-                          src={image.preview} 
-                          alt={image.file.name} 
-                          className="w-full h-full object-cover blur-sm opacity-50" 
-                        />
+                        <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-sm opacity-50" />
                         <div className="absolute inset-0 bg-background/30 animate-pulse flex items-center justify-center">
                           <div className="text-muted-foreground text-center text-xs">
                             Väntar...
                           </div>
                         </div>
                       </div>
-                    </Card>
-                  ))}
+                    </Card>)}
                   
-                  {uploadedImages.filter(img => img.status === 'completed' || img.status === 'processing').map((image, idx) => (
-                    <Card 
-                      key={image.id} 
-                      className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''}`} 
-                      onClick={() => image.status === 'completed' && !loadingImages.has(image.id) && toggleImageSelection(image.id)}
-                    >
+                  {uploadedImages.filter(img => img.status === 'completed' || img.status === 'processing').map((image, idx) => <Card key={image.id} className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''}`} onClick={() => image.status === 'completed' && !loadingImages.has(image.id) && toggleImageSelection(image.id)}>
                       {/* Image Preview - ALWAYS show finalUrl for generated images */}
                       <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                         {/* Show blurred placeholder while processing */}
-                        {image.status === 'processing' ? (
-                          <>
-                            <img 
-                              src={image.preview} 
-                              alt={image.file.name} 
-                              className="w-full h-full object-cover blur-sm opacity-60" 
-                            />
+                        {image.status === 'processing' ? <>
+                            <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-sm opacity-60" />
                             <div className="absolute inset-0 bg-background/20 flex items-center justify-center">
                               <div className="text-foreground text-center">
                                 <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
@@ -808,34 +761,26 @@ export default function Index() {
                             </div>
                             {/* Pulsing overlay effect */}
                             <div className="absolute inset-0 bg-primary/10 animate-pulse" />
-                          </>
-                        ) : (
-                          <img src={image.finalUrl || image.preview} alt={image.file.name} className="w-full h-full object-cover" />
-                        )}
+                          </> : <img src={image.finalUrl || image.preview} alt={image.file.name} className="w-full h-full object-cover" />}
                         
                         {/* Selection indicator */}
-                        {image.status === 'completed' && selectedImages.has(image.id) && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                        {image.status === 'completed' && selectedImages.has(image.id) && <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                             <Check className="w-4 h-4 text-primary-foreground" />
-                          </div>
-                        )}
+                          </div>}
                         
                         {/* Preview button overlay - only show if NOT in select mode and not loading */}
-                        {image.status === 'completed' && selectedImages.size === 0 && !loadingImages.has(image.id) && (
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        {image.status === 'completed' && selectedImages.size === 0 && !loadingImages.has(image.id) && <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Button size="icon" variant="secondary" onClick={e => {
-                              e.stopPropagation();
-                              const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                              setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
-                              setPreviewImage(image.finalUrl!);
-                            }} title="Förhandsgranska">
+                    e.stopPropagation();
+                    const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                    setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
+                    setPreviewImage(image.finalUrl!);
+                  }} title="Förhandsgranska">
                               <Eye className="w-4 h-4" />
                             </Button>
-                          </div>
-                        )}
+                          </div>}
                       </div>
-                    </Card>
-                  ))}
+                    </Card>)}
                 </div>
               </section>}
           </div>}
@@ -880,96 +825,92 @@ export default function Index() {
                 <div className="p-3 bg-background border-t flex flex-col gap-3">
                   {/* Regenerate button - prominent below image */}
                   <Button size="sm" variant="outline" className="w-full" onClick={async () => {
-                    if (!selectedScene || !currentImage) return;
-                    
-                    // Close preview dialog
-                    setPreviewImage(null);
-                    
-                    // Keep previous finalUrl for display while processing
-                    const previousFinalUrl = currentImage.finalUrl;
-                    
-                    // Only regenerate this single image - keep finalUrl for display
+                if (!selectedScene || !currentImage) return;
+
+                // Close preview dialog
+                setPreviewImage(null);
+
+                // Keep previous finalUrl for display while processing
+                const previousFinalUrl = currentImage.finalUrl;
+
+                // Only regenerate this single image - keep finalUrl for display
+                setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
+                  ...img,
+                  status: 'processing' as const,
+                  // Keep the old finalUrl so image stays visible in gallery
+                  finalUrl: previousFinalUrl
+                } : img));
+                try {
+                  const {
+                    data: {
+                      user
+                    }
+                  } = await supabase.auth.getUser();
+                  if (!user) {
+                    toast.error('Du måste vara inloggad');
+                    return;
+                  }
+                  const formData = new FormData();
+
+                  // Use croppedUrl if available, otherwise original
+                  if (currentImage.croppedUrl) {
+                    const response = await fetch(currentImage.croppedUrl);
+                    let blob = await response.blob();
+                    const img = new Image();
+                    img.src = currentImage.croppedUrl;
+                    await new Promise(resolve => {
+                      img.onload = resolve;
+                    });
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 2048;
+                    const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                      blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.9));
+                    }
+                    formData.append('image', blob, currentImage.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg');
+                  } else {
+                    formData.append('image', currentImage.file);
+                  }
+                  formData.append('scene', JSON.stringify(selectedScene));
+                  const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
+                  formData.append('backgroundUrl', backgroundUrl);
+                  formData.append('userId', user.id);
+                  if (currentProjectId) {
+                    formData.append('projectId', currentProjectId);
+                  }
+                  const controller = new AbortController();
+                  const timeoutId = setTimeout(() => controller.abort(), 90000);
+                  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                  });
+                  clearTimeout(timeoutId);
+                  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                  const result = await response.json();
+                  if (result.success) {
                     setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
                       ...img,
-                      status: 'processing' as const,
-                      // Keep the old finalUrl so image stays visible in gallery
-                      finalUrl: previousFinalUrl,
+                      status: 'completed',
+                      finalUrl: result.finalUrl,
+                      sceneId: selectedScene.id
                     } : img));
-                    
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) {
-                        toast.error('Du måste vara inloggad');
-                        return;
-                      }
-                      
-                      const formData = new FormData();
-                      
-                      // Use croppedUrl if available, otherwise original
-                      if (currentImage.croppedUrl) {
-                        const response = await fetch(currentImage.croppedUrl);
-                        let blob = await response.blob();
-                        const img = new Image();
-                        img.src = currentImage.croppedUrl;
-                        await new Promise(resolve => { img.onload = resolve; });
-                        
-                        const canvas = document.createElement('canvas');
-                        const maxDim = 2048;
-                        const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-                        canvas.width = img.width * scale;
-                        canvas.height = img.height * scale;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                          blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.9));
-                        }
-                        formData.append('image', blob, currentImage.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg');
-                      } else {
-                        formData.append('image', currentImage.file);
-                      }
-                      
-                      formData.append('scene', JSON.stringify(selectedScene));
-                      const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') 
-                        ? selectedScene.fullResUrl 
-                        : `${window.location.origin}${selectedScene.fullResUrl}`;
-                      formData.append('backgroundUrl', backgroundUrl);
-                      formData.append('userId', user.id);
-                      if (currentProjectId) {
-                        formData.append('projectId', currentProjectId);
-                      }
-                      
-                      const controller = new AbortController();
-                      const timeoutId = setTimeout(() => controller.abort(), 90000);
-                      
-                      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
-                        method: 'POST',
-                        body: formData,
-                        signal: controller.signal
-                      });
-                      clearTimeout(timeoutId);
-                      
-                      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                      
-                      const result = await response.json();
-                      if (result.success) {
-                        setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
-                          ...img,
-                          status: 'completed',
-                          finalUrl: result.finalUrl,
-                          sceneId: selectedScene.id,
-                        } : img));
-                      } else {
-                        throw new Error(result.error || 'Processing failed');
-                      }
-                    } catch (error: any) {
-                      console.error('Error regenerating:', error);
-                      toast.error(`Fel: ${error.message || 'Okänt fel'}`);
-                      setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
-                        ...img,
-                        status: 'failed',
-                      } : img));
-                    }
-                  }}>
+                  } else {
+                    throw new Error(result.error || 'Processing failed');
+                  }
+                } catch (error: any) {
+                  console.error('Error regenerating:', error);
+                  toast.error(`Fel: ${error.message || 'Okänt fel'}`);
+                  setUploadedImages(prev => prev.map(img => img.id === currentImage.id ? {
+                    ...img,
+                    status: 'failed'
+                  } : img));
+                }
+              }}>
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Generera igen
                   </Button>
@@ -978,38 +919,38 @@ export default function Index() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" title="Justera" onClick={() => {
-                        setPreviewImage(null);
-                        setEditingImage({
-                          id: currentImage.id,
-                          finalUrl: currentImage.finalUrl!,
-                          fileName: currentImage.file.name,
-                          type: 'adjust'
-                        });
-                      }}>
+                    setPreviewImage(null);
+                    setEditingImage({
+                      id: currentImage.id,
+                      finalUrl: currentImage.finalUrl!,
+                      fileName: currentImage.file.name,
+                      type: 'adjust'
+                    });
+                  }}>
                         <Sliders className="w-4 h-4" />
                         <span className="hidden sm:inline ml-1">Justera</span>
                       </Button>
                       <Button size="sm" variant="outline" title="Beskär" onClick={() => {
-                        setPreviewImage(null);
-                        setEditingImage({
-                          id: currentImage.id,
-                          finalUrl: currentImage.finalUrl!,
-                          fileName: currentImage.file.name,
-                          type: 'crop'
-                        });
-                      }}>
+                    setPreviewImage(null);
+                    setEditingImage({
+                      id: currentImage.id,
+                      finalUrl: currentImage.finalUrl!,
+                      fileName: currentImage.file.name,
+                      type: 'crop'
+                    });
+                  }}>
                         <Scissors className="w-4 h-4" />
                         <span className="hidden sm:inline ml-1">Beskär</span>
                       </Button>
                       <Button size="sm" variant="outline" title="Bokeh-effekt" onClick={() => {
-                        setPreviewImage(null);
-                        setEditingImage({
-                          id: currentImage.id,
-                          finalUrl: currentImage.finalUrl!,
-                          fileName: currentImage.file.name,
-                          type: 'blur'
-                        });
-                      }}>
+                    setPreviewImage(null);
+                    setEditingImage({
+                      id: currentImage.id,
+                      finalUrl: currentImage.finalUrl!,
+                      fileName: currentImage.file.name,
+                      type: 'blur'
+                    });
+                  }}>
                         <Focus className="w-4 h-4" />
                         <span className="hidden sm:inline ml-1">Blur</span>
                       </Button>
@@ -1028,243 +969,212 @@ export default function Index() {
 
       {/* Crop Editor for Generated Images - ImageCropEditor has its own Dialog */}
       {editingImage?.type === 'crop' && (() => {
+      const completedImages = uploadedImages.filter(img => img.status === 'completed');
+      const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
+      return <ImageCropEditor image={{
+        id: editingImage.id,
+        finalUrl: editingImage.finalUrl,
+        fileName: editingImage.fileName
+      }} onClose={() => {
+        setEditingImage(null);
+        // Return to preview gallery
+        const idx = completedImages.findIndex(img => img.id === editingImage.id);
+        if (idx !== -1) {
+          setGalleryIndex(idx);
+          const updatedImage = uploadedImages.find(img => img.id === editingImage.id);
+          setPreviewImage(updatedImage?.finalUrl || editingImage.finalUrl);
+        }
+      }} currentIndex={currentIdx} totalCount={completedImages.length} onPrevious={() => {
+        if (currentIdx > 0) {
+          const prevImg = completedImages[currentIdx - 1];
+          setEditingImage({
+            id: prevImg.id,
+            finalUrl: prevImg.finalUrl!,
+            fileName: prevImg.file.name,
+            type: 'crop'
+          });
+        }
+      }} onNext={() => {
+        if (currentIdx < completedImages.length - 1) {
+          const nextImg = completedImages[currentIdx + 1];
+          setEditingImage({
+            id: nextImg.id,
+            finalUrl: nextImg.finalUrl!,
+            fileName: nextImg.file.name,
+            type: 'crop'
+          });
+        }
+      }} onSave={(imageId, croppedUrl, newAspectRatio) => {
+        // Update finalUrl with cropped version
+        setUploadedImages(prev => prev.map(img => img.id === imageId ? {
+          ...img,
+          finalUrl: croppedUrl
+        } : img));
+        setAspectRatio(newAspectRatio);
+        setEditingImage(null);
+        // Return to preview gallery
         const completedImages = uploadedImages.filter(img => img.status === 'completed');
-        const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
-        return (
-          <ImageCropEditor 
-            image={{
-              id: editingImage.id,
-              finalUrl: editingImage.finalUrl,
-              fileName: editingImage.fileName
-            }} 
-            onClose={() => {
-              setEditingImage(null);
-              // Return to preview gallery
-              const idx = completedImages.findIndex(img => img.id === editingImage.id);
-              if (idx !== -1) {
-                setGalleryIndex(idx);
-                const updatedImage = uploadedImages.find(img => img.id === editingImage.id);
-                setPreviewImage(updatedImage?.finalUrl || editingImage.finalUrl);
-              }
-            }}
-            currentIndex={currentIdx}
-            totalCount={completedImages.length}
-            onPrevious={() => {
-              if (currentIdx > 0) {
-                const prevImg = completedImages[currentIdx - 1];
-                setEditingImage({
-                  id: prevImg.id,
-                  finalUrl: prevImg.finalUrl!,
-                  fileName: prevImg.file.name,
-                  type: 'crop'
-                });
-              }
-            }}
-            onNext={() => {
-              if (currentIdx < completedImages.length - 1) {
-                const nextImg = completedImages[currentIdx + 1];
-                setEditingImage({
-                  id: nextImg.id,
-                  finalUrl: nextImg.finalUrl!,
-                  fileName: nextImg.file.name,
-                  type: 'crop'
-                });
-              }
-            }}
-          onSave={(imageId, croppedUrl, newAspectRatio) => {
-            // Update finalUrl with cropped version
-            setUploadedImages(prev => prev.map(img => 
-              img.id === imageId ? { ...img, finalUrl: croppedUrl } : img
-            ));
-            setAspectRatio(newAspectRatio);
-            setEditingImage(null);
-            // Return to preview gallery
-            const completedImages = uploadedImages.filter(img => img.status === 'completed');
-            const index = completedImages.findIndex(img => img.id === imageId);
-            if (index !== -1) {
-              setGalleryIndex(index);
-              setPreviewImage(croppedUrl);
-            }
-          }}
-          onApplyToAll={async (croppedUrl, newAspectRatio, cropSettings) => {
-            if (!editingImage) return;
-            
-            // Get all completed images
-            const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
-            const targetWidth = cropSettings?.targetWidth || (newAspectRatio === 'landscape' ? 1920 : 1080);
-            const targetHeight = cropSettings?.targetHeight || (newAspectRatio === 'landscape' ? 1080 : 1920);
-            
-            // Collect all updates first
-            const updates: Map<string, string> = new Map();
-            updates.set(editingImage.id, croppedUrl);
-            
-            // Apply SAME crop settings to all OTHER completed images
-            for (const img of completedImages) {
-              if (img.id === editingImage.id) continue; // Skip current (already cropped)
-              
-              try {
-                const image = new Image();
-                image.crossOrigin = 'anonymous';
-                image.src = img.finalUrl!;
-                await new Promise((resolve, reject) => {
-                  image.onload = resolve;
-                  image.onerror = reject;
-                });
-                
-                // Use the same crop percent settings from the original crop
-                const cropAreaPercent = cropSettings?.croppedAreaPercent;
-                let cropX, cropY, cropWidth, cropHeight;
-                
-                if (cropAreaPercent) {
-                  // Apply the same percentage-based crop
-                  cropX = (cropAreaPercent.x / 100) * image.width;
-                  cropY = (cropAreaPercent.y / 100) * image.height;
-                  cropWidth = (cropAreaPercent.width / 100) * image.width;
-                  cropHeight = (cropAreaPercent.height / 100) * image.height;
-                } else {
-                  // Fallback to center crop
-                  const targetRatio = targetWidth / targetHeight;
-                  const imgRatio = image.width / image.height;
-                  
-                  if (imgRatio > targetRatio) {
-                    cropHeight = image.height;
-                    cropWidth = cropHeight * targetRatio;
-                    cropX = (image.width - cropWidth) / 2;
-                    cropY = 0;
-                  } else {
-                    cropWidth = image.width;
-                    cropHeight = cropWidth / targetRatio;
-                    cropX = 0;
-                    cropY = (image.height - cropHeight) / 2;
-                  }
-                }
-                
-                // Create cropped image
-                const canvas = document.createElement('canvas');
-                canvas.width = targetWidth;
-                canvas.height = targetHeight;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) continue;
-                
-                ctx.drawImage(
-                  image,
-                  cropX, cropY, cropWidth, cropHeight,
-                  0, 0, targetWidth, targetHeight
-                );
-                
-                const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                updates.set(img.id, croppedDataUrl);
-              } catch (error) {
-                console.error('Error cropping image:', error);
+        const index = completedImages.findIndex(img => img.id === imageId);
+        if (index !== -1) {
+          setGalleryIndex(index);
+          setPreviewImage(croppedUrl);
+        }
+      }} onApplyToAll={async (croppedUrl, newAspectRatio, cropSettings) => {
+        if (!editingImage) return;
+
+        // Get all completed images
+        const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
+        const targetWidth = cropSettings?.targetWidth || (newAspectRatio === 'landscape' ? 1920 : 1080);
+        const targetHeight = cropSettings?.targetHeight || (newAspectRatio === 'landscape' ? 1080 : 1920);
+
+        // Collect all updates first
+        const updates: Map<string, string> = new Map();
+        updates.set(editingImage.id, croppedUrl);
+
+        // Apply SAME crop settings to all OTHER completed images
+        for (const img of completedImages) {
+          if (img.id === editingImage.id) continue; // Skip current (already cropped)
+
+          try {
+            const image = new Image();
+            image.crossOrigin = 'anonymous';
+            image.src = img.finalUrl!;
+            await new Promise((resolve, reject) => {
+              image.onload = resolve;
+              image.onerror = reject;
+            });
+
+            // Use the same crop percent settings from the original crop
+            const cropAreaPercent = cropSettings?.croppedAreaPercent;
+            let cropX, cropY, cropWidth, cropHeight;
+            if (cropAreaPercent) {
+              // Apply the same percentage-based crop
+              cropX = cropAreaPercent.x / 100 * image.width;
+              cropY = cropAreaPercent.y / 100 * image.height;
+              cropWidth = cropAreaPercent.width / 100 * image.width;
+              cropHeight = cropAreaPercent.height / 100 * image.height;
+            } else {
+              // Fallback to center crop
+              const targetRatio = targetWidth / targetHeight;
+              const imgRatio = image.width / image.height;
+              if (imgRatio > targetRatio) {
+                cropHeight = image.height;
+                cropWidth = cropHeight * targetRatio;
+                cropX = (image.width - cropWidth) / 2;
+                cropY = 0;
+              } else {
+                cropWidth = image.width;
+                cropHeight = cropWidth / targetRatio;
+                cropX = 0;
+                cropY = (image.height - cropHeight) / 2;
               }
             }
-            
-            // Apply all updates in one batch
-            setUploadedImages(prev => prev.map(img => {
-              const newUrl = updates.get(img.id);
-              return newUrl ? { ...img, finalUrl: newUrl } : img;
-            }));
-            
-            setAspectRatio(newAspectRatio);
-            setEditingImage(null);
-            
-            // Return to gallery
-            if (completedImages.length > 0) {
-              setGalleryIndex(0);
-              setPreviewImage(croppedUrl);
-            }
-            toast.success(`Beskärning applicerad på ${updates.size} bilder`);
-          }}
-            aspectRatio={aspectRatio} 
-          />
-        );
-      })()}
+
+            // Create cropped image
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) continue;
+            ctx.drawImage(image, cropX, cropY, cropWidth, cropHeight, 0, 0, targetWidth, targetHeight);
+            const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            updates.set(img.id, croppedDataUrl);
+          } catch (error) {
+            console.error('Error cropping image:', error);
+          }
+        }
+
+        // Apply all updates in one batch
+        setUploadedImages(prev => prev.map(img => {
+          const newUrl = updates.get(img.id);
+          return newUrl ? {
+            ...img,
+            finalUrl: newUrl
+          } : img;
+        }));
+        setAspectRatio(newAspectRatio);
+        setEditingImage(null);
+
+        // Return to gallery
+        if (completedImages.length > 0) {
+          setGalleryIndex(0);
+          setPreviewImage(croppedUrl);
+        }
+        toast.success(`Beskärning applicerad på ${updates.size} bilder`);
+      }} aspectRatio={aspectRatio} />;
+    })()}
 
       {/* Adjustment Editor Dialog - using OriginalImageEditor for generated images */}
       {editingImage?.type === 'adjust' && (() => {
+      const completedImages = uploadedImages.filter(img => img.status === 'completed');
+      const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
+      return <OriginalImageEditor imageUrl={editingImage.finalUrl} imageName={editingImage.fileName} open={true} onClose={() => {
+        setEditingImage(null);
+        // Return to preview gallery
+        const idx = completedImages.findIndex(img => img.id === editingImage.id);
+        if (idx !== -1) {
+          setGalleryIndex(idx);
+          setPreviewImage(completedImages[idx].finalUrl!);
+        }
+      }} currentIndex={currentIdx} totalCount={completedImages.length} onPrevious={() => {
+        if (currentIdx > 0) {
+          const prevImg = completedImages[currentIdx - 1];
+          setEditingImage({
+            id: prevImg.id,
+            finalUrl: prevImg.finalUrl!,
+            fileName: prevImg.file.name,
+            type: 'adjust'
+          });
+        }
+      }} onNext={() => {
+        if (currentIdx < completedImages.length - 1) {
+          const nextImg = completedImages[currentIdx + 1];
+          setEditingImage({
+            id: nextImg.id,
+            finalUrl: nextImg.finalUrl!,
+            fileName: nextImg.file.name,
+            type: 'adjust'
+          });
+        }
+      }} onSave={(adjustedUrl, adjustments) => {
+        // Update the finalUrl with the adjusted image
+        setUploadedImages(prev => prev.map(img => img.id === editingImage.id ? {
+          ...img,
+          finalUrl: adjustedUrl,
+          carAdjustments: adjustments
+        } : img));
+        setEditingImage(null);
+        // Return to preview gallery with updated image
         const completedImages = uploadedImages.filter(img => img.status === 'completed');
-        const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
-        return (
-          <OriginalImageEditor
-            imageUrl={editingImage.finalUrl}
-            imageName={editingImage.fileName}
-            open={true}
-            onClose={() => {
-              setEditingImage(null);
-              // Return to preview gallery
-              const idx = completedImages.findIndex(img => img.id === editingImage.id);
-              if (idx !== -1) {
-                setGalleryIndex(idx);
-                setPreviewImage(completedImages[idx].finalUrl!);
-              }
-            }}
-            currentIndex={currentIdx}
-            totalCount={completedImages.length}
-            onPrevious={() => {
-              if (currentIdx > 0) {
-                const prevImg = completedImages[currentIdx - 1];
-                setEditingImage({
-                  id: prevImg.id,
-                  finalUrl: prevImg.finalUrl!,
-                  fileName: prevImg.file.name,
-                  type: 'adjust'
-                });
-              }
-            }}
-            onNext={() => {
-              if (currentIdx < completedImages.length - 1) {
-                const nextImg = completedImages[currentIdx + 1];
-                setEditingImage({
-                  id: nextImg.id,
-                  finalUrl: nextImg.finalUrl!,
-                  fileName: nextImg.file.name,
-                  type: 'adjust'
-                });
-              }
-            }}
-            onSave={(adjustedUrl, adjustments) => {
-            // Update the finalUrl with the adjusted image
-            setUploadedImages(prev => prev.map(img => 
-              img.id === editingImage.id 
-                ? { ...img, finalUrl: adjustedUrl, carAdjustments: adjustments }
-                : img
-            ));
-            setEditingImage(null);
-            // Return to preview gallery with updated image
-            const completedImages = uploadedImages.filter(img => img.status === 'completed');
-            const index = completedImages.findIndex(img => img.id === editingImage.id);
-            if (index !== -1) {
-              setGalleryIndex(index);
-              setPreviewImage(adjustedUrl);
-            }
-            toast.success('Justeringar sparade');
-          }}
-          onApplyToAll={async (adjustments) => {
-            // Mark all completed images as loading
-            const completedIds = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).map(img => img.id);
-            setLoadingImages(new Set(completedIds));
-            
-            // Apply adjustments to all completed images
-            const promises = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).map(async (img) => {
-              const result = await applyCarAdjustments(img.finalUrl!, adjustments);
-              setUploadedImages(prev => prev.map(prevImg => 
-                prevImg.id === img.id 
-                  ? { ...prevImg, finalUrl: result, carAdjustments: adjustments }
-                  : prevImg
-              ));
-              // Remove from loading set
-              setLoadingImages(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(img.id);
-                return newSet;
-              });
-            });
-            
-            await Promise.all(promises);
-          }}
-          />
-        );
-      })()}
+        const index = completedImages.findIndex(img => img.id === editingImage.id);
+        if (index !== -1) {
+          setGalleryIndex(index);
+          setPreviewImage(adjustedUrl);
+        }
+        toast.success('Justeringar sparade');
+      }} onApplyToAll={async adjustments => {
+        // Mark all completed images as loading
+        const completedIds = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).map(img => img.id);
+        setLoadingImages(new Set(completedIds));
+
+        // Apply adjustments to all completed images
+        const promises = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).map(async img => {
+          const result = await applyCarAdjustments(img.finalUrl!, adjustments);
+          setUploadedImages(prev => prev.map(prevImg => prevImg.id === img.id ? {
+            ...prevImg,
+            finalUrl: result,
+            carAdjustments: adjustments
+          } : prevImg));
+          // Remove from loading set
+          setLoadingImages(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(img.id);
+            return newSet;
+          });
+        });
+        await Promise.all(promises);
+      }} />;
+    })()}
 
       {/* Original Image Crop Editor Dialog */}
       <Dialog open={editingOriginal?.type === 'crop'} onOpenChange={() => setEditingOriginal(null)}>
@@ -1282,192 +1192,161 @@ export default function Index() {
 
       {/* Background Blur Editor for Generated Images */}
       {editingImage?.type === 'blur' && (() => {
-        const completedImages = uploadedImages.filter(img => img.status === 'completed');
-        const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
-        return (
-          <BackgroundBlurEditor
-            imageUrl={editingImage.finalUrl}
-            open={true}
-            onClose={() => {
-              setEditingImage(null);
-              const idx = completedImages.findIndex(img => img.id === editingImage.id);
-              if (idx !== -1) {
-                setGalleryIndex(idx);
-                setPreviewImage(completedImages[idx].finalUrl!);
-              }
-            }}
-            currentIndex={currentIdx}
-            totalCount={completedImages.length}
-            onPrevious={() => {
-              if (currentIdx > 0) {
-                const prevImg = completedImages[currentIdx - 1];
-                setEditingImage({
-                  id: prevImg.id,
-                  finalUrl: prevImg.finalUrl!,
-                  fileName: prevImg.file.name,
-                  type: 'blur'
-                });
-              }
-            }}
-            onNext={() => {
-              if (currentIdx < completedImages.length - 1) {
-                const nextImg = completedImages[currentIdx + 1];
-                setEditingImage({
-                  id: nextImg.id,
-                  finalUrl: nextImg.finalUrl!,
-                  fileName: nextImg.file.name,
-                  type: 'blur'
-                });
-              }
-            }}
-            onSave={(blurredUrl) => {
-              setUploadedImages(prev => prev.map(img => 
-                img.id === editingImage.id 
-                  ? { ...img, finalUrl: blurredUrl }
-                  : img
-              ));
-              setEditingImage(null);
-              const idx = completedImages.findIndex(img => img.id === editingImage.id);
-              if (idx !== -1) {
-                setGalleryIndex(idx);
-                setPreviewImage(blurredUrl);
-              }
-            }}
-          />
-        );
-      })()}
-
-      <BrandKitDesigner 
-        open={logoDesignOpen} 
-        onClose={() => setLogoDesignOpen(false)} 
-        design={logoDesign} 
-        onDesignChange={setLogoDesign} 
-        previewImage={uploadedImages.find(img => img.status === 'completed')?.finalUrl}
-        onSave={async (withLogo, withoutLogo) => {
-          // Apply logo design to all completed images
-          const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
-          
-          // Store original URLs before applying logo (for undo functionality)
-          const originals = new Map<string, string>();
-          completedImages.forEach(img => {
-            if (img.finalUrl && !originalImagesBeforeLogo.has(img.id)) {
-              originals.set(img.id, img.finalUrl);
-            }
+      const completedImages = uploadedImages.filter(img => img.status === 'completed');
+      const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
+      return <BackgroundBlurEditor imageUrl={editingImage.finalUrl} open={true} onClose={() => {
+        setEditingImage(null);
+        const idx = completedImages.findIndex(img => img.id === editingImage.id);
+        if (idx !== -1) {
+          setGalleryIndex(idx);
+          setPreviewImage(completedImages[idx].finalUrl!);
+        }
+      }} currentIndex={currentIdx} totalCount={completedImages.length} onPrevious={() => {
+        if (currentIdx > 0) {
+          const prevImg = completedImages[currentIdx - 1];
+          setEditingImage({
+            id: prevImg.id,
+            finalUrl: prevImg.finalUrl!,
+            fileName: prevImg.file.name,
+            type: 'blur'
           });
-          if (originals.size > 0) {
-            setOriginalImagesBeforeLogo(prev => new Map([...prev, ...originals]));
+        }
+      }} onNext={() => {
+        if (currentIdx < completedImages.length - 1) {
+          const nextImg = completedImages[currentIdx + 1];
+          setEditingImage({
+            id: nextImg.id,
+            finalUrl: nextImg.finalUrl!,
+            fileName: nextImg.file.name,
+            type: 'blur'
+          });
+        }
+      }} onSave={blurredUrl => {
+        setUploadedImages(prev => prev.map(img => img.id === editingImage.id ? {
+          ...img,
+          finalUrl: blurredUrl
+        } : img));
+        setEditingImage(null);
+        const idx = completedImages.findIndex(img => img.id === editingImage.id);
+        if (idx !== -1) {
+          setGalleryIndex(idx);
+          setPreviewImage(blurredUrl);
+        }
+      }} />;
+    })()}
+
+      <BrandKitDesigner open={logoDesignOpen} onClose={() => setLogoDesignOpen(false)} design={logoDesign} onDesignChange={setLogoDesign} previewImage={uploadedImages.find(img => img.status === 'completed')?.finalUrl} onSave={async (withLogo, withoutLogo) => {
+      // Apply logo design to all completed images
+      const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
+
+      // Store original URLs before applying logo (for undo functionality)
+      const originals = new Map<string, string>();
+      completedImages.forEach(img => {
+        if (img.finalUrl && !originalImagesBeforeLogo.has(img.id)) {
+          originals.set(img.id, img.finalUrl);
+        }
+      });
+      if (originals.size > 0) {
+        setOriginalImagesBeforeLogo(prev => new Map([...prev, ...originals]));
+      }
+      for (const img of completedImages) {
+        try {
+          // Create canvas to composite logo
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) continue;
+          const baseImg = new Image();
+          baseImg.crossOrigin = 'anonymous';
+          baseImg.src = img.finalUrl!;
+          await new Promise(resolve => {
+            baseImg.onload = resolve;
+          });
+          canvas.width = baseImg.width;
+          canvas.height = baseImg.height;
+          ctx.drawImage(baseImg, 0, 0);
+
+          // Draw banner if enabled - use 140% width to match preview
+          if (logoDesign.bannerEnabled) {
+            ctx.save();
+            ctx.globalAlpha = logoDesign.bannerOpacity / 100;
+            ctx.fillStyle = logoDesign.bannerColor;
+            const bx = logoDesign.bannerX / 100 * canvas.width;
+            const by = logoDesign.bannerY / 100 * canvas.height;
+            // Use 140% for width when horizontal (rotation 0) to match preview
+            const bw = logoDesign.bannerRotation === 0 ? canvas.width * 1.4 : logoDesign.bannerHeight / 100 * canvas.width;
+            const bh = logoDesign.bannerRotation === 0 ? logoDesign.bannerHeight / 100 * canvas.height : canvas.height * 1.4;
+            ctx.translate(bx, by);
+            ctx.rotate(logoDesign.bannerRotation * Math.PI / 180);
+            ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+            ctx.restore();
           }
-          
-          for (const img of completedImages) {
-            try {
-              // Create canvas to composite logo
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              if (!ctx) continue;
 
-              const baseImg = new Image();
-              baseImg.crossOrigin = 'anonymous';
-              baseImg.src = img.finalUrl!;
-              await new Promise(resolve => { baseImg.onload = resolve; });
-
-              canvas.width = baseImg.width;
-              canvas.height = baseImg.height;
-              ctx.drawImage(baseImg, 0, 0);
-
-              // Draw banner if enabled - use 140% width to match preview
-              if (logoDesign.bannerEnabled) {
-                ctx.save();
-                ctx.globalAlpha = logoDesign.bannerOpacity / 100;
-                ctx.fillStyle = logoDesign.bannerColor;
-                const bx = (logoDesign.bannerX / 100) * canvas.width;
-                const by = (logoDesign.bannerY / 100) * canvas.height;
-                // Use 140% for width when horizontal (rotation 0) to match preview
-                const bw = logoDesign.bannerRotation === 0 
-                  ? canvas.width * 1.4 
-                  : (logoDesign.bannerHeight / 100) * canvas.width;
-                const bh = logoDesign.bannerRotation === 0 
-                  ? (logoDesign.bannerHeight / 100) * canvas.height 
-                  : canvas.height * 1.4;
-                ctx.translate(bx, by);
-                ctx.rotate((logoDesign.bannerRotation * Math.PI) / 180);
-                ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
-                ctx.restore();
-              }
-
-              // Draw logos if present - support multiple logos
-              const logos = logoDesign.logos || (logoDesign.logoUrl ? [{
-                id: 'legacy',
-                url: logoDesign.logoUrl,
-                x: logoDesign.logoX,
-                y: logoDesign.logoY,
-                size: logoDesign.logoSize,
-                opacity: 100
-              }] : []);
-              
-              for (const logo of logos) {
-                const logoImg = new Image();
-                logoImg.crossOrigin = 'anonymous';
-                logoImg.src = logo.url;
-                await new Promise(resolve => { logoImg.onload = resolve; });
-
-                ctx.save();
-                ctx.globalAlpha = logo.opacity / 100;
-                const logoW = canvas.width * logo.size;
-                const logoH = (logoImg.height / logoImg.width) * logoW;
-                const logoX = (logo.x / 100) * canvas.width - logoW / 2;
-                const logoY = (logo.y / 100) * canvas.height - logoH / 2;
-                ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-                ctx.restore();
-              }
-
-              const withLogoUrl = canvas.toDataURL('image/jpeg', 0.9);
-              
-              if (withoutLogo) {
-                // Keep original AND add new image with logo
-                // Create a new image entry for the logo version
-                const newImageId = `${img.id}_logo`;
-                setUploadedImages(prev => {
-                  // Check if logo version already exists
-                  const exists = prev.some(p => p.id === newImageId);
-                  if (exists) {
-                    // Update existing logo version
-                    return prev.map(prevImg => 
-                      prevImg.id === newImageId 
-                        ? { ...prevImg, finalUrl: withLogoUrl }
-                        : prevImg
-                    );
-                  }
-                  // Add new image entry for logo version after the original
-                  const originalIndex = prev.findIndex(p => p.id === img.id);
-                  const newImage: UploadedImage = {
-                    ...img,
-                    id: newImageId,
-                    finalUrl: withLogoUrl,
-                    isOriginal: false,
-                  };
-                  const newArray = [...prev];
-                  newArray.splice(originalIndex + 1, 0, newImage);
-                  return newArray;
-                });
-              } else {
-                // Update image with logo version (replace original)
-                setUploadedImages(prev => prev.map(prevImg => 
-                  prevImg.id === img.id 
-                    ? { ...prevImg, finalUrl: withLogoUrl }
-                    : prevImg
-                ));
-              }
-
-            } catch (error) {
-              console.error('Error applying logo:', error);
-            }
+          // Draw logos if present - support multiple logos
+          const logos = logoDesign.logos || (logoDesign.logoUrl ? [{
+            id: 'legacy',
+            url: logoDesign.logoUrl,
+            x: logoDesign.logoX,
+            y: logoDesign.logoY,
+            size: logoDesign.logoSize,
+            opacity: 100
+          }] : []);
+          for (const logo of logos) {
+            const logoImg = new Image();
+            logoImg.crossOrigin = 'anonymous';
+            logoImg.src = logo.url;
+            await new Promise(resolve => {
+              logoImg.onload = resolve;
+            });
+            ctx.save();
+            ctx.globalAlpha = logo.opacity / 100;
+            const logoW = canvas.width * logo.size;
+            const logoH = logoImg.height / logoImg.width * logoW;
+            const logoX = logo.x / 100 * canvas.width - logoW / 2;
+            const logoY = logo.y / 100 * canvas.height - logoH / 2;
+            ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+            ctx.restore();
           }
-          
-          toast.success(withoutLogo ? 'Sparade med och utan logo' : 'Logo design sparad på alla bilder');
-        }}
-        onApplyToAll={() => {
-          toast.success('Design kommer appliceras vid sparning');
-        }}
-      />
+          const withLogoUrl = canvas.toDataURL('image/jpeg', 0.9);
+          if (withoutLogo) {
+            // Keep original AND add new image with logo
+            // Create a new image entry for the logo version
+            const newImageId = `${img.id}_logo`;
+            setUploadedImages(prev => {
+              // Check if logo version already exists
+              const exists = prev.some(p => p.id === newImageId);
+              if (exists) {
+                // Update existing logo version
+                return prev.map(prevImg => prevImg.id === newImageId ? {
+                  ...prevImg,
+                  finalUrl: withLogoUrl
+                } : prevImg);
+              }
+              // Add new image entry for logo version after the original
+              const originalIndex = prev.findIndex(p => p.id === img.id);
+              const newImage: UploadedImage = {
+                ...img,
+                id: newImageId,
+                finalUrl: withLogoUrl,
+                isOriginal: false
+              };
+              const newArray = [...prev];
+              newArray.splice(originalIndex + 1, 0, newImage);
+              return newArray;
+            });
+          } else {
+            // Update image with logo version (replace original)
+            setUploadedImages(prev => prev.map(prevImg => prevImg.id === img.id ? {
+              ...prevImg,
+              finalUrl: withLogoUrl
+            } : prevImg));
+          }
+        } catch (error) {
+          console.error('Error applying logo:', error);
+        }
+      }
+      toast.success(withoutLogo ? 'Sparade med och utan logo' : 'Logo design sparad på alla bilder');
+    }} onApplyToAll={() => {
+      toast.success('Design kommer appliceras vid sparning');
+    }} />
     </div>;
 }
