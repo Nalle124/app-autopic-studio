@@ -584,7 +584,7 @@ export default function Index() {
             <section className="space-y-4 pb-8">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg not-italic text-primary font-sans">1</span>
+                  <span className="not-italic text-primary font-sans text-base">1</span>
                 </div>
                 <div className="flex-1">
                   <h2 className="not-italic font-serif font-normal">Ladda upp bilder</h2>
@@ -601,9 +601,9 @@ export default function Index() {
             {uploadedImages.length > 0 && <section id="scene-section" className="space-y-4 pb-8">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-accent italic text-primary">2</span>
+                    <span className="text-lg not-italic text-primary font-sans font-normal">2</span>
                   </div>
-                  <h2 className="text-2xl font-accent italic text-foreground">Välj bakgrund</h2>
+                  <h2 className="italic text-foreground font-serif text-lg font-normal">Välj bakgrund</h2>
                 </div>
                 <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} />
               </section>}
@@ -612,9 +612,9 @@ export default function Index() {
             {selectedScene && <section id="export-section" className="space-y-6 pb-8">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg font-accent italic text-primary">3</span>
+                    <span className="not-italic text-primary font-sans text-base font-medium">3</span>
                   </div>
-                  <h2 className="text-2xl font-accent italic text-foreground">Generera & Anpassa</h2>
+                  <h2 className="not-italic text-foreground text-lg font-serif font-normal">Generera & Anpassa</h2>
                 </div>
                 
                 <div className="max-w-3xl mx-auto space-y-6">
@@ -669,7 +669,7 @@ export default function Index() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-lg font-accent italic text-primary">4</span>
+                        <span className="italic text-primary font-sans text-base font-medium">4</span>
                       </div>
                       <h2 className="not-italic text-foreground font-serif text-lg font-normal">Redigera och ladda ner</h2>
                     </div>
