@@ -584,7 +584,7 @@ export default function Index() {
             <section className="space-y-4 pb-8">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-accent italic text-primary">1</span>
+                  <span className="text-lg not-italic text-primary font-sans">1</span>
                 </div>
                 <div className="flex-1">
                   <h2 className="not-italic font-serif">Ladda upp bilder</h2>
