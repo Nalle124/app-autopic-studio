@@ -587,7 +587,7 @@ export default function Index() {
                   <span className="text-lg font-accent italic text-primary">1</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="not-italic">Ladda upp bilder</h2>
+                  <h2 className="not-italic font-serif">Ladda upp bilder</h2>
                 </div>
               </div>
               <ImageUploader onImagesUploaded={newImages => {
