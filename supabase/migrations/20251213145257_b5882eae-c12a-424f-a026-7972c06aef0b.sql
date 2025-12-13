@@ -1,0 +1,38 @@
+
+INSERT INTO public.scenes (
+  id,
+  name,
+  description,
+  category,
+  thumbnail_url,
+  full_res_url,
+  ai_prompt,
+  photoroom_shadow_mode,
+  reflection_enabled,
+  reflection_opacity,
+  reflection_fade,
+  shadow_enabled,
+  baseline_y,
+  horizon_y,
+  default_scale,
+  reference_scale,
+  sort_order
+) VALUES (
+  'lightroom-studio',
+  'Lightroom Studio',
+  'Ljus studio med stora fönster och reflekterande grått klinkergolv',
+  'studio-light',
+  'https://cfsyxrokdemwkklqflnb.supabase.co/storage/v1/object/public/processed-cars/scenes/lightroom-studio.png',
+  'https://cfsyxrokdemwkklqflnb.supabase.co/storage/v1/object/public/processed-cars/scenes/lightroom-studio.png',
+  'Professional automotive photography studio. Place the car centered on the grey tile floor, facing slightly angled to the left. The floor must show natural reflections of the car on the polished grey tiles. Large bright window panels on the right side provide soft diffused daylight. Clean white walls with subtle corner shadows. Maintain exact perspective and lighting from reference image. Studio environment must look spacious and premium. No props, no people, no text.',
+  'none',
+  true,
+  0.35,
+  0.6,
+  false,
+  70,
+  52,
+  0.65,
+  1.0,
+  15
+);
