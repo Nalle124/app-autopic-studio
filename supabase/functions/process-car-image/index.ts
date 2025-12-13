@@ -217,7 +217,11 @@ serve(async (req) => {
     console.log('Processing with Photoroom Studio model...');
     
     const photoroomFormData = new FormData();
-    photoroomFormData.append('imageFile', new Blob([imageBuffer], { type: imageFile.type }));
+    
+    // Create a proper File object for PhotoRoom API
+    const imageBlob = new Blob([imageBuffer], { type: imageFile.type });
+    const fileName = imageFile.name || 'image.jpg';
+    photoroomFormData.append('imageFile', imageBlob, fileName);
     
     // Use reference/guidance image for background
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
