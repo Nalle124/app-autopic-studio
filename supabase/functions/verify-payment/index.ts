@@ -35,7 +35,23 @@ serve(async (req) => {
     logStep("Function started");
 
     const { sessionId } = await req.json();
-    if (!sessionId) throw new Error("Session ID is required");
+    
+    // Validate sessionId
+    if (!sessionId || typeof sessionId !== 'string') {
+      return new Response(JSON.stringify({ error: "Session ID is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+    
+    // Validate Stripe session ID format (starts with cs_)
+    if (!sessionId.startsWith('cs_') || sessionId.length < 10 || sessionId.length > 200) {
+      return new Response(JSON.stringify({ error: "Invalid session ID format" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+    
     logStep("Session ID received", { sessionId });
 
     const authHeader = req.headers.get("Authorization");

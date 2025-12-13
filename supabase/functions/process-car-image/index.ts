@@ -45,11 +45,79 @@ serve(async (req) => {
     const projectId = formData.get('projectId') as string | null;
     const userId = formData.get('userId') as string | null;
     
+    // Input validation
     if (!imageFile || !sceneData || !backgroundImageUrl) {
-      throw new Error('Missing required fields');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing required fields' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const scene: SceneMetadata = JSON.parse(sceneData);
+    // Validate image file
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedMimeTypes.includes(imageFile.type)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid image type. Allowed: JPEG, PNG, WebP' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate file size (max 10MB)
+    const maxFileSize = 10 * 1024 * 1024;
+    if (imageFile.size > maxFileSize) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Image too large. Maximum 10MB allowed' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate backgroundUrl format
+    try {
+      const bgUrl = new URL(backgroundImageUrl);
+      if (!['http:', 'https:'].includes(bgUrl.protocol)) {
+        throw new Error('Invalid protocol');
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid background URL format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate userId format if provided
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (userId && !uuidRegex.test(userId)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid user ID format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate projectId format if provided
+    if (projectId && !uuidRegex.test(projectId)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid project ID format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Parse and validate scene data
+    let scene: SceneMetadata;
+    try {
+      scene = JSON.parse(sceneData);
+      if (!scene.id || typeof scene.id !== 'string' || scene.id.length > 100) {
+        throw new Error('Invalid scene id');
+      }
+      if (scene.aiPrompt && (typeof scene.aiPrompt !== 'string' || scene.aiPrompt.length > 2000)) {
+        throw new Error('Invalid AI prompt');
+      }
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid scene data format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
     
     if (!PHOTOROOM_API_KEY) {
