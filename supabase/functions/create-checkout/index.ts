@@ -26,13 +26,59 @@ serve(async (req) => {
     logStep("Function started");
 
     const { priceId, mode } = await req.json();
+    
+    // Validate priceId
+    if (!priceId || typeof priceId !== 'string') {
+      return new Response(JSON.stringify({ error: "Price ID is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+    
+    // Validate Stripe price ID format (starts with price_)
+    if (!priceId.startsWith('price_') || priceId.length < 10 || priceId.length > 100) {
+      return new Response(JSON.stringify({ error: "Invalid price ID format" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+    
+    // Validate mode if provided
+    const validModes = ['subscription', 'payment'];
+    if (mode && !validModes.includes(mode)) {
+      return new Response(JSON.stringify({ error: "Invalid mode. Must be 'subscription' or 'payment'" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+    
     logStep("Request params", { priceId, mode });
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Authorization required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
+    const { data, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !data.user) {
+      return new Response(JSON.stringify({ error: "Authentication failed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user.email) {
+      return new Response(JSON.stringify({ error: "User email not available" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+    
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
