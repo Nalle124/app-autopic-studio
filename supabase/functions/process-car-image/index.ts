@@ -218,10 +218,10 @@ serve(async (req) => {
     
     const photoroomFormData = new FormData();
     
-    // Create a proper File object for PhotoRoom API
-    const imageBlob = new Blob([imageBuffer], { type: imageFile.type });
-    const fileName = imageFile.name || 'image.jpg';
-    photoroomFormData.append('imageFile', imageBlob, fileName);
+    // Use imageUrl instead of imageFile - more reliable with Deno
+    // We already uploaded the image to storage, so use that public URL
+    photoroomFormData.append('imageUrl', originalImageUrl);
+    console.log('Using imageUrl:', originalImageUrl);
     
     // Use reference/guidance image for background
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
