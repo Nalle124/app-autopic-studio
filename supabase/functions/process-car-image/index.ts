@@ -236,6 +236,9 @@ serve(async (req) => {
     // Fixed seed for consistent results
     photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
     
+    // Enable expand prompt mode to help PhotoRoom use the reference image better
+    photoroomFormData.append('background.expandPrompt.mode', 'auto');
+    
     // Scene-specific AI prompt (or default if not provided)
     const prompt = scene.aiPrompt || 
       `Place this vehicle naturally in the scene. The car should be positioned on the ground level, ` +
