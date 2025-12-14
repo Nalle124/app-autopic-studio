@@ -3,7 +3,8 @@ import { useEffect, useRef, useCallback } from 'react';
 export function useStickyScroll(enabled: boolean = true) {
   const sectionsRef = useRef<HTMLElement[]>([]);
   const isScrollingRef = useRef(false);
-  const lastScrollTimeRef = useRef(0);
+  const lastScrollYRef = useRef(0);
+  const scrollDirectionRef = useRef<'up' | 'down'>('down');
 
   const registerSection = useCallback((element: HTMLElement | null) => {
     if (element && !sectionsRef.current.includes(element)) {
@@ -20,55 +21,105 @@ export function useStickyScroll(enabled: boolean = true) {
   useEffect(() => {
     if (!enabled) return;
 
+    let scrollTimeout: number | null = null;
+    let lastScrollTime = 0;
+
     const handleScroll = () => {
-      // Debounce - don't trigger if we're already auto-scrolling
+      // Track scroll direction
+      const currentScrollY = window.scrollY;
+      scrollDirectionRef.current = currentScrollY > lastScrollYRef.current ? 'down' : 'up';
+      lastScrollYRef.current = currentScrollY;
+
+      // Don't trigger if already auto-scrolling
       if (isScrollingRef.current) return;
-      
+
+      // Debounce
       const now = Date.now();
-      if (now - lastScrollTimeRef.current < 100) return;
-      lastScrollTimeRef.current = now;
+      if (now - lastScrollTime < 50) return;
+      lastScrollTime = now;
 
-      const viewportHeight = window.innerHeight;
-      const scrollY = window.scrollY;
-      const headerOffset = 80; // Fixed header height
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
 
-      sectionsRef.current.forEach((section, index) => {
-        const rect = section.getBoundingClientRect();
-        const sectionTop = scrollY + rect.top - headerOffset;
-        const sectionBottom = sectionTop + rect.height;
+      // Set timeout for snap detection after scroll stops
+      scrollTimeout = window.setTimeout(() => {
+        if (isScrollingRef.current) return;
 
-        // Check if we're near the bottom of a section (within 100px threshold)
-        const scrollBottom = scrollY + viewportHeight;
-        const distanceToSectionBottom = sectionBottom - scrollBottom;
+        const viewportHeight = window.innerHeight;
+        const scrollY = window.scrollY;
+        const headerOffset = 80;
 
-        // If we're within 50px of section bottom and scrolling down, snap to next
-        if (distanceToSectionBottom > -50 && distanceToSectionBottom < 50) {
-          const nextSection = sectionsRef.current[index + 1];
-          if (nextSection) {
-            const nextRect = nextSection.getBoundingClientRect();
-            const nextTop = scrollY + nextRect.top - headerOffset - 32; // 32px padding
+        for (let i = 0; i < sectionsRef.current.length; i++) {
+          const section = sectionsRef.current[i];
+          const rect = section.getBoundingClientRect();
+          const sectionTop = scrollY + rect.top;
+          const sectionBottom = sectionTop + rect.height;
+          const scrollBottom = scrollY + viewportHeight;
 
-            // Only snap if we're scrolling towards the next section
-            if (scrollY > sectionTop + 50) {
+          // Calculate how much of section is visible
+          const visibleTop = Math.max(sectionTop, scrollY + headerOffset);
+          const visibleBottom = Math.min(sectionBottom, scrollBottom);
+          const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+          const visibilityRatio = visibleHeight / rect.height;
+
+          // When scrolling down and near bottom of current section, snap to next
+          if (scrollDirectionRef.current === 'down') {
+            const distanceToBottom = sectionBottom - scrollBottom;
+            
+            // If we're within 80px of the bottom and there's a next section
+            if (distanceToBottom > -30 && distanceToBottom < 80 && i < sectionsRef.current.length - 1) {
+              const nextSection = sectionsRef.current[i + 1];
+              const nextRect = nextSection.getBoundingClientRect();
+              const nextTop = scrollY + nextRect.top - headerOffset - 24;
+
               isScrollingRef.current = true;
               window.scrollTo({
                 top: nextTop,
                 behavior: 'smooth'
               });
+              
               setTimeout(() => {
                 isScrollingRef.current = false;
-              }, 600);
+              }, 500);
+              return;
+            }
+          }
+          
+          // When scrolling up and near top of current section, snap to previous
+          if (scrollDirectionRef.current === 'up') {
+            const distanceToTop = rect.top - headerOffset;
+            
+            // If we're near the top of a section and there's a previous section
+            if (distanceToTop > -30 && distanceToTop < 80 && i > 0) {
+              const prevSection = sectionsRef.current[i - 1];
+              const prevRect = prevSection.getBoundingClientRect();
+              const prevTop = scrollY + prevRect.top - headerOffset - 24;
+
+              isScrollingRef.current = true;
+              window.scrollTo({
+                top: prevTop,
+                behavior: 'smooth'
+              });
+              
+              setTimeout(() => {
+                isScrollingRef.current = false;
+              }, 500);
+              return;
             }
           }
         }
-      });
+      }, 100);
     };
 
-    // Use passive scroll listener for better performance
     window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
     };
   }, [enabled]);
 

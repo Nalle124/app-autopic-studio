@@ -6,16 +6,19 @@
 
 @layer base {
   :root {
-    /* Light mode - keeping for completeness but app is dark-first */
-    --background: 0 0% 96%;
-    --foreground: 0 0% 8%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 8%;
+    /* Light mode - dark background like dark mode but with lighter cards */
+    --background: 0 0% 8%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 87%;
+    --card-foreground: 0 0% 15%;
+    --card-gradient-start: 0 0% 87%;
+    --card-gradient-end: 0 0% 20%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 8%;
     --primary: 0 38% 33%;
     --primary-foreground: 0 0% 98%;
     --primary-glow: 0 38% 45%;
+    --primary-dark: 0 38% 25%;
     --secondary: 0 0% 92%;
     --secondary-foreground: 0 0% 8%;
     --muted: 0 0% 90%;
@@ -27,18 +30,19 @@
     --accent-teal: 175 60% 40%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 85%;
+    --border: 0 0% 75%;
     --input: 0 0% 85%;
     --ring: 0 38% 33%;
     --radius: 0.625rem;
-    --radius-card: 0.625rem;
+    --radius-card: 1.25rem;
     --radius-button: 3rem;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 38% 33%), hsl(0 38% 45%));
+    --gradient-primary: linear-gradient(180deg, hsl(0 38% 33%), hsl(0 38% 25%));
     --gradient-glass: linear-gradient(135deg, hsla(0 0% 100% / 0.1), hsla(0 0% 100% / 0.05));
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 96%), hsl(0 0% 92%));
     --gradient-background: linear-gradient(180deg, hsl(0 0% 3.1%) 0%, hsl(0 0% 12.2%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 87% / 0.6) 0%, hsl(0 0% 20% / 1) 100%);
     
     /* Shadows */
     --shadow-elegant: 0 4px 20px hsl(0 0% 0% / 0.08);
@@ -51,6 +55,7 @@
     --shadow-lg: 0 8px 16px hsl(0 0% 0% / 0.15);
     --shadow-xl: 0 12px 24px hsl(0 0% 0% / 0.18);
     --shadow-2xl: 0 20px 40px hsl(0 0% 0% / 0.25);
+    --shadow-button-3d: inset 0 1px 0 hsl(0 0% 100% / 0.15), inset 0 -2px 4px hsl(0 0% 0% / 0.2);
     
     /* Charts */
     --chart-1: 0 38% 33%;
@@ -79,13 +84,16 @@
   .dark {
     --background: 0 0% 3.1%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 6%;
+    --card: 0 0% 87%;
     --card-foreground: 0 0% 98%;
+    --card-gradient-start: 0 0% 87%;
+    --card-gradient-end: 0 0% 20%;
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 38% 33%;
     --primary-foreground: 0 0% 98%;
     --primary-glow: 0 38% 45%;
+    --primary-dark: 0 38% 25%;
     --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 15%;
@@ -97,15 +105,16 @@
     --accent-teal: 175 60% 45%;
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 18%;
+    --border: 0 0% 30%;
     --input: 0 0% 18%;
     --ring: 0 38% 33%;
     
     /* Gradients - dark mode */
-    --gradient-primary: linear-gradient(135deg, hsl(0 38% 33%), hsl(0 38% 45%));
+    --gradient-primary: linear-gradient(180deg, hsl(0 38% 33%), hsl(0 38% 25%));
     --gradient-glass: linear-gradient(135deg, hsla(0 0% 100% / 0.05), hsla(0 0% 100% / 0.02));
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 6%), hsl(0 0% 10%));
     --gradient-background: linear-gradient(180deg, hsl(0 0% 3.1%) 0%, hsl(0 0% 12.2%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 87% / 0.6) 0%, hsl(0 0% 20% / 1) 100%);
     
     /* Shadows - dark mode */
     --shadow-elegant: 0 4px 20px hsl(0 0% 0% / 0.4);
@@ -118,6 +127,7 @@
     --shadow-lg: 0 8px 16px hsl(0 0% 0% / 0.4);
     --shadow-xl: 0 12px 24px hsl(0 0% 0% / 0.45);
     --shadow-2xl: 0 20px 40px hsl(0 0% 0% / 0.5);
+    --shadow-button-3d: inset 0 1px 0 hsl(0 0% 100% / 0.15), inset 0 -2px 4px hsl(0 0% 0% / 0.3);
     
     /* Charts - dark mode */
     --chart-1: 0 38% 40%;
@@ -149,7 +159,7 @@
   
   /* Light mode background */
   :root body {
-    background: linear-gradient(180deg, hsl(0 0% 96%) 0%, hsl(0 0% 92%) 100%);
+    background: linear-gradient(180deg, hsl(0 0% 8%) 0%, hsl(0 0% 12%) 100%);
   }
   
   /* Dark mode background */
@@ -157,7 +167,7 @@
     background: linear-gradient(180deg, hsl(0 0% 3.1%) 0%, hsl(0 0% 12.2%) 100%);
   }
   
-  /* Noise texture overlay */
+  /* Noise texture overlay - applied to both themes */
   body::before {
     content: '';
     position: fixed;
@@ -168,14 +178,7 @@
     pointer-events: none;
     z-index: -1;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  }
-  
-  :root body::before {
-    opacity: 0.02;
-  }
-  
-  .dark body::before {
-    opacity: 0.03;
+    opacity: 0.04;
   }
 
   /* Typography classes */
@@ -336,9 +339,16 @@
     @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-[10px];
   }
   
-  /* Section card styling */
+  /* Section card styling with gradient */
   .section-card {
-    @apply bg-card border border-border rounded-[10px] p-6;
+    @apply border border-border p-6;
+    background: linear-gradient(180deg, hsl(var(--card-gradient-start) / 0.6) 0%, hsl(var(--card-gradient-end) / 1) 100%);
+    border-radius: var(--radius-card);
+  }
+  
+  /* Step heading typography */
+  .step-heading {
+    @apply font-sans font-medium tracking-tight;
   }
   
   /* Premium button glow */
