@@ -229,8 +229,33 @@ export default function Index() {
             const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg';
             formData.append('image', blob, fileName);
           } else {
-            console.log(`Processing original image: ${image.file.name}`);
-            formData.append('image', image.file);
+            // Compress original images too if they're over 5MB
+            console.log(`Processing original image: ${image.file.name} (${(image.file.size / 1024 / 1024).toFixed(2)}MB)`);
+            if (image.file.size > 5 * 1024 * 1024) {
+              console.log('Original image is large, compressing...');
+              const imgUrl = URL.createObjectURL(image.file);
+              const img = new Image();
+              img.src = imgUrl;
+              await new Promise(resolve => { img.onload = resolve; });
+              URL.revokeObjectURL(imgUrl);
+              const canvas = document.createElement('canvas');
+              const maxDim = 2048;
+              const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+              canvas.width = img.width * scale;
+              canvas.height = img.height * scale;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.85));
+                console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+                const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+                formData.append('image', blob, fileName);
+              } else {
+                formData.append('image', image.file);
+              }
+            } else {
+              formData.append('image', image.file);
+            }
           }
           formData.append('scene', JSON.stringify(selectedScene));
           const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
@@ -876,7 +901,29 @@ export default function Index() {
                     }
                     formData.append('image', blob, currentImage.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg');
                   } else {
-                    formData.append('image', currentImage.file);
+                    // Compress original images too if they're over 5MB
+                    if (currentImage.file.size > 5 * 1024 * 1024) {
+                      const imgUrl = URL.createObjectURL(currentImage.file);
+                      const img = new Image();
+                      img.src = imgUrl;
+                      await new Promise(resolve => { img.onload = resolve; });
+                      URL.revokeObjectURL(imgUrl);
+                      const canvas = document.createElement('canvas');
+                      const maxDim = 2048;
+                      const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+                      canvas.width = img.width * scale;
+                      canvas.height = img.height * scale;
+                      const ctx = canvas.getContext('2d');
+                      if (ctx) {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.85));
+                        formData.append('image', blob, currentImage.file.name.replace(/\.[^/.]+$/, '') + '.jpg');
+                      } else {
+                        formData.append('image', currentImage.file);
+                      }
+                    } else {
+                      formData.append('image', currentImage.file);
+                    }
                   }
                   formData.append('scene', JSON.stringify(selectedScene));
                   const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
