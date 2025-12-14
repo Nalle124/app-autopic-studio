@@ -14,10 +14,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
 
 interface SceneSelectorProps {
   selectedSceneId: string | null;
   onSceneSelect: (scene: SceneMetadata) => void;
+  orientation?: 'landscape' | 'portrait';
+  onOrientationChange?: (orientation: 'landscape' | 'portrait') => void;
 }
 
 // Category order and descriptions
@@ -73,7 +76,12 @@ const getCategoryDisplayName = (category: string) => {
   return names[category] || category;
 };
 
-export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorProps) => {
+export const SceneSelector = ({ 
+  selectedSceneId, 
+  onSceneSelect,
+  orientation = 'landscape',
+  onOrientationChange
+}: SceneSelectorProps) => {
   const [scenes, setScenes] = useState<SceneMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
@@ -320,6 +328,25 @@ export const SceneSelector = ({ selectedSceneId, onSceneSelect }: SceneSelectorP
               </button>
             ))}
           </div>
+        )}
+        
+        {/* Orientation toggle */}
+        {onOrientationChange && (
+          <ToggleGroup 
+            type="single" 
+            value={orientation} 
+            onValueChange={(value) => value && onOrientationChange(value as 'landscape' | 'portrait')}
+            className="bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border/50"
+          >
+            <ToggleGroupItem value="landscape" aria-label="Liggande format" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-1.5">
+              <RectangleHorizontal className="w-4 h-4" />
+              {!isMobile && <span className="text-xs">Liggande</span>}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="portrait" aria-label="Stående format" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-1.5">
+              <RectangleVertical className="w-4 h-4" />
+              {!isMobile && <span className="text-xs">Stående</span>}
+            </ToggleGroupItem>
+          </ToggleGroup>
         )}
         
         {/* View toggle */}
