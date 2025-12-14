@@ -258,8 +258,9 @@ serve(async (req) => {
       console.log('Adding PhotoRoom shadow:', shadowMode);
     }
     
-    // Fixed padding 20% for consistent positioning
-    photoroomFormData.append('padding', '0.2');
+    // Fixed padding based on orientation - 5% for portrait, 10% for landscape
+    const paddingValue = orientation === 'portrait' ? '0.05' : '0.1';
+    photoroomFormData.append('padding', paddingValue);
     
     // Set positioning to fit the vehicle naturally within the frame
     photoroomFormData.append('scaling', 'fit');
@@ -280,7 +281,7 @@ serve(async (req) => {
     console.log('- Reference URL:', backgroundImageUrl);
     console.log('- Seed:', PHOTOROOM_SEED);
     console.log('- Shadow mode:', shadowMode);
-    console.log('- Padding: 0.2 (20%)');
+    console.log('- Padding:', paddingValue);
     console.log('- Orientation:', orientation);
     console.log('- Relight:', relightEnabled);
     
