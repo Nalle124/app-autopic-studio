@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
@@ -21,6 +21,7 @@ import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStickyScroll } from '@/hooks/useStickyScroll';
 import autoshotLogo from '@/assets/autoshot-logo.png';
 export default function Index() {
   const navigate = useNavigate();
@@ -94,8 +95,10 @@ export default function Index() {
     bannerRotation: 0
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
+  
+  // Sticky scroll between sections
+  const { registerSection } = useStickyScroll(activeTab === 'new');
 
-  // Redirect to auth if not logged in
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -584,13 +587,13 @@ export default function Index() {
         }} />
           </section> : <div className="space-y-8">
             {/* Step 1: Upload */}
-            <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
+            <section ref={registerSection} className="section-card space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="not-italic text-primary font-sans text-base">1</span>
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="not-italic text-primary-foreground font-sans text-base font-medium">1</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="not-italic font-serif font-normal">Ladda upp bilder</h2>
+                  <h2 className="step-heading text-foreground text-lg">Ladda upp bilder</h2>
                 </div>
               </div>
               <ImageUploader onImagesUploaded={newImages => {
@@ -601,23 +604,23 @@ export default function Index() {
             </section>
 
             {/* Step 2: Scene Selection */}
-            {uploadedImages.length > 0 && <section id="scene-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
+            {uploadedImages.length > 0 && <section ref={registerSection} id="scene-section" className="section-card space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg not-italic text-primary font-sans font-normal">2</span>
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-lg not-italic text-primary-foreground font-sans font-medium">2</span>
                   </div>
-                  <h2 className="italic text-foreground font-serif text-lg font-normal">Välj bakgrund</h2>
+                  <h2 className="step-heading text-foreground text-lg">Välj bakgrund</h2>
                 </div>
                 <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
               </section>}
 
             {/* Step 3: Generation & Logo */}
-            {selectedScene && <section id="export-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6">
+            {selectedScene && <section ref={registerSection} id="export-section" className="section-card space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="not-italic text-primary font-sans text-base font-medium">3</span>
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="not-italic text-primary-foreground font-sans text-base font-medium">3</span>
                   </div>
-                  <h2 className="not-italic text-foreground text-lg font-serif font-normal">Generera & Anpassa</h2>
+                  <h2 className="step-heading text-foreground text-lg">Generera & Anpassa</h2>
                 </div>
                 
                 <div className="space-y-6">
@@ -667,14 +670,14 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6 min-h-[70vh]">
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section ref={registerSection} id="results-section" className="section-card space-y-6 min-h-[70vh]">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="italic text-primary font-sans text-base font-medium">4</span>
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="not-italic text-primary-foreground font-sans text-base font-medium">4</span>
                       </div>
-                      <h2 className="not-italic text-foreground font-serif text-lg font-normal">Redigera och ladda ner</h2>
+                      <h2 className="step-heading text-foreground text-lg">Redigera och ladda ner</h2>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
