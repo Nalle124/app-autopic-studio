@@ -76,6 +76,19 @@ const getCategoryDisplayName = (category: string) => {
   return names[category] || category;
 };
 
+// Generate optimized thumbnail URL using Supabase Image Transformation
+const getOptimizedThumbnailUrl = (url: string, width: number = 400) => {
+  // Check if it's a Supabase storage URL
+  if (url.includes('supabase.co/storage/v1/object/public/')) {
+    // Convert to render endpoint with resize
+    return url.replace(
+      '/storage/v1/object/public/',
+      `/storage/v1/render/image/public/`
+    ) + `?width=${width}&quality=80`;
+  }
+  return url;
+};
+
 export const SceneSelector = ({ 
   selectedSceneId, 
   onSceneSelect,
@@ -88,12 +101,31 @@ export const SceneSelector = ({
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('grid');
   const [activeCategory, setActiveCategory] = useState<string>('');
+  const [preloadedImages, setPreloadedImages] = useState<Set<string>>(new Set());
   const isMobile = useIsMobile();
 
   useEffect(() => {
     loadScenes();
     loadFavorites();
   }, []);
+
+  // Preload all scene thumbnails when scenes are loaded
+  useEffect(() => {
+    if (scenes.length > 0) {
+      const imageUrls = scenes.map(scene => getOptimizedThumbnailUrl(scene.thumbnailUrl));
+      
+      // Preload all images in background
+      imageUrls.forEach(url => {
+        if (!preloadedImages.has(url)) {
+          const img = new Image();
+          img.onload = () => {
+            setPreloadedImages(prev => new Set([...prev, url]));
+          };
+          img.src = url;
+        }
+      });
+    }
+  }, [scenes]);
 
   const loadFavorites = () => {
     try {
@@ -238,12 +270,12 @@ export const SceneSelector = ({
       </Button>
 
       {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img
-          src={scene.thumbnailUrl}
+          src={getOptimizedThumbnailUrl(scene.thumbnailUrl)}
           alt={scene.name}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          loading="lazy"
+          loading="eager"
         />
         
         {/* Selected indicator */}
