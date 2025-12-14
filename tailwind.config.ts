@@ -63,7 +63,7 @@ export default {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
-        card: 'var(--radius-card)',
+        card: '0.625rem',
         button: '3rem'
       },
       backgroundImage: {

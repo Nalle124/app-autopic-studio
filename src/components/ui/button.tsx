@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-b from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg rounded-button [box-shadow:inset_0_1px_0_hsl(0_0%_100%/0.15),inset_0_-2px_4px_hsl(0_0%_0%/0.2),0_4px_8px_hsl(0_0%_0%/0.15)]",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg rounded-button",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-button",
         outline: "border border-border bg-transparent hover:bg-secondary hover:text-secondary-foreground rounded-button",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-button",
         ghost: "hover:bg-secondary hover:text-secondary-foreground rounded-button",
         link: "text-primary underline-offset-4 hover:underline",
-        premium: "bg-gradient-to-b from-primary to-primary/70 text-primary-foreground hover:from-primary-glow hover:to-primary rounded-button [box-shadow:inset_0_1px_0_hsl(0_0%_100%/0.2),inset_0_-2px_4px_hsl(0_0%_0%/0.25),0_0_20px_hsl(var(--primary)/0.3)]",
+        premium: "bg-primary text-primary-foreground hover:bg-primary-glow shadow-glow hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] rounded-button",
       },
       size: {
         default: "h-10 px-6 py-2",
