@@ -582,9 +582,9 @@ export default function Index() {
             toast.error('Kunde inte använda bilden');
           }
         }} />
-          </section> : <div className="space-y-16">
+          </section> : <div className="space-y-8">
             {/* Step 1: Upload */}
-            <section className="space-y-4 pb-8">
+            <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="not-italic text-primary font-sans text-base">1</span>
@@ -601,7 +601,7 @@ export default function Index() {
             </section>
 
             {/* Step 2: Scene Selection */}
-            {uploadedImages.length > 0 && <section id="scene-section" className="space-y-4 pb-8">
+            {uploadedImages.length > 0 && <section id="scene-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-lg not-italic text-primary font-sans font-normal">2</span>
@@ -612,7 +612,7 @@ export default function Index() {
               </section>}
 
             {/* Step 3: Generation & Logo */}
-            {selectedScene && <section id="export-section" className="space-y-6 pb-8">
+            {selectedScene && <section id="export-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="not-italic text-primary font-sans text-base font-medium">3</span>
@@ -620,9 +620,9 @@ export default function Index() {
                   <h2 className="not-italic text-foreground text-lg font-serif font-normal">Generera & Anpassa</h2>
                 </div>
                 
-                <div className="max-w-3xl mx-auto space-y-6">
+                <div className="space-y-6">
                   <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
-                  <Card className="p-6 space-y-3">
+                  <Card className="p-6 space-y-3 bg-secondary/30 border-border/50">
                     <Button onClick={() => setLogoDesignOpen(true)} variant="outline" className="w-full">
                       <ImageIcon className="w-4 h-4 mr-2" />
                       {logoDesign.enabled ? 'Redigera Logo Design' : 'Lägg till Logo Design'}
@@ -667,7 +667,7 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="space-y-6 pb-16 min-h-[70vh]">
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6 min-h-[70vh]">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
