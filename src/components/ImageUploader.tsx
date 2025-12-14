@@ -1,12 +1,15 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Image as ImageIcon, Scissors, Sliders } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Scissors, Sliders, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { UploadedImage } from '@/types/scene';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+
 interface ImageUploaderProps {
   onImagesUploaded: (images: UploadedImage[]) => void;
   onClearAll?: () => void;
@@ -16,6 +19,8 @@ interface ImageUploaderProps {
   uploadedImages: UploadedImage[];
   onEditImage?: (imageId: string, type: 'crop' | 'adjust') => void;
   animatingImages?: Set<string>;
+  relightEnabled?: boolean;
+  onRelightChange?: (enabled: boolean) => void;
 }
 export const ImageUploader = ({
   onImagesUploaded,
@@ -25,7 +30,9 @@ export const ImageUploader = ({
   onRegistrationNumberChange,
   uploadedImages: propUploadedImages,
   onEditImage,
-  animatingImages
+  animatingImages,
+  relightEnabled,
+  onRelightChange
 }: ImageUploaderProps) => {
   const [localImages, setLocalImages] = useState<UploadedImage[]>([]);
   const {
@@ -150,6 +157,23 @@ export const ImageUploader = ({
                   </Button>
                 </>
               )}
+              
+              {/* Relight toggle */}
+              {uploadedImages.length > 0 && onRelightChange && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
+                  <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
+                    Retouch
+                  </Label>
+                  <Switch
+                    id="relight-toggle"
+                    checked={relightEnabled}
+                    onCheckedChange={onRelightChange}
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </div>
+              )}
+              
               {uploadedImages.length > 0 && (
                 <Button variant="outline" size="sm" className="h-9 whitespace-nowrap" onClick={() => {
                   uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));

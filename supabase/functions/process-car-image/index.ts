@@ -44,6 +44,8 @@ serve(async (req) => {
     const backgroundImageUrl = formData.get('backgroundUrl') as string;
     const projectId = formData.get('projectId') as string | null;
     const userId = formData.get('userId') as string | null;
+    const orientation = formData.get('orientation') as string || 'landscape';
+    const relightEnabled = formData.get('relight') === 'true';
     
     // Input validation
     if (!imageFile || !sceneData || !backgroundImageUrl) {
@@ -127,6 +129,8 @@ serve(async (req) => {
     console.log(`Processing image for scene: ${scene.name}`);
     console.log(`Shadow mode: ${scene.photoroomShadowMode || 'none'}`);
     console.log(`AI Prompt: ${scene.aiPrompt || 'default'}`);
+    console.log(`Orientation: ${orientation}`);
+    console.log(`Relight enabled: ${relightEnabled}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -254,20 +258,31 @@ serve(async (req) => {
       console.log('Adding PhotoRoom shadow:', shadowMode);
     }
     
-    // Add padding to create natural spacing around the vehicle
-    photoroomFormData.append('padding', '0.1');
+    // Fixed padding 20% for consistent positioning
+    photoroomFormData.append('padding', '0.2');
     
     // Set positioning to fit the vehicle naturally within the frame
     photoroomFormData.append('scaling', 'fit');
     photoroomFormData.append('referenceBox', 'originalImage');
     
-    // Request high quality output in landscape format (3:2 ratio)
-    photoroomFormData.append('outputSize', '3072x2048');
+    // Add AI relight if enabled (preserve hue and saturation for accurate car colors)
+    if (relightEnabled) {
+      photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
+      console.log('AI Relight enabled with preserve-hue-and-saturation');
+    }
+    
+    // Output size based on orientation
+    const outputSize = orientation === 'portrait' ? '2048x3072' : '3072x2048';
+    photoroomFormData.append('outputSize', outputSize);
+    console.log('Output size:', outputSize);
     
     console.log('Photoroom request prepared:');
     console.log('- Reference URL:', backgroundImageUrl);
     console.log('- Seed:', PHOTOROOM_SEED);
     console.log('- Shadow mode:', shadowMode);
+    console.log('- Padding: 0.2 (20%)');
+    console.log('- Orientation:', orientation);
+    console.log('- Relight:', relightEnabled);
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',

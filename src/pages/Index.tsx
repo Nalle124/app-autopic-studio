@@ -74,6 +74,7 @@ export default function Index() {
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [activeTab, setActiveTab] = useState<'new' | 'history'>('new');
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
+  const [relightEnabled, setRelightEnabled] = useState(false);
   const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());
   const [animatingImages, setAnimatingImages] = useState<Set<string>>(new Set());
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set()); // For "apply to all" loading state
@@ -235,6 +236,8 @@ export default function Index() {
           const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
           formData.append('backgroundUrl', backgroundUrl);
           formData.append('userId', user.id);
+          formData.append('orientation', aspectRatio);
+          formData.append('relight', relightEnabled ? 'true' : 'false');
           if (projectId) {
             formData.append('projectId', projectId);
           }
@@ -594,7 +597,7 @@ export default function Index() {
             setUploadedImages(prev => [...prev, ...newImages]);
           }} onRemoveImage={imageId => {
             setUploadedImages(prev => prev.filter(img => img.id !== imageId));
-          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} />
+          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} />
             </section>
 
             {/* Step 2: Scene Selection */}
@@ -605,7 +608,7 @@ export default function Index() {
                   </div>
                   <h2 className="italic text-foreground font-serif text-lg font-normal">Välj bakgrund</h2>
                 </div>
-                <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} />
+                <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
               </section>}
 
             {/* Step 3: Generation & Logo */}
