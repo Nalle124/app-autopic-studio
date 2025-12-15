@@ -237,11 +237,17 @@ serve(async (req) => {
     photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
     
     // Scene-specific AI prompt (or default if not provided)
-    const prompt = scene.aiPrompt ||
+    // Add a small orientation hint to reduce "car too high" issues in portrait.
+    const basePrompt = scene.aiPrompt ||
       `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
-      `Position the vehicle in the lower half of the frame. ` +
       `Realistic scale, perspective and lighting for professional automotive photography.`;
-    
+
+    const orientationHint = orientation === 'portrait'
+      ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
+      : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
+
+    const prompt = `${basePrompt} ${orientationHint}`;
+
     photoroomFormData.append('background.prompt', prompt);
     console.log('Using prompt:', prompt);
     
@@ -260,8 +266,9 @@ serve(async (req) => {
       console.log('Adding PhotoRoom shadow:', shadowMode);
     }
     
-    // Fixed padding based on orientation - 5% for portrait, 10% for landscape
-    const paddingValue = orientation === 'portrait' ? '0.05' : '0.1';
+    // Fixed padding based on orientation
+    // Portrait needs a bit more padding to avoid cropping close-ups.
+    const paddingValue = orientation === 'portrait' ? '0.08' : '0.10';
     photoroomFormData.append('padding', paddingValue);
     
     // Set positioning to fit the vehicle naturally within the frame
