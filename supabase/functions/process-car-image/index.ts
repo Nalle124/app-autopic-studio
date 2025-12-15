@@ -238,17 +238,18 @@ serve(async (req) => {
     
     // Scene-specific AI prompt (or default if not provided)
     const prompt = scene.aiPrompt ||
-      `Place this vehicle naturally in the scene. The car should be positioned on the ground level, ` +
-      `centered in the frame, with proper perspective matching the environment. ` +
-      `Maintain realistic lighting and scale.`;
+      `A car horizontally centered in the frame, positioned naturally on the ground level, ` +
+      `proper perspective matching the environment, realistic lighting and scale, ` +
+      `professional automotive photography`;
     
     photoroomFormData.append('background.prompt', prompt);
     console.log('Using prompt:', prompt);
     
-    // Negative prompt to prevent common issues
+    // Negative prompt to prevent common issues including off-center placement
     photoroomFormData.append('background.negativePrompt', 
       'floating car, flying car, car on roof, car in sky, distorted, blurry, unrealistic scale, ' +
-      'wrong perspective, car too small, car too large, multiple cars'
+      'wrong perspective, car too small, car too large, multiple cars, off-center car, ' +
+      'car on right side, car on left side, asymmetric placement, cropped car'
     );
     
     // Add PhotoRoom AI shadow if specified
