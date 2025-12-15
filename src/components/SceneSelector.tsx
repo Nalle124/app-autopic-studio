@@ -88,7 +88,6 @@ export const SceneSelector = ({
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('grid');
   const [activeCategory, setActiveCategory] = useState<string>('');
-  const [preloadedImages, setPreloadedImages] = useState<Set<string>>(new Set());
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -96,32 +95,6 @@ export const SceneSelector = ({
     loadFavorites();
   }, []);
 
-  // Preload all scene thumbnails immediately when scenes are loaded
-  useEffect(() => {
-    if (scenes.length > 0) {
-      // Prioritize current category scenes first
-      const currentCategoryScenes = scenes.filter(s => s.category === activeCategory || favorites.has(s.id));
-      const otherScenes = scenes.filter(s => s.category !== activeCategory && !favorites.has(s.id));
-      
-      const preloadImage = (scene: SceneMetadata) => {
-        if (!preloadedImages.has(scene.thumbnailUrl)) {
-          const img = new Image();
-          img.onload = () => {
-            setPreloadedImages(prev => new Set([...prev, scene.thumbnailUrl]));
-          };
-          img.src = scene.thumbnailUrl;
-        }
-      };
-      
-      // Preload current category immediately
-      currentCategoryScenes.forEach(preloadImage);
-      
-      // Preload others with slight delay to not block
-      setTimeout(() => {
-        otherScenes.forEach(preloadImage);
-      }, 100);
-    }
-  }, [scenes, activeCategory, favorites]);
 
   const loadFavorites = () => {
     try {
@@ -236,8 +209,8 @@ export const SceneSelector = ({
   }
 
   const SceneCard = ({ scene, isGrid = false }: { scene: SceneMetadata; isGrid?: boolean }) => {
-    const isLoaded = preloadedImages.has(scene.thumbnailUrl);
-    
+    const [isLoaded, setIsLoaded] = useState(false);
+
     return (
       <Card
         onClick={() => onSceneSelect(scene)}
@@ -277,7 +250,10 @@ export const SceneSelector = ({
             src={scene.thumbnailUrl}
             alt={scene.name}
             className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-            loading="eager"
+            loading={isGrid ? 'lazy' : 'eager'}
+            decoding="async"
+            onLoad={() => setIsLoaded(true)}
+            onError={() => setIsLoaded(true)}
           />
           
           {/* Selected indicator */}
