@@ -96,11 +96,14 @@ export const SceneSelector = ({
     loadFavorites();
   }, []);
 
-  // Preload all scene thumbnails when scenes are loaded
+  // Preload all scene thumbnails immediately when scenes are loaded
   useEffect(() => {
     if (scenes.length > 0) {
-      // Preload all images in background using original URLs
-      scenes.forEach(scene => {
+      // Prioritize current category scenes first
+      const currentCategoryScenes = scenes.filter(s => s.category === activeCategory || favorites.has(s.id));
+      const otherScenes = scenes.filter(s => s.category !== activeCategory && !favorites.has(s.id));
+      
+      const preloadImage = (scene: SceneMetadata) => {
         if (!preloadedImages.has(scene.thumbnailUrl)) {
           const img = new Image();
           img.onload = () => {
@@ -108,9 +111,17 @@ export const SceneSelector = ({
           };
           img.src = scene.thumbnailUrl;
         }
-      });
+      };
+      
+      // Preload current category immediately
+      currentCategoryScenes.forEach(preloadImage);
+      
+      // Preload others with slight delay to not block
+      setTimeout(() => {
+        otherScenes.forEach(preloadImage);
+      }, 100);
     }
-  }, [scenes]);
+  }, [scenes, activeCategory, favorites]);
 
   const loadFavorites = () => {
     try {
@@ -224,66 +235,73 @@ export const SceneSelector = ({
     );
   }
 
-  const SceneCard = ({ scene, isGrid = false }: { scene: SceneMetadata; isGrid?: boolean }) => (
-    <Card
-      onClick={() => onSceneSelect(scene)}
-      className={`group relative overflow-hidden cursor-pointer transition-all duration-300 ${
-        isGrid ? 'w-full' : 'flex-shrink-0 w-72 snap-center'
-      } ${
-        selectedSceneId === scene.id
-          ? 'ring-2 ring-primary shadow-xl shadow-primary/30 scale-[1.02]'
-          : 'hover:shadow-xl hover:scale-[1.02]'
-      }`}
-    >
-      {/* Gradient overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category]?.gradient || 'from-accent-orange/20 via-accent-pink/10 to-background/5'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
-      
-      {/* Favorite button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-md"
-        onClick={(e) => toggleFavorite(scene.id, e)}
+  const SceneCard = ({ scene, isGrid = false }: { scene: SceneMetadata; isGrid?: boolean }) => {
+    const isLoaded = preloadedImages.has(scene.thumbnailUrl);
+    
+    return (
+      <Card
+        onClick={() => onSceneSelect(scene)}
+        className={`group relative overflow-hidden cursor-pointer transition-all duration-300 ${
+          isGrid ? 'w-full' : 'flex-shrink-0 w-72 snap-center'
+        } ${
+          selectedSceneId === scene.id
+            ? 'ring-2 ring-primary shadow-xl shadow-primary/30 scale-[1.02]'
+            : 'hover:shadow-xl hover:scale-[1.02]'
+        }`}
       >
-        <Star
-          className={`w-4 h-4 transition-all ${
-            favorites.has(scene.id)
-              ? 'fill-primary text-primary scale-110'
-              : 'text-muted-foreground'
-          }`}
-        />
-      </Button>
-
-      {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img
-          src={scene.thumbnailUrl}
-          alt={scene.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          loading="eager"
-        />
+        {/* Gradient overlay */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category]?.gradient || 'from-accent-orange/20 via-accent-pink/10 to-background/5'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
         
-        {/* Selected indicator */}
-        {selectedSceneId === scene.id && (
-          <div className="absolute inset-0 bg-primary/20 backdrop-blur-[2px] flex items-center justify-center">
-            <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-xl animate-scale-in">
-              <Check className="w-7 h-7 text-primary-foreground" strokeWidth={3} />
-            </div>
-          </div>
-        )}
-      </div>
+        {/* Favorite button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-md"
+          onClick={(e) => toggleFavorite(scene.id, e)}
+        >
+          <Star
+            className={`w-4 h-4 transition-all ${
+              favorites.has(scene.id)
+                ? 'fill-primary text-primary scale-110'
+                : 'text-muted-foreground'
+            }`}
+          />
+        </Button>
 
-      {/* Content */}
-      <div className="p-5 relative bg-gradient-to-t from-background via-background to-transparent">
-        <h3 className="font-bold text-base text-foreground mb-1.5">
-          {scene.name}
-        </h3>
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-          {scene.description}
-        </p>
-      </div>
-    </Card>
-  );
+        {/* Image with skeleton */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+          {/* Always-visible skeleton/placeholder */}
+          <div className={`absolute inset-0 bg-gradient-to-br from-muted via-muted/80 to-muted animate-pulse transition-opacity duration-300 ${isLoaded ? 'opacity-0' : 'opacity-100'}`} />
+          
+          <img
+            src={scene.thumbnailUrl}
+            alt={scene.name}
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            loading="eager"
+          />
+          
+          {/* Selected indicator */}
+          {selectedSceneId === scene.id && (
+            <div className="absolute inset-0 bg-primary/20 backdrop-blur-[2px] flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-xl animate-scale-in">
+                <Check className="w-7 h-7 text-primary-foreground" strokeWidth={3} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-5 relative bg-gradient-to-t from-background via-background to-transparent">
+          <h3 className="font-bold text-base text-foreground mb-1.5">
+            {scene.name}
+          </h3>
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+            {scene.description}
+          </p>
+        </div>
+      </Card>
+    );
+  };
 
   const visibleCategories = getVisibleCategories();
   const categoryScenes = getScenesByCategory(activeCategory);
