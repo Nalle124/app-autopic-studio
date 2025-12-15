@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import autoshotLogo from '@/assets/autoshot-logo.png';
+import holographicBg from '@/assets/holographic-bg.jpg';
 export default function Index() {
   const navigate = useNavigate();
   const {
@@ -642,53 +643,10 @@ export default function Index() {
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="not-italic text-primary font-sans text-base font-medium">3</span>
                   </div>
-                  <h2 className="not-italic text-foreground text-lg font-serif font-normal">Generera & Anpassa</h2>
+                  <h2 className="not-italic text-foreground text-lg font-serif font-normal">Generera</h2>
                 </div>
                 
-                <div className="space-y-6">
-                  <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
-                  <Card className="p-6 space-y-3 bg-secondary/30 border-border/50">
-                    <Button onClick={() => setLogoDesignOpen(true)} variant="outline" className="w-full">
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      {logoDesign.enabled ? 'Redigera Logo Design' : 'Lägg till Logo Design'}
-                    </Button>
-                    {logoDesign.enabled && <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => {
-                // Restore original images if we have them stored
-                if (originalImagesBeforeLogo.size > 0) {
-                  setUploadedImages(prev => prev.map(img => {
-                    const original = originalImagesBeforeLogo.get(img.id);
-                    if (original) {
-                      return {
-                        ...img,
-                        finalUrl: original
-                      };
-                    }
-                    return img;
-                  }));
-                  setOriginalImagesBeforeLogo(new Map());
-                  toast.success('Originalbilder återställda');
-                }
-                setLogoDesign({
-                  enabled: false,
-                  logoUrl: null,
-                  logoX: 85,
-                  logoY: 85,
-                  logoSize: 0.15,
-                  bannerEnabled: false,
-                  bannerX: 50,
-                  bannerY: 90,
-                  bannerHeight: 10,
-                  bannerWidth: 100,
-                  bannerColor: '#000000',
-                  bannerOpacity: 80,
-                  bannerRotation: 0
-                });
-              }}>
-                        <X className="w-4 h-4 mr-2" />
-                        Ta bort logo design
-                      </Button>}
-                  </Card>
-                </div>
+                <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
@@ -809,6 +767,80 @@ export default function Index() {
                           </div>}
                       </div>
                     </Card>)}
+                </div>
+              </section>}
+
+            {/* Step 5: Logo Design */}
+            {uploadedImages.some(img => img.status === 'completed') && <section className="relative overflow-hidden border border-border rounded-[10px]">
+                {/* Background with holographic effect */}
+                <div className="absolute inset-0">
+                  <img 
+                    src={holographicBg} 
+                    alt="" 
+                    className="w-full h-full object-cover opacity-30" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/90" />
+                  <div className="absolute inset-0 backdrop-blur-sm" />
+                </div>
+                
+                <div className="relative p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center border border-primary/30">
+                      <span className="text-primary font-sans text-base font-medium">5</span>
+                    </div>
+                    <div>
+                      <h2 className="text-foreground font-serif text-lg font-normal">Logo Design</h2>
+                      <p className="text-muted-foreground text-sm">Lägg till ditt varumärke på bilderna</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <Button 
+                      onClick={() => setLogoDesignOpen(true)} 
+                      className="flex-1 sm:flex-none"
+                    >
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      {logoDesign.enabled ? 'Redigera Design' : 'Öppna Logo Studio'}
+                    </Button>
+                    {logoDesign.enabled && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive" 
+                        onClick={() => {
+                          if (originalImagesBeforeLogo.size > 0) {
+                            setUploadedImages(prev => prev.map(img => {
+                              const original = originalImagesBeforeLogo.get(img.id);
+                              if (original) {
+                                return { ...img, finalUrl: original };
+                              }
+                              return img;
+                            }));
+                            setOriginalImagesBeforeLogo(new Map());
+                            toast.success('Originalbilder återställda');
+                          }
+                          setLogoDesign({
+                            enabled: false,
+                            logoUrl: null,
+                            logoX: 85,
+                            logoY: 85,
+                            logoSize: 0.15,
+                            bannerEnabled: false,
+                            bannerX: 50,
+                            bannerY: 90,
+                            bannerHeight: 10,
+                            bannerWidth: 100,
+                            bannerColor: '#000000',
+                            bannerOpacity: 80,
+                            bannerRotation: 0
+                          });
+                        }}
+                        title="Ta bort logo design"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </section>}
           </div>}
