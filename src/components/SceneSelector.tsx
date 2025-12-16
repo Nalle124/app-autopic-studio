@@ -209,7 +209,6 @@ export const SceneSelector = ({
   }
 
   const SceneCard = ({ scene, isGrid = false }: { scene: SceneMetadata; isGrid?: boolean }) => {
-    const [isLoaded, setIsLoaded] = useState(false);
 
     return (
       <Card
@@ -241,23 +240,13 @@ export const SceneSelector = ({
           />
         </Button>
 
-        {/* Image with skeleton */}
+        {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-          {/* Always-visible placeholder (no pulsing) */}
-          <div
-            className={`absolute inset-0 bg-gradient-to-br from-muted via-muted/70 to-muted transition-opacity duration-300 ${
-              isLoaded ? 'opacity-0' : 'opacity-100'
-            }`}
-          />
-          
           <img
             src={scene.thumbnailUrl}
             alt={scene.name}
-            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${isLoaded ? 'opacity-100 animate-fade-in' : 'opacity-0'}`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             loading={isGrid ? 'lazy' : 'eager'}
-            decoding="async"
-            onLoad={() => setIsLoaded(true)}
-            onError={() => setIsLoaded(true)}
           />
           
           {/* Selected indicator */}
