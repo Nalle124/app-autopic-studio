@@ -10,7 +10,13 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
@@ -131,10 +137,16 @@ export default function Index() {
   }, [uploadedImages]);
   useEffect(() => {
     if (selectedScene) {
-      document.getElementById('export-section')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
+      const section = document.getElementById('export-section');
+      if (section) {
+        const headerOffset = 100;
+        const elementPosition = section.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
     }
   }, [selectedScene]);
 
@@ -152,10 +164,16 @@ export default function Index() {
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
     setTimeout(() => {
-      document.getElementById('export-section')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
+      const section = document.getElementById('export-section');
+      if (section) {
+        const headerOffset = 100; // Account for fixed header + some padding
+        const elementPosition = section.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
     }, 300);
   };
   const handleExport = async (settings: ExportSettings) => {
@@ -168,10 +186,16 @@ export default function Index() {
       
       // Scroll to results section immediately when starting generation
       setTimeout(() => {
-        document.getElementById('results-section')?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
+        const section = document.getElementById('results-section');
+        if (section) {
+          const headerOffset = 100; // Account for fixed header + some padding
+          const elementPosition = section.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
       }, 100);
       const {
         data: {
@@ -606,7 +630,7 @@ export default function Index() {
             toast.error('Kunde inte använda bilden');
           }
         }} />
-          </section> : <div className="space-y-8 pb-[50vh]">
+          </section> : <div className="space-y-8 pb-32">
             {/* Step 1: Upload */}
             <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
               <div className="flex items-center gap-3">
@@ -631,12 +655,24 @@ export default function Index() {
                     <span className="text-lg not-italic text-primary font-sans font-normal">2</span>
                   </div>
                   <h2 className="italic text-foreground font-serif text-lg font-normal">Välj bakgrund</h2>
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                          <Info className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[280px]">
+                        <p className="text-sm">Kom ihåg att olika bakgrunder passar för olika bilar och vinklar. <a href="https://autoshot.se/guide" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">Läs vår guide här</a>.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
               </section>}
 
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
-            {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6 min-h-[50vh]">
+            {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="not-italic text-primary font-sans text-base font-medium">3</span>
@@ -648,7 +684,7 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6 min-h-[70vh]">
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
