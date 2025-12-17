@@ -281,10 +281,10 @@ export const SceneSelector = ({
   const categoryScenes = getScenesByCategory(activeCategory);
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       <div className="space-y-6">
-        {/* Header with info tooltip */}
-        <div className="flex items-center gap-2 mb-2">
+        {/* Header with info tooltip - info icon inline next to heading */}
+        <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-muted-foreground">Välj bakgrund</h3>
           <Tooltip>
             <TooltipTrigger asChild>
