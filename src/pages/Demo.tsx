@@ -141,7 +141,7 @@ const DemoContent = () => {
             ? selectedScene.fullResUrl 
             : `${window.location.origin}${selectedScene.fullResUrl}`;
           formData.append('backgroundUrl', backgroundUrl);
-          formData.append('userId', 'demo-user');
+          // No userId for demo - edge function handles this
           formData.append('orientation', aspectRatio);
           formData.append('relight', 'false');
 
