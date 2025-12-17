@@ -2,22 +2,24 @@ import { useState, useEffect } from 'react';
 import { DemoSceneSelector } from '@/components/DemoSceneSelector';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
-import { UploadedImage, SceneMetadata, CarAdjustments } from '@/types/scene';
+import { UploadedImage, SceneMetadata, CarAdjustments, ExportSettings } from '@/types/scene';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Sun, ExternalLink } from 'lucide-react';
+import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Sun, Settings2, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
-import { CarAdjustmentPanel } from '@/components/CarAdjustmentPanel';
+import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import autoshotLogo from '@/assets/autoshot-logo.png';
-import holographicBg from '@/assets/holographic-bg.jpg';
+import auraGradient from '@/assets/aura-gradient-step3.jpg';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const FRAMER_LANDING_URL = 'https://olive-buttons-692436.framer.app/#hero';
 
@@ -33,6 +35,13 @@ const DemoContent = () => {
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
   const [relightEnabled, setRelightEnabled] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exportSettings, setExportSettings] = useState<ExportSettings>({
+    format: 'jpg',
+    aspectRatio: 'original',
+    quality: 90,
+    includeTransparency: false
+  });
   
   // Editing states
   const [editingImage, setEditingImage] = useState<{
@@ -264,11 +273,10 @@ const DemoContent = () => {
   // Editing handlers
   const handleCropSave = (imageId: string, croppedUrl: string, newAspectRatio: 'landscape' | 'portrait') => {
     setUploadedImages(prev => prev.map(img => 
-      img.id === imageId ? { ...img, croppedUrl } : img
+      img.id === imageId ? { ...img, finalUrl: croppedUrl } : img
     ));
     setAspectRatio(newAspectRatio);
     setEditingImage(null);
-    setEditingOriginal(null);
   };
 
   const handleOriginalCropSave = (imageId: string, croppedUrl: string, newAspectRatio: 'landscape' | 'portrait') => {
@@ -279,25 +287,19 @@ const DemoContent = () => {
     setEditingOriginal(null);
   };
 
-  const handleAdjustmentsSave = async (imageId: string, adjustments: CarAdjustments) => {
-    const image = uploadedImages.find(img => img.id === imageId);
-    if (!image || !image.finalUrl) return;
-
-    try {
-      const adjustedUrl = await applyCarAdjustments(image.finalUrl, adjustments);
-      setUploadedImages(prev => prev.map(img => 
-        img.id === imageId ? { ...img, finalUrl: adjustedUrl, carAdjustments: adjustments } : img
-      ));
-    } catch (error) {
-      console.error('Error applying adjustments:', error);
-      toast.error('Kunde inte applicera justeringar');
-    }
+  const handleAdjustmentsSave = async (adjustedUrl: string, adjustments: CarAdjustments) => {
+    if (!editingImage) return;
+    
+    setUploadedImages(prev => prev.map(img => 
+      img.id === editingImage.id ? { ...img, finalUrl: adjustedUrl, carAdjustments: adjustments } : img
+    ));
     setEditingImage(null);
   };
 
-  const handleBlurSave = (imageId: string, blurredUrl: string) => {
+  const handleBlurSave = (blurredUrl: string) => {
+    if (!editingImage) return;
     setUploadedImages(prev => prev.map(img => 
-      img.id === imageId ? { ...img, finalUrl: blurredUrl } : img
+      img.id === editingImage.id ? { ...img, finalUrl: blurredUrl } : img
     ));
     setEditingImage(null);
   };
@@ -305,6 +307,7 @@ const DemoContent = () => {
   const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
   const processingImages = uploadedImages.filter(img => img.status === 'processing');
   const galleryImages = [...completedImages, ...processingImages];
+  const remainingGenerations = maxFreeGenerations - generationsUsed;
 
   return (
     <div className="min-h-screen bg-background">
@@ -321,13 +324,6 @@ const DemoContent = () => {
             <span className="text-sm text-muted-foreground hidden sm:block">
               {generationsUsed}/{maxFreeGenerations} bilder
             </span>
-            <a 
-              href={FRAMER_LANDING_URL}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:flex items-center gap-1"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Om Autoshot
-            </a>
             <Button 
               onClick={handleCreateAccount}
               className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full"
@@ -347,7 +343,7 @@ const DemoContent = () => {
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">1</div>
               <h2 className="text-lg font-semibold text-foreground">Ladda upp bilder</h2>
             </div>
-            {/* Relight toggle */}
+            {/* Relight toggle - same as main app */}
             <div className="flex items-center gap-2">
               <Switch
                 id="relight-toggle"
@@ -376,19 +372,20 @@ const DemoContent = () => {
             <p className="text-sm text-muted-foreground">eller klicka för att välja (max 5 bilder)</p>
           </div>
 
-          {/* Uploaded images preview with edit buttons */}
+          {/* Uploaded images preview with edit buttons - matching main app */}
           {uploadedImages.length > 0 && (
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {uploadedImages.map(img => (
                 <div key={img.id} className="relative aspect-[4/3] rounded-lg overflow-hidden group">
                   <img src={img.croppedUrl || img.preview} alt="" className="w-full h-full object-cover" />
                   
-                  {/* Hover overlay with edit buttons */}
+                  {/* Hover overlay with edit buttons - same as main app */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button
                       size="icon"
                       variant="secondary"
                       className="w-8 h-8"
+                      title="Beskär"
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingOriginal({
@@ -403,8 +400,26 @@ const DemoContent = () => {
                     </Button>
                     <Button
                       size="icon"
+                      variant="secondary"
+                      className="w-8 h-8"
+                      title="Redigera"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingOriginal({
+                          id: img.id,
+                          url: img.croppedUrl || img.preview,
+                          name: img.file.name,
+                          type: 'adjust'
+                        });
+                      }}
+                    >
+                      <Sliders className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
                       variant="destructive"
                       className="w-8 h-8"
+                      title="Ta bort"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemoveImage(img.id);
@@ -439,33 +454,133 @@ const DemoContent = () => {
           />
         </Card>
 
-        {/* Step 3: Generate - smaller button like main version */}
-        <Card id="demo-export-section" className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px] overflow-hidden relative">
+        {/* Step 3: Generate - ExportPanel style matching main app */}
+        <Card id="demo-export-section" className="relative overflow-hidden rounded-[10px]" style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.3))' }}>
+          {/* Aura gradient background */}
           <div 
-            className="absolute inset-0 bg-cover bg-center opacity-20"
-            style={{ backgroundImage: `url(${holographicBg})` }}
+            className="absolute inset-0 opacity-80 transition-opacity duration-500"
+            style={{
+              backgroundImage: `url(${auraGradient})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
           />
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-6">
+          
+          {/* Dark overlay for contrast */}
+          <div className="absolute inset-0 bg-background/30" />
+
+          <div className="relative p-4 space-y-4">
+            {/* Header */}
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">3</div>
-              <h2 className="text-lg font-semibold text-foreground">AI-generering</h2>
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-0.5">
+                  AI-Generering
+                </h3>
+                <p className="text-xs text-foreground/70">
+                  Välj inställningar och starta genereringen
+                </p>
+              </div>
             </div>
-            
-            <div className="flex flex-col items-center gap-3">
-              <Button
-                onClick={generateImages}
-                disabled={isProcessing || uploadedImages.length === 0 || !selectedScene}
-                className={`h-11 px-6 font-semibold rounded-full transition-all ${
-                  isProcessing 
-                    ? 'bg-primary/80 animate-shimmer' 
-                    : 'bg-primary hover:bg-primary/90'
-                }`}
+
+            {/* Settings Collapsible - same as ExportPanel */}
+            <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between border-border/50" size="sm">
+                  <div className="flex items-center gap-2">
+                    <Settings2 className="w-4 h-4" />
+                    <span>Inställningar</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${settingsOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wider">
+                      Format
+                    </Label>
+                    <Select value={exportSettings.format} onValueChange={value => setExportSettings({
+                      ...exportSettings,
+                      format: value as ExportSettings['format']
+                    })}>
+                      <SelectTrigger className="h-10 bg-background/60 backdrop-blur-sm border-border/50 hover:bg-background/80 hover:border-primary/30 transition-all">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="jpg">JPG</SelectItem>
+                        <SelectItem value="png">PNG</SelectItem>
+                        <SelectItem value="webp">WebP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wider">
+                      Bildformat
+                    </Label>
+                    <Select value={exportSettings.aspectRatio} onValueChange={value => setExportSettings({
+                      ...exportSettings,
+                      aspectRatio: value as ExportSettings['aspectRatio']
+                    })}>
+                      <SelectTrigger className="h-10 bg-background/60 backdrop-blur-sm border-border/50 hover:bg-background/80 hover:border-primary/30 transition-all">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="original">Original</SelectItem>
+                        <SelectItem value="1:1">1:1</SelectItem>
+                        <SelectItem value="4:5">4:5</SelectItem>
+                        <SelectItem value="16:9">16:9</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wider">
+                      Kvalitet
+                    </Label>
+                    <Select value={exportSettings.quality.toString()} onValueChange={value => setExportSettings({
+                      ...exportSettings,
+                      quality: parseInt(value)
+                    })}>
+                      <SelectTrigger className="h-10 bg-background/60 backdrop-blur-sm border-border/50 hover:bg-background/80 hover:border-primary/30 transition-all">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="70">70%</SelectItem>
+                        <SelectItem value="80">80%</SelectItem>
+                        <SelectItem value="90">90%</SelectItem>
+                        <SelectItem value="95">95%</SelectItem>
+                        <SelectItem value="100">100%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Generate Button - same style as ExportPanel */}
+            <div className="space-y-2">
+              <Button 
+                onClick={generateImages} 
+                disabled={isProcessing || uploadedImages.length === 0 || !selectedScene || !canGenerate} 
+                className={`w-full h-12 text-sm font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
               >
-                {isProcessing ? 'Genererar...' : `Generera bild (${maxFreeGenerations - generationsUsed} kvar)`}
+                {/* Shimmer effect when not processing */}
+                {!isProcessing && (
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                )}
+                
+                <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? '' : 'animate-pulse'}`} />
+                <span className="relative z-10">
+                  {isProcessing ? 'Genererar...' : `Starta AI-generering (${remainingGenerations} kvar)`}
+                </span>
+                <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? '' : 'animate-pulse'}`} />
               </Button>
               
+              {/* Limit reached message */}
               {!canGenerate && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-center text-muted-foreground">
                   Du har använt alla gratis genereringar. 
                   <button onClick={() => triggerPaywall('limit')} className="text-primary ml-1 underline">
                     Skapa konto för fler
@@ -724,7 +839,7 @@ const DemoContent = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Crop Editor Modal */}
+      {/* Crop Editor Modal - for generated images */}
       {editingImage?.type === 'crop' && (
         <ImageCropEditor
           image={{ id: editingImage.id, finalUrl: editingImage.finalUrl, fileName: editingImage.fileName }}
@@ -734,28 +849,15 @@ const DemoContent = () => {
         />
       )}
 
-      {/* Adjustments Modal */}
+      {/* Adjustments Modal - using OriginalImageEditor like main app */}
       {editingImage?.type === 'adjust' && (
-        <Dialog open={true} onOpenChange={() => setEditingImage(null)}>
-          <DialogContent className="max-w-lg p-4 bg-background border-border">
-            <div className="space-y-4">
-              <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
-                <img 
-                  src={editingImage.finalUrl} 
-                  alt="Edit" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <CarAdjustmentPanel
-                adjustments={uploadedImages.find(img => img.id === editingImage.id)?.carAdjustments || { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }}
-                onAdjustmentsChange={(adjustments) => handleAdjustmentsSave(editingImage.id, adjustments)}
-              />
-              <Button onClick={() => setEditingImage(null)} className="w-full">
-                Spara ändringar
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <OriginalImageEditor
+          imageUrl={editingImage.finalUrl}
+          imageName={editingImage.fileName}
+          open={true}
+          onClose={() => setEditingImage(null)}
+          onSave={handleAdjustmentsSave}
+        />
       )}
 
       {/* Blur Editor Modal */}
@@ -764,7 +866,7 @@ const DemoContent = () => {
           imageUrl={editingImage.finalUrl}
           open={true}
           onClose={() => setEditingImage(null)}
-          onSave={(blurredUrl) => handleBlurSave(editingImage.id, blurredUrl)}
+          onSave={handleBlurSave}
         />
       )}
 
@@ -775,6 +877,22 @@ const DemoContent = () => {
           onSave={(imageId, croppedUrl, newAspectRatio) => handleOriginalCropSave(imageId, croppedUrl, newAspectRatio)}
           onClose={() => setEditingOriginal(null)}
           aspectRatio={aspectRatio}
+        />
+      )}
+
+      {/* Original Image Adjust Editor */}
+      {editingOriginal?.type === 'adjust' && (
+        <OriginalImageEditor
+          imageUrl={editingOriginal.url}
+          imageName={editingOriginal.name}
+          open={true}
+          onClose={() => setEditingOriginal(null)}
+          onSave={(adjustedUrl, adjustments) => {
+            setUploadedImages(prev => prev.map(img => 
+              img.id === editingOriginal.id ? { ...img, preview: adjustedUrl, croppedUrl: adjustedUrl, carAdjustments: adjustments } : img
+            ));
+            setEditingOriginal(null);
+          }}
         />
       )}
 

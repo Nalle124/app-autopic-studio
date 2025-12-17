@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
-import { Lock, Sparkles, Check, Zap, ArrowLeft, Loader2 } from 'lucide-react';
+import { Lock, Sparkles, Check, Zap, ArrowLeft, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import pricingGradientPopular from '@/assets/pricing-gradient-popular.jpg';
 import pricingGradientPremium from '@/assets/pricing-gradient-premium.jpg';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const features = [
   'Obegränsade AI-genererade bakgrunder',
@@ -68,6 +69,7 @@ export const DemoPaywall = () => {
   const [view, setView] = useState<PaywallView>('info');
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [isCreatingDemoAccount, setIsCreatingDemoAccount] = useState(false);
+  const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
 
   const getTitle = () => {
     switch (paywallTrigger) {
@@ -234,18 +236,19 @@ export const DemoPaywall = () => {
     </>
   );
 
-  const PricingCard = ({ planKey, plan }: { planKey: PlanKey; plan: typeof PRICING_PLANS[PlanKey] }) => {
+  // Desktop pricing card - horizontal layout
+  const DesktopPricingCard = ({ planKey, plan }: { planKey: PlanKey; plan: typeof PRICING_PLANS[PlanKey] }) => {
     const hasGradient = 'gradient' in plan && plan.gradient;
     const isPopular = 'popular' in plan && plan.popular;
     const isLoading = loadingTier === planKey;
 
     return (
       <div 
-        className={`relative rounded-[10px] overflow-hidden cursor-pointer transition-all hover:scale-[1.02] ${
+        className={`relative rounded-[10px] overflow-hidden cursor-pointer transition-all hover:scale-[1.02] flex-1 min-w-0 ${
           hasGradient 
             ? 'border border-white/10' 
             : 'border border-border bg-card'
-        }`}
+        } ${isPopular ? 'ring-2 ring-primary' : ''}`}
         onClick={() => !isLoading && handleSelectPlan(planKey)}
       >
         {/* Background gradient image */}
@@ -260,62 +263,157 @@ export const DemoPaywall = () => {
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20" />
         
         {/* Content */}
-        <div className="relative p-5">
+        <div className="relative p-4">
           {/* Header with name and popular badge */}
-          <div className="flex items-start justify-between mb-3">
-            <h3 className="font-display text-xl font-semibold text-foreground">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="font-display text-lg font-semibold text-foreground">
               {plan.name}
             </h3>
             {isPopular && (
-              <span className="px-3 py-1 text-xs rounded-full border border-white/20 bg-white/10 text-foreground/80">
+              <span className="px-2 py-0.5 text-[10px] rounded-full border border-white/20 bg-white/10 text-foreground/80">
                 Populär
               </span>
             )}
           </div>
 
           {/* Price */}
-          <div className="mb-3">
-            <span className="font-display text-4xl font-light text-foreground">{plan.price}</span>
-            <span className="text-lg text-foreground/70 ml-1">kr</span>
+          <div className="mb-2">
+            <span className="font-display text-3xl font-light text-foreground">{plan.price}</span>
+            <span className="text-base text-foreground/70 ml-1">kr</span>
             {'oneTime' in plan && plan.oneTime ? null : (
-              <span className="text-sm text-foreground/50"> /månad</span>
+              <span className="text-xs text-foreground/50"> /mån</span>
             )}
           </div>
 
-          {/* Description */}
-          <p className="text-sm text-foreground/60 mb-4">
-            {plan.description}
-          </p>
+          {/* Features - compact */}
+          {plan.features.length > 0 && (
+            <ul className="space-y-1 mb-3">
+              {plan.features.map((feature, i) => (
+                <li key={i} className="flex items-center gap-1.5 text-xs text-foreground/70">
+                  <Check className="w-3 h-3 text-foreground/50" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          )}
 
           {/* CTA Button */}
           <Button 
-            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 h-10 font-medium"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-9 text-sm font-medium"
             disabled={isLoading}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              'Testa direkt'
+              'Välj'
             )}
           </Button>
+        </div>
+      </div>
+    );
+  };
 
-          {/* Features list */}
-          {plan.features.length > 0 && (
-            <>
-              <div className="flex items-center gap-3 my-4">
-                <div className="flex-1 h-px bg-foreground/10" />
-                <span className="text-xs text-foreground/50">Detta ingår</span>
-                <div className="flex-1 h-px bg-foreground/10" />
+  // Mobile pricing card - accordion style
+  const MobilePricingCard = ({ planKey, plan }: { planKey: PlanKey; plan: typeof PRICING_PLANS[PlanKey] }) => {
+    const hasGradient = 'gradient' in plan && plan.gradient;
+    const isPopular = 'popular' in plan && plan.popular;
+    const isLoading = loadingTier === planKey;
+    const isExpanded = expandedPlan === planKey;
+
+    return (
+      <div 
+        className={`relative rounded-[10px] overflow-hidden ${
+          hasGradient 
+            ? 'border border-white/10' 
+            : 'border border-border bg-card'
+        } ${isPopular ? 'ring-2 ring-primary' : ''}`}
+      >
+        {/* Background gradient image */}
+        {hasGradient && (
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-30"
+            style={{ backgroundImage: `url(${plan.gradient})` }}
+          />
+        )}
+        
+        {/* Noise overlay */}
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10" />
+        
+        {/* Content */}
+        <div className="relative">
+          {/* Main row - always visible */}
+          <div className="p-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-base font-semibold text-foreground">
+                    {plan.name}
+                  </h3>
+                  {isPopular && (
+                    <span className="px-1.5 py-0.5 text-[9px] rounded-full border border-white/20 bg-white/10 text-foreground/80">
+                      Populär
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm">
+                  <span className="font-display text-xl font-light text-foreground">{plan.price}</span>
+                  <span className="text-foreground/70 ml-1">kr</span>
+                  {'oneTime' in plan && plan.oneTime ? null : (
+                    <span className="text-xs text-foreground/50"> /mån</span>
+                  )}
+                </div>
               </div>
-              <ul className="space-y-2">
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button 
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-8 px-4 text-xs font-medium"
+                disabled={isLoading}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectPlan(planKey);
+                }}
+              >
+                {isLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  'Välj'
+                )}
+              </Button>
+              
+              {plan.features.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedPlan(isExpanded ? null : planKey);
+                  }}
+                >
+                  {isExpanded ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Expandable features */}
+          {isExpanded && plan.features.length > 0 && (
+            <div className="px-3 pb-3 border-t border-border/50">
+              <p className="text-[10px] text-foreground/50 pt-2 pb-1">Detta ingår:</p>
+              <ul className="space-y-1">
                 {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-foreground/80">
-                    <Check className="w-4 h-4 text-foreground/50" />
+                  <li key={i} className="flex items-center gap-1.5 text-xs text-foreground/70">
+                    <Check className="w-3 h-3 text-foreground/50" />
                     {feature}
                   </li>
                 ))}
               </ul>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -337,32 +435,39 @@ export const DemoPaywall = () => {
         <h2 className="font-display text-xl italic text-foreground">Välj ditt paket</h2>
       </div>
 
-      {/* Subscription plans */}
-      <div className="space-y-3 mb-4">
+      {/* Desktop: Horizontal layout */}
+      <div className="hidden md:flex gap-3 mb-4">
         {(['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const).map((key) => (
-          <PricingCard key={key} planKey={key} plan={PRICING_PLANS[key]} />
+          <DesktopPricingCard key={key} planKey={key} plan={PRICING_PLANS[key]} />
+        ))}
+      </div>
+
+      {/* Mobile: Accordion layout */}
+      <div className="md:hidden space-y-2 mb-4">
+        {(['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const).map((key) => (
+          <MobilePricingCard key={key} planKey={key} plan={PRICING_PLANS[key]} />
         ))}
       </div>
 
       {/* One-time purchase */}
-      <div className="relative rounded-[10px] overflow-hidden border border-border bg-card/50 p-4">
+      <div className="relative rounded-[10px] overflow-hidden border border-border bg-card/50 p-3">
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10" />
         <div className="relative flex items-center justify-between">
           <div>
-            <h3 className="font-display text-lg font-medium text-foreground">
+            <h3 className="font-display text-sm font-medium text-foreground">
               {PRICING_PLANS.creditPack.name}
             </h3>
-            <p className="text-sm text-foreground/60">
+            <p className="text-xs text-foreground/60 hidden sm:block">
               {PRICING_PLANS.creditPack.description}
             </p>
           </div>
           <Button 
-            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5 h-9 text-sm font-medium"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 h-8 text-xs font-medium"
             onClick={() => handleSelectPlan('creditPack')}
             disabled={loadingTier === 'creditPack'}
           >
             {loadingTier === 'creditPack' ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-3 h-3 animate-spin" />
             ) : (
               `${PRICING_PLANS.creditPack.price} kr`
             )}
@@ -390,7 +495,7 @@ export const DemoPaywall = () => {
 
   return (
     <Dialog open={showPaywall} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden bg-background border-border">
+      <DialogContent className="sm:max-w-lg md:max-w-2xl p-0 overflow-hidden bg-background border-border">
         {view === 'info' && renderInfoView()}
         {view === 'plans' && renderPlansView()}
       </DialogContent>
