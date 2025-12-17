@@ -373,7 +373,9 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
             </div>
 
             <p className="text-[10px] text-muted-foreground leading-tight pt-1">
-              Dra bilden för att positionera. Nyp med två fingrar för att zooma på mobil.
+              {localAspectRatio === 'free' 
+                ? 'I fritt läge: Dra bilden för att positionera. Nyp med två fingrar för att ändra storlek på beskärningsytan.'
+                : 'Dra bilden för att positionera. Nyp med två fingrar för att zooma på mobil.'}
             </p>
           </div>
         </div>

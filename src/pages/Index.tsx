@@ -165,8 +165,14 @@ export default function Index() {
     }
     try {
       setIsProcessing(true);
-
-      // Get current user
+      
+      // Scroll to results section immediately when starting generation
+      setTimeout(() => {
+        document.getElementById('results-section')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 100);
       const {
         data: {
           user
@@ -323,15 +329,7 @@ export default function Index() {
         }
       }
       setIsProcessing(false);
-      if (successCount > 0) {
-        // Scroll to results section after generation
-        setTimeout(() => {
-          document.getElementById('results-section')?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }, 300);
-      }
+      // Don't auto-scroll after completion - scroll happens when clicking generate button
       if (errorCount > 0) {
         toast.error(`${errorCount} bilder misslyckades`);
       }
@@ -608,7 +606,7 @@ export default function Index() {
             toast.error('Kunde inte använda bilden');
           }
         }} />
-          </section> : <div className="space-y-8">
+          </section> : <div className="space-y-8 pb-[50vh]">
             {/* Step 1: Upload */}
             <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
               <div className="flex items-center gap-3">
@@ -637,8 +635,8 @@ export default function Index() {
                 <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
               </section>}
 
-            {/* Step 3: Generation & Logo */}
-            {selectedScene && <section id="export-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6">
+            {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
+            {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6 min-h-[50vh]">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="not-italic text-primary font-sans text-base font-medium">3</span>
@@ -733,7 +731,19 @@ export default function Index() {
                       </div>
                     </Card>)}
                   
-                  {uploadedImages.filter(img => img.status === 'completed' || img.status === 'processing').map((image, idx) => <Card key={image.id} className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''}`} onClick={() => image.status === 'completed' && !loadingImages.has(image.id) && toggleImageSelection(image.id)}>
+                  {uploadedImages.filter(img => img.status === 'completed' || img.status === 'processing').map((image, idx) => <Card key={image.id} className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''}`} onClick={() => {
+                      if (image.status !== 'completed' || loadingImages.has(image.id)) return;
+                      
+                      // If select mode is active (any image selected), toggle selection
+                      // Otherwise, open preview directly
+                      if (selectedImages.size > 0) {
+                        toggleImageSelection(image.id);
+                      } else {
+                        const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                        setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
+                        setPreviewImage(image.finalUrl!);
+                      }
+                    }}>
                       {/* Image Preview - ALWAYS show finalUrl for generated images */}
                       <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                         {/* Show blurred placeholder while processing */}
@@ -752,18 +762,6 @@ export default function Index() {
                         {/* Selection indicator */}
                         {image.status === 'completed' && selectedImages.has(image.id) && <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                             <Check className="w-4 h-4 text-primary-foreground" />
-                          </div>}
-                        
-                        {/* Preview button overlay - only show if NOT in select mode and not loading */}
-                        {image.status === 'completed' && selectedImages.size === 0 && !loadingImages.has(image.id) && <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button size="icon" variant="secondary" onClick={e => {
-                    e.stopPropagation();
-                    const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                    setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
-                    setPreviewImage(image.finalUrl!);
-                  }} title="Förhandsgranska">
-                              <Eye className="w-4 h-4" />
-                            </Button>
                           </div>}
                       </div>
                     </Card>)}

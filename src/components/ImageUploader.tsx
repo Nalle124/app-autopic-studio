@@ -138,9 +138,9 @@ export const ImageUploader = ({
 
       {uploadedImages.length > 0 && (
         <div id="uploaded-images">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-3 mb-4">
+            <div className="flex-1 min-w-0 space-y-3 sm:space-y-2">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <ImageIcon className="w-5 h-5" />
                 <span className="truncate">Uppladdade bilder ({uploadedImages.filter(img => img.isOriginal !== false).length})</span>
               </h3>
@@ -158,7 +158,7 @@ export const ImageUploader = ({
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-3 sm:gap-2 flex-wrap mt-2 sm:mt-0">
               {uploadedImages.length > 0 && onEditImage && (
                 <>
                   <Button variant="outline" size="icon" className="h-9 w-9" title="Beskär" onClick={() => {
@@ -178,23 +178,25 @@ export const ImageUploader = ({
                 </>
               )}
               
-              {/* Relight toggle with info tooltip */}
+              {/* Relight toggle */}
               {uploadedImages.length > 0 && onRelightChange && (
                 <TooltipProvider>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
-                    <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
-                      Retouch
-                    </Label>
-                    <Switch
-                      id="relight-toggle"
-                      checked={relightEnabled}
-                      onCheckedChange={onRelightChange}
-                      className="data-[state=checked]:bg-primary"
-                    />
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
+                      <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
+                        Retouch
+                      </Label>
+                      <Switch
+                        id="relight-toggle"
+                        checked={relightEnabled}
+                        onCheckedChange={onRelightChange}
+                        className="data-[state=checked]:bg-primary"
+                      />
+                    </div>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <button type="button" className="text-muted-foreground hover:text-foreground transition-colors p-1">
                           <Info className="w-4 h-4" />
                         </button>
                       </TooltipTrigger>
