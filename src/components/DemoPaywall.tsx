@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useDemo } from '@/contexts/DemoContext';
 import { Lock, Sparkles, Check, Zap, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PRICING_TIERS, PricingTier } from '@/config/pricing';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import pricingGradientPopular from '@/assets/pricing-gradient-popular.jpg';
+import pricingGradientPremium from '@/assets/pricing-gradient-premium.jpg';
 
 const features = [
   'Obegränsade AI-genererade bakgrunder',
@@ -18,6 +17,49 @@ const features = [
   'Galleri med alla dina projekt',
 ];
 
+// Updated pricing tiers matching the landing page design
+const PRICING_PLANS = {
+  hobbyhandlaren: {
+    name: 'Hobbyhandlaren',
+    price: 399,
+    credits: 100,
+    priceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n',
+    description: 'Få full tillgång till magisk annonsbild-generering.',
+    features: ['100 bilder', 'Brand kit', 'Support'],
+    gradient: null,
+  },
+  blocketkungen: {
+    name: 'Blocketkungen',
+    price: 599,
+    credits: 300,
+    priceId: 'price_1SbVePJQldzCYD0ZL3pOnmK9',
+    description: 'Få full tillgång till magisk annonsbild-generering.',
+    features: ['300 bilder', 'Brand kit', 'Support'],
+    popular: true,
+    gradient: pricingGradientPopular,
+  },
+  storafisken: {
+    name: 'Stora fisken',
+    price: 999,
+    credits: 600,
+    priceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk',
+    description: 'Få full tillgång till magisk annonsbild-generering.',
+    features: ['500 bilder', 'Brand kit', 'Support'],
+    gradient: pricingGradientPremium,
+  },
+  creditPack: {
+    name: '30 bilder — engångsköp',
+    price: 69,
+    credits: 30,
+    priceId: 'price_1SbVf4JQldzCYD0Z11oZm3qb',
+    description: 'Få full tillgång till magisk generering, brandkit och redigering.',
+    features: [],
+    oneTime: true,
+    gradient: null,
+  },
+} as const;
+
+type PlanKey = keyof typeof PRICING_PLANS;
 type PaywallView = 'info' | 'plans' | 'auth';
 
 export const DemoPaywall = () => {
@@ -66,23 +108,20 @@ export const DemoPaywall = () => {
     setView('info');
   };
 
-  const handleSelectPlan = async (tier: PricingTier) => {
-    const tierConfig = PRICING_TIERS[tier];
+  const handleSelectPlan = async (tier: PlanKey) => {
+    const tierConfig = PRICING_PLANS[tier];
     const isOneTime = 'oneTime' in tierConfig && tierConfig.oneTime;
     setLoadingTier(tier);
 
     try {
-      // Check if user is logged in
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        // Redirect to auth with return URL
         handleClose();
         navigate('/auth?returnTo=/pricing');
         return;
       }
 
-      // User is logged in, create checkout
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           priceId: tierConfig.priceId,
@@ -105,11 +144,9 @@ export const DemoPaywall = () => {
     }
   };
 
-  // Temporary demo account creation for testing (bypasses Stripe)
   const handleCreateDemoAccount = async () => {
     setIsCreatingDemoAccount(true);
     try {
-      // Generate a random email for testing
       const randomId = Math.random().toString(36).substring(2, 10);
       const demoEmail = `demo-${randomId}@test.autoshot.se`;
       const demoPassword = `demo-${randomId}-password`;
@@ -145,7 +182,6 @@ export const DemoPaywall = () => {
 
   const renderInfoView = () => (
     <>
-      {/* Header with gradient */}
       <div className="relative p-6 pb-8 bg-gradient-to-br from-primary/20 via-accent-pink/10 to-background">
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5" />
         <div className="relative">
@@ -161,7 +197,6 @@ export const DemoPaywall = () => {
         </div>
       </div>
 
-      {/* Features list */}
       <div className="p-6 space-y-4">
         <div className="space-y-3">
           {features.map((feature, i) => (
@@ -174,7 +209,6 @@ export const DemoPaywall = () => {
           ))}
         </div>
 
-        {/* CTA buttons */}
         <div className="space-y-3 pt-4">
           <Button 
             onClick={() => setView('plans')}
@@ -192,7 +226,6 @@ export const DemoPaywall = () => {
           </Button>
         </div>
 
-        {/* Trust badge */}
         <p className="text-xs text-center text-muted-foreground pt-2">
           <Zap className="w-3 h-3 inline mr-1" />
           Kom igång på 30 sekunder
@@ -201,9 +234,98 @@ export const DemoPaywall = () => {
     </>
   );
 
+  const PricingCard = ({ planKey, plan }: { planKey: PlanKey; plan: typeof PRICING_PLANS[PlanKey] }) => {
+    const hasGradient = 'gradient' in plan && plan.gradient;
+    const isPopular = 'popular' in plan && plan.popular;
+    const isLoading = loadingTier === planKey;
+
+    return (
+      <div 
+        className={`relative rounded-[10px] overflow-hidden cursor-pointer transition-all hover:scale-[1.02] ${
+          hasGradient 
+            ? 'border border-white/10' 
+            : 'border border-border bg-card'
+        }`}
+        onClick={() => !isLoading && handleSelectPlan(planKey)}
+      >
+        {/* Background gradient image */}
+        {hasGradient && (
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-40"
+            style={{ backgroundImage: `url(${plan.gradient})` }}
+          />
+        )}
+        
+        {/* Noise overlay */}
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20" />
+        
+        {/* Content */}
+        <div className="relative p-5">
+          {/* Header with name and popular badge */}
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="font-display text-xl font-semibold text-foreground">
+              {plan.name}
+            </h3>
+            {isPopular && (
+              <span className="px-3 py-1 text-xs rounded-full border border-white/20 bg-white/10 text-foreground/80">
+                Populär
+              </span>
+            )}
+          </div>
+
+          {/* Price */}
+          <div className="mb-3">
+            <span className="font-display text-4xl font-light text-foreground">{plan.price}</span>
+            <span className="text-lg text-foreground/70 ml-1">kr</span>
+            {'oneTime' in plan && plan.oneTime ? null : (
+              <span className="text-sm text-foreground/50"> /månad</span>
+            )}
+          </div>
+
+          {/* Description */}
+          <p className="text-sm text-foreground/60 mb-4">
+            {plan.description}
+          </p>
+
+          {/* CTA Button */}
+          <Button 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 h-10 font-medium"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              'Testa direkt'
+            )}
+          </Button>
+
+          {/* Features list */}
+          {plan.features.length > 0 && (
+            <>
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-foreground/10" />
+                <span className="text-xs text-foreground/50">Detta ingår</span>
+                <div className="flex-1 h-px bg-foreground/10" />
+              </div>
+              <ul className="space-y-2">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-foreground/80">
+                    <Check className="w-4 h-4 text-foreground/50" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderPlansView = () => (
-    <div className="p-6">
-      <div className="flex items-center gap-2 mb-6">
+    <div className="p-4 max-h-[85vh] overflow-y-auto">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-4">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -212,76 +334,44 @@ export const DemoPaywall = () => {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <h2 className="text-xl font-bold text-foreground">Välj din plan</h2>
+        <h2 className="font-display text-xl italic text-foreground">Välj ditt paket</h2>
       </div>
 
-      <div className="space-y-4 mb-6">
-        {(['starter', 'professional', 'business'] as const).map((tier) => {
-          const config = PRICING_TIERS[tier];
-          const isPopular = 'popular' in config && config.popular;
-
-          return (
-            <Card
-              key={tier}
-              className={`relative cursor-pointer transition-all hover:border-primary/50 ${isPopular ? 'border-primary shadow-md' : ''}`}
-              onClick={() => handleSelectPlan(tier)}
-            >
-              {isPopular && (
-                <Badge className="absolute -top-2 left-4 text-xs">
-                  Populärast
-                </Badge>
-              )}
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-primary" />
-                      {config.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{config.credits} credits/månad</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-2xl font-bold">{config.price}</span>
-                    <span className="text-sm text-muted-foreground"> kr/mån</span>
-                  </div>
-                </div>
-                {loadingTier === tier && (
-                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Subscription plans */}
+      <div className="space-y-3 mb-4">
+        {(['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const).map((key) => (
+          <PricingCard key={key} planKey={key} plan={PRICING_PLANS[key]} />
+        ))}
       </div>
 
       {/* One-time purchase */}
-      <Card 
-        className="cursor-pointer transition-all hover:border-primary/50 mb-6"
-        onClick={() => handleSelectPlan('creditPack')}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">{PRICING_TIERS.creditPack.name}</h3>
-              <p className="text-sm text-muted-foreground">{PRICING_TIERS.creditPack.credits} credits (engångsköp)</p>
-            </div>
-            <div className="text-right">
-              <span className="text-2xl font-bold">{PRICING_TIERS.creditPack.price}</span>
-              <span className="text-sm text-muted-foreground"> kr</span>
-            </div>
+      <div className="relative rounded-[10px] overflow-hidden border border-border bg-card/50 p-4">
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10" />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-lg font-medium text-foreground">
+              {PRICING_PLANS.creditPack.name}
+            </h3>
+            <p className="text-sm text-foreground/60">
+              {PRICING_PLANS.creditPack.description}
+            </p>
           </div>
-          {loadingTier === 'creditPack' && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <Button 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5 h-9 text-sm font-medium"
+            onClick={() => handleSelectPlan('creditPack')}
+            disabled={loadingTier === 'creditPack'}
+          >
+            {loadingTier === 'creditPack' ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              `${PRICING_PLANS.creditPack.price} kr`
+            )}
+          </Button>
+        </div>
+      </div>
 
-      {/* Temporary demo account option for testing */}
-      <div className="border-t border-border pt-4">
+      {/* Demo account option */}
+      <div className="border-t border-border pt-4 mt-4">
         <p className="text-xs text-center text-muted-foreground mb-3">
           Bara testa? Skapa ett gratis demo-konto
         </p>
@@ -289,11 +379,9 @@ export const DemoPaywall = () => {
           variant="outline"
           onClick={handleCreateDemoAccount}
           disabled={isCreatingDemoAccount}
-          className="w-full rounded-full"
+          className="w-full rounded-full border-border/50"
         >
-          {isCreatingDemoAccount ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          ) : null}
+          {isCreatingDemoAccount && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
           Skapa gratis demo-konto
         </Button>
       </div>
@@ -302,7 +390,7 @@ export const DemoPaywall = () => {
 
   return (
     <Dialog open={showPaywall} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-background border-border">
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden bg-background border-border">
         {view === 'info' && renderInfoView()}
         {view === 'plans' && renderPlansView()}
       </DialogContent>
