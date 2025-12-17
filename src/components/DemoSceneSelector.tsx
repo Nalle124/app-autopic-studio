@@ -2,11 +2,19 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, Lock, Star } from 'lucide-react';
+import { Check, Lock, Star, LayoutGrid, GalleryHorizontal } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface DemoSceneSelectorProps {
   selectedSceneId: string | null;
@@ -15,7 +23,46 @@ interface DemoSceneSelectorProps {
   onOrientationChange?: (orientation: 'landscape' | 'portrait') => void;
 }
 
-const DEMO_SCENE_LIMIT = 10;
+// Specific demo scene IDs
+const DEMO_SCENE_IDS = [
+  'wood-slat-studio',
+  'nordic-showroom',
+  'platvagg-studio',
+  'svart-platvagg',
+  'verkstad-ljus',
+  'warszawa-showroom',
+  'gra-enkel-studio',
+  'stiftsgarden',
+  'hostgata',
+  'hansahamn-kullsten',
+  'bla-sammet-draperi',
+];
+
+// Category config matching main app
+const categoryConfig: Record<string, { order: number; description: string }> = {
+  'demo': { order: 0, description: 'Gratis demo-bakgrunder' },
+  'studio-light': { order: 1, description: 'Ljusa studiomiljöer med rena ytor' },
+  'studio-dark': { order: 2, description: 'Mörka studios med dramatisk belysning' },
+  'studio-colored': { order: 3, description: 'Färgstarka studios med personlighet' },
+  'autumn': { order: 4, description: 'Höstmiljöer med varma färger' },
+  'winter': { order: 5, description: 'Vintermiljöer med nordisk känsla' },
+  'outdoor': { order: 6, description: 'Utomhusmiljöer och naturliga scener' },
+  'premium': { order: 7, description: 'Exklusiva miljöer för lyxbilar' },
+};
+
+const getCategoryDisplayName = (category: string) => {
+  const names: Record<string, string> = {
+    'demo': 'Demo',
+    'studio-light': 'Ljusa Studios',
+    'studio-dark': 'Mörka Studios',
+    'studio-colored': 'Färgade Studios',
+    'autumn': 'Höst',
+    'winter': 'Vinter',
+    'outdoor': 'Utomhus',
+    'premium': 'Premium',
+  };
+  return names[category] || category;
+};
 
 export const DemoSceneSelector = ({ 
   selectedSceneId, 
@@ -25,8 +72,10 @@ export const DemoSceneSelector = ({
 }: DemoSceneSelectorProps) => {
   const [allScenes, setAllScenes] = useState<SceneMetadata[]>([]);
   const [demoScenes, setDemoScenes] = useState<SceneMetadata[]>([]);
-  const [lockedScenes, setLockedScenes] = useState<SceneMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>('demo');
+  const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('grid');
   const { triggerPaywall } = useDemo();
   const isMobile = useIsMobile();
 
@@ -73,13 +122,26 @@ export const DemoSceneSelector = ({
 
       setAllScenes(scenesData);
 
-      // Select 10 random scenes for demo
-      const shuffled = [...scenesData].sort(() => Math.random() - 0.5);
-      const demo = shuffled.slice(0, DEMO_SCENE_LIMIT);
-      const locked = shuffled.slice(DEMO_SCENE_LIMIT);
+      // Filter demo scenes by ID
+      const demo = scenesData.filter(scene => 
+        DEMO_SCENE_IDS.some(id => scene.id.toLowerCase().includes(id.toLowerCase()) || scene.name.toLowerCase().includes(id.toLowerCase().replace(/-/g, ' ')))
+      );
       
-      setDemoScenes(demo);
-      setLockedScenes(locked);
+      // If no matches by ID, get first 10
+      if (demo.length === 0) {
+        setDemoScenes(scenesData.slice(0, 10));
+      } else {
+        setDemoScenes(demo.slice(0, 11));
+      }
+
+      // Extract categories
+      const uniqueCategories = Array.from(new Set(scenesData.map((s) => s.category)));
+      const sortedCategories = uniqueCategories.sort((a, b) => {
+        const orderA = categoryConfig[a]?.order ?? 99;
+        const orderB = categoryConfig[b]?.order ?? 99;
+        return orderA - orderB;
+      });
+      setCategories(['demo', ...sortedCategories]);
     } catch (error) {
       console.error('Error loading scenes:', error);
     } finally {
@@ -91,6 +153,21 @@ export const DemoSceneSelector = ({
     triggerPaywall('premium-scene');
   };
 
+  const handleCategoryChange = (category: string) => {
+    setActiveCategory(category);
+    if (category !== 'demo') {
+      // Show paywall when switching to non-demo category
+      triggerPaywall('premium-scene');
+    }
+  };
+
+  const getScenesByCategory = (category: string) => {
+    if (category === 'demo') {
+      return demoScenes;
+    }
+    return allScenes.filter((scene) => scene.category === category);
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -99,11 +176,13 @@ export const DemoSceneSelector = ({
     );
   }
 
-  const SceneCard = ({ scene, isLocked = false }: { scene: SceneMetadata; isLocked?: boolean }) => {
+  const SceneCard = ({ scene, isLocked = false, isGrid = false }: { scene: SceneMetadata; isLocked?: boolean; isGrid?: boolean }) => {
     return (
       <Card
         onClick={() => isLocked ? handleLockedSceneClick() : onSceneSelect(scene)}
         className={`group relative overflow-hidden cursor-pointer transition-all duration-300 ${
+          isGrid ? 'w-full' : 'flex-shrink-0 w-72 snap-center'
+        } ${
           isLocked ? 'opacity-60' : ''
         } ${
           selectedSceneId === scene.id && !isLocked
@@ -153,9 +232,12 @@ export const DemoSceneSelector = ({
     );
   };
 
+  const categoryScenes = getScenesByCategory(activeCategory);
+  const isLockedCategory = activeCategory !== 'demo';
+
   return (
-    <div className="space-y-6">
-      {/* Orientation toggle */}
+    <div className="space-y-4">
+      {/* Orientation toggle - compact on mobile */}
       {isMobile && onOrientationChange && (
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Format:</span>
@@ -178,8 +260,74 @@ export const DemoSceneSelector = ({
         </div>
       )}
 
-      {!isMobile && onOrientationChange && (
-        <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-4 mb-4">
+        {/* Mobile: Dropdown select for categories */}
+        {isMobile ? (
+          <Select value={activeCategory} onValueChange={handleCategoryChange}>
+            <SelectTrigger className="flex-1 bg-background/50 backdrop-blur-sm border-border/50">
+              <SelectValue>
+                {activeCategory === 'demo' ? (
+                  <span className="flex items-center gap-2">
+                    <Star className="w-4 h-4 fill-current text-primary" />
+                    Demo
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Lock className="w-3 h-3" />
+                    {getCategoryDisplayName(activeCategory)}
+                  </span>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-background border-border z-50">
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category === 'demo' ? (
+                    <span className="flex items-center gap-2">
+                      <Star className="w-4 h-4 fill-current text-primary" />
+                      Demo
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Lock className="w-3 h-3 text-muted-foreground" />
+                      {getCategoryDisplayName(category)}
+                    </span>
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          /* Desktop: Tab buttons */
+          <div className="flex-1 flex gap-2 bg-background/50 backdrop-blur-sm p-2 rounded-xl border border-border/50 overflow-x-auto">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => handleCategoryChange(category)}
+                className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap font-medium text-sm ${
+                  activeCategory === category
+                    ? 'bg-primary text-primary-foreground shadow-glow'
+                    : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {category === 'demo' ? (
+                  <span className="flex items-center gap-2">
+                    <Star className="w-4 h-4 fill-current" />
+                    Demo
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    {category !== 'demo' && <Lock className="w-3 h-3" />}
+                    {getCategoryDisplayName(category)}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+        
+        {/* Desktop: Orientation toggle */}
+        {!isMobile && onOrientationChange && (
           <ToggleGroup 
             type="single" 
             value={orientation} 
@@ -195,40 +343,95 @@ export const DemoSceneSelector = ({
               <span className="text-xs">Stående</span>
             </ToggleGroupItem>
           </ToggleGroup>
+        )}
+        
+        {/* View toggle */}
+        <ToggleGroup 
+          type="single" 
+          value={viewMode} 
+          onValueChange={(value) => value && setViewMode(value as 'slideshow' | 'grid')}
+          className="bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border/50"
+        >
+          <ToggleGroupItem value="slideshow" aria-label="Slideshow vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+            <GalleryHorizontal className="w-4 h-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="grid" aria-label="Grid vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+            <LayoutGrid className="w-4 h-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      {/* Category description */}
+      {categoryConfig[activeCategory]?.description && (
+        <div className="text-center mb-4">
+          <p className="text-sm text-muted-foreground">
+            {categoryConfig[activeCategory].description}
+          </p>
         </div>
       )}
 
-      {/* Demo scenes header */}
-      <div className="flex items-center gap-2">
-        <Star className="w-4 h-4 text-primary fill-primary" />
-        <span className="text-sm font-medium text-foreground">Demo-bakgrunder</span>
-        <span className="text-xs text-muted-foreground">({demoScenes.length} tillgängliga)</span>
-      </div>
-
-      {/* Demo scenes grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {demoScenes.map((scene) => (
-          <SceneCard key={scene.id} scene={scene} />
-        ))}
-      </div>
-
-      {/* Locked scenes section */}
-      {lockedScenes.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 mt-8">
-            <Lock className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Premium-bakgrunder</span>
-            <span className="text-xs text-muted-foreground">({lockedScenes.length}+ fler med konto)</span>
-          </div>
-
-          {/* Show only first 6 locked scenes as preview */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {lockedScenes.slice(0, 6).map((scene) => (
-              <SceneCard key={scene.id} scene={scene} isLocked />
+      {/* Scene cards with locked/unlocked state */}
+      {isLockedCategory ? (
+        // Locked category: show blurred grid with fade
+        <div className="relative">
+          <div className={`${viewMode === 'grid' 
+            ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4' 
+            : 'flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide'
+          }`}>
+            {categoryScenes.slice(0, 10).map((scene, index) => (
+              <div 
+                key={scene.id} 
+                className={`${index >= 5 ? 'opacity-30' : ''}`}
+                style={{ filter: 'blur(2px)' }}
+              >
+                <SceneCard scene={scene} isLocked isGrid={viewMode === 'grid'} />
+              </div>
             ))}
           </div>
+          
+          {/* Fade overlay with premium badge */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/80 to-transparent flex flex-col items-center justify-end pb-6 pointer-events-none">
+            <div className="pointer-events-auto">
+              <Button 
+                onClick={handleLockedSceneClick}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Lås upp med konto
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Demo category: show normal grid
+        <>
+          {viewMode === 'slideshow' ? (
+            <div className="relative">
+              <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+                {categoryScenes.map((scene) => (
+                  <SceneCard key={scene.id} scene={scene} />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {categoryScenes.map((scene) => (
+                <SceneCard key={scene.id} scene={scene} isGrid />
+              ))}
+            </div>
+          )}
         </>
       )}
+
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 };
