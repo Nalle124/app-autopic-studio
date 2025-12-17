@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Image as ImageIcon, Scissors, Sliders, Sparkles } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Scissors, Sliders, Sparkles, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -9,6 +9,12 @@ import { UploadedImage } from '@/types/scene';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ImageUploaderProps {
   onImagesUploaded: (images: UploadedImage[]) => void;
@@ -22,6 +28,7 @@ interface ImageUploaderProps {
   relightEnabled?: boolean;
   onRelightChange?: (enabled: boolean) => void;
 }
+
 export const ImageUploader = ({
   onImagesUploaded,
   onClearAll,
@@ -35,13 +42,11 @@ export const ImageUploader = ({
   onRelightChange
 }: ImageUploaderProps) => {
   const [localImages, setLocalImages] = useState<UploadedImage[]>([]);
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const uploadedImages = propUploadedImages || localImages;
+  
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    // Require login to upload
     if (!user) {
       toast.error('Du måste logga in för att ladda upp bilder');
       navigate('/auth');
@@ -73,32 +78,34 @@ export const ImageUploader = ({
       }
     }, 300);
   }, [onImagesUploaded, user, navigate]);
-  const {
-    getRootProps,
-    getInputProps,
-    isDragActive
-  } = useDropzone({
+  
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.webp']
     },
     maxFiles: 50
   });
+  
   const removeImage = (id: string) => {
     const removed = uploadedImages.find(img => img.id === id);
     if (removed) {
       URL.revokeObjectURL(removed.preview);
     }
-    
-    // Update local state
     setLocalImages(prev => prev.filter(img => img.id !== id));
-    
-    // Notify parent to update its state
     if (onRemoveImage) {
       onRemoveImage(id);
     }
   };
-  return <div className="space-y-6">
+
+  const handleClearAll = () => {
+    uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
+    setLocalImages([]);
+    onClearAll?.();
+  };
+  
+  return (
+    <div className="space-y-6">
       <Card {...getRootProps()} className="cursor-pointer hover:border-primary/80 transition-colors">
         <input {...getInputProps()} />
         <div className="p-6 text-center shadow-none border-primary border border-dashed">
@@ -117,7 +124,20 @@ export const ImageUploader = ({
         </div>
       </Card>
 
-      {uploadedImages.length > 0 && <div id="uploaded-images">
+      {/* Clear all - centered text with lines */}
+      {uploadedImages.length > 0 && (
+        <button
+          onClick={handleClearAll}
+          className="w-full flex items-center justify-center gap-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <span className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors" />
+          <span className="whitespace-nowrap">Rensa allt</span>
+          <span className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors" />
+        </button>
+      )}
+
+      {uploadedImages.length > 0 && (
+        <div id="uploaded-images">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-2">
@@ -158,36 +178,39 @@ export const ImageUploader = ({
                 </>
               )}
               
-              {/* Relight toggle */}
+              {/* Relight toggle with info tooltip */}
               {uploadedImages.length > 0 && onRelightChange && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
-                  <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
-                    Retouch
-                  </Label>
-                  <Switch
-                    id="relight-toggle"
-                    checked={relightEnabled}
-                    onCheckedChange={onRelightChange}
-                    className="data-[state=checked]:bg-primary"
-                  />
-                </div>
-              )}
-              
-              {uploadedImages.length > 0 && (
-                <Button variant="outline" size="sm" className="h-9 whitespace-nowrap" onClick={() => {
-                  uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
-                  setLocalImages([]);
-                  onClearAll?.();
-                }}>
-                  Rensa
-                </Button>
+                <TooltipProvider>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
+                    <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
+                      Retouch
+                    </Label>
+                    <Switch
+                      id="relight-toggle"
+                      checked={relightEnabled}
+                      onCheckedChange={onRelightChange}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                          <Info className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[250px] text-center">
+                        <p className="text-sm">Återupplivar ljuset i bilen och är perfekt när det var för mörkt eller mycket reflektioner i originalbilden.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
               )}
             </div>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {uploadedImages.filter(img => img.isOriginal !== false).map(image => <Card key={image.id} className={`group relative overflow-hidden ${animatingImages?.has(image.id) ? 'animate-clean-boost' : ''}`}>
+            {uploadedImages.filter(img => img.isOriginal !== false).map(image => (
+              <Card key={image.id} className={`group relative overflow-hidden ${animatingImages?.has(image.id) ? 'animate-clean-boost' : ''}`}>
                 <div className="aspect-square relative">
                   <img src={image.croppedUrl || image.preview} alt="Original bild" className="w-full h-full object-cover" />
                   
@@ -206,27 +229,32 @@ export const ImageUploader = ({
                   
                   {/* Hover overlay with actions */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    {onEditImage && <>
+                    {onEditImage && (
+                      <>
                         <Button variant="secondary" size="icon" className="rounded-full shadow-lg hover-scale" onClick={e => {
-                  e.stopPropagation();
-                  onEditImage(image.id, 'crop');
-                }} title="Beskär">
+                          e.stopPropagation();
+                          onEditImage(image.id, 'crop');
+                        }} title="Beskär">
                           <Scissors className="w-4 h-4" />
                         </Button>
                         <Button variant="secondary" size="icon" className="rounded-full shadow-lg hover-scale" onClick={e => {
-                  e.stopPropagation();
-                  onEditImage(image.id, 'adjust');
-                }} title="Redigera">
+                          e.stopPropagation();
+                          onEditImage(image.id, 'adjust');
+                        }} title="Redigera">
                           <Sliders className="w-4 h-4" />
                         </Button>
-                      </>}
+                      </>
+                    )}
                     <Button variant="destructive" size="icon" className="rounded-full shadow-lg hover-scale" onClick={() => removeImage(image.id)}>
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
-              </Card>)}
+              </Card>
+            ))}
           </div>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };

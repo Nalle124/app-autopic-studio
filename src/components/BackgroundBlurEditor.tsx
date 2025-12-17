@@ -31,6 +31,70 @@ const defaultSettings: BlurSettings = {
   ovalY: 50,
 };
 
+// Simple box blur implementation
+function boxBlur(imageData: ImageData, radius: number): ImageData {
+  const pixels = imageData.data;
+  const width = imageData.width;
+  const height = imageData.height;
+  const output = new Uint8ClampedArray(pixels);
+  
+  const kernelSize = radius * 2 + 1;
+  const kernelArea = kernelSize * kernelSize;
+  
+  // Horizontal pass
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let r = 0, g = 0, b = 0, a = 0, count = 0;
+      
+      for (let kx = -radius; kx <= radius; kx++) {
+        const px = Math.min(Math.max(x + kx, 0), width - 1);
+        const idx = (y * width + px) * 4;
+        r += pixels[idx];
+        g += pixels[idx + 1];
+        b += pixels[idx + 2];
+        a += pixels[idx + 3];
+        count++;
+      }
+      
+      const idx = (y * width + x) * 4;
+      output[idx] = r / count;
+      output[idx + 1] = g / count;
+      output[idx + 2] = b / count;
+      output[idx + 3] = a / count;
+    }
+  }
+  
+  // Copy horizontal result back
+  for (let i = 0; i < pixels.length; i++) {
+    pixels[i] = output[i];
+  }
+  
+  // Vertical pass
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      let r = 0, g = 0, b = 0, a = 0, count = 0;
+      
+      for (let ky = -radius; ky <= radius; ky++) {
+        const py = Math.min(Math.max(y + ky, 0), height - 1);
+        const idx = (py * width + x) * 4;
+        r += pixels[idx];
+        g += pixels[idx + 1];
+        b += pixels[idx + 2];
+        a += pixels[idx + 3];
+        count++;
+      }
+      
+      const idx = (y * width + x) * 4;
+      output[idx] = r / count;
+      output[idx + 1] = g / count;
+      output[idx + 2] = b / count;
+      output[idx + 3] = a / count;
+    }
+  }
+  
+  return new ImageData(output, width, height);
+}
+
 export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevious, onNext, currentIndex, totalCount }: BackgroundBlurEditorProps) => {
   const [settings, setSettings] = useState<BlurSettings>(defaultSettings);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
@@ -60,70 +124,82 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
     
     img.onload = () => {
       try {
+        // Work at reduced resolution for performance
+        const maxDim = 1200;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const workWidth = Math.round(img.width * scale);
+        const workHeight = Math.round(img.height * scale);
+        
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
         if (!ctx) {
           setIsProcessing(false);
           return;
         }
         
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = workWidth;
+        canvas.height = workHeight;
+        
+        // Draw original image
+        ctx.drawImage(img, 0, 0, workWidth, workHeight);
+        
+        // Get image data for processing
+        const originalData = ctx.getImageData(0, 0, workWidth, workHeight);
+        
+        // Apply blur (multiple passes for stronger effect)
+        const blurRadius = Math.max(1, Math.round(settings.blurAmount * scale));
+        let blurredData = new ImageData(
+          new Uint8ClampedArray(originalData.data),
+          workWidth,
+          workHeight
+        );
+        
+        // Apply blur 2-3 times for smoother result
+        const passes = Math.min(3, Math.ceil(settings.blurAmount / 8));
+        for (let p = 0; p < passes; p++) {
+          blurredData = boxBlur(blurredData, Math.ceil(blurRadius / passes));
+        }
         
         // Calculate oval dimensions
-        const centerX = (settings.ovalX / 100) * canvas.width;
-        const centerY = (settings.ovalY / 100) * canvas.height;
-        const radiusX = (settings.ovalSize / 100) * canvas.width / 2;
-        const radiusY = (settings.ovalSize / 100) * canvas.height / 2;
+        const centerX = (settings.ovalX / 100) * workWidth;
+        const centerY = (settings.ovalY / 100) * workHeight;
+        const radiusX = (settings.ovalSize / 100) * workWidth / 2;
+        const radiusY = (settings.ovalSize / 100) * workHeight / 2 * 0.6; // Slightly squashed
         
-        // Step 1: Draw the blurred background
-        const blurCanvas = document.createElement('canvas');
-        blurCanvas.width = canvas.width;
-        blurCanvas.height = canvas.height;
-        const blurCtx = blurCanvas.getContext('2d');
+        // Blend blurred and original based on oval mask
+        const resultData = ctx.createImageData(workWidth, workHeight);
         
-        if (!blurCtx) {
-          setIsProcessing(false);
-          return;
+        for (let y = 0; y < workHeight; y++) {
+          for (let x = 0; x < workWidth; x++) {
+            const idx = (y * workWidth + x) * 4;
+            
+            // Calculate distance from oval center (normalized)
+            const dx = (x - centerX) / radiusX;
+            const dy = (y - centerY) / radiusY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            // Smooth falloff from sharp center to blurred edge
+            let blend;
+            if (dist < 0.5) {
+              blend = 0; // Fully sharp in center
+            } else if (dist < 1.0) {
+              // Smooth transition zone
+              blend = (dist - 0.5) * 2;
+              blend = blend * blend; // Ease-in for smoother transition
+            } else {
+              blend = 1; // Fully blurred outside
+            }
+            
+            // Blend original and blurred
+            resultData.data[idx] = originalData.data[idx] * (1 - blend) + blurredData.data[idx] * blend;
+            resultData.data[idx + 1] = originalData.data[idx + 1] * (1 - blend) + blurredData.data[idx + 1] * blend;
+            resultData.data[idx + 2] = originalData.data[idx + 2] * (1 - blend) + blurredData.data[idx + 2] * blend;
+            resultData.data[idx + 3] = 255;
+          }
         }
         
-        blurCtx.filter = `blur(${settings.blurAmount}px)`;
-        blurCtx.drawImage(img, 0, 0);
-        
-        // Step 2: Draw blurred image as base
-        ctx.drawImage(blurCanvas, 0, 0);
-        
-        // Step 3: Create gradient mask and draw sharp center
-        const maskCanvas = document.createElement('canvas');
-        maskCanvas.width = canvas.width;
-        maskCanvas.height = canvas.height;
-        const maskCtx = maskCanvas.getContext('2d');
-        
-        if (!maskCtx) {
-          setIsProcessing(false);
-          return;
-        }
-        
-        // Draw sharp image
-        maskCtx.drawImage(img, 0, 0);
-        
-        // Create elliptical gradient mask
-        const gradient = ctx.createRadialGradient(
-          centerX, centerY, Math.min(radiusX, radiusY) * 0.5,
-          centerX, centerY, Math.max(radiusX, radiusY)
-        );
-        gradient.addColorStop(0, 'rgba(0,0,0,1)');
-        gradient.addColorStop(0.6, 'rgba(0,0,0,0.9)');
-        gradient.addColorStop(1, 'rgba(0,0,0,0)');
-        
-        // Apply the gradient as a mask to the sharp image
-        maskCtx.globalCompositeOperation = 'destination-in';
-        maskCtx.fillStyle = gradient;
-        maskCtx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw the masked sharp image over the blurred background
-        ctx.drawImage(maskCanvas, 0, 0);
+        ctx.putImageData(resultData, 0, 0);
         
         setProcessedUrl(canvas.toDataURL('image/jpeg', 0.92));
         setIsProcessing(false);
@@ -138,18 +214,17 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
       setIsProcessing(false);
     };
     
-    // Set src AFTER handlers
     img.src = imageUrl;
     
   }, [imageUrl, open, settings]);
 
-  // Apply blur when settings change
+  // Apply blur when settings change (debounced)
   useEffect(() => {
     if (!open) return;
     
     const timeoutId = setTimeout(() => {
       applyBlur();
-    }, 100);
+    }, 200);
 
     return () => clearTimeout(timeoutId);
   }, [settings, applyBlur, open]);
@@ -241,7 +316,7 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
   // Calculate oval overlay dimensions for preview
   const ovalStyle = {
     width: `${settings.ovalSize}%`,
-    height: `${settings.ovalSize * 0.6}%`, // Slightly shorter than wide for natural bokeh
+    height: `${settings.ovalSize * 0.6}%`,
     left: `${settings.ovalX - settings.ovalSize / 2}%`,
     top: `${settings.ovalY - (settings.ovalSize * 0.6) / 2}%`,
   };
