@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Undo2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Undo2, ChevronLeft, ChevronRight, Check, RotateCcw } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,6 @@ interface BackgroundBlurEditorProps {
   onClose: () => void;
   onSave: (blurredUrl: string) => void;
   onApplyToAll?: (blurredUrl: string) => void;
-  // Navigation props for gallery mode
   onPrevious?: () => void;
   onNext?: () => void;
   currentIndex?: number;
@@ -19,10 +18,11 @@ interface BackgroundBlurEditorProps {
 }
 
 interface BlurSettings {
-  blurAmount: number; // 0-20 pixels
-  ovalSize: number; // 40-100% of image
-  ovalX: number; // 0-100% horizontal position
-  ovalY: number; // 0-100% vertical position
+  blurAmount: number;
+  ovalSize: number;
+  ovalX: number;
+  ovalY: number;
+  rotation: number; // degrees
 }
 
 const defaultSettings: BlurSettings = {
@@ -30,6 +30,7 @@ const defaultSettings: BlurSettings = {
   ovalSize: 70,
   ovalX: 50,
   ovalY: 50,
+  rotation: 0,
 };
 
 // Simple box blur implementation
@@ -39,10 +40,6 @@ function boxBlur(imageData: ImageData, radius: number): ImageData {
   const height = imageData.height;
   const output = new Uint8ClampedArray(pixels);
   
-  const kernelSize = radius * 2 + 1;
-  const kernelArea = kernelSize * kernelSize;
-  
-  // Horizontal pass
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       let r = 0, g = 0, b = 0, a = 0, count = 0;
@@ -65,12 +62,10 @@ function boxBlur(imageData: ImageData, radius: number): ImageData {
     }
   }
   
-  // Copy horizontal result back
   for (let i = 0; i < pixels.length; i++) {
     pixels[i] = output[i];
   }
   
-  // Vertical pass
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
       let r = 0, g = 0, b = 0, a = 0, count = 0;
@@ -102,8 +97,11 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
   const [isProcessing, setIsProcessing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
   const [history, setHistory] = useState<BlurSettings[]>([defaultSettings]);
   const [appliedToAll, setAppliedToAll] = useState(false);
+  const lastTouchDistRef = useRef<number | null>(null);
+  const lastTouchAngleRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -127,7 +125,6 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
     
     img.onload = () => {
       try {
-        // Work at reduced resolution for performance
         const maxDim = 1200;
         const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
         const workWidth = Math.round(img.width * scale);
@@ -143,14 +140,9 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
         
         canvas.width = workWidth;
         canvas.height = workHeight;
-        
-        // Draw original image
         ctx.drawImage(img, 0, 0, workWidth, workHeight);
         
-        // Get image data for processing
         const originalData = ctx.getImageData(0, 0, workWidth, workHeight);
-        
-        // Apply blur (multiple passes for stronger effect)
         const blurRadius = Math.max(1, Math.round(settings.blurAmount * scale));
         let blurredData = new ImageData(
           new Uint8ClampedArray(originalData.data),
@@ -158,43 +150,43 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
           workHeight
         );
         
-        // Apply blur 2-3 times for smoother result
         const passes = Math.min(3, Math.ceil(settings.blurAmount / 8));
         for (let p = 0; p < passes; p++) {
           blurredData = boxBlur(blurredData, Math.ceil(blurRadius / passes));
         }
         
-        // Calculate oval dimensions
         const centerX = (settings.ovalX / 100) * workWidth;
         const centerY = (settings.ovalY / 100) * workHeight;
-        const radiusX = (settings.ovalSize / 100) * workWidth / 2;
-        const radiusY = (settings.ovalSize / 100) * workHeight / 2 * 0.6; // Slightly squashed
+        // Increased size multiplier for more effect (from 0.5 to 0.65)
+        const radiusX = (settings.ovalSize / 100) * workWidth * 0.65;
+        const radiusY = (settings.ovalSize / 100) * workHeight * 0.65 * 0.6;
+        const rotationRad = (settings.rotation * Math.PI) / 180;
         
-        // Blend blurred and original based on oval mask
         const resultData = ctx.createImageData(workWidth, workHeight);
         
         for (let y = 0; y < workHeight; y++) {
           for (let x = 0; x < workWidth; x++) {
             const idx = (y * workWidth + x) * 4;
             
-            // Calculate distance from oval center (normalized)
-            const dx = (x - centerX) / radiusX;
-            const dy = (y - centerY) / radiusY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+            // Apply rotation to calculate distance from oval center
+            const dx = x - centerX;
+            const dy = y - centerY;
+            const rotatedX = dx * Math.cos(-rotationRad) - dy * Math.sin(-rotationRad);
+            const rotatedY = dx * Math.sin(-rotationRad) + dy * Math.cos(-rotationRad);
+            const normalizedX = rotatedX / radiusX;
+            const normalizedY = rotatedY / radiusY;
+            const dist = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
             
-            // Smooth falloff from sharp center to blurred edge
             let blend;
             if (dist < 0.5) {
-              blend = 0; // Fully sharp in center
+              blend = 0;
             } else if (dist < 1.0) {
-              // Smooth transition zone
               blend = (dist - 0.5) * 2;
-              blend = blend * blend; // Ease-in for smoother transition
+              blend = blend * blend;
             } else {
-              blend = 1; // Fully blurred outside
+              blend = 1;
             }
             
-            // Blend original and blurred
             resultData.data[idx] = originalData.data[idx] * (1 - blend) + blurredData.data[idx] * blend;
             resultData.data[idx + 1] = originalData.data[idx + 1] * (1 - blend) + blurredData.data[idx + 1] * blend;
             resultData.data[idx + 2] = originalData.data[idx + 2] * (1 - blend) + blurredData.data[idx + 2] * blend;
@@ -203,7 +195,6 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
         }
         
         ctx.putImageData(resultData, 0, 0);
-        
         setProcessedUrl(canvas.toDataURL('image/jpeg', 0.92));
         setIsProcessing(false);
       } catch (err) {
@@ -221,13 +212,12 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
     
   }, [imageUrl, open, settings]);
 
-  // Apply blur when settings change (fast debounce for responsiveness)
   useEffect(() => {
     if (!open) return;
     
     const timeoutId = setTimeout(() => {
       applyBlur();
-    }, 50); // Reduced from 200ms for faster feedback
+    }, 50);
 
     return () => clearTimeout(timeoutId);
   }, [settings, applyBlur, open]);
@@ -278,18 +268,58 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setIsRotating(false);
+    lastTouchDistRef.current = null;
+    lastTouchAngleRef.current = null;
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!containerRef.current) return;
-    setIsDragging(true);
-    updateOvalPositionTouch(e.touches[0]);
+    
+    if (e.touches.length === 2) {
+      // Pinch gesture for rotation and size
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dx = touch2.clientX - touch1.clientX;
+      const dy = touch2.clientY - touch1.clientY;
+      lastTouchDistRef.current = Math.sqrt(dx * dx + dy * dy);
+      lastTouchAngleRef.current = Math.atan2(dy, dx) * (180 / Math.PI);
+      setIsRotating(true);
+    } else if (e.touches.length === 1) {
+      setIsDragging(true);
+      updateOvalPositionTouch(e.touches[0]);
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !containerRef.current) return;
+    if (!containerRef.current) return;
     e.preventDefault();
-    updateOvalPositionTouchDirect(e.touches[0]);
+    
+    if (e.touches.length === 2 && isRotating) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dx = touch2.clientX - touch1.clientX;
+      const dy = touch2.clientY - touch1.clientY;
+      const currentDist = Math.sqrt(dx * dx + dy * dy);
+      const currentAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+      
+      if (lastTouchAngleRef.current !== null) {
+        let angleDelta = currentAngle - lastTouchAngleRef.current;
+        // Normalize angle delta
+        if (angleDelta > 180) angleDelta -= 360;
+        if (angleDelta < -180) angleDelta += 360;
+        
+        setSettings(prev => ({
+          ...prev,
+          rotation: (prev.rotation + angleDelta + 360) % 360
+        }));
+      }
+      
+      lastTouchDistRef.current = currentDist;
+      lastTouchAngleRef.current = currentAngle;
+    } else if (e.touches.length === 1 && isDragging) {
+      updateOvalPositionTouchDirect(e.touches[0]);
+    }
   };
 
   const updateOvalPosition = (e: React.MouseEvent) => {
@@ -324,12 +354,13 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
     setSettings(prev => ({ ...prev, ovalX: x, ovalY: y }));
   };
 
-  // Calculate oval overlay dimensions for preview
+  // Calculate oval overlay dimensions for preview with rotation
   const ovalStyle = {
     width: `${settings.ovalSize}%`,
     height: `${settings.ovalSize * 0.6}%`,
-    left: `${settings.ovalX - settings.ovalSize / 2}%`,
-    top: `${settings.ovalY - (settings.ovalSize * 0.6) / 2}%`,
+    left: `${settings.ovalX}%`,
+    top: `${settings.ovalY}%`,
+    transform: `translate(-50%, -50%) rotate(${settings.rotation}deg)`,
   };
 
   const canUndo = history.length > 1;
@@ -417,7 +448,7 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
             )}
             
             <p className="absolute bottom-2 left-2 text-xs text-white/70 bg-black/50 px-2 py-1 rounded">
-              Klicka och dra för att flytta fokusområdet
+              Dra för att flytta • Nyp för att rotera
             </p>
           </div>
           
@@ -455,8 +486,31 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
               <Slider
                 value={[settings.ovalSize]}
                 onValueChange={([value]) => updateSettings({ ovalSize: value })}
-                min={30}
-                max={120}
+                min={20}
+                max={150}
+                step={5}
+                className="h-8"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Rotation ({Math.round(settings.rotation)}°)</Label>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => updateSettings({ rotation: 0 })}
+                >
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                  Återställ
+                </Button>
+              </div>
+              <Slider
+                value={[settings.rotation]}
+                onValueChange={([value]) => setSettings(prev => ({ ...prev, rotation: value }))}
+                min={0}
+                max={360}
                 step={5}
                 className="h-8"
               />
@@ -495,16 +549,23 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
                 disabled={isProcessing || !processedUrl}
                 className={`flex-1 sm:flex-none text-sm ${appliedToAll ? 'bg-green-600 hover:bg-green-700' : ''}`}
               >
-                {appliedToAll ? <><Check className="w-4 h-4 mr-1" /> Applicerat</> : 'Applicera på alla'}
+                {appliedToAll ? (
+                  <>
+                    <Check className="w-4 h-4 mr-1" />
+                    Applicerat på alla
+                  </>
+                ) : (
+                  'Applicera på alla'
+                )}
               </Button>
             )}
             
             <Button 
-              onClick={handleSave} 
-              className="flex-1 sm:flex-none" 
+              onClick={handleSave}
               disabled={isProcessing}
+              className="flex-1 sm:flex-none"
             >
-              {settings.blurAmount > 0 ? 'Spara' : 'Stäng'}
+              Spara
             </Button>
           </div>
         </div>

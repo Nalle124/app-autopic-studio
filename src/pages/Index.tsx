@@ -313,6 +313,8 @@ export default function Index() {
             const result = await response.json();
             if (result.success) {
               successCount++;
+              // Add to loading state to show shimmer while image loads
+              setLoadingImages(prev => new Set([...prev, image.id]));
               // CRITICAL: Update the image with finalUrl but keep it visible in uploads
               // The image stays in uploads section with status badge showing "Klar"
               setUploadedImages(prev => prev.map(img => img.id === image.id ? {
@@ -790,7 +792,31 @@ export default function Index() {
                             </div>
                             {/* Pulsing overlay effect */}
                             <div className="absolute inset-0 bg-primary/10 animate-pulse" />
-                          </> : <img src={image.finalUrl || image.preview} alt={image.file.name} className="w-full h-full object-cover" />}
+                          </> : <>
+                            {/* Skeleton shimmer while loading */}
+                            {loadingImages.has(image.id) && (
+                              <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted-foreground/10 to-muted animate-shimmer bg-[length:200%_100%]" />
+                            )}
+                            <img 
+                              src={image.finalUrl || image.preview} 
+                              alt={image.file.name} 
+                              className={`w-full h-full object-cover transition-opacity duration-300 ${loadingImages.has(image.id) ? 'opacity-0' : 'opacity-100'}`}
+                              onLoad={() => {
+                                setLoadingImages(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(image.id);
+                                  return next;
+                                });
+                              }}
+                              onError={() => {
+                                setLoadingImages(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(image.id);
+                                  return next;
+                                });
+                              }}
+                            />
+                          </>}
                         
                         {/* Selection indicator */}
                         {image.status === 'completed' && selectedImages.has(image.id) && <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">

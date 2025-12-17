@@ -24,7 +24,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
+    <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <button 
