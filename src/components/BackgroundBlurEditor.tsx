@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Undo2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ interface BackgroundBlurEditorProps {
   open: boolean;
   onClose: () => void;
   onSave: (blurredUrl: string) => void;
+  onApplyToAll?: (blurredUrl: string) => void;
   // Navigation props for gallery mode
   onPrevious?: () => void;
   onNext?: () => void;
@@ -95,19 +96,21 @@ function boxBlur(imageData: ImageData, radius: number): ImageData {
   return new ImageData(output, width, height);
 }
 
-export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevious, onNext, currentIndex, totalCount }: BackgroundBlurEditorProps) => {
+export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyToAll, onPrevious, onNext, currentIndex, totalCount }: BackgroundBlurEditorProps) => {
   const [settings, setSettings] = useState<BlurSettings>(defaultSettings);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [history, setHistory] = useState<BlurSettings[]>([defaultSettings]);
+  const [appliedToAll, setAppliedToAll] = useState(false);
 
   useEffect(() => {
     if (open) {
       setSettings(defaultSettings);
       setProcessedUrl(null);
       setHistory([defaultSettings]);
+      setAppliedToAll(false);
     }
   }, [imageUrl, open]);
 
@@ -218,13 +221,13 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
     
   }, [imageUrl, open, settings]);
 
-  // Apply blur when settings change (debounced)
+  // Apply blur when settings change (fast debounce for responsiveness)
   useEffect(() => {
     if (!open) return;
     
     const timeoutId = setTimeout(() => {
       applyBlur();
-    }, 200);
+    }, 50); // Reduced from 200ms for faster feedback
 
     return () => clearTimeout(timeoutId);
   }, [settings, applyBlur, open]);
@@ -251,6 +254,14 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
   const updateSettings = (newSettings: Partial<BlurSettings>) => {
     setHistory(prev => [...prev, settings]);
     setSettings(prev => ({ ...prev, ...newSettings }));
+    setAppliedToAll(false);
+  };
+
+  const handleApplyToAll = () => {
+    if (processedUrl && onApplyToAll) {
+      onApplyToAll(processedUrl);
+      setAppliedToAll(true);
+    }
   };
 
   // Handle drag for oval position
@@ -476,6 +487,17 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onPrevio
                 </>
               )}
             </div>
+            
+            {onApplyToAll && totalCount && totalCount > 1 && settings.blurAmount > 0 && (
+              <Button 
+                variant={appliedToAll ? "default" : "outline"}
+                onClick={handleApplyToAll}
+                disabled={isProcessing || !processedUrl}
+                className={`flex-1 sm:flex-none text-sm ${appliedToAll ? 'bg-green-600 hover:bg-green-700' : ''}`}
+              >
+                {appliedToAll ? <><Check className="w-4 h-4 mr-1" /> Applicerat</> : 'Applicera på alla'}
+              </Button>
+            )}
             
             <Button 
               onClick={handleSave} 

@@ -12,11 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info } from 'lucide-react';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
@@ -655,18 +654,16 @@ export default function Index() {
                     <span className="text-lg not-italic text-primary font-sans font-normal">2</span>
                   </div>
                   <h2 className="italic text-foreground font-serif text-lg font-normal">Välj bakgrund</h2>
-                  <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
-                          <Info className="w-4 h-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[280px]">
-                        <p className="text-sm">Kom ihåg att olika bakgrunder passar för olika bilar och vinklar. <a href="https://autoshot.se/guide" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">Läs vår guide här</a>.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <Info className="w-4 h-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="start" className="max-w-[280px] text-sm">
+                      <p>Kom ihåg att olika bakgrunder passar för olika bilar och vinklar. <a href="https://autoshot.se/guide" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">Läs vår guide här</a>.</p>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
               </section>}
@@ -1348,6 +1345,17 @@ export default function Index() {
           setGalleryIndex(idx);
           setPreviewImage(blurredUrl);
         }
+      }} onApplyToAll={blurredUrl => {
+        // Apply the same blur to all completed images - this will trigger blur processing for each
+        setAnimatingImages(new Set(completedImages.map(img => img.id)));
+        setUploadedImages(prev => prev.map(img => {
+          if (img.status === 'completed' && img.finalUrl) {
+            return { ...img, finalUrl: blurredUrl };
+          }
+          return img;
+        }));
+        setTimeout(() => setAnimatingImages(new Set()), 500);
+        toast.success('Blur applicerad på alla bilder');
       }} />;
     })()}
 
