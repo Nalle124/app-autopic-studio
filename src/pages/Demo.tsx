@@ -7,15 +7,23 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Sun, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
+import { ImageCropEditor } from '@/components/ImageCropEditor';
+import { CarAdjustmentPanel } from '@/components/CarAdjustmentPanel';
+import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
+import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import autoshotLogo from '@/assets/autoshot-logo.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
 
+const FRAMER_LANDING_URL = 'https://olive-buttons-692436.framer.app/#hero';
+
 const DemoContent = () => {
   const navigate = useNavigate();
-  const { generationsUsed, maxFreeGenerations, canGenerate, incrementGenerations, triggerPaywall } = useDemo();
+  const { generationsUsed, maxFreeGenerations, canGenerate, incrementGenerations, triggerPaywall, setShowPaywall } = useDemo();
   
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
@@ -24,6 +32,21 @@ const DemoContent = () => {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+  const [relightEnabled, setRelightEnabled] = useState(false);
+  
+  // Editing states
+  const [editingImage, setEditingImage] = useState<{
+    id: string;
+    finalUrl: string;
+    fileName: string;
+    type: 'crop' | 'adjust' | 'blur';
+  } | null>(null);
+  const [editingOriginal, setEditingOriginal] = useState<{
+    id: string;
+    url: string;
+    name: string;
+    type: 'crop' | 'adjust';
+  } | null>(null);
 
   useEffect(() => {
     if (selectedScene) {
@@ -46,6 +69,7 @@ const DemoContent = () => {
         file,
         preview: URL.createObjectURL(file),
         status: 'pending' as const,
+        carAdjustments: { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }
       }));
       setUploadedImages(prev => [...prev, ...newImages]);
     }
@@ -57,6 +81,10 @@ const DemoContent = () => {
 
   const handleLogoClick = () => {
     triggerPaywall('logo');
+  };
+
+  const handleCreateAccount = () => {
+    triggerPaywall('signup');
   };
 
   // Add watermark to image
@@ -134,16 +162,24 @@ const DemoContent = () => {
           ));
 
           const formData = new FormData();
-          formData.append('image', image.file);
+          
+          // Use cropped image if available
+          if (image.croppedUrl) {
+            const response = await fetch(image.croppedUrl);
+            const blob = await response.blob();
+            formData.append('image', blob, image.file.name);
+          } else {
+            formData.append('image', image.file);
+          }
+          
           formData.append('scene', JSON.stringify(selectedScene));
           
           const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') 
             ? selectedScene.fullResUrl 
             : `${window.location.origin}${selectedScene.fullResUrl}`;
           formData.append('backgroundUrl', backgroundUrl);
-          // No userId for demo - edge function handles this
           formData.append('orientation', aspectRatio);
-          formData.append('relight', 'false');
+          formData.append('relight', relightEnabled ? 'true' : 'false');
 
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 90000);
@@ -175,6 +211,7 @@ const DemoContent = () => {
                 status: 'completed',
                 finalUrl: watermarkedUrl,
                 sceneId: selectedScene.id,
+                carAdjustments: { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }
               } : img
             ));
           } else {
@@ -224,6 +261,47 @@ const DemoContent = () => {
       });
   };
 
+  // Editing handlers
+  const handleCropSave = (imageId: string, croppedUrl: string, newAspectRatio: 'landscape' | 'portrait') => {
+    setUploadedImages(prev => prev.map(img => 
+      img.id === imageId ? { ...img, croppedUrl } : img
+    ));
+    setAspectRatio(newAspectRatio);
+    setEditingImage(null);
+    setEditingOriginal(null);
+  };
+
+  const handleOriginalCropSave = (imageId: string, croppedUrl: string, newAspectRatio: 'landscape' | 'portrait') => {
+    setUploadedImages(prev => prev.map(img => 
+      img.id === imageId ? { ...img, croppedUrl, preview: croppedUrl } : img
+    ));
+    setAspectRatio(newAspectRatio);
+    setEditingOriginal(null);
+  };
+
+  const handleAdjustmentsSave = async (imageId: string, adjustments: CarAdjustments) => {
+    const image = uploadedImages.find(img => img.id === imageId);
+    if (!image || !image.finalUrl) return;
+
+    try {
+      const adjustedUrl = await applyCarAdjustments(image.finalUrl, adjustments);
+      setUploadedImages(prev => prev.map(img => 
+        img.id === imageId ? { ...img, finalUrl: adjustedUrl, carAdjustments: adjustments } : img
+      ));
+    } catch (error) {
+      console.error('Error applying adjustments:', error);
+      toast.error('Kunde inte applicera justeringar');
+    }
+    setEditingImage(null);
+  };
+
+  const handleBlurSave = (imageId: string, blurredUrl: string) => {
+    setUploadedImages(prev => prev.map(img => 
+      img.id === imageId ? { ...img, finalUrl: blurredUrl } : img
+    ));
+    setEditingImage(null);
+  };
+
   const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
   const processingImages = uploadedImages.filter(img => img.status === 'processing');
   const galleryImages = [...completedImages, ...processingImages];
@@ -234,15 +312,24 @@ const DemoContent = () => {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={autoshotLogo} alt="Autoshot" className="h-8" />
+            <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <img src={autoshotLogo} alt="Autoshot" className="h-8" />
+            </a>
             <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full font-medium">Demo</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground hidden sm:block">
               {generationsUsed}/{maxFreeGenerations} bilder
             </span>
+            <a 
+              href={FRAMER_LANDING_URL}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Om Autoshot
+            </a>
             <Button 
-              onClick={() => navigate('/auth')}
+              onClick={handleCreateAccount}
               className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full"
             >
               <Sparkles className="w-4 h-4 mr-2" />
@@ -255,9 +342,23 @@ const DemoContent = () => {
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* Step 1: Upload */}
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px]">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">1</div>
-            <h2 className="text-lg font-semibold text-foreground">Ladda upp bilder</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">1</div>
+              <h2 className="text-lg font-semibold text-foreground">Ladda upp bilder</h2>
+            </div>
+            {/* Relight toggle */}
+            <div className="flex items-center gap-2">
+              <Switch
+                id="relight-toggle"
+                checked={relightEnabled}
+                onCheckedChange={setRelightEnabled}
+              />
+              <Label htmlFor="relight-toggle" className="text-sm text-muted-foreground flex items-center gap-1.5 cursor-pointer">
+                <Sun className="w-4 h-4" />
+                <span className="hidden sm:inline">Retouch ljus</span>
+              </Label>
+            </div>
           </div>
           
           {/* Simple dropzone */}
@@ -275,20 +376,44 @@ const DemoContent = () => {
             <p className="text-sm text-muted-foreground">eller klicka för att välja (max 5 bilder)</p>
           </div>
 
-          {/* Uploaded images preview */}
+          {/* Uploaded images preview with edit buttons */}
           {uploadedImages.length > 0 && (
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {uploadedImages.map(img => (
                 <div key={img.id} className="relative aspect-[4/3] rounded-lg overflow-hidden group">
-                  <img src={img.preview} alt="" className="w-full h-full object-cover" />
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute top-2 right-2 w-7 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemoveImage(img.id)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                  <img src={img.croppedUrl || img.preview} alt="" className="w-full h-full object-cover" />
+                  
+                  {/* Hover overlay with edit buttons */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="w-8 h-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingOriginal({
+                          id: img.id,
+                          url: img.croppedUrl || img.preview,
+                          name: img.file.name,
+                          type: 'crop'
+                        });
+                      }}
+                    >
+                      <Scissors className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      className="w-8 h-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveImage(img.id);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
                   {img.status === 'completed' && (
                     <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-accent-green/90 text-white text-xs rounded-full">
                       Klar
@@ -314,7 +439,7 @@ const DemoContent = () => {
           />
         </Card>
 
-        {/* Step 3: Generate */}
+        {/* Step 3: Generate - smaller button like main version */}
         <Card id="demo-export-section" className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px] overflow-hidden relative">
           <div 
             className="absolute inset-0 bg-cover bg-center opacity-20"
@@ -326,17 +451,17 @@ const DemoContent = () => {
               <h2 className="text-lg font-semibold text-foreground">AI-generering</h2>
             </div>
             
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-3">
               <Button
                 onClick={generateImages}
                 disabled={isProcessing || uploadedImages.length === 0 || !selectedScene}
-                className={`h-14 px-8 text-lg font-semibold rounded-full transition-all ${
+                className={`h-11 px-6 font-semibold rounded-full transition-all ${
                   isProcessing 
                     ? 'bg-primary/80 animate-shimmer' 
-                    : 'bg-primary hover:bg-primary/90 shadow-glow'
+                    : 'bg-primary hover:bg-primary/90'
                 }`}
               >
-                {isProcessing ? 'Genererar...' : `Starta AI-generering (${maxFreeGenerations - generationsUsed} kvar)`}
+                {isProcessing ? 'Genererar...' : `Generera bild (${maxFreeGenerations - generationsUsed} kvar)`}
               </Button>
               
               {!canGenerate && (
@@ -351,13 +476,13 @@ const DemoContent = () => {
           </div>
         </Card>
 
-        {/* Step 4: Results */}
+        {/* Step 4: Results with editing */}
         {galleryImages.length > 0 && (
           <Card id="demo-results-section" className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px]">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">4</div>
-                <h2 className="text-lg font-semibold text-foreground">Resultat</h2>
+                <h2 className="text-lg font-semibold text-foreground">Redigera och ladda ner</h2>
               </div>
             </div>
 
@@ -395,8 +520,59 @@ const DemoContent = () => {
                         })}
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <Button size="sm" variant="secondary" className="rounded-full">
+                        <Button size="icon" variant="secondary" className="w-8 h-8" title="Förhandsgranska">
                           <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="secondary" 
+                          className="w-8 h-8"
+                          title="Beskär"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingImage({
+                              id: image.id,
+                              finalUrl: image.finalUrl!,
+                              fileName: `demo_${image.id}.jpg`,
+                              type: 'crop'
+                            });
+                          }}
+                        >
+                          <Scissors className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="secondary" 
+                          className="w-8 h-8"
+                          title="Justera"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingImage({
+                              id: image.id,
+                              finalUrl: image.finalUrl!,
+                              fileName: `demo_${image.id}.jpg`,
+                              type: 'adjust'
+                            });
+                          }}
+                        >
+                          <Sliders className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="secondary" 
+                          className="w-8 h-8"
+                          title="Blur"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingImage({
+                              id: image.id,
+                              finalUrl: image.finalUrl!,
+                              fileName: `demo_${image.id}.jpg`,
+                              type: 'blur'
+                            });
+                          }}
+                        >
+                          <Focus className="w-4 h-4" />
                         </Button>
                       </div>
                     </>
@@ -485,15 +661,122 @@ const DemoContent = () => {
               <Button
                 size="sm"
                 variant="ghost"
+                onClick={() => {
+                  const currentImage = completedImages[galleryIndex];
+                  if (currentImage?.finalUrl) {
+                    setEditingImage({
+                      id: currentImage.id,
+                      finalUrl: currentImage.finalUrl,
+                      fileName: `demo_${currentImage.id}.jpg`,
+                      type: 'crop'
+                    });
+                    setPreviewImage(null);
+                  }
+                }}
+              >
+                <Scissors className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const currentImage = completedImages[galleryIndex];
+                  if (currentImage?.finalUrl) {
+                    setEditingImage({
+                      id: currentImage.id,
+                      finalUrl: currentImage.finalUrl,
+                      fileName: `demo_${currentImage.id}.jpg`,
+                      type: 'adjust'
+                    });
+                    setPreviewImage(null);
+                  }
+                }}
+              >
+                <Sliders className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const currentImage = completedImages[galleryIndex];
+                  if (currentImage?.finalUrl) {
+                    setEditingImage({
+                      id: currentImage.id,
+                      finalUrl: currentImage.finalUrl,
+                      fileName: `demo_${currentImage.id}.jpg`,
+                      type: 'blur'
+                    });
+                    setPreviewImage(null);
+                  }
+                }}
+              >
+                <Focus className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
                 onClick={() => previewImage && handleDownload(previewImage, `demo_${Date.now()}.jpg`)}
               >
-                <Download className="w-4 h-4 mr-2" />
-                Ladda ner
+                <Download className="w-4 h-4" />
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Crop Editor Modal */}
+      {editingImage?.type === 'crop' && (
+        <ImageCropEditor
+          image={{ id: editingImage.id, finalUrl: editingImage.finalUrl, fileName: editingImage.fileName }}
+          onSave={(imageId, croppedUrl, newAspectRatio) => handleCropSave(imageId, croppedUrl, newAspectRatio)}
+          onClose={() => setEditingImage(null)}
+          aspectRatio={aspectRatio}
+        />
+      )}
+
+      {/* Adjustments Modal */}
+      {editingImage?.type === 'adjust' && (
+        <Dialog open={true} onOpenChange={() => setEditingImage(null)}>
+          <DialogContent className="max-w-lg p-4 bg-background border-border">
+            <div className="space-y-4">
+              <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                <img 
+                  src={editingImage.finalUrl} 
+                  alt="Edit" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <CarAdjustmentPanel
+                adjustments={uploadedImages.find(img => img.id === editingImage.id)?.carAdjustments || { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }}
+                onAdjustmentsChange={(adjustments) => handleAdjustmentsSave(editingImage.id, adjustments)}
+              />
+              <Button onClick={() => setEditingImage(null)} className="w-full">
+                Spara ändringar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Blur Editor Modal */}
+      {editingImage?.type === 'blur' && (
+        <BackgroundBlurEditor
+          imageUrl={editingImage.finalUrl}
+          open={true}
+          onClose={() => setEditingImage(null)}
+          onSave={(blurredUrl) => handleBlurSave(editingImage.id, blurredUrl)}
+        />
+      )}
+
+      {/* Original Image Crop Editor */}
+      {editingOriginal?.type === 'crop' && (
+        <ImageCropEditor
+          image={{ id: editingOriginal.id, finalUrl: editingOriginal.url, fileName: editingOriginal.name }}
+          onSave={(imageId, croppedUrl, newAspectRatio) => handleOriginalCropSave(imageId, croppedUrl, newAspectRatio)}
+          onClose={() => setEditingOriginal(null)}
+          aspectRatio={aspectRatio}
+        />
+      )}
 
       <DemoPaywall />
     </div>

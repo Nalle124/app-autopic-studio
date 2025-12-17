@@ -11,6 +11,8 @@ interface DemoContextType {
   triggerPaywall: (trigger: string) => void;
 }
 
+export type PaywallTriggerType = 'logo' | 'gallery' | 'limit' | 'premium-scene' | 'signup' | 'default';
+
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
 const DEMO_STORAGE_KEY = 'autoshot_demo_generations';
