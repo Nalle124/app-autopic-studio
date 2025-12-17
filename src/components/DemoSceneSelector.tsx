@@ -155,10 +155,8 @@ export const DemoSceneSelector = ({
 
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
-    if (category !== 'demo') {
-      // Show paywall when switching to non-demo category
-      triggerPaywall('premium-scene');
-    }
+    // Don't trigger paywall - let users explore categories freely
+    // They'll see blurred content with lock badge instead
   };
 
   const getScenesByCategory = (category: string) => {
