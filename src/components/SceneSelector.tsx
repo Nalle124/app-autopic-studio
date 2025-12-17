@@ -282,41 +282,27 @@ export const SceneSelector = ({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="space-y-6">
-        {/* Header with info tooltip - info icon inline next to heading */}
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-muted-foreground">Välj bakgrund</h3>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
-                <Info className="w-4 h-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-[280px]">
-              <p className="text-sm">Kom ihåg att olika bakgrunder passar för olika bilar och vinklar. <a href="https://autoshot.se/guide" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">Läs vår guide om hur man får bästa resultat här</a>.</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* Orientation toggle - separate row on mobile for visibility */}
+      <div className="space-y-4">
+        {/* Orientation toggle - compact on mobile */}
         {isMobile && onOrientationChange && (
-          <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/50">
-            <span className="text-sm text-muted-foreground">Format:</span>
-            <ToggleGroup 
-              type="single" 
-              value={orientation} 
-              onValueChange={(value) => value && onOrientationChange(value as 'landscape' | 'portrait')}
-              className="bg-background p-1 rounded-lg border border-border/50"
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Format:</span>
+            <button
+              onClick={() => onOrientationChange(orientation === 'landscape' ? 'portrait' : 'landscape')}
+              className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
             >
-              <ToggleGroupItem value="landscape" aria-label="Liggande format" className="px-4 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-2">
-                <RectangleHorizontal className="w-4 h-4" />
-                <span className="text-sm">Liggande</span>
-              </ToggleGroupItem>
-              <ToggleGroupItem value="portrait" aria-label="Stående format" className="px-4 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-2">
-                <RectangleVertical className="w-4 h-4" />
-                <span className="text-sm">Stående</span>
-              </ToggleGroupItem>
-            </ToggleGroup>
+              {orientation === 'landscape' ? (
+                <>
+                  <RectangleHorizontal className="w-4 h-4" />
+                  <span>Liggande</span>
+                </>
+              ) : (
+                <>
+                  <RectangleVertical className="w-4 h-4" />
+                  <span>Stående</span>
+                </>
+              )}
+            </button>
           </div>
         )}
 

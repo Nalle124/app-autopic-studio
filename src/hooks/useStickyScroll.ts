@@ -30,7 +30,7 @@ export function useStickyScroll(enabled: boolean = true) {
 
       const viewportHeight = window.innerHeight;
       const scrollY = window.scrollY;
-      const headerOffset = 80; // Fixed header height
+      const headerOffset = 100; // Fixed header height + padding to show section header
 
       sectionsRef.current.forEach((section, index) => {
         const rect = section.getBoundingClientRect();
@@ -46,7 +46,7 @@ export function useStickyScroll(enabled: boolean = true) {
           const nextSection = sectionsRef.current[index + 1];
           if (nextSection) {
             const nextRect = nextSection.getBoundingClientRect();
-            const nextTop = scrollY + nextRect.top - headerOffset - 32; // 32px padding
+            const nextTop = scrollY + nextRect.top - headerOffset;
 
             // Only snap if we're scrolling towards the next section
             if (scrollY > sectionTop + 50) {
