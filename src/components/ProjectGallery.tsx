@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote, Share2, Focus } from 'lucide-react';
+import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote, Share2, Focus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,10 +36,13 @@ interface ProjectGalleryProps {
   onUseAsNewImage?: (imageUrl: string) => void;
 }
 
+const PROJECTS_PER_PAGE = 9;
+
 export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [orphanJobs, setOrphanJobs] = useState<OrphanJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -47,6 +50,11 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const [editingName, setEditingName] = useState('');
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesText, setNotesText] = useState('');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalProjects, setTotalProjects] = useState(0);
   
   // Edit states
   const [editingImage, setEditingImage] = useState<{ jobId: string; url: string; type: 'crop' | 'adjust' | 'blur' } | null>(null);
@@ -82,17 +90,25 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   };
 
   useEffect(() => {
-    loadProjects();
+    loadProjects(1);
   }, []);
 
-  const loadProjects = async () => {
+  const loadProjects = async (page: number, append = false) => {
     try {
-      setIsLoading(true);
+      if (page === 1) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Load projects with their jobs
-      const { data: projectsData, error: projectsError } = await supabase
+      const from = (page - 1) * PROJECTS_PER_PAGE;
+      const to = from + PROJECTS_PER_PAGE - 1;
+
+      // Load projects with their jobs (paginated)
+      const { data: projectsData, error: projectsError, count } = await supabase
         .from('projects')
         .select(`
           id,
@@ -104,30 +120,49 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
             final_url,
             scene_id
           )
-        `)
+        `, { count: 'exact' })
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (projectsError) throw projectsError;
 
-      // Load orphan jobs (jobs without project_id)
-      const { data: orphanData, error: orphanError } = await supabase
-        .from('processing_jobs')
-        .select('id, final_url, scene_id, created_at')
-        .eq('user_id', user.id)
-        .is('project_id', null)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false });
+      // Only load orphan jobs on first page
+      if (page === 1) {
+        const { data: orphanData, error: orphanError } = await supabase
+          .from('processing_jobs')
+          .select('id, final_url, scene_id, created_at')
+          .eq('user_id', user.id)
+          .is('project_id', null)
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      if (orphanError) throw orphanError;
+        if (orphanError) throw orphanError;
+        setOrphanJobs(orphanData || []);
+      }
 
-      setProjects(projectsData as any);
-      setOrphanJobs(orphanData || []);
+      if (append) {
+        setProjects(prev => [...prev, ...(projectsData as any)]);
+      } else {
+        setProjects(projectsData as any);
+      }
+      
+      setTotalProjects(count || 0);
+      setHasMore((projectsData?.length || 0) === PROJECTS_PER_PAGE && from + PROJECTS_PER_PAGE < (count || 0));
+      setCurrentPage(page);
     } catch (error) {
       console.error('Error loading projects:', error);
       toast.error('Kunde inte ladda projekt');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      loadProjects(currentPage + 1, true);
     }
   };
 
@@ -171,11 +206,9 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
 
       if (error) throw error;
 
-      // Update orphan jobs list
       const newOrphanJobs = orphanJobs.filter(j => j.id !== jobId);
       setOrphanJobs(newOrphanJobs);
       
-      // Update selected project if viewing orphans
       if (selectedProject?.id === 'orphan') {
         const updatedJobs = selectedProject.jobs.filter(j => j.id !== jobId);
         if (updatedJobs.length === 0) {
@@ -185,7 +218,6 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
             ...selectedProject,
             jobs: updatedJobs
           });
-          // Adjust preview index if needed
           if (previewIndex >= updatedJobs.length) {
             setPreviewIndex(Math.max(0, updatedJobs.length - 1));
           }
@@ -229,7 +261,6 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
 
       if (error) throw error;
 
-      // Update project's jobs in state
       setProjects(projects.map(p => {
         if (p.id === projectId) {
           return { ...p, jobs: p.jobs.filter(j => j.id !== jobId) };
@@ -237,7 +268,6 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
         return p;
       }));
 
-      // Update selected project if viewing it
       if (selectedProject?.id === projectId) {
         const updatedJobs = selectedProject.jobs.filter(j => j.id !== jobId);
         if (updatedJobs.length === 0) {
@@ -247,7 +277,6 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
             ...selectedProject,
             jobs: updatedJobs
           });
-          // Adjust preview index if needed
           if (previewIndex >= updatedJobs.length) {
             setPreviewIndex(Math.max(0, updatedJobs.length - 1));
           }
@@ -322,7 +351,6 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   };
 
   const handleCropSave = (jobId: string, croppedUrl: string) => {
-    // Update the job's final_url in local state
     setProjects(projects.map(p => ({
       ...p,
       jobs: p.jobs.map(j => j.id === jobId ? { ...j, final_url: croppedUrl } : j)
@@ -337,7 +365,6 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   };
 
   const handleAdjustSave = (jobId: string, adjustedUrl: string) => {
-    // Update the job's final_url in local state
     setProjects(projects.map(p => ({
       ...p,
       jobs: p.jobs.map(j => j.id === jobId ? { ...j, final_url: adjustedUrl } : j)
@@ -424,9 +451,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                     src={firstImage.final_url}
                     alt={project.registration_number}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    loading="eager"
-                    decoding="async"
-                    fetchPriority="high"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -559,6 +584,27 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
           );
         })}
       </div>
+
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <Button 
+            variant="outline" 
+            onClick={loadMore} 
+            disabled={isLoadingMore}
+            className="min-w-[200px]"
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Laddar...
+              </>
+            ) : (
+              <>Visa fler projekt</>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Project Detail Dialog */}
       <Dialog open={!!selectedProject && !previewOpen} onOpenChange={() => { setSelectedProject(null); setSelectedJobIds(new Set()); }}>

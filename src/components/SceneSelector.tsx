@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, Star, LayoutGrid, GalleryHorizontal, ChevronDown } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Check, Star, LayoutGrid, GalleryHorizontal, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
@@ -13,6 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
 
@@ -276,26 +281,89 @@ export const SceneSelector = ({
   const categoryScenes = getScenesByCategory(activeCategory);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 mb-4">
-        {/* Mobile: Dropdown select for categories */}
-        {isMobile ? (
-          <Select value={activeCategory} onValueChange={setActiveCategory}>
-            <SelectTrigger className="flex-1 bg-background/50 backdrop-blur-sm border-border/50">
-              <SelectValue>
-                {activeCategory === 'favorites' ? (
-                  <span className="flex items-center gap-2">
-                    <Star className="w-4 h-4 fill-current" />
-                    Favoriter
-                  </span>
-                ) : (
-                  getCategoryDisplayName(activeCategory)
-                )}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-background border-border z-50">
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header with info tooltip */}
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Välj bakgrund</h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Info className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-[280px]">
+              <p className="text-sm">Kom ihåg att olika bakgrunder passar för olika bilar och vinklar. <a href="https://autoshot.se/guide" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">Läs vår guide om hur man får bästa resultat här</a>.</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Orientation toggle - separate row on mobile for visibility */}
+        {isMobile && onOrientationChange && (
+          <div className="flex items-center justify-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/50">
+            <span className="text-sm text-muted-foreground">Format:</span>
+            <ToggleGroup 
+              type="single" 
+              value={orientation} 
+              onValueChange={(value) => value && onOrientationChange(value as 'landscape' | 'portrait')}
+              className="bg-background p-1 rounded-lg border border-border/50"
+            >
+              <ToggleGroupItem value="landscape" aria-label="Liggande format" className="px-4 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-2">
+                <RectangleHorizontal className="w-4 h-4" />
+                <span className="text-sm">Liggande</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="portrait" aria-label="Stående format" className="px-4 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-2">
+                <RectangleVertical className="w-4 h-4" />
+                <span className="text-sm">Stående</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-4 mb-4">
+          {/* Mobile: Dropdown select for categories */}
+          {isMobile ? (
+            <Select value={activeCategory} onValueChange={setActiveCategory}>
+              <SelectTrigger className="flex-1 bg-background/50 backdrop-blur-sm border-border/50">
+                <SelectValue>
+                  {activeCategory === 'favorites' ? (
+                    <span className="flex items-center gap-2">
+                      <Star className="w-4 h-4 fill-current" />
+                      Favoriter
+                    </span>
+                  ) : (
+                    getCategoryDisplayName(activeCategory)
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border z-50">
+                {visibleCategories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category === 'favorites' ? (
+                      <span className="flex items-center gap-2">
+                        <Star className="w-4 h-4 fill-current" />
+                        Favoriter
+                      </span>
+                    ) : (
+                      getCategoryDisplayName(category)
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            /* Desktop: Tab buttons */
+            <div className="flex-1 flex gap-2 bg-background/50 backdrop-blur-sm p-2 rounded-xl border border-border/50 overflow-x-auto">
               {visibleCategories.map((category) => (
-                <SelectItem key={category} value={category}>
+                <button
+                  key={category}
+                  onClick={() => setActiveCategory(category)}
+                  className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap font-medium text-sm ${
+                    activeCategory === category
+                      ? 'bg-primary text-primary-foreground shadow-glow'
+                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
                   {category === 'favorites' ? (
                     <span className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-current" />
@@ -304,106 +372,82 @@ export const SceneSelector = ({
                   ) : (
                     getCategoryDisplayName(category)
                   )}
-                </SelectItem>
+                </button>
               ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          /* Desktop: Tab buttons */
-          <div className="flex-1 flex gap-2 bg-background/50 backdrop-blur-sm p-2 rounded-xl border border-border/50 overflow-x-auto">
-            {visibleCategories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap font-medium text-sm ${
-                  activeCategory === category
-                    ? 'bg-primary text-primary-foreground shadow-glow'
-                    : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {category === 'favorites' ? (
-                  <span className="flex items-center gap-2">
-                    <Star className="w-4 h-4 fill-current" />
-                    Favoriter
-                  </span>
-                ) : (
-                  getCategoryDisplayName(category)
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-        
-        {/* Orientation toggle */}
-        {onOrientationChange && (
+            </div>
+          )}
+          
+          {/* Desktop: Orientation toggle */}
+          {!isMobile && onOrientationChange && (
+            <ToggleGroup 
+              type="single" 
+              value={orientation} 
+              onValueChange={(value) => value && onOrientationChange(value as 'landscape' | 'portrait')}
+              className="bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border/50"
+            >
+              <ToggleGroupItem value="landscape" aria-label="Liggande format" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-1.5">
+                <RectangleHorizontal className="w-4 h-4" />
+                <span className="text-xs">Liggande</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="portrait" aria-label="Stående format" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-1.5">
+                <RectangleVertical className="w-4 h-4" />
+                <span className="text-xs">Stående</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+          
+          {/* View toggle */}
           <ToggleGroup 
             type="single" 
-            value={orientation} 
-            onValueChange={(value) => value && onOrientationChange(value as 'landscape' | 'portrait')}
+            value={viewMode} 
+            onValueChange={(value) => value && setViewMode(value as 'slideshow' | 'grid')}
             className="bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border/50"
           >
-            <ToggleGroupItem value="landscape" aria-label="Liggande format" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-1.5">
-              <RectangleHorizontal className="w-4 h-4" />
-              {!isMobile && <span className="text-xs">Liggande</span>}
+            <ToggleGroupItem value="slideshow" aria-label="Slideshow vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+              <GalleryHorizontal className="w-4 h-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="portrait" aria-label="Stående format" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground gap-1.5">
-              <RectangleVertical className="w-4 h-4" />
-              {!isMobile && <span className="text-xs">Stående</span>}
+            <ToggleGroupItem value="grid" aria-label="Grid vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+              <LayoutGrid className="w-4 h-4" />
             </ToggleGroupItem>
           </ToggleGroup>
+        </div>
+
+        {/* Category description */}
+        {activeCategory !== 'favorites' && categoryConfig[activeCategory]?.description && (
+          <div className="text-center mb-6">
+            <p className="text-sm text-muted-foreground">
+              {categoryConfig[activeCategory].description}
+            </p>
+          </div>
         )}
         
-        {/* View toggle */}
-        <ToggleGroup 
-          type="single" 
-          value={viewMode} 
-          onValueChange={(value) => value && setViewMode(value as 'slideshow' | 'grid')}
-          className="bg-background/50 backdrop-blur-sm p-1 rounded-lg border border-border/50"
-        >
-          <ToggleGroupItem value="slideshow" aria-label="Slideshow vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-            <GalleryHorizontal className="w-4 h-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="grid" aria-label="Grid vy" className="px-3 py-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-            <LayoutGrid className="w-4 h-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-
-      {/* Category description */}
-      {activeCategory !== 'favorites' && categoryConfig[activeCategory]?.description && (
-        <div className="text-center mb-6">
-          <p className="text-sm text-muted-foreground">
-            {categoryConfig[activeCategory].description}
-          </p>
-        </div>
-      )}
-      
-      {/* Scene cards */}
-      {viewMode === 'slideshow' ? (
-        <div className="relative">
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+        {/* Scene cards */}
+        {viewMode === 'slideshow' ? (
+          <div className="relative">
+            <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+              {categoryScenes.map((scene) => (
+                <SceneCard key={scene.id} scene={scene} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {categoryScenes.map((scene) => (
-              <SceneCard key={scene.id} scene={scene} />
+              <SceneCard key={scene.id} scene={scene} isGrid />
             ))}
           </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {categoryScenes.map((scene) => (
-            <SceneCard key={scene.id} scene={scene} isGrid />
-          ))}
-        </div>
-      )}
+        )}
 
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-    </div>
+        <style>{`
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}</style>
+      </div>
+    </TooltipProvider>
   );
 };
