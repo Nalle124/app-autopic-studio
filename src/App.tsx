@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Demo from "./pages/Demo";
 import SetupScenes from "./pages/SetupScenes";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
@@ -33,6 +34,7 @@ function App() {
             <Sonner />
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/try" element={<Demo />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
