@@ -11,6 +11,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info } from 'lucide-react';
+import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
   PopoverContent,
@@ -1527,5 +1528,8 @@ export default function Index() {
     }} onApplyToAll={() => {
       toast.success('Design kommer appliceras vid sparning');
     }} />
+
+    {/* Scroll to top button for large galleries */}
+    <ScrollToTopButton threshold={600} />
     </div>;
 }
