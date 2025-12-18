@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Undo2, ChevronLeft, ChevronRight, Check, RotateCcw } from 'lucide-react';
+import { Undo2, ChevronLeft, ChevronRight, Check, RotateCcw, Sparkles } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ interface BackgroundBlurEditorProps {
 interface BlurSettings {
   blurAmount: number;
   ovalSize: number;
+  ovalHeight: number; // separate height control for oval thickness
   ovalX: number;
   ovalY: number;
   rotation: number; // degrees
@@ -28,8 +29,19 @@ interface BlurSettings {
 const defaultSettings: BlurSettings = {
   blurAmount: 8,
   ovalSize: 70,
+  ovalHeight: 42, // 60% of ovalSize by default
   ovalX: 50,
   ovalY: 50,
+  rotation: 0,
+};
+
+// Auto blur presets for quick application
+const autoBlurSettings: BlurSettings = {
+  blurAmount: 10,
+  ovalSize: 80,
+  ovalHeight: 45,
+  ovalX: 50,
+  ovalY: 55,
   rotation: 0,
 };
 
@@ -157,9 +169,9 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
         
         const centerX = (settings.ovalX / 100) * workWidth;
         const centerY = (settings.ovalY / 100) * workHeight;
-        // Increased size multiplier for more effect (from 0.5 to 0.65)
+        // Use separate ovalHeight for vertical radius control
         const radiusX = (settings.ovalSize / 100) * workWidth * 0.65;
-        const radiusY = (settings.ovalSize / 100) * workHeight * 0.65 * 0.6;
+        const radiusY = (settings.ovalHeight / 100) * workHeight * 0.65;
         const rotationRad = (settings.rotation * Math.PI) / 180;
         
         const resultData = ctx.createImageData(workWidth, workHeight);
@@ -354,13 +366,19 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
     setSettings(prev => ({ ...prev, ovalX: x, ovalY: y }));
   };
 
-  // Calculate oval overlay dimensions for preview with rotation
+  // Calculate oval overlay dimensions for preview with rotation (use separate height)
   const ovalStyle = {
     width: `${settings.ovalSize}%`,
-    height: `${settings.ovalSize * 0.6}%`,
+    height: `${settings.ovalHeight}%`,
     left: `${settings.ovalX}%`,
     top: `${settings.ovalY}%`,
     transform: `translate(-50%, -50%) rotate(${settings.rotation}deg)`,
+  };
+
+  // Auto blur - apply preset and trigger processing
+  const handleAutoBlur = () => {
+    setHistory(prev => [...prev, settings]);
+    setSettings(autoBlurSettings);
   };
 
   const canUndo = history.length > 1;
@@ -469,6 +487,16 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
         {/* Controls - below image */}
         <div className="flex flex-col sm:flex-row gap-4 pt-4">
           <div className="flex-1 space-y-3">
+            {/* Auto blur button - prominent at top */}
+            <Button 
+              onClick={handleAutoBlur}
+              variant="secondary"
+              className="w-full glass-button"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Auto Blur
+            </Button>
+            
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Styrka ({settings.blurAmount}px)</Label>
               <Slider
@@ -482,12 +510,24 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Ovalstorlek ({settings.ovalSize}%)</Label>
+              <Label className="text-sm font-semibold">Bredd ({settings.ovalSize}%)</Label>
               <Slider
                 value={[settings.ovalSize]}
                 onValueChange={([value]) => updateSettings({ ovalSize: value })}
                 min={20}
                 max={150}
+                step={5}
+                className="h-8"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Höjd ({settings.ovalHeight}%)</Label>
+              <Slider
+                value={[settings.ovalHeight]}
+                onValueChange={([value]) => updateSettings({ ovalHeight: value })}
+                min={10}
+                max={100}
                 step={5}
                 className="h-8"
               />

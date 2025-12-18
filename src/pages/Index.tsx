@@ -365,26 +365,38 @@ export default function Index() {
     }
   };
   const handleDownload = async (imageUrl: string, fileName: string) => {
-    // Check if navigator.share is available (mobile)
-    if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    // Mobile: Use share API to save to camera roll
+    if (isMobile && navigator.share) {
       try {
         const response = await fetch(imageUrl);
         const blob = await response.blob();
-        const file = new File([blob], fileName, {
-          type: 'image/jpeg'
-        });
-        await navigator.share({
-          files: [file],
-          title: 'Bilbild'
-        });
-        return;
-      } catch (error) {
-        console.log('Share failed, falling back to download');
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+        
+        // Check if we can share files
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Spara till Bilder'
+          });
+          toast.success('Välj "Spara bild" för att lägga till i kamerarullen');
+          return;
+        }
+      } catch (error: any) {
+        // User cancelled share or share not supported
+        if (error.name !== 'AbortError') {
+          console.log('Share failed, falling back to download');
+        } else {
+          return; // User cancelled, don't fallback
+        }
       }
     }
 
-    // Fallback to traditional download
-    fetch(imageUrl).then(response => response.blob()).then(blob => {
+    // Desktop or fallback: Traditional download
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -393,10 +405,13 @@ export default function Index() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    }).catch(error => {
+      if (!isMobile) {
+        toast.success('Bild nedladdad');
+      }
+    } catch (error) {
       console.error('Download failed:', error);
       toast.error('Nedladdning misslyckades');
-    });
+    }
   };
   const handleShareSelected = async () => {
     const selected = uploadedImages.filter(img => selectedImages.has(img.id) && img.finalUrl);
@@ -753,77 +768,97 @@ export default function Index() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {/* Show placeholders for all pending/processing images */}
-                  {uploadedImages.filter(img => img.status === 'pending' && selectedScene).map(image => <Card key={`pending-${image.id}`} className="relative overflow-hidden">
-                      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                        {/* Blurred preview as placeholder */}
-                        <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-sm opacity-50" />
-                        <div className="absolute inset-0 bg-background/30 animate-pulse flex items-center justify-center">
-                          <div className="text-muted-foreground text-center text-xs">
-                            Väntar...
-                          </div>
-                        </div>
-                      </div>
-                    </Card>)}
-                  
-                  {uploadedImages.filter(img => img.status === 'completed' || img.status === 'processing').map((image, idx) => <Card key={image.id} className={`group relative overflow-hidden cursor-pointer transition-all ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''}`} onClick={() => {
-                      if (image.status !== 'completed' || loadingImages.has(image.id)) return;
-                      
-                      // If select mode is active (any image selected), toggle selection
-                      // Otherwise, open preview directly
-                      if (selectedImages.size > 0) {
-                        toggleImageSelection(image.id);
-                      } else {
-                        const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                        setGalleryIndex(completedImages.findIndex(img => img.id === image.id));
-                        setPreviewImage(image.finalUrl!);
-                      }
-                    }}>
-                      {/* Image Preview - ALWAYS show finalUrl for generated images */}
-                      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                        {/* Show blurred placeholder while processing */}
-                        {image.status === 'processing' ? <>
-                            <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-sm opacity-60" />
-                            <div className="absolute inset-0 bg-background/20 flex items-center justify-center">
-                              <div className="text-foreground text-center">
-                                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                                <span className="text-xs">Bearbetas...</span>
+                  {/* Sort images: completed first (in order), then processing, then pending */}
+                  {(() => {
+                    const pendingImages = uploadedImages.filter(img => img.status === 'pending' && selectedScene);
+                    const processingImages = uploadedImages.filter(img => img.status === 'processing');
+                    const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                    
+                    return (
+                      <>
+                        {/* Completed images first - with staggered reveal animation */}
+                        {completedImages.map((image, idx) => (
+                          <Card 
+                            key={image.id} 
+                            className={`group relative overflow-hidden cursor-pointer transition-all animate-reveal animate-reveal-${Math.min(idx + 1, 6)} ${selectedImages.has(image.id) ? 'ring-2 ring-primary' : ''} ${animatingImages.has(image.id) ? 'animate-pulse-glow' : ''}`}
+                            style={{ opacity: 0 }} // Initial state for animation
+                            onClick={() => {
+                              if (loadingImages.has(image.id)) return;
+                              if (selectedImages.size > 0) {
+                                toggleImageSelection(image.id);
+                              } else {
+                                const allCompleted = uploadedImages.filter(img => img.status === 'completed');
+                                setGalleryIndex(allCompleted.findIndex(img => img.id === image.id));
+                                setPreviewImage(image.finalUrl!);
+                              }
+                            }}
+                          >
+                            <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                              {/* Premium shimmer while image loads */}
+                              {loadingImages.has(image.id) && (
+                                <div className="absolute inset-0 animate-premium-shimmer" />
+                              )}
+                              <img 
+                                src={image.finalUrl || image.preview} 
+                                alt={image.file.name} 
+                                className={`w-full h-full object-cover transition-all duration-500 ${loadingImages.has(image.id) ? 'opacity-0 scale-105 blur-sm' : 'opacity-100 scale-100 blur-0'}`}
+                                onLoad={() => {
+                                  setLoadingImages(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(image.id);
+                                    return next;
+                                  });
+                                }}
+                                onError={() => {
+                                  setLoadingImages(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(image.id);
+                                    return next;
+                                  });
+                                }}
+                              />
+                              {/* Selection indicator */}
+                              {selectedImages.has(image.id) && (
+                                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                  <Check className="w-4 h-4 text-primary-foreground" />
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                        ))}
+                        
+                        {/* Processing images - with premium loading effect */}
+                        {processingImages.map((image) => (
+                          <Card key={image.id} className="relative overflow-hidden animate-pulse-glow">
+                            <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                              <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-md opacity-40 scale-105" />
+                              <div className="absolute inset-0 animate-premium-shimmer" />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-foreground text-center bg-background/60 backdrop-blur-sm rounded-lg px-4 py-3">
+                                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                                  <span className="text-xs font-medium">AI genererar...</span>
+                                </div>
                               </div>
                             </div>
-                            {/* Pulsing overlay effect */}
-                            <div className="absolute inset-0 bg-primary/10 animate-pulse" />
-                          </> : <>
-                            {/* Skeleton shimmer while loading */}
-                            {loadingImages.has(image.id) && (
-                              <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted-foreground/10 to-muted animate-shimmer bg-[length:200%_100%]" />
-                            )}
-                            <img 
-                              src={image.finalUrl || image.preview} 
-                              alt={image.file.name} 
-                              className={`w-full h-full object-cover transition-opacity duration-300 ${loadingImages.has(image.id) ? 'opacity-0' : 'opacity-100'}`}
-                              onLoad={() => {
-                                setLoadingImages(prev => {
-                                  const next = new Set(prev);
-                                  next.delete(image.id);
-                                  return next;
-                                });
-                              }}
-                              onError={() => {
-                                setLoadingImages(prev => {
-                                  const next = new Set(prev);
-                                  next.delete(image.id);
-                                  return next;
-                                });
-                              }}
-                            />
-                          </>}
+                          </Card>
+                        ))}
                         
-                        {/* Selection indicator */}
-                        {image.status === 'completed' && selectedImages.has(image.id) && <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="w-4 h-4 text-primary-foreground" />
-                          </div>}
-                      </div>
-                    </Card>)}
+                        {/* Pending images - queued for processing */}
+                        {pendingImages.map((image) => (
+                          <Card key={`pending-${image.id}`} className="relative overflow-hidden opacity-60">
+                            <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                              <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-sm opacity-50" />
+                              <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
+                                <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">
+                                  I kö...
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </div>
               </section>}
 
