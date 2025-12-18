@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
 import { ExportPanel } from '@/components/ExportPanel';
-import { BrandKitDesigner, LogoDesign } from '@/components/BrandKitDesigner';
+import { BrandKitDesignerSimplified as BrandKitDesigner, LogoDesign } from '@/components/BrandKitDesignerSimplified';
 import { ProjectGallery } from '@/components/ProjectGallery';
 import { UploadedImage, SceneMetadata, ExportSettings, CarAdjustments } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
@@ -827,18 +827,12 @@ export default function Index() {
                           </Card>
                         ))}
                         
-                        {/* Processing images - with premium loading effect */}
+                        {/* Processing images - premium loading effect only */}
                         {processingImages.map((image) => (
-                          <Card key={image.id} className="relative overflow-hidden animate-pulse-glow">
+                          <Card key={image.id} className="relative overflow-hidden">
                             <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                              <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-md opacity-40 scale-105" />
+                              <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-md opacity-50 scale-105" />
                               <div className="absolute inset-0 animate-premium-shimmer" />
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-foreground text-center bg-background/60 backdrop-blur-sm rounded-lg px-4 py-3">
-                                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                                  <span className="text-xs font-medium">AI genererar...</span>
-                                </div>
-                              </div>
                             </div>
                           </Card>
                         ))}
