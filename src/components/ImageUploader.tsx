@@ -127,11 +127,11 @@ export const ImageUploader = ({
       {uploadedImages.length > 0 && (
         <button
           onClick={handleClearAll}
-          className="w-full flex items-center justify-center gap-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+          className="w-full flex items-center justify-center gap-3 py-2 text-sm text-destructive/70 hover:text-destructive transition-colors group"
         >
-          <span className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors" />
+          <span className="flex-1 h-px bg-destructive/30 group-hover:bg-destructive/50 transition-colors" />
           <span className="whitespace-nowrap">Rensa allt</span>
-          <span className="flex-1 h-px bg-border group-hover:bg-muted-foreground/50 transition-colors" />
+          <span className="flex-1 h-px bg-destructive/30 group-hover:bg-destructive/50 transition-colors" />
         </button>
       )}
 

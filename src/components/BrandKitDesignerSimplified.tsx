@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, Copy, Sparkles, Save, X, Check, Plus, Star, Pencil, Trash2, RotateCw } from 'lucide-react';
+import { Upload, Copy, Sparkles, Save, Check, Star, Pencil, Trash2, RotateCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -15,23 +15,19 @@ import { Card } from '@/components/ui/card';
 type BannerPosition = 'top' | 'bottom';
 type LogoPosition = 'left' | 'center' | 'right';
 
-interface Preset {
+interface VisualPreset {
   id: string;
   name: string;
   bannerPosition: BannerPosition;
   logoPosition: LogoPosition;
-  isCustom?: boolean;
-  isFavorite?: boolean;
 }
 
-// Built-in presets
-const DEFAULT_PRESETS: Preset[] = [
-  { id: 'top-left', name: 'Banner topp, logo vänster', bannerPosition: 'top', logoPosition: 'left' },
-  { id: 'top-center', name: 'Banner topp, logo center', bannerPosition: 'top', logoPosition: 'center' },
-  { id: 'top-right', name: 'Banner topp, logo höger', bannerPosition: 'top', logoPosition: 'right' },
-  { id: 'bottom-left', name: 'Banner botten, logo vänster', bannerPosition: 'bottom', logoPosition: 'left' },
-  { id: 'bottom-center', name: 'Banner botten, logo center', bannerPosition: 'bottom', logoPosition: 'center' },
-  { id: 'bottom-right', name: 'Banner botten, logo höger', bannerPosition: 'bottom', logoPosition: 'right' },
+// Visual presets with 4 main options
+const VISUAL_PRESETS: VisualPreset[] = [
+  { id: 'klassisk-topp', name: 'Klassisk Topp', bannerPosition: 'top', logoPosition: 'left' },
+  { id: 'klassisk-botten', name: 'Klassisk Botten', bannerPosition: 'bottom', logoPosition: 'left' },
+  { id: 'centrerad-topp', name: 'Centrerad Topp', bannerPosition: 'top', logoPosition: 'center' },
+  { id: 'centrerad-botten', name: 'Centrerad Botten', bannerPosition: 'bottom', logoPosition: 'center' },
 ];
 
 export interface LogoDesign {
@@ -61,6 +57,31 @@ interface BrandKitDesignerSimplifiedProps {
   onApplyToAll?: () => void;
 }
 
+// Mini preview component for preset cards
+const PresetPreview = ({ preset, isSelected }: { preset: VisualPreset; isSelected: boolean }) => {
+  const bannerTop = preset.bannerPosition === 'top';
+  const logoLeft = preset.logoPosition === 'left' ? 'left-1' : preset.logoPosition === 'right' ? 'right-1' : 'left-1/2 -translate-x-1/2';
+  const logoTop = bannerTop ? 'top-1' : 'bottom-1';
+  
+  return (
+    <div className={`relative w-full aspect-[4/3] bg-muted/50 rounded border-2 transition-all ${isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border/50'}`}>
+      {/* Mini car placeholder */}
+      <div className="absolute inset-x-3 top-1/2 -translate-y-1/2 h-6 bg-muted-foreground/20 rounded" />
+      
+      {/* Mini banner */}
+      <div 
+        className={`absolute left-0 right-0 h-2 bg-foreground/60 ${bannerTop ? 'top-0 rounded-t' : 'bottom-0 rounded-b'}`}
+      />
+      
+      {/* Mini logo */}
+      <div 
+        className={`absolute w-3 h-2 bg-primary/80 rounded-sm ${logoLeft} ${logoTop}`}
+        style={{ transform: preset.logoPosition === 'center' ? 'translateX(-50%)' : undefined }}
+      />
+    </div>
+  );
+};
+
 export const BrandKitDesignerSimplified = ({ 
   open, 
   onClose, 
@@ -74,12 +95,11 @@ export const BrandKitDesignerSimplified = ({
   const previewRef = useRef<HTMLDivElement>(null);
   
   // State
-  const [step, setStep] = useState<'select-logo' | 'select-preset' | 'customize'>('select-logo');
+  const [step, setStep] = useState<'select-preset' | 'customize'>('select-preset');
   const [logoLight, setLogoLight] = useState<string | null>(null);
   const [logoDark, setLogoDark] = useState<string | null>(null);
   const [loadingLogos, setLoadingLogos] = useState(false);
-  const [selectedBannerPosition, setSelectedBannerPosition] = useState<BannerPosition | null>(null);
-  const [selectedLogoPosition, setSelectedLogoPosition] = useState<LogoPosition | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [savedKits, setSavedKits] = useState<any[]>([]);
   const [saveWithoutLogo, setSaveWithoutLogo] = useState(false);
   const [appliedToAll, setAppliedToAll] = useState(false);
@@ -99,11 +119,9 @@ export const BrandKitDesignerSimplified = ({
     if (!open) {
       setAppliedToAll(false);
       setShowManualControls(false);
-      // Keep step if design already has content
       if (!design.enabled && !design.logoUrl) {
-        setStep('select-logo');
-        setSelectedBannerPosition(null);
-        setSelectedLogoPosition(null);
+        setStep('select-preset');
+        setSelectedPresetId(null);
       }
     }
   }, [open, design]);
@@ -152,19 +170,42 @@ export const BrandKitDesignerSimplified = ({
     }
   };
 
-  const selectLogo = (url: string) => {
+  const applyPreset = (preset: VisualPreset, logoUrl: string) => {
+    // Calculate positions based on preset
+    let logoX = 15, logoY = 10, bannerY = 5;
+    
+    if (preset.bannerPosition === 'bottom') {
+      bannerY = 95;
+      logoY = 90;
+    }
+    
+    if (preset.logoPosition === 'center') {
+      logoX = 50;
+    } else if (preset.logoPosition === 'right') {
+      logoX = 85;
+    }
+
+    setSelectedPresetId(preset.id);
+    
     onDesignChange({
       ...design,
       enabled: true,
-      logoUrl: url,
-      logoX: 15,
-      logoY: 10,
+      logoUrl: logoUrl,
+      logoX: logoX,
+      logoY: logoY,
       logoSize: 0.12,
+      bannerEnabled: true,
+      bannerX: 50,
+      bannerY: bannerY,
+      bannerHeight: 8,
+      bannerWidth: 100,
+      bannerRotation: 0,
     });
-    setStep('select-preset');
+    
+    setStep('customize');
   };
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = (file: File, presetId: string) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Vänligen välj en bildfil');
       return;
@@ -172,42 +213,12 @@ export const BrandKitDesignerSimplified = ({
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      selectLogo(result);
+      const preset = VISUAL_PRESETS.find(p => p.id === presetId);
+      if (preset) {
+        applyPreset(preset, result);
+      }
     };
     reader.readAsDataURL(file);
-  };
-
-  const applyPreset = (bannerPos: BannerPosition, logoPos: LogoPosition) => {
-    // Calculate positions based on preset
-    let logoX = 15, logoY = 10, bannerY = 5;
-    
-    if (bannerPos === 'bottom') {
-      bannerY = 95;
-      logoY = 90;
-    }
-    
-    if (logoPos === 'center') {
-      logoX = 50;
-    } else if (logoPos === 'right') {
-      logoX = 85;
-    }
-
-    setSelectedBannerPosition(bannerPos);
-    setSelectedLogoPosition(logoPos);
-    
-    onDesignChange({
-      ...design,
-      bannerEnabled: true,
-      bannerX: 50,
-      bannerY: bannerY,
-      bannerHeight: 8,
-      bannerWidth: 100,
-      bannerRotation: 0,
-      logoX: logoX,
-      logoY: logoY,
-    });
-    
-    setStep('customize');
   };
 
   const applySavedKit = (kit: any) => {
@@ -324,12 +335,14 @@ export const BrandKitDesignerSimplified = ({
       bannerRotation: 0,
       logos: [],
     });
-    setStep('select-logo');
-    setSelectedBannerPosition(null);
-    setSelectedLogoPosition(null);
+    setStep('select-preset');
+    setSelectedPresetId(null);
     setAppliedToAll(false);
     setShowManualControls(false);
   };
+
+  // Get available logo URL (prefer light for dark backgrounds)
+  const availableLogoUrl = logoLight || logoDark;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -344,31 +357,32 @@ export const BrandKitDesignerSimplified = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto max-h-[75vh]">
           {/* Left: Controls */}
           <div className="space-y-4">
-            {/* Step 1: Select Logo */}
-            {step === 'select-logo' && (
+            {/* Step 1: Select Preset with Visual Cards */}
+            {step === 'select-preset' && (
               <div className="space-y-4">
-                <Label className="text-sm font-medium">1. Välj logo</Label>
-                
-                {/* Saved brand kits */}
+                {/* Saved brand kits - shown first if available */}
                 {savedKits.length > 0 && (
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Sparade brand kits</Label>
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Star className="w-4 h-4 text-yellow-500" />
+                      Dina sparade brand kits
+                    </Label>
                     <div className="grid grid-cols-2 gap-2">
-                      {savedKits.slice(0, 4).map((kit) => (
+                      {savedKits.map((kit) => (
                         <Card 
                           key={kit.id} 
-                          className="p-2 cursor-pointer hover:bg-accent transition-colors group relative"
+                          className="p-3 cursor-pointer hover:bg-accent transition-colors group relative"
                           onClick={() => applySavedKit(kit)}
                         >
                           <div className="flex items-center gap-2">
                             {kit.is_favorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
-                            <span className="text-xs truncate flex-1">{kit.name}</span>
+                            <span className="text-sm truncate flex-1">{kit.name}</span>
                           </div>
                           <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-5 w-5"
+                              className="h-6 w-6"
                               onClick={(e) => { e.stopPropagation(); toggleFavorite(kit); }}
                             >
                               <Star className={`w-3 h-3 ${kit.is_favorite ? 'text-yellow-500 fill-yellow-500' : ''}`} />
@@ -376,7 +390,7 @@ export const BrandKitDesignerSimplified = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-5 w-5 text-destructive"
+                              className="h-6 w-6 text-destructive"
                               onClick={(e) => { e.stopPropagation(); deleteKit(kit.id); }}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -388,148 +402,135 @@ export const BrandKitDesignerSimplified = ({
                   </div>
                 )}
 
-                {/* Profile logos */}
-                {loadingLogos ? (
-                  <div className="h-16 bg-muted animate-pulse rounded-lg" />
-                ) : (logoLight || logoDark) ? (
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Dina logos</Label>
-                    <div className="grid grid-cols-2 gap-3">
+                {/* Visual preset cards */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Välj en stil</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Klicka på en stil för att välja, {!availableLogoUrl ? 'sedan ladda upp din logo' : 'sedan applicera'}
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    {VISUAL_PRESETS.map((preset) => (
+                      <Card 
+                        key={preset.id}
+                        className={`p-3 cursor-pointer transition-all hover:shadow-md ${
+                          selectedPresetId === preset.id 
+                            ? 'ring-2 ring-primary bg-accent' 
+                            : 'hover:bg-accent/50'
+                        }`}
+                        onClick={() => {
+                          setSelectedPresetId(preset.id);
+                          // If we have a logo, apply preset directly
+                          if (availableLogoUrl) {
+                            applyPreset(preset, availableLogoUrl);
+                          }
+                        }}
+                      >
+                        <PresetPreview preset={preset} isSelected={selectedPresetId === preset.id} />
+                        <p className="text-xs text-center mt-2 font-medium">{preset.name}</p>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Logo upload - only show if no logo available and preset selected */}
+                {selectedPresetId && !availableLogoUrl && (
+                  <div className="space-y-2 animate-fade-in">
+                    <Label className="text-xs text-muted-foreground">Ladda upp din logo</Label>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => document.getElementById('logo-upload-preset')?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Välj logo
+                    </Button>
+                    <input
+                      id="logo-upload-preset"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && selectedPresetId) {
+                          handleFileUpload(file, selectedPresetId);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Show available logos if we have them */}
+                {(logoLight || logoDark) && selectedPresetId && (
+                  <div className="space-y-2 animate-fade-in">
+                    <Label className="text-xs text-muted-foreground">Eller välj från dina logos</Label>
+                    <div className="grid grid-cols-2 gap-2">
                       {logoLight && (
                         <Card 
-                          className="p-3 cursor-pointer hover:ring-2 hover:ring-primary transition-all bg-zinc-800"
-                          onClick={() => selectLogo(logoLight)}
+                          className="p-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all bg-zinc-800"
+                          onClick={() => {
+                            const preset = VISUAL_PRESETS.find(p => p.id === selectedPresetId);
+                            if (preset) applyPreset(preset, logoLight);
+                          }}
                         >
-                          <img src={logoLight} alt="Ljus logo" className="h-8 object-contain mx-auto" />
-                          <p className="text-[10px] text-center mt-1 text-muted-foreground">Mörk bakgrund</p>
+                          <img src={logoLight} alt="Ljus logo" className="h-6 object-contain mx-auto" />
                         </Card>
                       )}
                       {logoDark && (
                         <Card 
-                          className="p-3 cursor-pointer hover:ring-2 hover:ring-primary transition-all bg-zinc-100"
-                          onClick={() => selectLogo(logoDark)}
+                          className="p-2 cursor-pointer hover:ring-2 hover:ring-primary transition-all bg-zinc-100"
+                          onClick={() => {
+                            const preset = VISUAL_PRESETS.find(p => p.id === selectedPresetId);
+                            if (preset) applyPreset(preset, logoDark);
+                          }}
                         >
-                          <img src={logoDark} alt="Mörk logo" className="h-8 object-contain mx-auto" />
-                          <p className="text-[10px] text-center mt-1 text-muted-foreground">Ljus bakgrund</p>
+                          <img src={logoDark} alt="Mörk logo" className="h-6 object-contain mx-auto" />
                         </Card>
                       )}
                     </div>
                   </div>
-                ) : null}
-
-                {/* Upload */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Eller ladda upp</Label>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => document.getElementById('logo-upload-simple')?.click()}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Ladda upp logo
-                  </Button>
-                  <input
-                    id="logo-upload-simple"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file);
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Select Preset */}
-            {step === 'select-preset' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">2. Välj stil</Label>
-                  <Button variant="ghost" size="sm" onClick={() => setStep('select-logo')}>
-                    ← Byt logo
-                  </Button>
-                </div>
-
-                {/* Banner position */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Banner placering</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant={selectedBannerPosition === 'top' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedBannerPosition('top')}
-                      className="h-auto py-3 flex flex-col gap-1"
-                    >
-                      <div className="w-full h-1 bg-current rounded opacity-80" />
-                      <div className="w-8 h-4 border border-current rounded opacity-40" />
-                      <span className="text-[10px]">Toppen</span>
-                    </Button>
-                    <Button
-                      variant={selectedBannerPosition === 'bottom' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedBannerPosition('bottom')}
-                      className="h-auto py-3 flex flex-col gap-1"
-                    >
-                      <div className="w-8 h-4 border border-current rounded opacity-40" />
-                      <div className="w-full h-1 bg-current rounded opacity-80" />
-                      <span className="text-[10px]">Botten</span>
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Logo position - only show after banner selected */}
-                {selectedBannerPosition && (
-                  <div className="space-y-2 animate-fade-in">
-                    <Label className="text-xs text-muted-foreground">Logo placering</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['left', 'center', 'right'] as LogoPosition[]).map((pos) => (
-                        <Button
-                          key={pos}
-                          variant={selectedLogoPosition === pos ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => applyPreset(selectedBannerPosition, pos)}
-                          className="h-auto py-3"
-                        >
-                          <div className="flex flex-col items-center gap-1">
-                            <div className="w-10 h-6 border border-current/30 rounded relative">
-                              <div 
-                                className="w-2 h-2 bg-current rounded-sm absolute"
-                                style={{
-                                  left: pos === 'left' ? '2px' : pos === 'right' ? 'auto' : '50%',
-                                  right: pos === 'right' ? '2px' : 'auto',
-                                  transform: pos === 'center' ? 'translateX(-50%)' : 'none',
-                                  top: selectedBannerPosition === 'top' ? '2px' : 'auto',
-                                  bottom: selectedBannerPosition === 'bottom' ? '2px' : 'auto',
-                                }}
-                              />
-                            </div>
-                            <span className="text-[10px] capitalize">
-                              {pos === 'left' ? 'Vänster' : pos === 'center' ? 'Center' : 'Höger'}
-                            </span>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
                 )}
+
+                {/* Upload new logo button when we already have logos */}
+                {availableLogoUrl && selectedPresetId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-muted-foreground"
+                    onClick={() => document.getElementById('logo-upload-new')?.click()}
+                  >
+                    <Upload className="w-3 h-3 mr-2" />
+                    Ladda upp annan logo
+                  </Button>
+                )}
+                <input
+                  id="logo-upload-new"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && selectedPresetId) {
+                      handleFileUpload(file, selectedPresetId);
+                    }
+                  }}
+                />
               </div>
             )}
 
-            {/* Step 3: Customize */}
+            {/* Step 2: Customize */}
             {step === 'customize' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">3. Finjustera</Label>
+                  <Label className="text-sm font-medium">Finjustera</Label>
                   <Button variant="ghost" size="sm" onClick={() => setShowManualControls(!showManualControls)}>
                     <Pencil className="w-3 h-3 mr-1" />
-                    {showManualControls ? 'Dölj' : 'Manuell'}
+                    {showManualControls ? 'Dölj kontroller' : 'Manuell justering'}
                   </Button>
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Dra logon och bannern direkt på bilden för att justera
+                  Dra logon och bannern direkt på bilden, eller använd pinch-to-zoom på mobil
                 </p>
 
                 {/* Manual controls - collapsible */}
@@ -599,18 +600,6 @@ export const BrandKitDesignerSimplified = ({
                         </Button>
                       </>
                     )}
-
-                    {!design.bannerEnabled && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-xs"
-                        onClick={() => onDesignChange({ ...design, bannerEnabled: true })}
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        Lägg till banner
-                      </Button>
-                    )}
                   </div>
                 )}
 
@@ -622,19 +611,18 @@ export const BrandKitDesignerSimplified = ({
                   onClick={saveCurrentKit}
                 >
                   <Star className="w-3 h-3 mr-2" />
-                  Spara som brand kit
+                  Spara som favorit
                 </Button>
 
-                {/* Reset */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-destructive hover:text-destructive"
+                {/* Reset - styled like clear button */}
+                <button
                   onClick={resetDesign}
+                  className="w-full flex items-center justify-center gap-3 py-2 text-sm text-destructive/70 hover:text-destructive transition-colors group"
                 >
-                  <X className="w-3 h-3 mr-1" />
-                  Ta bort design
-                </Button>
+                  <span className="flex-1 h-px bg-destructive/30 group-hover:bg-destructive/50 transition-colors" />
+                  <span className="whitespace-nowrap">Rensa design</span>
+                  <span className="flex-1 h-px bg-destructive/30 group-hover:bg-destructive/50 transition-colors" />
+                </button>
               </div>
             )}
           </div>
