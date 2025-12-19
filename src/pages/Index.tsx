@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, LayoutGrid, Grid3x3, Search } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -101,6 +101,8 @@ export default function Index() {
     bannerRotation: 0
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
+  const [resultsGridCols, setResultsGridCols] = useState<2 | 3 | 4>(2); // Mobile grid columns
+  const [resultsSearchQuery, setResultsSearchQuery] = useState('');
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -163,6 +165,7 @@ export default function Index() {
   }
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
+    // Slower scroll (10% slower) to allow background to load
     setTimeout(() => {
       const section = document.getElementById('export-section');
       if (section) {
@@ -174,7 +177,7 @@ export default function Index() {
           behavior: 'smooth'
         });
       }
-    }, 300);
+    }, 350); // Increased from 300 to 350 (roughly 10% slower)
   };
   const handleExport = async (settings: ExportSettings) => {
     if (!selectedScene || uploadedImages.length === 0) {
@@ -184,7 +187,7 @@ export default function Index() {
     try {
       setIsProcessing(true);
       
-      // Scroll to results section immediately when starting generation
+      // Scroll to results section (step 4) immediately when starting generation
       setTimeout(() => {
         const section = document.getElementById('results-section');
         if (section) {
@@ -196,7 +199,7 @@ export default function Index() {
             behavior: 'smooth'
           });
         }
-      }, 100);
+      }, 150); // Slightly delayed to let step 4 render first
       const {
         data: {
           user
@@ -752,28 +755,66 @@ export default function Index() {
                     </div>
                   </div>
                   
-                  {/* Select all moved under heading */}
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="select-all" checked={selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length && uploadedImages.filter(img => img.status === 'completed').length > 0} onCheckedChange={checked => {
-                const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                if (checked) {
-                  setSelectedImages(new Set(completedImages.map(img => img.id)));
-                } else {
-                  setSelectedImages(new Set());
-                }
-              }} />
-                    <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
-                      Markera alla ({uploadedImages.filter(img => img.status === 'completed').length} bilder)
-                    </label>
+                  {/* Search and grid controls */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    {/* Search input */}
+                    <div className="relative flex-1 w-full sm:max-w-[200px]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Sök reg.nr..."
+                        value={resultsSearchQuery}
+                        onChange={(e) => setResultsSearchQuery(e.target.value.toUpperCase())}
+                        className="w-full pl-9 pr-3 py-1.5 text-sm rounded-md border border-border/50 bg-background/50 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    
+                    {/* Grid toggle - mobile only */}
+                    <div className="flex items-center gap-2 sm:hidden">
+                      <span className="text-xs text-muted-foreground">Vy:</span>
+                      <div className="flex rounded-lg border border-border/50 overflow-hidden">
+                        <button 
+                          onClick={() => setResultsGridCols(2)}
+                          className={`p-1.5 ${resultsGridCols === 2 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
+                        >
+                          <LayoutGrid className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setResultsGridCols(3)}
+                          className={`p-1.5 ${resultsGridCols === 3 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
+                        >
+                          <Grid3x3 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Select all */}
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="select-all" checked={selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length && uploadedImages.filter(img => img.status === 'completed').length > 0} onCheckedChange={checked => {
+                        const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                        if (checked) {
+                          setSelectedImages(new Set(completedImages.map(img => img.id)));
+                        } else {
+                          setSelectedImages(new Set());
+                        }
+                      }} />
+                      <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+                        Markera alla ({uploadedImages.filter(img => img.status === 'completed').length})
+                      </label>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className={`grid gap-4 ${resultsGridCols === 3 ? 'grid-cols-3 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-2'} md:grid-cols-3 lg:grid-cols-4`}>
                   {/* Sort images: completed first (in order), then processing, then pending */}
                   {(() => {
                     const pendingImages = uploadedImages.filter(img => img.status === 'pending' && selectedScene);
                     const processingImages = uploadedImages.filter(img => img.status === 'processing');
-                    const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                    // Filter completed images by search query (matches registration number)
+                    const completedImages = uploadedImages.filter(img => 
+                      img.status === 'completed' && 
+                      (!resultsSearchQuery || registrationNumber.includes(resultsSearchQuery) || img.file.name.toUpperCase().includes(resultsSearchQuery))
+                    );
                     
                     return (
                       <>
@@ -876,7 +917,7 @@ export default function Index() {
                       <span className="text-primary font-sans text-base font-medium">5</span>
                     </div>
                     <div>
-                      <h2 className="text-foreground font-serif text-lg font-normal">Logo Design</h2>
+                      <h2 className="text-foreground font-sans text-lg font-medium">Logo Design</h2>
                       <p className="text-muted-foreground text-sm">Lägg till ditt varumärke på bilderna</p>
                     </div>
                   </div>
@@ -1531,7 +1572,7 @@ export default function Index() {
       toast.success('Design kommer appliceras vid sparning');
     }} />
 
-    {/* Scroll to top button - only show from results gallery onwards */}
-    <ScrollToTopButton threshold={600} hideBeforeElementId="results-section" />
+    {/* Scroll to top button - only show from results gallery onwards, hide at steps 3-5 on mobile */}
+    <ScrollToTopButton threshold={600} hideBeforeElementId="results-section" hideAfterElementId="export-section" />
     </div>;
 }

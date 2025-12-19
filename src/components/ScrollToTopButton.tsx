@@ -1,36 +1,52 @@
 import { useState, useEffect } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ScrollToTopButtonProps {
   threshold?: number;
   containerRef?: React.RefObject<HTMLElement>;
   hideBeforeElementId?: string;
+  hideAfterElementId?: string; // New prop to hide after a specific element (for mobile)
 }
 
-export const ScrollToTopButton = ({ threshold = 400, containerRef, hideBeforeElementId }: ScrollToTopButtonProps) => {
+export const ScrollToTopButton = ({ 
+  threshold = 400, 
+  containerRef, 
+  hideBeforeElementId,
+  hideAfterElementId 
+}: ScrollToTopButtonProps) => {
   const [visible, setVisible] = useState(false);
-  const [passedElement, setPassedElement] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = containerRef?.current?.scrollTop ?? window.scrollY;
       const meetsThreshold = scrollTop > threshold;
       
-      // Check if we've passed the target element
+      let passedStartElement = true;
+      let beforeEndElement = true;
+      
+      // Check if we've passed the start element (show after this)
       if (hideBeforeElementId) {
         const element = document.getElementById(hideBeforeElementId);
         if (element) {
           const rect = element.getBoundingClientRect();
           // Only show button once we're past the element (it's above viewport)
-          setPassedElement(rect.top < window.innerHeight * 0.5);
-        } else {
-          setPassedElement(true);
+          passedStartElement = rect.top < window.innerHeight * 0.5;
         }
-      } else {
-        setPassedElement(true);
       }
       
-      setVisible(meetsThreshold && passedElement);
+      // On mobile, check if we're before the end element (hide when reaching this)
+      if (isMobile && hideAfterElementId) {
+        const element = document.getElementById(hideAfterElementId);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          // Hide button when the element is visible in viewport
+          beforeEndElement = rect.top > window.innerHeight * 0.7;
+        }
+      }
+      
+      setVisible(meetsThreshold && passedStartElement && beforeEndElement);
     };
 
     const target = containerRef?.current ?? window;
@@ -38,7 +54,7 @@ export const ScrollToTopButton = ({ threshold = 400, containerRef, hideBeforeEle
     handleScroll();
 
     return () => target.removeEventListener('scroll', handleScroll);
-  }, [threshold, containerRef, hideBeforeElementId, passedElement]);
+  }, [threshold, containerRef, hideBeforeElementId, hideAfterElementId, isMobile]);
 
   const scrollToTop = () => {
     if (containerRef?.current) {
