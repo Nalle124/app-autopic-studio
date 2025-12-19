@@ -35,14 +35,41 @@ const defaultSettings: BlurSettings = {
   rotation: 0,
 };
 
-// Auto blur presets for quick application
-const autoBlurSettings: BlurSettings = {
-  blurAmount: 10,
-  ovalSize: 80,
-  ovalHeight: 45,
-  ovalX: 50,
-  ovalY: 55,
-  rotation: 0,
+// Blur presets
+const BLUR_PRESETS = {
+  soft: {
+    name: 'Mjuk',
+    settings: {
+      blurAmount: 6,
+      ovalSize: 90,
+      ovalHeight: 55,
+      ovalX: 50,
+      ovalY: 52,
+      rotation: 0,
+    }
+  },
+  medium: {
+    name: 'Medium',
+    settings: {
+      blurAmount: 10,
+      ovalSize: 75,
+      ovalHeight: 45,
+      ovalX: 50,
+      ovalY: 55,
+      rotation: 0,
+    }
+  },
+  strong: {
+    name: 'Stark',
+    settings: {
+      blurAmount: 15,
+      ovalSize: 60,
+      ovalHeight: 35,
+      ovalX: 50,
+      ovalY: 55,
+      rotation: 0,
+    }
+  },
 };
 
 // Simple box blur implementation
@@ -376,9 +403,10 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
   };
 
   // Auto blur - apply preset and trigger processing
-  const handleAutoBlur = () => {
+
+  const applyPreset = (presetKey: keyof typeof BLUR_PRESETS) => {
     setHistory(prev => [...prev, settings]);
-    setSettings(autoBlurSettings);
+    setSettings(BLUR_PRESETS[presetKey].settings);
   };
 
   const canUndo = history.length > 1;
@@ -487,15 +515,33 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
         {/* Controls - below image */}
         <div className="flex flex-col sm:flex-row gap-4 pt-4">
           <div className="flex-1 space-y-3">
-            {/* Auto blur button - prominent at top */}
-            <Button 
-              onClick={handleAutoBlur}
-              variant="secondary"
-              className="w-full glass-button"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Auto Blur
-            </Button>
+            {/* Blur presets - 3 options */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => applyPreset('soft')}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
+                Mjuk
+              </Button>
+              <Button 
+                onClick={() => applyPreset('medium')}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
+                Medium
+              </Button>
+              <Button 
+                onClick={() => applyPreset('strong')}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
+                Stark
+              </Button>
+            </div>
             
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Styrka ({settings.blurAmount}px)</Label>

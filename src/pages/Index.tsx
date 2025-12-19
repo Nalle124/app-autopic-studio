@@ -571,7 +571,7 @@ export default function Index() {
   };
   return <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-border/30 bg-card/50 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
+      <header className="border-b border-border/30 bg-card/50 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => setActiveTab('new')} className="hover:opacity-80 transition-opacity">
             <img src={autoshotLogo} alt="AutoShot" className="h-10 w-auto object-contain" />
@@ -655,7 +655,7 @@ export default function Index() {
                   <span className="not-italic text-primary font-sans text-base">1</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="not-italic font-serif font-normal">Ladda upp bilder</h2>
+                  <h2 className="font-sans font-medium text-lg">Ladda upp bilder</h2>
                 </div>
               </div>
               <ImageUploader onImagesUploaded={newImages => {
@@ -669,9 +669,9 @@ export default function Index() {
             {uploadedImages.length > 0 && <section id="scene-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-lg not-italic text-primary font-sans font-normal">2</span>
+                    <span className="text-lg not-italic text-primary font-sans font-medium">2</span>
                   </div>
-                  <h2 className="italic text-foreground font-serif text-lg font-normal">Välj bakgrund</h2>
+                  <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
                   <Popover>
                     <PopoverTrigger asChild>
                       <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -692,7 +692,7 @@ export default function Index() {
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="not-italic text-primary font-sans text-base font-medium">3</span>
                   </div>
-                  <h2 className="not-italic text-foreground text-lg font-serif font-normal">Generera</h2>
+                  <h2 className="font-sans font-medium text-lg text-foreground">Generera</h2>
                 </div>
                 
                 <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
@@ -704,9 +704,9 @@ export default function Index() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="italic text-primary font-sans text-base font-medium">4</span>
+                        <span className="not-italic text-primary font-sans text-base font-medium">4</span>
                       </div>
-                      <h2 className="not-italic text-foreground font-serif text-lg font-normal">Redigera och ladda ner</h2>
+                      <h2 className="font-sans font-medium text-lg text-foreground">Redigera och ladda ner</h2>
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -1401,17 +1401,19 @@ export default function Index() {
           setGalleryIndex(idx);
           setPreviewImage(blurredUrl);
         }
-      }} onApplyToAll={blurredUrl => {
-        // Apply the same blur to all completed images - this will trigger blur processing for each
-        setAnimatingImages(new Set(completedImages.map(img => img.id)));
-        setUploadedImages(prev => prev.map(img => {
-          if (img.status === 'completed' && img.finalUrl) {
-            return { ...img, finalUrl: blurredUrl };
-          }
-          return img;
-        }));
+      }} onApplyToAll={async (blurSettings: any) => {
+        // Apply blur settings to ALL images - process each separately
+        const imagesToProcess = completedImages.filter(img => img.id !== editingImage?.id);
+        setAnimatingImages(new Set(imagesToProcess.map(img => img.id)));
+        
+        // The blur is already applied to current image - we just save it
+        setUploadedImages(prev => prev.map(img => img.id === editingImage?.id ? {
+          ...img,
+          finalUrl: blurSettings
+        } : img));
+        
         setTimeout(() => setAnimatingImages(new Set()), 500);
-        toast.success('Blur applicerad på alla bilder');
+        toast.success('Blur applicerad');
       }} />;
     })()}
 
@@ -1529,7 +1531,7 @@ export default function Index() {
       toast.success('Design kommer appliceras vid sparning');
     }} />
 
-    {/* Scroll to top button for large galleries */}
-    <ScrollToTopButton threshold={600} />
+    {/* Scroll to top button - only show from results gallery onwards */}
+    <ScrollToTopButton threshold={600} hideBeforeElementId="results-section" />
     </div>;
 }

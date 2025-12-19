@@ -4,15 +4,33 @@ import { ArrowUp } from 'lucide-react';
 interface ScrollToTopButtonProps {
   threshold?: number;
   containerRef?: React.RefObject<HTMLElement>;
+  hideBeforeElementId?: string;
 }
 
-export const ScrollToTopButton = ({ threshold = 400, containerRef }: ScrollToTopButtonProps) => {
+export const ScrollToTopButton = ({ threshold = 400, containerRef, hideBeforeElementId }: ScrollToTopButtonProps) => {
   const [visible, setVisible] = useState(false);
+  const [passedElement, setPassedElement] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = containerRef?.current?.scrollTop ?? window.scrollY;
-      setVisible(scrollTop > threshold);
+      const meetsThreshold = scrollTop > threshold;
+      
+      // Check if we've passed the target element
+      if (hideBeforeElementId) {
+        const element = document.getElementById(hideBeforeElementId);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          // Only show button once we're past the element (it's above viewport)
+          setPassedElement(rect.top < window.innerHeight * 0.5);
+        } else {
+          setPassedElement(true);
+        }
+      } else {
+        setPassedElement(true);
+      }
+      
+      setVisible(meetsThreshold && passedElement);
     };
 
     const target = containerRef?.current ?? window;
@@ -20,7 +38,7 @@ export const ScrollToTopButton = ({ threshold = 400, containerRef }: ScrollToTop
     handleScroll();
 
     return () => target.removeEventListener('scroll', handleScroll);
-  }, [threshold, containerRef]);
+  }, [threshold, containerRef, hideBeforeElementId, passedElement]);
 
   const scrollToTop = () => {
     if (containerRef?.current) {
