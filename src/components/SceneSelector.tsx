@@ -283,9 +283,9 @@ export const SceneSelector = ({
   return (
     <TooltipProvider delayDuration={0}>
       <div className="space-y-4">
-        {/* Orientation toggle - compact on mobile */}
+        {/* Orientation toggle - compact on mobile with more spacing */}
         {isMobile && onOrientationChange && (
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-sm mb-4">
             <span className="text-muted-foreground">Format:</span>
             <button
               onClick={() => onOrientationChange(orientation === 'landscape' ? 'portrait' : 'landscape')}
@@ -407,10 +407,13 @@ export const SceneSelector = ({
           </div>
         )}
         
-        {/* Scene cards */}
+        {/* Scene cards with touch swipe support */}
         {viewMode === 'slideshow' ? (
           <div className="relative">
-            <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+            <div 
+              className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide touch-pan-x"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
               {categoryScenes.map((scene) => (
                 <SceneCard key={scene.id} scene={scene} />
               ))}

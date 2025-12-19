@@ -157,7 +157,8 @@ export const ImageUploader = ({
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-4 sm:gap-2 flex-wrap mt-3 sm:mt-0">
+            {/* All controls on one row */}
+            <div className="flex items-center gap-2 flex-wrap mt-3 sm:mt-0">
               {uploadedImages.length > 0 && onEditImage && (
                 <>
                   <Button variant="outline" size="icon" className="h-9 w-9" title="Beskär" onClick={() => {
@@ -177,9 +178,9 @@ export const ImageUploader = ({
                 </>
               )}
               
-              {/* Relight toggle - moved to edge on mobile */}
+              {/* Relight toggle - on same row */}
               {uploadedImages.length > 0 && onRelightChange && (
-                <div className="flex items-center gap-2 sm:order-none order-first w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
                     <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
                     <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
