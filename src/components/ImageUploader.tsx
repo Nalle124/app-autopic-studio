@@ -177,9 +177,9 @@ export const ImageUploader = ({
                 </>
               )}
               
-              {/* Relight toggle */}
+              {/* Relight toggle - moved to edge on mobile */}
               {uploadedImages.length > 0 && onRelightChange && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:order-none order-first w-full sm:w-auto justify-end">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
                     <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
                     <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
@@ -209,7 +209,16 @@ export const ImageUploader = ({
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {uploadedImages.filter(img => img.isOriginal !== false).map(image => (
-              <Card key={image.id} className={`group relative overflow-hidden ${animatingImages?.has(image.id) ? 'animate-clean-boost' : ''}`}>
+              <Card 
+                key={image.id} 
+                className={`group relative overflow-hidden cursor-pointer ${animatingImages?.has(image.id) ? 'animate-clean-boost' : ''}`}
+                onClick={() => {
+                  // Click to view - like final gallery
+                  if (onEditImage) {
+                    onEditImage(image.id, 'adjust');
+                  }
+                }}
+              >
                 <div className="aspect-square relative">
                   <img src={image.croppedUrl || image.preview} alt="Original bild" className="w-full h-full object-cover" />
                   
@@ -226,28 +235,18 @@ export const ImageUploader = ({
                     )}
                   </div>
                   
-                  {/* Hover overlay with actions */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    {onEditImage && (
-                      <>
-                        <Button variant="secondary" size="icon" className="rounded-full shadow-lg hover-scale" onClick={e => {
-                          e.stopPropagation();
-                          onEditImage(image.id, 'crop');
-                        }} title="Beskär">
-                          <Scissors className="w-4 h-4" />
-                        </Button>
-                        <Button variant="secondary" size="icon" className="rounded-full shadow-lg hover-scale" onClick={e => {
-                          e.stopPropagation();
-                          onEditImage(image.id, 'adjust');
-                        }} title="Redigera">
-                          <Sliders className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
-                    <Button variant="destructive" size="icon" className="rounded-full shadow-lg hover-scale" onClick={() => removeImage(image.id)}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {/* Remove button - small X in corner */}
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeImage(image.id);
+                    }}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
                 </div>
               </Card>
             ))}
