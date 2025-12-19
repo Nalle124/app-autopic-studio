@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote, Share2, Focus, Loader2 } from 'lucide-react';
+import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote, Share2, Focus, Loader2, LayoutGrid, Grid3x3, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -60,6 +60,10 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const [editingImage, setEditingImage] = useState<{ jobId: string; url: string; type: 'crop' | 'adjust' | 'blur' } | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+  
+  // Grid and search states
+  const [gridCols, setGridCols] = useState<2 | 3>(2);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleJobSelection = (jobId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -430,10 +434,49 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
 
   const allProjects = orphanProject ? [orphanProject, ...projects] : projects;
 
+  // Filter projects by search query
+  const filteredProjects = allProjects.filter(project => 
+    !searchQuery || project.registration_number.toUpperCase().includes(searchQuery.toUpperCase())
+  );
+
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {allProjects.map((project) => {
+      {/* Search and Grid Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
+        {/* Search input */}
+        <div className="relative flex-1 w-full sm:max-w-[250px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Sök reg.nr..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border/50 bg-background/50 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+        
+        {/* Grid toggle - mobile only */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <span className="text-xs text-muted-foreground">Vy:</span>
+          <div className="flex rounded-lg border border-border/50 overflow-hidden">
+            <button 
+              onClick={() => setGridCols(2)}
+              className={`p-1.5 ${gridCols === 2 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setGridCols(3)}
+              className={`p-1.5 ${gridCols === 3 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
+            >
+              <Grid3x3 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`grid gap-4 ${gridCols === 3 ? 'grid-cols-3' : 'grid-cols-2'} sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3`}>
+        {filteredProjects.map((project) => {
           const projectJobs = project.jobs.filter(j => j.final_url);
           const firstImage = projectJobs[0];
           const isOrphan = project.id === 'orphan';

@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, LayoutGrid, Grid3x3, Search } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -101,8 +101,6 @@ export default function Index() {
     bannerRotation: 0
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
-  const [resultsGridCols, setResultsGridCols] = useState<2 | 3 | 4>(2); // Mobile grid columns
-  const [resultsSearchQuery, setResultsSearchQuery] = useState('');
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -755,66 +753,28 @@ export default function Index() {
                     </div>
                   </div>
                   
-                  {/* Search and grid controls */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    {/* Search input */}
-                    <div className="relative flex-1 w-full sm:max-w-[200px]">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
-                        type="text"
-                        placeholder="Sök reg.nr..."
-                        value={resultsSearchQuery}
-                        onChange={(e) => setResultsSearchQuery(e.target.value.toUpperCase())}
-                        className="w-full pl-9 pr-3 py-1.5 text-sm rounded-md border border-border/50 bg-background/50 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                    
-                    {/* Grid toggle - mobile only */}
-                    <div className="flex items-center gap-2 sm:hidden">
-                      <span className="text-xs text-muted-foreground">Vy:</span>
-                      <div className="flex rounded-lg border border-border/50 overflow-hidden">
-                        <button 
-                          onClick={() => setResultsGridCols(2)}
-                          className={`p-1.5 ${resultsGridCols === 2 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
-                        >
-                          <LayoutGrid className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => setResultsGridCols(3)}
-                          className={`p-1.5 ${resultsGridCols === 3 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
-                        >
-                          <Grid3x3 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Select all */}
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="select-all" checked={selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length && uploadedImages.filter(img => img.status === 'completed').length > 0} onCheckedChange={checked => {
-                        const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                        if (checked) {
-                          setSelectedImages(new Set(completedImages.map(img => img.id)));
-                        } else {
-                          setSelectedImages(new Set());
-                        }
-                      }} />
-                      <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
-                        Markera alla ({uploadedImages.filter(img => img.status === 'completed').length})
-                      </label>
-                    </div>
+                  {/* Select all */}
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="select-all" checked={selectedImages.size === uploadedImages.filter(img => img.status === 'completed').length && uploadedImages.filter(img => img.status === 'completed').length > 0} onCheckedChange={checked => {
+                      const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                      if (checked) {
+                        setSelectedImages(new Set(completedImages.map(img => img.id)));
+                      } else {
+                        setSelectedImages(new Set());
+                      }
+                    }} />
+                    <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+                      Markera alla ({uploadedImages.filter(img => img.status === 'completed').length})
+                    </label>
                   </div>
                 </div>
 
-                <div className={`grid gap-4 ${resultsGridCols === 3 ? 'grid-cols-3 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-2'} md:grid-cols-3 lg:grid-cols-4`}>
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                   {/* Sort images: completed first (in order), then processing, then pending */}
                   {(() => {
                     const pendingImages = uploadedImages.filter(img => img.status === 'pending' && selectedScene);
                     const processingImages = uploadedImages.filter(img => img.status === 'processing');
-                    // Filter completed images by search query (matches registration number)
-                    const completedImages = uploadedImages.filter(img => 
-                      img.status === 'completed' && 
-                      (!resultsSearchQuery || registrationNumber.includes(resultsSearchQuery) || img.file.name.toUpperCase().includes(resultsSearchQuery))
-                    );
+                    const completedImages = uploadedImages.filter(img => img.status === 'completed');
                     
                     return (
                       <>
