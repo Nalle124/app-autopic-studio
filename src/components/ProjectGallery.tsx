@@ -81,6 +81,65 @@ const ProjectImagePreviewContent = ({
   );
 };
 
+// Helper component for dialog job cards with proper useState hook
+const DialogJobCard = ({
+  job,
+  idx,
+  projectName,
+  isSelected,
+  onToggleSelection,
+  onOpenPreview
+}: {
+  job: { id: string; final_url: string | null; thumbnail_url: string | null; scene_id: string };
+  idx: number;
+  projectName: string;
+  isSelected: boolean;
+  onToggleSelection: (e: React.MouseEvent) => void;
+  onOpenPreview: () => void;
+}) => {
+  const [isImgLoading, setIsImgLoading] = useState(true);
+  const displayUrl = job.thumbnail_url || job.final_url;
+
+  return (
+    <div 
+      className={`aspect-[4/3] bg-muted rounded-lg overflow-hidden group relative cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      onClick={onOpenPreview}
+    >
+      {isImgLoading && (
+        <ImageSkeleton className="absolute inset-0 z-10" aspectRatio="gallery" />
+      )}
+      <img
+        src={displayUrl!}
+        alt={projectName}
+        className={`w-full h-full object-cover group-hover:scale-105 transition-all ${isImgLoading ? 'opacity-0' : 'opacity-100'}`}
+        loading="lazy"
+        onLoad={() => setIsImgLoading(false)}
+      />
+      
+      {/* Selection checkbox */}
+      <div 
+        className="absolute top-2 left-2 z-10"
+        onClick={onToggleSelection}
+      >
+        <Checkbox 
+          checked={isSelected}
+          className="bg-background/80 border-border"
+        />
+      </div>
+      
+      {isSelected && (
+        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+          <Check className="w-4 h-4 text-primary-foreground" />
+        </div>
+      )}
+      
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <Eye className="w-8 h-8 text-white" />
+      </div>
+    </div>
+  );
+};
+
 export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [orphanJobs, setOrphanJobs] = useState<OrphanJob[]>([]);
@@ -784,51 +843,17 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
               
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {completedJobsList.map((job, idx) => {
-                    const [isImgLoading, setIsImgLoading] = useState(true);
-                    // Use thumbnail if available for the grid
-                    const displayUrl = job.thumbnail_url || job.final_url;
-                    
-                    return (
-                      <div 
-                        key={job.id} 
-                        className={`aspect-[4/3] bg-muted rounded-lg overflow-hidden group relative cursor-pointer transition-all ${selectedJobIds.has(job.id) ? 'ring-2 ring-primary' : ''}`}
-                        onClick={() => openPreview(selectedProject, idx)}
-                      >
-                        {isImgLoading && (
-                          <ImageSkeleton className="absolute inset-0 z-10" aspectRatio="video" />
-                        )}
-                        <img
-                          src={displayUrl!}
-                          alt={`${selectedProject.registration_number}`}
-                          className={`w-full h-full object-cover group-hover:scale-105 transition-all ${isImgLoading ? 'opacity-0' : 'opacity-100'}`}
-                          loading="lazy"
-                          onLoad={() => setIsImgLoading(false)}
-                        />
-                        
-                        {/* Selection checkbox */}
-                        <div 
-                          className="absolute top-2 left-2 z-10"
-                          onClick={(e) => toggleJobSelection(job.id, e)}
-                        >
-                          <Checkbox 
-                            checked={selectedJobIds.has(job.id)}
-                            className="bg-background/80 border-border"
-                          />
-                        </div>
-                        
-                        {selectedJobIds.has(job.id) && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="w-4 h-4 text-primary-foreground" />
-                          </div>
-                        )}
-                        
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Eye className="w-8 h-8 text-white" />
-                        </div>
-                      </div>
-                    );
-                    })}
+                  {completedJobsList.map((job, idx) => (
+                      <DialogJobCard
+                        key={job.id}
+                        job={job}
+                        idx={idx}
+                        projectName={selectedProject.registration_number}
+                        isSelected={selectedJobIds.has(job.id)}
+                        onToggleSelection={(e) => toggleJobSelection(job.id, e)}
+                        onOpenPreview={() => openPreview(selectedProject, idx)}
+                      />
+                    ))}
                 </div>
               </div>
             </div>
