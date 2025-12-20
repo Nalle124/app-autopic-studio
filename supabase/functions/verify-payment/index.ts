@@ -136,6 +136,42 @@ serve(async (req) => {
       }
 
       logStep("Credits updated", { previousBalance: currentBalance, newBalance, creditsAdded: creditsToAdd });
+
+      // Send payment confirmation email
+      try {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.email) {
+          const emailPayload = {
+            email: profile.email,
+            name: profile.full_name || profile.email.split('@')[0],
+            amount: session.amount_total || 0,
+            credits: creditsToAdd,
+            transactionId: session.id
+          };
+
+          // Call the send-payment-confirmation function
+          const supabaseUrl = Deno.env.get("SUPABASE_URL");
+          const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+          
+          await fetch(`${supabaseUrl}/functions/v1/send-payment-confirmation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseAnonKey}`
+            },
+            body: JSON.stringify(emailPayload)
+          });
+          
+          logStep("Payment confirmation email sent", { email: profile.email });
+        }
+      } catch (emailError) {
+        logStep("Email sending error (non-blocking)", { error: String(emailError) });
+      }
     }
 
     return new Response(JSON.stringify({ 
