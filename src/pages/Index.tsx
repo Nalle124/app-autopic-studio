@@ -748,8 +748,7 @@ export default function Index() {
                   });
                 }} className="flex-1 sm:flex-none gap-2">
                         <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}</span>
-                        <span className="sm:hidden">{selectedImages.size > 0 ? selectedImages.size : 'Alla'}</span>
+                        <span>Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}</span>
                       </Button>
                     </div>
                   </div>
@@ -885,6 +884,7 @@ export default function Index() {
                   
                   <div className="flex items-center gap-3 w-full sm:w-auto">
                     <Button 
+                      variant="outline"
                       onClick={() => setLogoDesignOpen(true)} 
                       className="flex-1 sm:flex-none gap-2"
                     >
