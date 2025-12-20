@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -85,8 +85,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       },
     });
     
-    if (!error) {
+    if (!error && data.user) {
       toast.success('Konto skapat! Du är nu inloggad.');
+      
+      // Send welcome email (non-blocking)
+      supabase.functions.invoke('send-welcome-email', {
+        body: {
+          userId: data.user.id,
+          email: email,
+          name: fullName
+        }
+      }).catch(err => console.error('Welcome email error:', err));
+      
       navigate('/onboarding');
     }
     
