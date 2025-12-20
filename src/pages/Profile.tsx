@@ -252,7 +252,7 @@ export const Profile = () => {
   return (
     <div className="min-h-screen">
       {/* Header matching Index.tsx layout */}
-      <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
+        <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
             <img src={autoshotLogo} alt="AutoShot" className="h-10 w-auto object-contain" />
@@ -313,9 +313,44 @@ export const Profile = () => {
                 </p>
               </div>
             </div>
-            <Button variant="premium">
+            <Button variant="outline">
               Köp credits
             </Button>
+          </div>
+        </Card>
+
+        {/* Theme Settings */}
+        <Card className="p-6 mb-6">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Palette className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground font-heading">
+                Utseende
+              </h2>
+              <p className="text-sm text-muted-foreground font-small">Anpassa appens utseende</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? (
+                <Moon className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <Sun className="w-5 h-5 text-muted-foreground" />
+              )}
+              <div>
+                <Label className="text-sm font-medium">Ljust läge</Label>
+                <p className="text-xs text-muted-foreground font-small">
+                  Växla mellan mörkt och ljust tema
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={theme === 'light'}
+              onCheckedChange={(checked) => setTheme(checked ? 'light' : 'dark')}
+            />
           </div>
         </Card>
 
@@ -423,45 +458,10 @@ export const Profile = () => {
             </div>
 
             <div className="pt-4">
-              <Button onClick={handleSave} disabled={isSaving}>
+              <Button variant="outline" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? 'Sparar...' : 'Spara ändringar'}
               </Button>
             </div>
-          </div>
-        </Card>
-
-        {/* Theme Settings */}
-        <Card className="p-6 mb-6">
-          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Palette className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground font-heading">
-                Utseende
-              </h2>
-              <p className="text-sm text-muted-foreground font-small">Anpassa appens utseende</p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {theme === 'dark' ? (
-                <Moon className="w-5 h-5 text-muted-foreground" />
-              ) : (
-                <Sun className="w-5 h-5 text-muted-foreground" />
-              )}
-              <div>
-                <Label className="text-sm font-medium">Ljust läge</Label>
-                <p className="text-xs text-muted-foreground font-small">
-                  Växla mellan mörkt och ljust tema
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={theme === 'light'}
-              onCheckedChange={(checked) => setTheme(checked ? 'light' : 'dark')}
-            />
           </div>
         </Card>
 

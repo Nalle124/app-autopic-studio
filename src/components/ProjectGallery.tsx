@@ -164,7 +164,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
   
   // Grid and search states
-  const [gridCols, setGridCols] = useState<2 | 3>(2);
+  const [gridCols, setGridCols] = useState<1 | 2>(2);
   const [searchQuery, setSearchQuery] = useState('');
 
   const toggleJobSelection = (jobId: string, e: React.MouseEvent) => {
@@ -558,19 +558,19 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
           />
         </div>
         
-        {/* Grid toggle - mobile only */}
+        {/* Grid toggle - mobile only - changed to 1 or 2 columns */}
         <div className="flex items-center gap-2 sm:hidden">
           <span className="text-xs text-muted-foreground">Vy:</span>
           <div className="flex rounded-lg border border-border/50 overflow-hidden">
             <button 
-              onClick={() => setGridCols(2)}
-              className={`p-1.5 ${gridCols === 2 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
+              onClick={() => setGridCols(1)}
+              className={`p-1.5 ${gridCols === 1 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button 
-              onClick={() => setGridCols(3)}
-              className={`p-1.5 ${gridCols === 3 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
+              onClick={() => setGridCols(2)}
+              className={`p-1.5 ${gridCols === 2 ? 'bg-primary text-primary-foreground' : 'bg-background/50'}`}
             >
               <Grid3x3 className="w-4 h-4" />
             </button>
@@ -578,7 +578,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
         </div>
       </div>
 
-      <div className={`grid gap-4 ${gridCols === 3 ? 'grid-cols-3' : 'grid-cols-2'} sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3`}>
+      <div className={`grid gap-4 ${gridCols === 1 ? 'grid-cols-1' : 'grid-cols-2'} sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3`}>
         {filteredProjects.map((project) => {
           const projectJobs = project.jobs.filter(j => j.final_url);
           const firstImage = projectJobs[0];
@@ -716,7 +716,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">
-                  {projectJobs.length} bilder • {new Date(project.created_at).toLocaleDateString('sv-SE')}
+                  {projectJobs.length} bilder
                 </p>
               </div>
             </Card>
@@ -800,46 +800,6 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                 </label>
               </div>
               
-              {/* Notes Section */}
-              {selectedProject.id !== 'orphan' && (
-                <div className="px-4 pt-2 pb-2 border-b">
-                  {editingNotes === selectedProject.id ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={notesText}
-                        onChange={(e) => setNotesText(e.target.value)}
-                        placeholder="Skriv en anteckning..."
-                        className="min-h-[80px] text-sm"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleSaveNotes(selectedProject.id, notesText)}>
-                          <Check className="w-4 h-4 mr-1" />
-                          Spara
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingNotes(null)}>
-                          Avbryt
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div 
-                      className="flex items-start gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-lg -m-2 transition-colors"
-                      onClick={() => {
-                        setEditingNotes(selectedProject.id);
-                        setNotesText(selectedProject.notes || '');
-                      }}
-                    >
-                      <StickyNote className="w-4 h-4 mt-0.5 text-muted-foreground" />
-                      {selectedProject.notes ? (
-                        <p className="text-sm flex-1">{selectedProject.notes}</p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">Klicka för att lägga till anteckning...</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
               
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
