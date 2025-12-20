@@ -185,13 +185,13 @@ export default function Index() {
     try {
       setIsProcessing(true);
       
-      // Scroll to results section (step 4) immediately when starting generation
+      // Scroll to results section (step 4) so it fills the screen
       setTimeout(() => {
         const section = document.getElementById('results-section');
         if (section) {
-          const headerOffset = 100; // Account for fixed header + some padding
+          const headerHeight = 64 + (window.visualViewport?.offsetTop || 0); // Header + safe area
           const elementPosition = section.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          const offsetPosition = elementPosition + window.pageYOffset - headerHeight - 16; // Small padding
           window.scrollTo({
             top: offsetPosition,
             behavior: 'smooth'
@@ -572,7 +572,7 @@ export default function Index() {
   };
   return <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-border/30 bg-card/50 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)]">
+      <header className="border-b border-border/30 bg-card/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)]" style={{ top: 0, marginTop: 0 }}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => setActiveTab('new')} className="hover:opacity-80 transition-opacity">
             <img src={autoshotLogo} alt="AutoShot" className="h-10 w-auto object-contain" />
@@ -648,7 +648,7 @@ export default function Index() {
             toast.error('Kunde inte använda bilden');
           }
         }} />
-          </section> : <div className="space-y-8 pb-32">
+          </section> : <div className="space-y-8 pb-[70vh]">
             {/* Step 1: Upload */}
             <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
               <div className="flex items-center gap-3">
@@ -664,7 +664,40 @@ export default function Index() {
           }} onRemoveImage={imageId => {
             setUploadedImages(prev => prev.filter(img => img.id !== imageId));
           }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} />
+              
+              {/* "Se bakgrunder" button - only show when no images uploaded */}
+              {uploadedImages.length === 0 && (
+                <div className="pt-2 flex justify-center">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground gap-2"
+                    onClick={() => {
+                      const sceneSection = document.getElementById('explore-scenes-section');
+                      if (sceneSection) {
+                        sceneSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                  >
+                    <Eye className="w-4 h-4" />
+                    Se bakgrunder
+                  </Button>
+                </div>
+              )}
             </section>
+
+            {/* Explore Scenes - Only show when no images uploaded */}
+            {uploadedImages.length === 0 && (
+              <section id="explore-scenes-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="font-sans font-medium text-lg text-foreground">Utforska bakgrunder</h2>
+                </div>
+                <SceneSelector selectedSceneId={null} onSceneSelect={() => {}} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
+                
+                {/* Scroll to top button for scene gallery */}
+                <ScrollToTopButton threshold={300} />
+              </section>
+            )}
 
             {/* Step 2: Scene Selection */}
             {uploadedImages.length > 0 && <section id="scene-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
@@ -685,6 +718,9 @@ export default function Index() {
                   </Popover>
                 </div>
                 <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
+                
+                {/* Scroll to top button for scene gallery */}
+                <ScrollToTopButton threshold={300} />
               </section>}
 
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
@@ -700,7 +736,7 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden" style={{ background: 'radial-gradient(ellipse at center, hsla(0, 0%, 20%, 0.25) 0%, hsla(0, 0%, 87%, 0.15) 100%)' }}>
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden" style={{ background: 'radial-gradient(ellipse at center, hsla(0, 0%, 20%, 0.55) 0%, hsla(0, 0%, 87%, 0.45) 100%)' }}>
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -738,7 +774,7 @@ export default function Index() {
                         <Scissors className="w-4 h-4" />
                       </Button>
                       
-                      <Button size="sm" onClick={() => {
+                      <Button variant="outline" size="icon" title={selectedImages.size > 0 ? `Ladda ner ${selectedImages.size}` : 'Ladda ner alla'} onClick={() => {
                   // If no images selected, download all
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
                   const imagesToDownload = selectedImages.size > 0 ? completedImages.filter(img => selectedImages.has(img.id)) : completedImages;
@@ -746,9 +782,8 @@ export default function Index() {
                     await new Promise(resolve => setTimeout(resolve, idx * 300));
                     handleDownload(image.finalUrl!, `${registrationNumber || 'bild'}_${image.id}.jpg`);
                   });
-                }} className="flex-1 sm:flex-none gap-2">
+                }}>
                         <Download className="w-4 h-4" />
-                        <span>Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}</span>
                       </Button>
                     </div>
                   </div>

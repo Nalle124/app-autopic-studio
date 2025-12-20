@@ -31,6 +31,11 @@ interface SceneSelectorProps {
 
 // Category order and descriptions
 const categoryConfig: Record<string, { order: number; description: string; gradient: string }> = {
+  'popular': {
+    order: 0,
+    description: 'Våra mest populära bakgrunder',
+    gradient: 'from-primary/20 via-accent-pink/10 to-background/5'
+  },
   'studio-light': { 
     order: 1, 
     description: 'Ljusa studiomiljöer med rena ytor',
@@ -68,9 +73,20 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
   },
 };
 
+// Popular scene IDs
+const POPULAR_SCENE_IDS = [
+  'wood-slat-studio',
+  'plathall-studio',
+  'clean-wood-studio',
+  'trapanel-takljus',
+  'hostgata',
+  'kullerstengata'
+];
+
 const getCategoryDisplayName = (category: string) => {
   const names: Record<string, string> = {
     'favorites': 'Favoriter',
+    'popular': 'Populära',
     'studio-light': 'Ljusa Studios',
     'studio-dark': 'Mörka Studios',
     'studio-colored': 'Färgade Studios',
@@ -179,11 +195,11 @@ export const SceneSelector = ({
         const orderB = categoryConfig[b]?.order ?? 99;
         return orderA - orderB;
       });
-      setCategories(['favorites', ...sortedCategories]);
+      setCategories(['favorites', 'popular', ...sortedCategories]);
       
-      // Set default active category
+      // Set default active category to popular
       if (!activeCategory) {
-        setActiveCategory(favorites.size > 0 ? 'favorites' : sortedCategories[0] || 'studio-light');
+        setActiveCategory('popular');
       }
     } catch (error) {
       console.error('Error loading scenes:', error);
@@ -196,12 +212,16 @@ export const SceneSelector = ({
     if (category === 'favorites') {
       return scenes.filter(scene => favorites.has(scene.id));
     }
+    if (category === 'popular') {
+      return scenes.filter(scene => POPULAR_SCENE_IDS.includes(scene.id));
+    }
     return scenes.filter((scene) => scene.category === category);
   };
 
   const getVisibleCategories = () => {
     return categories.filter(category => {
       if (category === 'favorites') return favorites.size > 0;
+      if (category === 'popular') return getScenesByCategory('popular').length > 0;
       return getScenesByCategory(category).length > 0;
     });
   };
@@ -250,7 +270,7 @@ export const SceneSelector = ({
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {!imageLoaded && (
-            <ImageSkeleton className="absolute inset-0" aspectRatio="video" />
+            <ImageSkeleton className="absolute inset-0" aspectRatio="gallery" />
           )}
           <img
             src={scene.thumbnailUrl}

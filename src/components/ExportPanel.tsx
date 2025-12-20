@@ -138,18 +138,16 @@ export const ExportPanel = ({
           <Button 
             onClick={handleExport} 
             disabled={isProcessing} 
-            className={`w-full h-12 text-sm font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+            className={`w-full sm:w-auto sm:min-w-[280px] mx-auto h-12 text-sm font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-primary/30 hover:shadow-2xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
           >
             {/* Shimmer effect when not processing */}
             {!isProcessing && (
               <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             )}
             
-            <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? '' : 'animate-pulse'}`} />
             <span className="relative z-10">
               {isProcessing ? 'Genererar...' : 'Starta AI-generering'}
             </span>
-            <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? '' : 'animate-pulse'}`} />
           </Button>
           
           {/* Cancel text - only visible when processing */}
