@@ -700,7 +700,7 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden" style={{ background: 'linear-gradient(180deg, hsla(0, 0%, 87%, 0.08) 0%, hsla(0, 0%, 20%, 0.08) 100%)' }}>
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden" style={{ background: 'radial-gradient(ellipse at center, hsla(0, 0%, 20%, 0.25) 0%, hsla(0, 0%, 87%, 0.15) 100%)' }}>
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
