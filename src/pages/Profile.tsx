@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, Bug, Loader2 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,10 +30,15 @@ interface ProfileData {
 }
 
 export const Profile = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const { credits } = useUserCredits();
+  
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
   const [profileData, setProfileData] = useState<ProfileData>({
     full_name: null,
     company_name: null,
@@ -286,6 +292,15 @@ export const Profile = () => {
             <Button variant="ghost" size="icon" className="bg-primary/10">
               <User className="w-5 h-5" />
             </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={handleLogout}
+              title="Logga ut"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       </header>
@@ -314,7 +329,7 @@ export const Profile = () => {
                 </p>
               </div>
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => navigate('/pricing')}>
               Köp credits
             </Button>
           </div>
@@ -507,10 +522,12 @@ export const Profile = () => {
   );
 };
 
-// Bug Report Component
+// Bug Report Component - Collapsible dropdown version
 const BugReportSection = ({ userId }: { userId?: string }) => {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async () => {
     if (!message.trim()) {
@@ -537,8 +554,15 @@ const BugReportSection = ({ userId }: { userId?: string }) => {
 
       if (error) throw error;
 
-      toast.success('Tack för din feedback!');
+      // No toast - just update button state
+      setIsSubmitted(true);
       setMessage('');
+      
+      // Reset after 3 seconds
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setIsOpen(false);
+      }, 2500);
     } catch (error) {
       console.error('Error submitting bug report:', error);
       toast.error('Kunde inte skicka. Försök igen.');
@@ -548,42 +572,54 @@ const BugReportSection = ({ userId }: { userId?: string }) => {
   };
 
   return (
-    <Card className="p-6 mt-6">
-      <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
-        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Bug className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold text-foreground font-heading">
-            Rapportera problem
-          </h2>
-          <p className="text-sm text-muted-foreground font-small">
-            Upptäckt en bugg eller har feedback?
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="bug-message">Beskriv problemet eller din feedback</Label>
-          <Textarea
-            id="bug-message"
-            placeholder="Beskriv vad som hände eller vad du tycker vi borde förbättra..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            disabled={isSubmitting}
-            className="min-h-[100px] resize-none"
-          />
-        </div>
-        <Button 
-          onClick={handleSubmit} 
-          disabled={isSubmitting || !message.trim()}
-          variant="outline"
-        >
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Skicka feedback
-        </Button>
-      </div>
-    </Card>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mt-6">
+      <Card className="p-4">
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h2 className="text-sm font-medium text-foreground">
+                  Feedback & Support
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Rapportera problem eller ge feedback
+                </p>
+              </div>
+            </div>
+            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent className="pt-4">
+          <div className="space-y-3">
+            <Textarea
+              id="bug-message"
+              placeholder="Beskriv vad som hände eller vad du tycker vi borde förbättra..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              disabled={isSubmitting || isSubmitted}
+              className="min-h-[80px] resize-none text-sm"
+            />
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting || !message.trim() || isSubmitted}
+              variant={isSubmitted ? "default" : "outline"}
+              size="sm"
+              className={isSubmitted ? "bg-green-600 hover:bg-green-600" : ""}
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : isSubmitted ? (
+                <Check className="mr-2 h-4 w-4" />
+              ) : null}
+              {isSubmitted ? 'Skickat!' : 'Skicka feedback'}
+            </Button>
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 };
