@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg rounded-button",
+        default: "text-primary-foreground shadow-md hover:shadow-lg rounded-button relative overflow-hidden bg-gradient-to-b from-[hsl(0_38%_38%)] to-[hsl(0_38%_30%)] hover:from-[hsl(0_38%_42%)] hover:to-[hsl(0_38%_33%)] before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/10 before:to-transparent before:pointer-events-none",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-button",
         outline: "border border-border bg-transparent hover:bg-secondary hover:text-secondary-foreground rounded-button",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-button",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-button relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/5 before:to-transparent before:pointer-events-none",
         ghost: "hover:bg-secondary hover:text-secondary-foreground rounded-button",
         link: "text-primary underline-offset-4 hover:underline",
-        premium: "bg-primary text-primary-foreground hover:bg-primary-glow shadow-glow hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] rounded-button",
+        premium: "text-primary-foreground shadow-glow hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] rounded-button relative overflow-hidden bg-gradient-to-b from-[hsl(0_38%_40%)] to-[hsl(0_38%_28%)] hover:from-[hsl(0_38%_45%)] hover:to-[hsl(0_38%_32%)] before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/15 before:to-transparent before:pointer-events-none",
       },
       size: {
         default: "h-10 px-6 py-2",
