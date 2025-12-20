@@ -10,12 +10,13 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Sun, Moon, Settings2, ChevronDown, Info, Image as ImageIcon, Mail } from 'lucide-react';
+import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Sun, Moon, Settings2, ChevronDown, Info, Image as ImageIcon, Mail, Palette } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
+import { BrandKitDesignerSimplified, LogoDesign } from '@/components/BrandKitDesignerSimplified';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import autoshotLogo from '@/assets/autoshot-logo.png';
 import auraGradient from '@/assets/aura-gradient-step3.jpg';
@@ -66,6 +67,25 @@ const DemoContent = () => {
     name: string;
     type: 'crop' | 'adjust';
   } | null>(null);
+  
+  // Brand kit state
+  const [showBrandKit, setShowBrandKit] = useState(false);
+  const [logoDesign, setLogoDesign] = useState<LogoDesign>({
+    enabled: false,
+    logoUrl: null,
+    logoX: 15,
+    logoY: 10,
+    logoSize: 0.12,
+    bannerEnabled: false,
+    bannerX: 50,
+    bannerY: 90,
+    bannerHeight: 8,
+    bannerWidth: 100,
+    bannerColor: '#000000',
+    bannerOpacity: 80,
+    bannerRotation: 0,
+    logos: [],
+  });
 
   useEffect(() => {
     if (selectedScene) {
@@ -99,7 +119,7 @@ const DemoContent = () => {
   };
 
   const handleLogoClick = () => {
-    triggerPaywall('logo');
+    setShowBrandKit(true);
   };
 
   const handleCreateAccount = () => {
@@ -776,17 +796,17 @@ const DemoContent = () => {
           </Card>
         )}
 
-        {/* Step 5: Logo (locked) */}
-        <Card className="p-6 bg-card/30 backdrop-blur-sm border-border/30 rounded-[10px] relative overflow-hidden">
+        {/* Step 5: Logo & Brand Kit */}
+        <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px] relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <h2 className="text-lg font-semibold text-muted-foreground">Logo & Brand Kit</h2>
-                <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full">Premium</span>
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">5</div>
+                <h2 className="text-lg font-semibold text-foreground">Logo & Brand Kit</h2>
+                {logoDesign.enabled && (
+                  <span className="text-xs px-2 py-1 bg-green-500/20 text-green-500 rounded-full">Aktiv</span>
+                )}
               </div>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
@@ -794,11 +814,10 @@ const DemoContent = () => {
             </p>
             <Button 
               onClick={handleLogoClick}
-              variant="outline" 
-              className="rounded-full border-primary/50 text-primary hover:bg-primary/10"
+              className="rounded-full"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Lås upp med konto
+              <Palette className="w-4 h-4 mr-2" />
+              {logoDesign.enabled ? 'Redigera brand kit' : 'Öppna brand kit designer'}
             </Button>
           </div>
         </Card>
@@ -1023,6 +1042,18 @@ const DemoContent = () => {
       </Dialog>
 
       <DemoPaywall />
+
+      {/* Brand Kit Designer */}
+      <BrandKitDesignerSimplified
+        open={showBrandKit}
+        onClose={() => setShowBrandKit(false)}
+        design={logoDesign}
+        onDesignChange={setLogoDesign}
+        previewImage={completedImages[0]?.finalUrl || uploadedImages[0]?.preview}
+        onApplyToAll={() => {
+          toast.success('Brand kit applicerat på alla bilder');
+        }}
+      />
     </div>
   );
 };
