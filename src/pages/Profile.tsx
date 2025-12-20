@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, Bug, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -498,7 +499,91 @@ export const Profile = () => {
             </div>
           </div>
         </Card>
+
+        {/* Bug Report Section */}
+        <BugReportSection userId={user?.id} />
       </main>
     </div>
+  );
+};
+
+// Bug Report Component
+const BugReportSection = ({ userId }: { userId?: string }) => {
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!message.trim()) {
+      toast.error('Skriv ett meddelande');
+      return;
+    }
+    
+    if (!userId) {
+      toast.error('Du måste vara inloggad');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('bug_reports')
+        .insert({
+          user_id: userId,
+          message: message.trim(),
+          page_url: window.location.href,
+          user_agent: navigator.userAgent,
+        });
+
+      if (error) throw error;
+
+      toast.success('Tack för din feedback!');
+      setMessage('');
+    } catch (error) {
+      console.error('Error submitting bug report:', error);
+      toast.error('Kunde inte skicka. Försök igen.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Card className="p-6 mt-6">
+      <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
+        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <Bug className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-foreground font-heading">
+            Rapportera problem
+          </h2>
+          <p className="text-sm text-muted-foreground font-small">
+            Upptäckt en bugg eller har feedback?
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="bug-message">Beskriv problemet eller din feedback</Label>
+          <Textarea
+            id="bug-message"
+            placeholder="Beskriv vad som hände eller vad du tycker vi borde förbättra..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            disabled={isSubmitting}
+            className="min-h-[100px] resize-none"
+          />
+        </div>
+        <Button 
+          onClick={handleSubmit} 
+          disabled={isSubmitting || !message.trim()}
+          variant="outline"
+        >
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Skicka feedback
+        </Button>
+      </div>
+    </Card>
   );
 };
