@@ -700,7 +700,7 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6">
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden" style={{ background: 'linear-gradient(180deg, hsla(0, 0%, 87%, 0.08) 0%, hsla(0, 0%, 20%, 0.08) 100%)' }}>
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -746,9 +746,10 @@ export default function Index() {
                     await new Promise(resolve => setTimeout(resolve, idx * 300));
                     handleDownload(image.finalUrl!, `${registrationNumber || 'bild'}_${image.id}.jpg`);
                   });
-                }} className="flex-1 sm:flex-none">
-                        <Download className="w-4 h-4 mr-2" />
-                        Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}
+                }} className="flex-1 sm:flex-none gap-2">
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Ladda ner{selectedImages.size > 0 ? ` (${selectedImages.size})` : ' alla'}</span>
+                        <span className="sm:hidden">{selectedImages.size > 0 ? selectedImages.size : 'Alla'}</span>
                       </Button>
                     </div>
                   </div>
@@ -885,10 +886,10 @@ export default function Index() {
                   <div className="flex items-center gap-3 w-full sm:w-auto">
                     <Button 
                       onClick={() => setLogoDesignOpen(true)} 
-                      className="flex-1 sm:flex-none"
+                      className="flex-1 sm:flex-none gap-2"
                     >
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      {logoDesign.enabled ? 'Redigera Design' : 'Öppna Logo Studio'}
+                      <ImageIcon className="w-4 h-4" />
+                      <span>{logoDesign.enabled ? 'Redigera Design' : 'Öppna Logo Studio'}</span>
                     </Button>
                     {logoDesign.enabled && (
                       <Button 

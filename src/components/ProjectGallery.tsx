@@ -66,7 +66,7 @@ const ProjectImagePreviewContent = ({
   return (
     <>
       {isLoading && (
-        <ImageSkeleton className="absolute inset-0 z-10" aspectRatio="video" />
+        <ImageSkeleton className="absolute inset-0 z-10" aspectRatio="gallery" />
       )}
       <img
         src={displayUrl}
@@ -445,7 +445,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
           <Card key={i} className="overflow-hidden border-border">
-            <ImageSkeleton aspectRatio="video" className="aspect-[4/3]" />
+            <ImageSkeleton aspectRatio="gallery" />
             <div className="p-4 space-y-2">
               <div className="h-6 w-32 bg-muted rounded animate-image-shimmer bg-gradient-to-r from-transparent via-foreground/10 to-transparent bg-[length:200%_100%]" />
               <div className="h-4 w-24 bg-muted rounded animate-image-shimmer bg-gradient-to-r from-transparent via-foreground/10 to-transparent bg-[length:200%_100%]" />

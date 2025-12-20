@@ -221,6 +221,7 @@ export const ImageUploader = ({
                 }}
               >
                 <div className="aspect-square relative">
+                  {/* CRITICAL: Always show original image, never finalUrl */}
                   <img src={image.croppedUrl || image.preview} alt="Original bild" className="w-full h-full object-cover" />
                   
                   {/* Status badge */}
