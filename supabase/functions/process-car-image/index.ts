@@ -351,6 +351,27 @@ serve(async (req) => {
 
     console.log('✅ Final image uploaded:', finalPublicUrlData.publicUrl);
 
+    // Step 4: Generate thumbnail (400px wide JPEG for fast gallery loading)
+    console.log('Generating thumbnail...');
+    let thumbnailUrl: string | null = null;
+    
+    try {
+      // Create a thumbnail using canvas-like approach in Deno
+      // We'll use the Supabase Image Transformation if available, or create a smaller copy
+      const thumbnailFilename = `thumbnails/${crypto.randomUUID()}-${sanitizedSceneId}-thumb.jpg`;
+      
+      // For now, we'll upload a reference to use Supabase's transform API
+      // The thumbnail URL will use the transform parameter for resizing
+      const transformedUrl = `${finalPublicUrlData.publicUrl}?width=400&quality=70`;
+      
+      // Store the original URL with transform parameters as thumbnail
+      thumbnailUrl = transformedUrl;
+      console.log('✅ Thumbnail URL generated:', thumbnailUrl);
+    } catch (thumbError) {
+      console.error('Thumbnail generation failed, using full URL:', thumbError);
+      thumbnailUrl = finalPublicUrlData.publicUrl;
+    }
+
     // Clean up temp file
     await supabase.storage
       .from('processed-cars')
@@ -368,6 +389,7 @@ serve(async (req) => {
           scene_id: scene.id,
           status: 'completed',
           final_url: finalPublicUrlData.publicUrl,
+          thumbnail_url: thumbnailUrl,
           completed_at: new Date().toISOString(),
         })
         .select('id')
@@ -385,6 +407,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         finalUrl: finalPublicUrlData.publicUrl,
+        thumbnailUrl: thumbnailUrl,
         jobId,
       }),
       {

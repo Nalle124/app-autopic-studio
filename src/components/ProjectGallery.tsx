@@ -21,6 +21,7 @@ interface Project {
   jobs: {
     id: string;
     final_url: string | null;
+    thumbnail_url: string | null;
     scene_id: string;
   }[];
 }
@@ -28,6 +29,7 @@ interface Project {
 interface OrphanJob {
   id: string;
   final_url: string | null;
+  thumbnail_url: string | null;
   scene_id: string;
   created_at: string;
 }
@@ -38,11 +40,22 @@ interface ProjectGalleryProps {
 
 const PROJECTS_PER_PAGE = 9;
 
-// Helper component for image preview with loading state
-const ProjectImagePreviewContent = ({ imageUrl, projectName }: { imageUrl: string | null | undefined; projectName: string }) => {
+// Helper component for image preview with loading state - now using thumbnails
+const ProjectImagePreviewContent = ({ 
+  thumbnailUrl, 
+  fullUrl, 
+  projectName 
+}: { 
+  thumbnailUrl?: string | null;
+  fullUrl: string | null | undefined; 
+  projectName: string;
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   
-  if (!imageUrl) {
+  // Use thumbnail if available, otherwise fall back to full URL
+  const displayUrl = thumbnailUrl || fullUrl;
+  
+  if (!displayUrl) {
     return (
       <div className="w-full h-full flex items-center justify-center text-muted-foreground">
         Ingen bild
@@ -56,7 +69,7 @@ const ProjectImagePreviewContent = ({ imageUrl, projectName }: { imageUrl: strin
         <ImageSkeleton className="absolute inset-0 z-10" aspectRatio="video" />
       )}
       <img
-        src={imageUrl}
+        src={displayUrl}
         alt={projectName}
         className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-300 ${
           isLoading ? 'opacity-0' : 'opacity-100'
@@ -152,6 +165,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
           jobs:processing_jobs (
             id,
             final_url,
+            thumbnail_url,
             scene_id
           )
         `, { count: 'exact' })
@@ -165,7 +179,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
       if (page === 1) {
         const { data: orphanData, error: orphanError } = await supabase
           .from('processing_jobs')
-          .select('id, final_url, scene_id, created_at')
+          .select('id, final_url, thumbnail_url, scene_id, created_at')
           .eq('user_id', user.id)
           .is('project_id', null)
           .eq('status', 'completed')
@@ -459,7 +473,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     registration_number: 'Utan projekt',
     created_at: orphanJobs[0]?.created_at || new Date().toISOString(),
     notes: null,
-    jobs: orphanJobs.map(j => ({ id: j.id, final_url: j.final_url, scene_id: j.scene_id }))
+    jobs: orphanJobs.map(j => ({ id: j.id, final_url: j.final_url, thumbnail_url: j.thumbnail_url, scene_id: j.scene_id }))
   } : null;
 
   const allProjects = orphanProject ? [orphanProject, ...projects] : projects;
@@ -520,7 +534,8 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
               {/* Preview Image */}
               <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                 <ProjectImagePreviewContent 
-                  imageUrl={firstImage?.final_url}
+                  thumbnailUrl={firstImage?.thumbnail_url}
+                  fullUrl={firstImage?.final_url}
                   projectName={project.registration_number}
                 />
                 
@@ -769,17 +784,26 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
               
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {completedJobsList.map((job, idx) => (
+                  {completedJobsList.map((job, idx) => {
+                    const [isImgLoading, setIsImgLoading] = useState(true);
+                    // Use thumbnail if available for the grid
+                    const displayUrl = job.thumbnail_url || job.final_url;
+                    
+                    return (
                       <div 
                         key={job.id} 
                         className={`aspect-[4/3] bg-muted rounded-lg overflow-hidden group relative cursor-pointer transition-all ${selectedJobIds.has(job.id) ? 'ring-2 ring-primary' : ''}`}
                         onClick={() => openPreview(selectedProject, idx)}
                       >
+                        {isImgLoading && (
+                          <ImageSkeleton className="absolute inset-0 z-10" aspectRatio="video" />
+                        )}
                         <img
-                          src={job.final_url!}
+                          src={displayUrl!}
                           alt={`${selectedProject.registration_number}`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-all ${isImgLoading ? 'opacity-0' : 'opacity-100'}`}
                           loading="lazy"
+                          onLoad={() => setIsImgLoading(false)}
                         />
                         
                         {/* Selection checkbox */}
@@ -803,7 +827,8 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                           <Eye className="w-8 h-8 text-white" />
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                 </div>
               </div>
             </div>

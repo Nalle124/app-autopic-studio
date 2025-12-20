@@ -86,6 +86,7 @@ export type Database = {
           scene_id: string
           segmented_url: string | null
           status: string
+          thumbnail_url: string | null
           user_id: string | null
         }
         Insert: {
@@ -99,6 +100,7 @@ export type Database = {
           scene_id: string
           segmented_url?: string | null
           status?: string
+          thumbnail_url?: string | null
           user_id?: string | null
         }
         Update: {
@@ -112,6 +114,7 @@ export type Database = {
           scene_id?: string
           segmented_url?: string | null
           status?: string
+          thumbnail_url?: string | null
           user_id?: string | null
         }
         Relationships: [
