@@ -241,7 +241,7 @@ export const DemoPaywall = () => {
 
           {/* CTA Button */}
           <Button 
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-10 text-sm font-medium"
+            className="w-full rounded-full h-10 text-sm font-medium"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -309,7 +309,7 @@ export const DemoPaywall = () => {
             
             <div className="flex items-center gap-2">
               <Button 
-                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-9 px-5 text-sm font-medium"
+                className="rounded-full h-9 px-5 text-sm font-medium"
                 disabled={isLoading}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -426,7 +426,7 @@ export const DemoPaywall = () => {
               </p>
             </div>
             <Button 
-              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-5 h-9 text-sm font-medium"
+              className="rounded-full px-5 h-9 text-sm font-medium"
               onClick={() => handleSelectPlan('creditPack')}
               disabled={loadingTier === 'creditPack'}
             >
