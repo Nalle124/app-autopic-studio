@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Download, Eye, Trash2, ChevronLeft, ChevronRight, Scissors, Sliders, Pencil, Check, X, RefreshCw, Upload, StickyNote, Share2, Focus, Loader2, LayoutGrid, Grid3x3, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ImageSkeleton } from '@/components/ImageSkeleton';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -37,6 +37,36 @@ interface ProjectGalleryProps {
 }
 
 const PROJECTS_PER_PAGE = 9;
+
+// Helper component for image preview with loading state
+const ProjectImagePreviewContent = ({ imageUrl, projectName }: { imageUrl: string | null | undefined; projectName: string }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  
+  if (!imageUrl) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+        Ingen bild
+      </div>
+    );
+  }
+  
+  return (
+    <>
+      {isLoading && (
+        <ImageSkeleton className="absolute inset-0 z-10" aspectRatio="video" />
+      )}
+      <img
+        src={imageUrl}
+        alt={projectName}
+        className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-300 ${
+          isLoading ? 'opacity-0' : 'opacity-100'
+        }`}
+        loading="lazy"
+        onLoad={() => setIsLoading(false)}
+      />
+    </>
+  );
+};
 
 export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -400,11 +430,11 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="overflow-hidden">
-            <Skeleton className="aspect-[4/3] w-full" />
+          <Card key={i} className="overflow-hidden border-border">
+            <ImageSkeleton aspectRatio="video" className="aspect-[4/3]" />
             <div className="p-4 space-y-2">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-24" />
+              <div className="h-6 w-32 bg-muted rounded animate-image-shimmer bg-gradient-to-r from-transparent via-foreground/10 to-transparent bg-[length:200%_100%]" />
+              <div className="h-4 w-24 bg-muted rounded animate-image-shimmer bg-gradient-to-r from-transparent via-foreground/10 to-transparent bg-[length:200%_100%]" />
             </div>
           </Card>
         ))}
@@ -484,34 +514,26 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
           return (
             <Card 
               key={project.id} 
-              className="overflow-hidden group hover:shadow-lg transition-all cursor-pointer"
+              className="overflow-hidden group hover:shadow-lg transition-all cursor-pointer border-border"
               onClick={() => setSelectedProject(project)}
             >
               {/* Preview Image */}
               <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                {firstImage?.final_url ? (
-                  <img
-                    src={firstImage.final_url}
-                    alt={project.registration_number}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    Ingen bild
-                  </div>
-                )}
+                <ProjectImagePreviewContent 
+                  imageUrl={firstImage?.final_url}
+                  projectName={project.registration_number}
+                />
                 
                 {/* Image count badge */}
                 {projectJobs.length > 1 && (
-                  <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                  <div className="absolute top-2 right-2 bg-background/90 backdrop-blur-sm text-foreground text-xs px-2 py-1 rounded-full">
                     {projectJobs.length} bilder
                   </div>
                 )}
                 
                 {/* Notes indicator */}
                 {project.notes && (
-                  <div className="absolute top-2 left-2 bg-black/70 text-white p-1.5 rounded-full" title={project.notes}>
+                  <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm text-foreground p-1.5 rounded-full" title={project.notes}>
                     <StickyNote className="w-3 h-3" />
                   </div>
                 )}
@@ -541,20 +563,20 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                   >
                     <Download className="w-4 h-4" />
                   </Button>
-                <Button
-                  size="icon"
-                  variant="destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isOrphan) {
-                      handleDeleteAllOrphanJobs();
-                    } else {
-                      handleDeleteProject(project.id);
-                    }
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isOrphan) {
+                        handleDeleteAllOrphanJobs();
+                      } else {
+                        handleDeleteProject(project.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
 
