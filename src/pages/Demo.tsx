@@ -350,10 +350,10 @@ const DemoContent = () => {
             </span>
             <Button 
               onClick={handleCreateAccount}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full"
+              className="bg-primary hover:bg-primary/90 rounded-full"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Skapa konto
+              <Sparkles className="w-4 h-4" />
+              <span>Skapa konto</span>
             </Button>
           </div>
         </div>
@@ -631,12 +631,18 @@ const DemoContent = () => {
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Generate Button - same style as ExportPanel */}
-            <div className="space-y-2">
+            {/* Generate Button - centered, same style as main app */}
+            <div className="flex justify-center">
               <Button 
-                onClick={generateImages} 
-                disabled={isProcessing || uploadedImages.length === 0 || !selectedScene || !canGenerate} 
-                className={`w-full h-12 text-sm font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+                onClick={() => {
+                  if (!canGenerate) {
+                    triggerPaywall('limit');
+                    return;
+                  }
+                  generateImages();
+                }} 
+                disabled={isProcessing || uploadedImages.length === 0 || !selectedScene} 
+                className={`h-12 px-8 text-sm font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
               >
                 {/* Shimmer effect when not processing */}
                 {!isProcessing && (
@@ -649,17 +655,17 @@ const DemoContent = () => {
                 </span>
                 <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? '' : 'animate-pulse'}`} />
               </Button>
-              
-              {/* Limit reached message */}
-              {!canGenerate && (
-                <p className="text-sm text-center text-muted-foreground">
-                  Du har använt alla gratis genereringar. 
-                  <button onClick={() => triggerPaywall('limit')} className="text-primary ml-1 underline">
-                    Skapa konto för fler
-                  </button>
-                </p>
-              )}
             </div>
+              
+            {/* Limit reached message */}
+            {!canGenerate && (
+              <p className="text-sm text-center text-muted-foreground">
+                Du har använt alla gratis genereringar. 
+                <button onClick={() => triggerPaywall('limit')} className="text-primary ml-1 underline">
+                  Skapa konto för fler
+                </button>
+              </p>
+            )}
           </div>
         </Card>
 

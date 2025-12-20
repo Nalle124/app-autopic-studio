@@ -12,8 +12,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Building2, Upload, ChevronRight, ChevronLeft, Check, ImageIcon, X, Sparkles, UserCircle, Plus } from 'lucide-react';
 import autoshotLogo from '@/assets/autoshot-logo.png';
 
-type OnboardingStep = 'type' | 'info' | 'logos';
+type OnboardingStep = 'type' | 'info' | 'source' | 'logos';
 type CustomerType = 'company' | 'private';
+type ReferralSource = 'social' | 'search' | 'recommendation' | 'event' | 'other';
 
 interface CustomerInfo {
   full_name: string;
@@ -43,12 +44,15 @@ export const Onboarding = () => {
   const [logos, setLogos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [showSecondLogo, setShowSecondLogo] = useState(false);
+  const [referralSource, setReferralSource] = useState<ReferralSource | null>(null);
+  const [referralOther, setReferralOther] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const secondLogoInputRef = useRef<HTMLInputElement>(null);
 
   const steps = [
     { id: 'type', label: 'Kundtyp', icon: UserCircle },
     { id: 'info', label: 'Uppgifter', icon: Building2 },
+    { id: 'source', label: 'Källa', icon: Sparkles },
     { id: 'logos', label: 'Logotyp', icon: ImageIcon },
   ];
 
@@ -126,16 +130,20 @@ export const Onboarding = () => {
       setCurrentStep('info');
     } else if (currentStep === 'info') {
       if (validateInfoStep()) {
-        setCurrentStep('logos');
+        setCurrentStep('source');
       }
+    } else if (currentStep === 'source') {
+      setCurrentStep('logos');
     }
   };
 
   const handleBack = () => {
     if (currentStep === 'info') {
       setCurrentStep('type');
-    } else if (currentStep === 'logos') {
+    } else if (currentStep === 'source') {
       setCurrentStep('info');
+    } else if (currentStep === 'logos') {
+      setCurrentStep('source');
     }
   };
 
@@ -383,6 +391,122 @@ export const Onboarding = () => {
                     />
                   </div>
                 </div>
+              </CardContent>
+            </>
+          )}
+
+          {currentStep === 'source' && (
+            <>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <span className="font-accent italic">Hur hittade du oss?</span>
+                </CardTitle>
+                <CardDescription>
+                  Vi vill gärna veta hur du kom i kontakt med AutoShot
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={referralSource || ''}
+                  onValueChange={(value) => setReferralSource(value as ReferralSource)}
+                  className="space-y-3"
+                >
+                  <label
+                    htmlFor="social"
+                    className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      referralSource === 'social' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="social" id="social" />
+                    <div className="flex-1">
+                      <div className="font-medium">Sociala medier</div>
+                      <div className="text-sm text-muted-foreground">
+                        Facebook, Instagram, LinkedIn, etc.
+                      </div>
+                    </div>
+                  </label>
+                  
+                  <label
+                    htmlFor="search"
+                    className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      referralSource === 'search' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="search" id="search" />
+                    <div className="flex-1">
+                      <div className="font-medium">Sökmotor</div>
+                      <div className="text-sm text-muted-foreground">
+                        Google, Bing, etc.
+                      </div>
+                    </div>
+                  </label>
+                  
+                  <label
+                    htmlFor="recommendation"
+                    className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      referralSource === 'recommendation' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="recommendation" id="recommendation" />
+                    <div className="flex-1">
+                      <div className="font-medium">Rekommendation</div>
+                      <div className="text-sm text-muted-foreground">
+                        En kollega, vän eller affärskontakt
+                      </div>
+                    </div>
+                  </label>
+                  
+                  <label
+                    htmlFor="event"
+                    className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      referralSource === 'event' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="event" id="event" />
+                    <div className="flex-1">
+                      <div className="font-medium">Event eller mässa</div>
+                      <div className="text-sm text-muted-foreground">
+                        Bilmässa, branschevent, etc.
+                      </div>
+                    </div>
+                  </label>
+                  
+                  <label
+                    htmlFor="other"
+                    className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
+                      referralSource === 'other' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="other" id="other" />
+                    <div className="flex-1">
+                      <div className="font-medium">Annat</div>
+                      <div className="text-sm text-muted-foreground">
+                        Berätta gärna mer
+                      </div>
+                    </div>
+                  </label>
+                </RadioGroup>
+                
+                {referralSource === 'other' && (
+                  <div className="mt-4">
+                    <Input
+                      value={referralOther}
+                      onChange={(e) => setReferralOther(e.target.value)}
+                      placeholder="Berätta hur du hittade oss..."
+                    />
+                  </div>
+                )}
               </CardContent>
             </>
           )}
