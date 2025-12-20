@@ -145,7 +145,7 @@ export const ImageUploader = ({
               </h3>
               {onRegistrationNumberChange && (
                 <div className="relative w-full sm:max-w-[180px]">
-                  <div className="absolute -inset-[1px] rounded-lg bg-gradient-to-r from-accent-teal via-accent-orange to-accent-blue opacity-70 blur-[1px]" />
+                  <div className="absolute -inset-[1px] rounded-lg bg-primary/50 blur-[2px]" />
                   <input 
                     type="text" 
                     placeholder="Reg.nr" 
