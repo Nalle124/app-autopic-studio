@@ -41,9 +41,9 @@ export const Header = () => {
           <nav className="flex items-center gap-4">
             {user ? (
               <>
-                {/* Credits Display - clickable to pricing */}
+                {/* Credits Display - clickable to profile for credit management */}
                 <button
-                  onClick={() => navigate('/pricing')}
+                  onClick={() => navigate('/profil')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
                 >
                   <Coins className="w-4 h-4 text-primary" />

@@ -53,6 +53,29 @@ export const Profile = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isBuyingCredits, setIsBuyingCredits] = useState(false);
+
+  const handleBuyCredits = async () => {
+    setIsBuyingCredits(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          priceId: 'price_1SbVf4JQldzCYD0Z11oZm3qb', // 30 credits pack
+          mode: 'payment',
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      toast.error('Kunde inte starta betalning. Försök igen.');
+    } finally {
+      setIsBuyingCredits(false);
+    }
+  };
 
   useEffect(() => {
     if (user?.id) {
@@ -329,8 +352,15 @@ export const Profile = () => {
                 </p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate('/pricing')}>
-              Köp credits
+            <Button variant="outline" onClick={handleBuyCredits} disabled={isBuyingCredits}>
+              {isBuyingCredits ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Laddar...
+                </>
+              ) : (
+                'Köp credits'
+              )}
             </Button>
           </div>
         </Card>

@@ -181,16 +181,16 @@ export const DemoSceneSelector = ({
         className={`group relative overflow-hidden cursor-pointer transition-all duration-300 ${
           isGrid ? 'w-full' : 'flex-shrink-0 w-72 snap-center'
         } ${
-          isLocked ? 'opacity-60' : ''
+          isLocked ? 'opacity-70' : ''
         } ${
           selectedSceneId === scene.id && !isLocked
             ? 'ring-2 ring-primary shadow-xl shadow-primary/30 scale-[1.02]'
             : 'hover:shadow-xl hover:scale-[1.02]'
         }`}
       >
-        {/* Locked overlay */}
+        {/* Locked overlay - 30% lighter (reduced opacity from 60% to 42%) */}
         {isLocked && (
-          <div className="absolute inset-0 z-20 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center">
+          <div className="absolute inset-0 z-20 bg-background/42 backdrop-blur-[2px] flex flex-col items-center justify-center">
             <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-2">
               <Lock className="w-5 h-5 text-muted-foreground" />
             </div>
@@ -198,7 +198,7 @@ export const DemoSceneSelector = ({
           </div>
         )}
 
-        {/* Image */}
+        {/* Image - use thumbnail for faded preview */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           <img
             src={scene.thumbnailUrl}

@@ -689,22 +689,35 @@ const DemoContent = () => {
           </div>
         </Card>
 
-        {/* Step 4: Results with editing */}
+        {/* Step 4: Results with editing - matching Index gradient style */}
         {galleryImages.length > 0 && (
-          <Card id="demo-results-section" className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px]">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">4</div>
-                <h2 className="text-lg font-semibold text-foreground">Redigera och ladda ner</h2>
-              </div>
+          <section id="demo-results-section" className="relative rounded-2xl overflow-hidden border border-border/50">
+            {/* Gradient background matching Index.tsx */}
+            <div className="absolute inset-0 -z-10">
+              <img 
+                src={auraGradient} 
+                alt="" 
+                className="w-full h-full object-cover opacity-30" 
+              />
+              {/* Gradient: larger dark inner (85% opacity), lighter outer (60% opacity) */}
+              <div className="absolute inset-0 bg-gradient-radial from-background/85 via-background/85 to-background/60" style={{ backgroundSize: '150% 150%', backgroundPosition: 'center' }} />
+              <div className="absolute inset-0 backdrop-blur-sm" />
             </div>
+            
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">4</div>
+                  <h2 className="text-lg font-semibold text-foreground">Redigera och ladda ner</h2>
+                </div>
+              </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {galleryImages.map((image) => (
                 <div 
                   key={image.id} 
                   className={`relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group ${
-                    loadingImages.has(image.id) || image.status === 'processing' ? 'animate-shimmer bg-muted' : ''
+                    loadingImages.has(image.id) ? 'bg-muted' : ''
                   }`}
                   onClick={() => {
                     if (image.finalUrl) {
@@ -713,9 +726,14 @@ const DemoContent = () => {
                     }
                   }}
                 >
+                  {/* Premium shimmer while processing - matching Index.tsx */}
+                  {(image.status === 'processing' || loadingImages.has(image.id)) && (
+                    <div className="absolute inset-0 animate-premium-shimmer z-10" />
+                  )}
+                  
                   {image.status === 'processing' ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                      <div className="text-center">
+                      <div className="text-center z-20">
                         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                         <span className="text-xs text-muted-foreground">Bearbetar...</span>
                       </div>
@@ -793,34 +811,46 @@ const DemoContent = () => {
                 </div>
               ))}
             </div>
-          </Card>
+            </div>
+          </section>
         )}
 
-        {/* Step 5: Logo & Brand Kit */}
-        <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px] relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">5</div>
-                <h2 className="text-lg font-semibold text-foreground">Logo & Brand Kit</h2>
-                {logoDesign.enabled && (
-                  <span className="text-xs px-2 py-1 bg-green-500/20 text-green-500 rounded-full">Aktiv</span>
-                )}
+        {/* Step 5: Logo & Brand Kit - matching Index.tsx style */}
+        <section className="relative rounded-2xl overflow-hidden border border-border/50">
+          {/* Gradient background matching Index.tsx holographic style */}
+          <div className="absolute inset-0 -z-10">
+            <img 
+              src={auraGradient} 
+              alt="" 
+              className="w-full h-full object-cover opacity-30" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/90" />
+            <div className="absolute inset-0 backdrop-blur-sm" />
+          </div>
+          
+          <div className="relative p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center border border-primary/30">
+                <span className="text-primary font-sans text-base font-medium">5</span>
+              </div>
+              <div>
+                <h2 className="text-foreground font-sans text-lg font-medium">Logo Design</h2>
+                <p className="text-muted-foreground text-sm">Lägg till ditt varumärke på bilderna</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Lägg till din logotyp på alla bilder automatiskt. Skapa ett professionellt brand kit med färger och banners.
-            </p>
-            <Button 
-              onClick={handleLogoClick}
-              className="rounded-full"
-            >
-              <Palette className="w-4 h-4 mr-2" />
-              {logoDesign.enabled ? 'Redigera brand kit' : 'Öppna brand kit designer'}
-            </Button>
+            
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Button 
+                variant="outline"
+                onClick={handleLogoClick} 
+                className="flex-1 sm:flex-none gap-2"
+              >
+                <Palette className="w-4 h-4" />
+                <span>{logoDesign.enabled ? 'Redigera Design' : 'Öppna Logo Studio'}</span>
+              </Button>
+            </div>
           </div>
-        </Card>
+        </section>
       </main>
 
       {/* Preview Modal */}

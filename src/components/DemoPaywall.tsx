@@ -116,7 +116,7 @@ export const DemoPaywall = () => {
       
       if (!user) {
         handleClose();
-        navigate('/auth?returnTo=/pricing');
+        navigate('/auth');
         return;
       }
 
