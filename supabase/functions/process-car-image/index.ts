@@ -38,12 +38,42 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Require authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client for auth verification
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify the user's JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use authenticated user ID - never trust client-supplied userId
+    const userId = user.id;
+    console.log(`Authenticated user: ${userId}`);
+
     const formData = await req.formData();
     const imageFile = formData.get('image') as File;
     const sceneData = formData.get('scene') as string;
     const backgroundImageUrl = formData.get('backgroundUrl') as string;
     const projectId = formData.get('projectId') as string | null;
-    const userId = formData.get('userId') as string | null;
+    // Note: userId from formData is now ignored - we use authenticated user ID
     const orientation = formData.get('orientation') as string || 'landscape';
     const relightEnabled = formData.get('relight') === 'true';
     
@@ -86,16 +116,8 @@ serve(async (req) => {
       );
     }
 
-    // Validate userId format if provided
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (userId && !uuidRegex.test(userId)) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid user ID format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Validate projectId format if provided
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (projectId && !uuidRegex.test(projectId)) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid project ID format' }),
@@ -132,67 +154,60 @@ serve(async (req) => {
     console.log(`Orientation: ${orientation}`);
     console.log(`Relight enabled: ${relightEnabled}`);
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Always check and deduct credits - authentication is required
+    console.log(`Checking credits for user: ${userId}`);
+    
+    // Get current credits
+    const { data: creditsData, error: creditsError } = await supabase
+      .from('user_credits')
+      .select('credits')
+      .eq('user_id', userId)
+      .single();
 
-    // Check and deduct credits if user is logged in
-    if (userId) {
-      console.log(`Checking credits for user: ${userId}`);
-      
-      // Get current credits
-      const { data: creditsData, error: creditsError } = await supabase
-        .from('user_credits')
-        .select('credits')
-        .eq('user_id', userId)
-        .single();
-
-      if (creditsError) {
-        console.error('Error fetching credits:', creditsError);
-        throw new Error('Kunde inte hämta credits. Försök igen.');
-      }
-
-      const currentCredits = creditsData?.credits || 0;
-      console.log(`Current credits: ${currentCredits}`);
-
-      if (currentCredits < 1) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'insufficient_credits',
-            message: 'Du har inga credits kvar. Köp fler credits för att fortsätta.',
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      // Deduct 1 credit
-      const newBalance = currentCredits - 1;
-      const { error: updateError } = await supabase
-        .from('user_credits')
-        .update({ credits: newBalance, updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
-
-      if (updateError) {
-        console.error('Error deducting credit:', updateError);
-        throw new Error('Kunde inte dra credit. Försök igen.');
-      }
-
-      // Log the transaction
-      await supabase.from('credit_transactions').insert({
-        user_id: userId,
-        amount: -1,
-        balance_after: newBalance,
-        transaction_type: 'generation',
-        description: `Bildgenerering: ${scene.name}`,
-      });
-
-      console.log(`Credit deducted. New balance: ${newBalance}`);
+    if (creditsError) {
+      console.error('Error fetching credits:', creditsError);
+      throw new Error('Kunde inte hämta credits. Försök igen.');
     }
+
+    const currentCredits = creditsData?.credits || 0;
+    console.log(`Current credits: ${currentCredits}`);
+
+    if (currentCredits < 1) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'insufficient_credits',
+          message: 'Du har inga credits kvar. Köp fler credits för att fortsätta.',
+        }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Deduct 1 credit
+    const newBalance = currentCredits - 1;
+    const { error: updateError } = await supabase
+      .from('user_credits')
+      .update({ credits: newBalance, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('Error deducting credit:', updateError);
+      throw new Error('Kunde inte dra credit. Försök igen.');
+    }
+
+    // Log the transaction
+    await supabase.from('credit_transactions').insert({
+      user_id: userId,
+      amount: -1,
+      balance_after: newBalance,
+      transaction_type: 'generation',
+      description: `Bildgenerering: ${scene.name}`,
+    });
+
+    console.log(`Credit deducted. New balance: ${newBalance}`);
 
     // Step 1: Upload original image to storage to get a URL
     const imageBuffer = await imageFile.arrayBuffer();
@@ -377,30 +392,28 @@ serve(async (req) => {
       .from('processed-cars')
       .remove([uploadFilename]);
 
-    // Save to processing_jobs if user is logged in
+    // Save to processing_jobs - user is always authenticated
     let jobId: string | null = null;
-    if (userId) {
-      const { data: jobData, error: jobError } = await supabase
-        .from('processing_jobs')
-        .insert({
-          user_id: userId,
-          project_id: projectId || null,
-          original_filename: imageFile.name,
-          scene_id: scene.id,
-          status: 'completed',
-          final_url: finalPublicUrlData.publicUrl,
-          thumbnail_url: thumbnailUrl,
-          completed_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single();
+    const { data: jobData, error: jobError } = await supabase
+      .from('processing_jobs')
+      .insert({
+        user_id: userId,
+        project_id: projectId || null,
+        original_filename: imageFile.name,
+        scene_id: scene.id,
+        status: 'completed',
+        final_url: finalPublicUrlData.publicUrl,
+        thumbnail_url: thumbnailUrl,
+        completed_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
 
-      if (jobError) {
-        console.error('Error saving job:', jobError);
-      } else {
-        jobId = jobData.id;
-        console.log('✅ Job saved:', jobId);
-      }
+    if (jobError) {
+      console.error('Error saving job:', jobError);
+    } else {
+      jobId = jobData.id;
+      console.log('✅ Job saved:', jobId);
     }
 
     return new Response(
