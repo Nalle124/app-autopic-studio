@@ -45,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const emailResponse = await resend.emails.send({
-      from: "AutoShot <no-reply@autoshot.se>",
+      from: "AutoShot <onboarding@resend.dev>",
       to: [email],
       subject: `Betalningsbekräftelse - ${formattedAmount}`,
       html: `
