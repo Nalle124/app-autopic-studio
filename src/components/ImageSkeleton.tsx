@@ -3,14 +3,15 @@ import { cn } from "@/lib/utils";
 
 interface ImageSkeletonProps {
   className?: string;
-  aspectRatio?: "square" | "video" | "wide";
+  aspectRatio?: "square" | "video" | "wide" | "gallery";
 }
 
 export function ImageSkeleton({ className, aspectRatio = "video" }: ImageSkeletonProps) {
   const aspectClasses = {
     square: "aspect-square",
     video: "aspect-video",
-    wide: "aspect-[16/9]"
+    wide: "aspect-[16/9]",
+    gallery: "aspect-[4/3]"
   };
 
   return (
