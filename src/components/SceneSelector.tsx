@@ -4,6 +4,7 @@ import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, Star, LayoutGrid, GalleryHorizontal, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ImageSkeleton } from '@/components/ImageSkeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   Select,
@@ -214,11 +215,12 @@ export const SceneSelector = ({
   }
 
   const SceneCard = ({ scene, isGrid = false }: { scene: SceneMetadata; isGrid?: boolean }) => {
+    const [imageLoaded, setImageLoaded] = useState(false);
 
     return (
       <Card
         onClick={() => onSceneSelect(scene)}
-        className={`group relative overflow-hidden cursor-pointer transition-all duration-300 ${
+        className={`group relative overflow-hidden cursor-pointer transition-all duration-300 border-border ${
           isGrid ? 'w-full' : 'flex-shrink-0 w-72 snap-center'
         } ${
           selectedSceneId === scene.id
@@ -247,11 +249,17 @@ export const SceneSelector = ({
 
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+          {!imageLoaded && (
+            <ImageSkeleton className="absolute inset-0" aspectRatio="video" />
+          )}
           <img
             src={scene.thumbnailUrl}
             alt={scene.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             loading={isGrid ? 'lazy' : 'eager'}
+            onLoad={() => setImageLoaded(true)}
           />
           
           {/* Selected indicator */}

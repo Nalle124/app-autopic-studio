@@ -502,4 +502,16 @@
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
   }
+  
+  /* Fix white borders in dark mode on cards */
+  .dark .border-white,
+  .dark .border-gray-100,
+  .dark .border-gray-200 {
+    border-color: hsl(var(--border)) !important;
+  }
+  
+  /* Ensure cards in dark mode don't have light borders */
+  .dark [class*="border-"] {
+    --tw-border-opacity: 1;
+  }
 }
