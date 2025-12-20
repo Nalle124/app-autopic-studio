@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  adminLoading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -21,10 +22,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(true);
   const navigate = useNavigate();
 
   // Helper function to check admin status - deferred to avoid deadlock
   const checkAdminStatus = (userId: string) => {
+    setAdminLoading(true);
     setTimeout(async () => {
       try {
         const { data, error } = await supabase.rpc('is_admin', {
@@ -35,6 +38,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (err) {
         console.error('Error checking admin status:', err);
+      } finally {
+        setAdminLoading(false);
       }
     }, 0);
   };
@@ -53,6 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           checkAdminStatus(session.user.id);
         } else {
           setIsAdmin(false);
+          setAdminLoading(false);
         }
       }
     );
@@ -65,6 +71,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (session?.user) {
         checkAdminStatus(session.user.id);
+      } else {
+        setAdminLoading(false);
       }
     });
 
@@ -125,7 +133,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, adminLoading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

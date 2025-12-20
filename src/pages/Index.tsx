@@ -648,7 +648,7 @@ export default function Index() {
             toast.error('Kunde inte använda bilden');
           }
         }} />
-          </section> : <div className="space-y-8 pb-[70vh]">
+          </section> : <div className={`space-y-8 ${selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing') ? 'pb-[70vh]' : 'pb-16'}`}>
             {/* Step 1: Upload */}
             <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
               <div className="flex items-center gap-3">
@@ -664,29 +664,9 @@ export default function Index() {
           }} onRemoveImage={imageId => {
             setUploadedImages(prev => prev.filter(img => img.id !== imageId));
           }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} />
-              
-              {/* "Se bakgrunder" button - only show when no images uploaded */}
-              {uploadedImages.length === 0 && (
-                <div className="pt-2 flex justify-center">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground gap-2"
-                    onClick={() => {
-                      const sceneSection = document.getElementById('explore-scenes-section');
-                      if (sceneSection) {
-                        sceneSection.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }}
-                  >
-                    <Eye className="w-4 h-4" />
-                    Se bakgrunder
-                  </Button>
-                </div>
-              )}
             </section>
 
-            {/* Explore Scenes - Only show when no images uploaded */}
+            {/* Explore Scenes - Always visible */}
             {uploadedImages.length === 0 && (
               <section id="explore-scenes-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
                 <div className="flex items-center gap-3">

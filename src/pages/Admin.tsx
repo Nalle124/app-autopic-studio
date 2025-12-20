@@ -45,7 +45,7 @@ interface Stats {
 }
 
 const Admin = () => {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, loading: authLoading, adminLoading } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserData[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -59,11 +59,12 @@ const Admin = () => {
   const [adjusting, setAdjusting] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) {
+    // Wait for both auth and admin check to complete
+    if (!authLoading && !adminLoading && !isAdmin) {
       toast.error('Du har inte behörighet att se den här sidan');
       navigate('/');
     }
-  }, [isAdmin, authLoading, navigate]);
+  }, [isAdmin, authLoading, adminLoading, navigate]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -129,7 +130,7 @@ const Admin = () => {
     }
   };
 
-  if (authLoading || !isAdmin) {
+  if (authLoading || adminLoading || !isAdmin) {
     return null;
   }
 
