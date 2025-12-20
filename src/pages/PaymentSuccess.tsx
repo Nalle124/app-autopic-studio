@@ -90,7 +90,7 @@ const PaymentSuccess = () => {
           {status === 'error' && (
             <>
               <p className="text-muted-foreground">{error}</p>
-              <Button onClick={() => navigate('/pricing')} variant="outline" className="w-full">
+              <Button onClick={() => navigate('/profil')} variant="outline" className="w-full">
                 Försök igen
               </Button>
             </>
