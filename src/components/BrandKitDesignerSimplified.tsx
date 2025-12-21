@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, Copy, Sparkles, Save, Check, Star, Trash2, RotateCw, Type, Square, Circle, Move, Palette, Plus, Minus, GripVertical } from 'lucide-react';
+import { Upload, Copy, Sparkles, Save, Check, Star, Trash2, RotateCw, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -10,28 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Element types for the canvas
-interface CanvasElement {
-  id: string;
-  type: 'logo' | 'text' | 'shape';
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  // Logo specific
-  url?: string;
-  // Text specific
-  text?: string;
-  fontSize?: number;
-  fontColor?: string;
-  fontFamily?: string;
-  // Shape specific
-  shapeType?: 'rect' | 'circle';
-  fillColor?: string;
-  opacity?: number;
-}
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export interface LogoDesign {
   enabled: boolean;
@@ -48,7 +27,7 @@ export interface LogoDesign {
   bannerOpacity: number;
   bannerRotation: number;
   logos?: any[];
-  elements?: CanvasElement[];
+  elements?: any[];
 }
 
 interface BrandKitDesignerSimplifiedProps {
@@ -61,12 +40,12 @@ interface BrandKitDesignerSimplifiedProps {
   onApplyToAll?: () => void;
 }
 
-// Quick preset templates
+// Quick preset templates with preview info
 const QUICK_PRESETS = [
-  { id: 'top-left', name: 'Topp vänster', logoX: 12, logoY: 12, bannerY: 6, bannerPos: 'top' },
-  { id: 'top-center', name: 'Topp center', logoX: 50, logoY: 12, bannerY: 6, bannerPos: 'top' },
-  { id: 'bottom-left', name: 'Botten vänster', logoX: 12, logoY: 88, bannerY: 94, bannerPos: 'bottom' },
-  { id: 'bottom-center', name: 'Botten center', logoX: 50, logoY: 88, bannerY: 94, bannerPos: 'bottom' },
+  { id: 'top-left', name: 'Topp vänster', logoX: 12, logoY: 12, bannerY: 6, desc: 'Logo i övre vänstra hörnet' },
+  { id: 'top-center', name: 'Topp center', logoX: 50, logoY: 12, bannerY: 6, desc: 'Logo centrerad högst upp' },
+  { id: 'bottom-left', name: 'Botten vänster', logoX: 12, logoY: 88, bannerY: 94, desc: 'Logo i nedre vänstra hörnet' },
+  { id: 'bottom-center', name: 'Botten center', logoX: 50, logoY: 88, bannerY: 94, desc: 'Logo centrerad längst ner' },
 ];
 
 export const BrandKitDesignerSimplified = ({ 
@@ -82,7 +61,7 @@ export const BrandKitDesignerSimplified = ({
   const previewRef = useRef<HTMLDivElement>(null);
   
   // State
-  const [activeTab, setActiveTab] = useState<'presets' | 'elements' | 'style'>('presets');
+  const [showManualControl, setShowManualControl] = useState(false);
   const [logoLight, setLogoLight] = useState<string | null>(null);
   const [logoDark, setLogoDark] = useState<string | null>(null);
   const [loadingLogos, setLoadingLogos] = useState(false);
@@ -90,16 +69,6 @@ export const BrandKitDesignerSimplified = ({
   const [saveWithoutLogo, setSaveWithoutLogo] = useState(false);
   const [appliedToAll, setAppliedToAll] = useState(false);
   const [isDragging, setIsDragging] = useState<string | null>(null);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
-  const [newText, setNewText] = useState('');
-  const [elements, setElements] = useState<CanvasElement[]>(design.elements || []);
-
-  // Sync elements with design
-  useEffect(() => {
-    if (design.elements) {
-      setElements(design.elements);
-    }
-  }, [design.elements]);
 
   // Load logos and saved kits
   useEffect(() => {
@@ -113,7 +82,6 @@ export const BrandKitDesignerSimplified = ({
   useEffect(() => {
     if (!open) {
       setAppliedToAll(false);
-      setSelectedElement(null);
     }
   }, [open]);
 
@@ -203,11 +171,10 @@ export const BrandKitDesignerSimplified = ({
     if (!name) return;
 
     try {
-      const designToSave = { ...design, elements };
       const { error } = await supabase.from('brand_kits').insert({
         user_id: user.id,
         name,
-        design: designToSave as any,
+        design: design as any,
       });
 
       if (error) throw error;
@@ -243,60 +210,6 @@ export const BrandKitDesignerSimplified = ({
     }
   };
 
-  // Add text element
-  const addTextElement = () => {
-    if (!newText.trim()) return;
-    const textEl: CanvasElement = {
-      id: `text-${Date.now()}`,
-      type: 'text',
-      x: 50,
-      y: 50,
-      text: newText,
-      fontSize: 24,
-      fontColor: '#ffffff',
-      fontFamily: 'sans-serif',
-    };
-    const newElements = [...elements, textEl];
-    setElements(newElements);
-    onDesignChange({ ...design, elements: newElements });
-    setNewText('');
-    setSelectedElement(textEl.id);
-  };
-
-  // Add shape element
-  const addShape = (shapeType: 'rect' | 'circle') => {
-    const shapeEl: CanvasElement = {
-      id: `shape-${Date.now()}`,
-      type: 'shape',
-      shapeType,
-      x: 50,
-      y: 50,
-      width: 80,
-      height: shapeType === 'circle' ? 80 : 40,
-      fillColor: '#000000',
-      opacity: 60,
-    };
-    const newElements = [...elements, shapeEl];
-    setElements(newElements);
-    onDesignChange({ ...design, elements: newElements });
-    setSelectedElement(shapeEl.id);
-  };
-
-  // Update element
-  const updateElement = (id: string, updates: Partial<CanvasElement>) => {
-    const newElements = elements.map(el => el.id === id ? { ...el, ...updates } : el);
-    setElements(newElements);
-    onDesignChange({ ...design, elements: newElements });
-  };
-
-  // Remove element
-  const removeElement = (id: string) => {
-    const newElements = elements.filter(el => el.id !== id);
-    setElements(newElements);
-    onDesignChange({ ...design, elements: newElements });
-    setSelectedElement(null);
-  };
-
   // Drag handling for logo and banner
   useEffect(() => {
     if (!isDragging) return;
@@ -311,9 +224,6 @@ export const BrandKitDesignerSimplified = ({
         onDesignChange({ ...design, bannerY: y });
       } else if (isDragging === 'logo') {
         onDesignChange({ ...design, logoX: x, logoY: y });
-      } else if (isDragging.startsWith('element-')) {
-        const elId = isDragging.replace('element-', '');
-        updateElement(elId, { x, y });
       }
     };
 
@@ -334,7 +244,7 @@ export const BrandKitDesignerSimplified = ({
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleEnd);
     };
-  }, [isDragging, design, elements, onDesignChange]);
+  }, [isDragging, design, onDesignChange]);
 
   const handleApplyToAll = () => {
     if (appliedToAll) {
@@ -363,17 +273,14 @@ export const BrandKitDesignerSimplified = ({
       logos: [],
       elements: [],
     });
-    setElements([]);
     setAppliedToAll(false);
-    setSelectedElement(null);
   };
 
   const availableLogoUrl = logoLight || logoDark;
-  const selectedEl = elements.find(el => el.id === selectedElement);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
@@ -381,206 +288,136 @@ export const BrandKitDesignerSimplified = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 overflow-y-auto max-h-[75vh]">
-          {/* Left: Controls - 2 cols */}
-          <div className="lg:col-span-2 space-y-4">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-              <TabsList className="w-full grid grid-cols-3">
-                <TabsTrigger value="presets">Presets</TabsTrigger>
-                <TabsTrigger value="elements">Element</TabsTrigger>
-                <TabsTrigger value="style">Stil</TabsTrigger>
-              </TabsList>
-
-              {/* Presets Tab */}
-              <TabsContent value="presets" className="space-y-4 mt-4">
-                {/* Saved brand kits */}
-                {savedKits.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium flex items-center gap-2">
-                      <Star className="w-3 h-3 text-yellow-500" />
-                      Sparade brand kits
-                    </Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {savedKits.slice(0, 4).map((kit) => (
-                        <Card 
-                          key={kit.id} 
-                          className="p-2 cursor-pointer hover:bg-accent transition-colors group relative"
-                          onClick={() => applySavedKit(kit)}
-                        >
-                          <div className="flex items-center gap-2">
-                            {kit.is_favorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
-                            <span className="text-xs truncate flex-1">{kit.name}</span>
-                          </div>
-                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5"
-                              onClick={(e) => { e.stopPropagation(); toggleFavorite(kit); }}
-                            >
-                              <Star className={`w-2.5 h-2.5 ${kit.is_favorite ? 'text-yellow-500 fill-yellow-500' : ''}`} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 text-destructive"
-                              onClick={(e) => { e.stopPropagation(); deleteKit(kit.id); }}
-                            >
-                              <Trash2 className="w-2.5 h-2.5" />
-                            </Button>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Quick position presets */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Snabbval position</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {QUICK_PRESETS.map((preset) => (
-                      <Button
-                        key={preset.id}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs h-8"
-                        onClick={() => {
-                          if (availableLogoUrl || design.logoUrl) {
-                            applyQuickPreset(preset, design.logoUrl || availableLogoUrl!);
-                          } else {
-                            toast.error('Ladda upp en logo först');
-                          }
-                        }}
-                      >
-                        {preset.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Logo selection/upload */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Logo</Label>
-                  {(logoLight || logoDark) && (
-                    <div className="flex gap-2">
-                      {logoLight && (
-                        <Card 
-                          className={`flex-1 p-2 cursor-pointer transition-all bg-zinc-800 ${design.logoUrl === logoLight ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/50'}`}
-                          onClick={() => onDesignChange({ ...design, enabled: true, logoUrl: logoLight })}
-                        >
-                          <img src={logoLight} alt="Ljus" className="h-6 object-contain mx-auto" />
-                        </Card>
-                      )}
-                      {logoDark && (
-                        <Card 
-                          className={`flex-1 p-2 cursor-pointer transition-all bg-zinc-100 ${design.logoUrl === logoDark ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/50'}`}
-                          onClick={() => onDesignChange({ ...design, enabled: true, logoUrl: logoDark })}
-                        >
-                          <img src={logoDark} alt="Mörk" className="h-6 object-contain mx-auto" />
-                        </Card>
-                      )}
-                    </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto max-h-[75vh]">
+          {/* Left: Controls */}
+          <div className="space-y-4">
+            {/* Logo selection/upload */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Välj logo</Label>
+              {(logoLight || logoDark) && (
+                <div className="flex gap-2">
+                  {logoLight && (
+                    <Card 
+                      className={`flex-1 p-3 cursor-pointer transition-all bg-zinc-800 ${design.logoUrl === logoLight ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/50'}`}
+                      onClick={() => onDesignChange({ ...design, enabled: true, logoUrl: logoLight })}
+                    >
+                      <img src={logoLight} alt="Ljus" className="h-8 object-contain mx-auto" />
+                    </Card>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-xs"
-                    onClick={() => document.getElementById('logo-upload-studio')?.click()}
-                  >
-                    <Upload className="w-3 h-3 mr-2" />
-                    {design.logoUrl ? 'Byt logo' : 'Ladda upp logo'}
-                  </Button>
-                  <input
-                    id="logo-upload-studio"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file);
-                    }}
-                  />
+                  {logoDark && (
+                    <Card 
+                      className={`flex-1 p-3 cursor-pointer transition-all bg-zinc-100 ${design.logoUrl === logoDark ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-primary/50'}`}
+                      onClick={() => onDesignChange({ ...design, enabled: true, logoUrl: logoDark })}
+                    >
+                      <img src={logoDark} alt="Mörk" className="h-8 object-contain mx-auto" />
+                    </Card>
+                  )}
                 </div>
-              </TabsContent>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => document.getElementById('logo-upload-studio')?.click()}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {design.logoUrl ? 'Byt logo' : 'Ladda upp logo'}
+              </Button>
+              <input
+                id="logo-upload-studio"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file);
+                }}
+              />
+            </div>
 
-              {/* Elements Tab - Add text, shapes */}
-              <TabsContent value="elements" className="space-y-4 mt-4">
-                {/* Add text */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium flex items-center gap-2">
-                    <Type className="w-3 h-3" />
-                    Lägg till text
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newText}
-                      onChange={(e) => setNewText(e.target.value)}
-                      placeholder="Skriv text..."
-                      className="text-sm h-8"
-                      onKeyDown={(e) => e.key === 'Enter' && addTextElement()}
-                    />
-                    <Button size="sm" className="h-8" onClick={addTextElement}>
-                      <Plus className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Add shapes */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Lägg till form</Label>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 h-8" onClick={() => addShape('rect')}>
-                      <Square className="w-3 h-3 mr-1" />
-                      Rektangel
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1 h-8" onClick={() => addShape('circle')}>
-                      <Circle className="w-3 h-3 mr-1" />
-                      Cirkel
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Element list */}
-                {elements.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Placerade element</Label>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {elements.map((el) => (
-                        <div 
-                          key={el.id}
-                          className={`flex items-center gap-2 p-2 rounded text-xs cursor-pointer transition-colors ${selectedElement === el.id ? 'bg-primary/20' : 'bg-muted/50 hover:bg-muted'}`}
-                          onClick={() => setSelectedElement(el.id)}
-                        >
-                          <GripVertical className="w-3 h-3 text-muted-foreground" />
-                          {el.type === 'text' && <Type className="w-3 h-3" />}
-                          {el.type === 'shape' && el.shapeType === 'rect' && <Square className="w-3 h-3" />}
-                          {el.type === 'shape' && el.shapeType === 'circle' && <Circle className="w-3 h-3" />}
-                          <span className="flex-1 truncate">
-                            {el.type === 'text' ? el.text : el.shapeType}
-                          </span>
+            {/* Saved brand kits */}
+            {savedKits.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-500" />
+                  Sparade presets
+                </Label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {savedKits.map((kit) => (
+                    <Card 
+                      key={kit.id} 
+                      className="p-3 cursor-pointer hover:bg-accent transition-colors group"
+                      onClick={() => applySavedKit(kit)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {kit.is_favorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
+                          <span className="text-sm">{kit.name}</span>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-5 w-5 text-destructive"
-                            onClick={(e) => { e.stopPropagation(); removeElement(el.id); }}
+                            className="h-6 w-6"
+                            onClick={(e) => { e.stopPropagation(); toggleFavorite(kit); }}
+                          >
+                            <Star className={`w-3 h-3 ${kit.is_favorite ? 'text-yellow-500 fill-yellow-500' : ''}`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                            onClick={(e) => { e.stopPropagation(); deleteKit(kit.id); }}
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
 
-              {/* Style Tab */}
-              <TabsContent value="style" className="space-y-4 mt-4">
+            {/* Quick position presets */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Snabbval position</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {QUICK_PRESETS.map((preset) => (
+                  <Card
+                    key={preset.id}
+                    className={`p-3 cursor-pointer transition-all hover:bg-accent ${
+                      design.logoX === preset.logoX && design.logoY === preset.logoY ? 'ring-2 ring-primary' : ''
+                    }`}
+                    onClick={() => {
+                      if (availableLogoUrl || design.logoUrl) {
+                        applyQuickPreset(preset, design.logoUrl || availableLogoUrl!);
+                      } else {
+                        toast.error('Ladda upp en logo först');
+                      }
+                    }}
+                  >
+                    <div className="text-sm font-medium">{preset.name}</div>
+                    <div className="text-xs text-muted-foreground">{preset.desc}</div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Manual control dropdown */}
+            <Collapsible open={showManualControl} onOpenChange={setShowManualControl}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span>Manuell kontroll</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showManualControl ? 'rotate-180' : ''}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4 space-y-4">
                 {/* Logo size */}
                 {design.logoUrl && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">Logo storlek</Label>
+                      <Label className="text-sm">Logo storlek</Label>
                       <span className="text-xs text-muted-foreground">{Math.round(design.logoSize * 100)}%</span>
                     </div>
                     <Slider
@@ -596,7 +433,7 @@ export const BrandKitDesignerSimplified = ({
                 {/* Banner controls */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium">Banner</Label>
+                    <Label className="text-sm font-medium">Banner</Label>
                     <Checkbox
                       checked={design.bannerEnabled}
                       onCheckedChange={(checked) => onDesignChange({ ...design, bannerEnabled: checked === true })}
@@ -604,14 +441,14 @@ export const BrandKitDesignerSimplified = ({
                   </div>
                   
                   {design.bannerEnabled && (
-                    <div className="space-y-3 pl-2 border-l-2 border-primary/20">
+                    <div className="space-y-3 pl-3 border-l-2 border-primary/20">
                       <div className="space-y-1">
                         <Label className="text-xs">Färg</Label>
                         <Input
                           type="color"
                           value={design.bannerColor}
                           onChange={(e) => onDesignChange({ ...design, bannerColor: e.target.value })}
-                          className="h-7 w-full"
+                          className="h-8 w-full"
                         />
                       </div>
                       <div className="space-y-1">
@@ -643,7 +480,7 @@ export const BrandKitDesignerSimplified = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full text-xs h-7"
+                        className="w-full text-xs"
                         onClick={() => onDesignChange({ ...design, bannerRotation: design.bannerRotation === 0 ? 90 : 0 })}
                       >
                         <RotateCw className="w-3 h-3 mr-1" />
@@ -653,102 +490,12 @@ export const BrandKitDesignerSimplified = ({
                   )}
                 </div>
 
-                {/* Selected element controls */}
-                {selectedEl && (
-                  <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
-                    <Label className="text-xs font-medium">Valt element: {selectedEl.type === 'text' ? 'Text' : selectedEl.shapeType}</Label>
-                    
-                    {selectedEl.type === 'text' && (
-                      <>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Text</Label>
-                          <Input
-                            value={selectedEl.text || ''}
-                            onChange={(e) => updateElement(selectedEl.id, { text: e.target.value })}
-                            className="h-7 text-xs"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-xs">Storlek</Label>
-                            <span className="text-xs text-muted-foreground">{selectedEl.fontSize}px</span>
-                          </div>
-                          <Slider
-                            value={[selectedEl.fontSize || 24]}
-                            onValueChange={(v) => updateElement(selectedEl.id, { fontSize: v[0] })}
-                            min={12}
-                            max={72}
-                            step={2}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Färg</Label>
-                          <Input
-                            type="color"
-                            value={selectedEl.fontColor || '#ffffff'}
-                            onChange={(e) => updateElement(selectedEl.id, { fontColor: e.target.value })}
-                            className="h-7 w-full"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {selectedEl.type === 'shape' && (
-                      <>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Färg</Label>
-                          <Input
-                            type="color"
-                            value={selectedEl.fillColor || '#000000'}
-                            onChange={(e) => updateElement(selectedEl.id, { fillColor: e.target.value })}
-                            className="h-7 w-full"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-xs">Transparens</Label>
-                            <span className="text-xs text-muted-foreground">{selectedEl.opacity}%</span>
-                          </div>
-                          <Slider
-                            value={[selectedEl.opacity || 60]}
-                            onValueChange={(v) => updateElement(selectedEl.id, { opacity: v[0] })}
-                            min={10}
-                            max={100}
-                            step={5}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Bredd</Label>
-                            <div className="flex gap-1">
-                              <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateElement(selectedEl.id, { width: Math.max(20, (selectedEl.width || 80) - 10) })}>
-                                <Minus className="w-3 h-3" />
-                              </Button>
-                              <span className="flex-1 text-center text-xs leading-6">{selectedEl.width}</span>
-                              <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateElement(selectedEl.id, { width: (selectedEl.width || 80) + 10 })}>
-                                <Plus className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Höjd</Label>
-                            <div className="flex gap-1">
-                              <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateElement(selectedEl.id, { height: Math.max(20, (selectedEl.height || 40) - 10) })}>
-                                <Minus className="w-3 h-3" />
-                              </Button>
-                              <span className="flex-1 text-center text-xs leading-6">{selectedEl.height}</span>
-                              <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateElement(selectedEl.id, { height: (selectedEl.height || 40) + 10 })}>
-                                <Plus className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                {/* Tip */}
+                <p className="text-xs text-muted-foreground text-center">
+                  Tips: Dra logo och banner direkt på förhandsvisningen
+                </p>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Save/Reset buttons */}
             <div className="space-y-2 pt-2 border-t border-border">
@@ -757,9 +504,9 @@ export const BrandKitDesignerSimplified = ({
                 size="sm"
                 className="w-full"
                 onClick={saveCurrentKit}
-                disabled={!design.logoUrl && !design.bannerEnabled && elements.length === 0}
+                disabled={!design.logoUrl && !design.bannerEnabled}
               >
-                <Star className="w-3 h-3 mr-2" />
+                <Star className="w-4 h-4 mr-2" />
                 Spara som preset
               </Button>
               
@@ -774,11 +521,11 @@ export const BrandKitDesignerSimplified = ({
             </div>
           </div>
 
-          {/* Right: Preview - 3 cols */}
-          <div className="lg:col-span-3 space-y-3">
+          {/* Right: Preview */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Förhandsgranskning</Label>
-              <p className="text-xs text-muted-foreground">Dra element för att flytta</p>
+              <p className="text-xs text-muted-foreground">Dra för att flytta</p>
             </div>
             <div 
               ref={previewRef}
@@ -831,58 +578,6 @@ export const BrandKitDesignerSimplified = ({
                   />
                 </div>
               )}
-
-              {/* Canvas elements */}
-              {elements.map((el) => (
-                <div
-                  key={el.id}
-                  className={`absolute cursor-move select-none touch-none transition-all ${selectedElement === el.id ? 'ring-2 ring-primary' : 'ring-1 ring-transparent hover:ring-white/30'}`}
-                  onMouseDown={() => { setIsDragging(`element-${el.id}`); setSelectedElement(el.id); }}
-                  onTouchStart={() => { setIsDragging(`element-${el.id}`); setSelectedElement(el.id); }}
-                  style={{
-                    left: `${el.x}%`,
-                    top: `${el.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  {el.type === 'text' && (
-                    <span
-                      className="whitespace-nowrap drop-shadow-lg pointer-events-none"
-                      style={{
-                        fontSize: `${(el.fontSize || 24) * 0.6}px`, // Scale for preview
-                        color: el.fontColor || '#ffffff',
-                        fontFamily: el.fontFamily || 'sans-serif',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-                      }}
-                    >
-                      {el.text}
-                    </span>
-                  )}
-                  {el.type === 'shape' && el.shapeType === 'rect' && (
-                    <div
-                      className="pointer-events-none"
-                      style={{
-                        width: `${(el.width || 80) * 0.8}px`,
-                        height: `${(el.height || 40) * 0.8}px`,
-                        backgroundColor: el.fillColor || '#000000',
-                        opacity: (el.opacity || 60) / 100,
-                        borderRadius: '4px',
-                      }}
-                    />
-                  )}
-                  {el.type === 'shape' && el.shapeType === 'circle' && (
-                    <div
-                      className="pointer-events-none rounded-full"
-                      style={{
-                        width: `${(el.width || 80) * 0.8}px`,
-                        height: `${(el.width || 80) * 0.8}px`,
-                        backgroundColor: el.fillColor || '#000000',
-                        opacity: (el.opacity || 60) / 100,
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
             </div>
 
             {/* Actions */}
@@ -921,13 +616,10 @@ export const BrandKitDesignerSimplified = ({
                   size="sm" 
                   className="flex-1"
                   onClick={() => {
-                    // Save design with elements
-                    const finalDesign = { ...design, elements };
-                    onDesignChange(finalDesign);
                     onSave?.(true, saveWithoutLogo);
                     onClose();
                   }}
-                  disabled={!design.logoUrl && !design.bannerEnabled && elements.length === 0}
+                  disabled={!design.logoUrl && !design.bannerEnabled}
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Spara

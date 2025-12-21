@@ -10,6 +10,7 @@ import pricingGradientPopular from '@/assets/pricing-gradient-popular.jpg';
 import pricingGradientPremium from '@/assets/pricing-gradient-premium.jpg';
 import oneTimeBg from '@/assets/one-time-bg.png';
 import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const features = [
   'Obegränsade AI-genererade bakgrunder',
@@ -459,38 +460,58 @@ export const DemoPaywall = () => {
           ))}
         </div>
 
-        {/* One-time purchase with background image */}
-        <div className="relative rounded-[10px] overflow-hidden border border-border p-4 mb-4">
-          {/* Background image with low brightness */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-20"
-            style={{ backgroundImage: `url(${oneTimeBg})` }}
-          />
-          <div className="absolute inset-0 bg-background/60" />
-          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10" />
-          <div className="relative flex items-center justify-between">
-            <div>
-              <h3 className="font-display text-sm font-medium text-foreground">
-                {PRICING_PLANS.creditPack.name}
-              </h3>
-              <p className="text-xs text-foreground/60 hidden sm:block">
-                {PRICING_PLANS.creditPack.description}
-              </p>
+        {/* One-time purchase as dropdown */}
+        <Collapsible className="rounded-[10px] border border-border overflow-hidden mb-4">
+          <CollapsibleTrigger asChild>
+            <button className="w-full relative p-4">
+              {/* Background image with low brightness */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-20"
+                style={{ backgroundImage: `url(${oneTimeBg})` }}
+              />
+              <div className="absolute inset-0 bg-background/60" />
+              <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10" />
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-sm font-medium text-foreground">
+                    Engångsköp
+                  </h3>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Behöver du bara några bilder?
+                </span>
+              </div>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="relative p-4 pt-0">
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-20"
+                style={{ backgroundImage: `url(${oneTimeBg})` }}
+              />
+              <div className="absolute inset-0 bg-background/60" />
+              <div className="relative flex items-center justify-between border-t border-border/50 pt-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">30 bilder</p>
+                  <p className="text-xs text-muted-foreground">Alla funktioner ingår</p>
+                </div>
+                <Button 
+                  variant="outline"
+                  className="rounded-full px-5 h-9 text-sm font-medium bg-white/10 border-foreground/20 hover:bg-white/20 dark:border-white/20"
+                  onClick={() => handleSelectPlan('creditPack')}
+                  disabled={loadingTier === 'creditPack'}
+                >
+                  {loadingTier === 'creditPack' ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <span className="font-display italic">{PRICING_PLANS.creditPack.price} kr</span>
+                  )}
+                </Button>
+              </div>
             </div>
-            <Button 
-              variant="outline"
-              className="rounded-full px-5 h-9 text-sm font-medium bg-white/10 border-foreground/20 hover:bg-white/20 dark:border-white/20"
-              onClick={() => handleSelectPlan('creditPack')}
-              disabled={loadingTier === 'creditPack'}
-            >
-              {loadingTier === 'creditPack' ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <span className="font-display italic">{PRICING_PLANS.creditPack.price} kr</span>
-              )}
-            </Button>
-          </div>
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Review slideshow for social proof */}
         <ReviewSlideshow />
