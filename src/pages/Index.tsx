@@ -687,7 +687,7 @@ export default function Index() {
             {/* Step 2: Scene Selection */}
             {uploadedImages.length > 0 && <section id="scene-section" className="border border-border rounded-[10px] p-6 space-y-4 dark:bg-[hsla(0,0%,14%,0.8)]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
                     <span className="text-lg not-italic text-primary font-sans font-medium">2</span>
                   </div>
                   <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
@@ -711,7 +711,7 @@ export default function Index() {
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
             {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="dark:bg-card border border-foreground/20 dark:border-border rounded-[10px] p-6 space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
                     <span className="not-italic text-primary font-sans text-base font-medium">3</span>
                   </div>
                   <h2 className="font-sans font-medium text-lg text-foreground">Generera</h2>
@@ -725,7 +725,7 @@ export default function Index() {
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
                         <span className="not-italic text-primary font-sans text-base font-medium">4</span>
                       </div>
                       <h2 className="font-sans font-medium text-lg text-foreground">Redigera och ladda ner</h2>
@@ -893,7 +893,7 @@ export default function Index() {
                 
                 <div className="relative p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center border border-primary/30">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
                       <span className="text-primary font-sans text-base font-medium">5</span>
                     </div>
                     <div>
