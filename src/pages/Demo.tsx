@@ -370,9 +370,8 @@ const DemoContent = () => {
             </span>
             <Button 
               onClick={handleCreateAccount}
-              className="bg-primary hover:bg-primary/90 rounded-full"
+              className="bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] rounded-full"
             >
-              <Sparkles className="w-4 h-4" />
               <span>Skapa konto</span>
             </Button>
           </div>
@@ -662,18 +661,16 @@ const DemoContent = () => {
                   generateImages();
                 }} 
                 disabled={isProcessing || uploadedImages.length === 0 || !selectedScene} 
-                className={`h-12 px-8 text-sm font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-glow hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+                className={`h-10 px-8 text-sm font-bold bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/40 hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
               >
                 {/* Shimmer effect when not processing */}
                 {!isProcessing && (
                   <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                 )}
                 
-                <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? '' : 'animate-pulse'}`} />
                 <span className="relative z-10">
                   {isProcessing ? 'Genererar...' : `Starta AI-generering (${remainingGenerations} kvar)`}
                 </span>
-                <Sparkles className={`w-4 h-4 relative z-10 ${isProcessing ? '' : 'animate-pulse'}`} />
               </Button>
             </div>
               
