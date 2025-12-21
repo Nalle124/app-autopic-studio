@@ -685,7 +685,7 @@ export default function Index() {
             )}
 
             {/* Step 2: Scene Selection */}
-            {uploadedImages.length > 0 && <section id="scene-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
+            {uploadedImages.length > 0 && <section id="scene-section" className="border border-border rounded-[10px] p-6 space-y-4" style={{ background: 'hsla(0, 0%, 14%, 0.8)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-lg not-italic text-primary font-sans font-medium">2</span>
@@ -721,7 +721,7 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden" style={{ background: 'radial-gradient(ellipse at center, hsla(0, 0%, 20%, 0.55) 0%, hsla(0, 0%, 87%, 0.45) 100%)' }}>
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden" style={{ background: 'radial-gradient(ellipse 120% 100% at center, hsla(0, 0%, 87%, 0.6) 0%, hsla(0, 0%, 20%, 0.9) 100%)' }}>
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">

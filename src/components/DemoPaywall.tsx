@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import pricingGradientPopular from '@/assets/pricing-gradient-popular.jpg';
 import pricingGradientPremium from '@/assets/pricing-gradient-premium.jpg';
+import { Switch } from '@/components/ui/switch';
 
 const features = [
   'Obegränsade AI-genererade bakgrunder',
@@ -21,18 +22,22 @@ const features = [
 const PRICING_PLANS = {
   hobbyhandlaren: {
     name: 'Hobbyhandlaren',
-    price: 399,
+    price: 499,
+    yearlyPrice: 399,
     credits: 100,
     priceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n',
+    yearlyPriceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n', // TODO: Replace with yearly price ID
     description: 'Få full tillgång till magisk annonsbild-generering.',
     features: ['100 bilder', 'Brand kit', 'Support'],
     gradient: null,
   },
   blocketkungen: {
     name: 'Blocketkungen',
-    price: 599,
+    price: 699,
+    yearlyPrice: 559,
     credits: 300,
     priceId: 'price_1SbVePJQldzCYD0ZL3pOnmK9',
+    yearlyPriceId: 'price_1SbVePJQldzCYD0ZL3pOnmK9', // TODO: Replace with yearly price ID
     description: 'Få full tillgång till magisk annonsbild-generering.',
     features: ['300 bilder', 'Brand kit', 'Support'],
     popular: true,
@@ -40,9 +45,11 @@ const PRICING_PLANS = {
   },
   storafisken: {
     name: 'Stora fisken',
-    price: 999,
+    price: 1299,
+    yearlyPrice: 1039,
     credits: 600,
     priceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk',
+    yearlyPriceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk', // TODO: Replace with yearly price ID
     description: 'Få full tillgång till magisk annonsbild-generering.',
     features: ['500 bilder', 'Brand kit', 'Support'],
     gradient: pricingGradientPremium,
@@ -67,6 +74,7 @@ export const DemoPaywall = () => {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [isCreatingDemoAccount, setIsCreatingDemoAccount] = useState(false);
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
+  const [isYearly, setIsYearly] = useState(false);
 
   const getTitle = () => {
     switch (paywallTrigger) {
@@ -120,9 +128,14 @@ export const DemoPaywall = () => {
         return;
       }
 
+      // Use yearly price ID if yearly billing is selected
+      const priceId = isYearly && 'yearlyPriceId' in tierConfig 
+        ? tierConfig.yearlyPriceId 
+        : tierConfig.priceId;
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
-          priceId: tierConfig.priceId,
+          priceId,
           mode: isOneTime ? 'payment' : 'subscription',
         },
       });
@@ -220,7 +233,9 @@ export const DemoPaywall = () => {
 
           {/* Price */}
           <div className="mb-3">
-            <span className="font-display text-4xl font-light text-foreground">{plan.price}</span>
+            <span className="font-display text-4xl font-light text-foreground">
+              {isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price}
+            </span>
             <span className="text-base text-foreground/70 ml-1">kr</span>
             {'oneTime' in plan && plan.oneTime ? null : (
               <span className="text-sm text-foreground/50"> /mån</span>
@@ -241,13 +256,14 @@ export const DemoPaywall = () => {
 
           {/* CTA Button */}
           <Button 
-            className="w-full rounded-full h-10 text-sm font-medium"
+            variant="outline"
+            className="w-full rounded-full h-10 text-sm font-medium bg-white/10 border-white/20 hover:bg-white/20"
             disabled={isLoading}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              'Välj plan'
+              'Skaffa nu'
             )}
           </Button>
         </div>
@@ -298,7 +314,9 @@ export const DemoPaywall = () => {
                   )}
                 </div>
                 <div className="text-sm mt-1">
-                  <span className="font-display text-2xl font-light text-foreground">{plan.price}</span>
+                  <span className="font-display text-2xl font-light text-foreground">
+                    {isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price}
+                  </span>
                   <span className="text-foreground/70 ml-1">kr</span>
                   {'oneTime' in plan && plan.oneTime ? null : (
                     <span className="text-xs text-foreground/50"> /mån</span>
@@ -309,7 +327,8 @@ export const DemoPaywall = () => {
             
             <div className="flex items-center gap-2">
               <Button 
-                className="rounded-full h-9 px-5 text-sm font-medium"
+                variant="outline"
+                className="rounded-full h-9 px-5 text-sm font-medium bg-white/10 border-white/20 hover:bg-white/20"
                 disabled={isLoading}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -397,7 +416,28 @@ export const DemoPaywall = () => {
 
       {/* Pricing section */}
       <div className="p-6">
-        <h3 className="font-display text-lg italic text-foreground mb-4 text-center">Välj ditt paket</h3>
+        {/* Header with toggle */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+          <h3 className="font-display text-lg italic text-foreground">Välj ditt paket</h3>
+          
+          {/* Yearly/Monthly toggle */}
+          <div className="flex items-center gap-2 bg-background/50 rounded-full px-3 py-1.5 border border-border/50">
+            <span className={`text-xs transition-colors ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Månadsvis
+            </span>
+            <Switch 
+              checked={isYearly} 
+              onCheckedChange={setIsYearly}
+              className="scale-90"
+            />
+            <span className={`text-xs transition-colors ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Årsvis
+            </span>
+            <span className="text-[10px] bg-accent-green/20 text-accent-green px-1.5 py-0.5 rounded-full font-medium">
+              20% rabatt
+            </span>
+          </div>
+        </div>
 
         {/* Desktop: Horizontal layout - wider cards */}
         <div className="hidden md:flex gap-4 mb-4">
@@ -486,7 +526,7 @@ export const DemoPaywall = () => {
 
   return (
     <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
-      <DialogContent className="p-0 gap-0 max-w-2xl overflow-hidden">
+      <DialogContent className="p-0 gap-0 max-w-4xl overflow-hidden">
         {renderCombinedView()}
       </DialogContent>
     </Dialog>

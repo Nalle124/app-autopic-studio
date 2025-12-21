@@ -278,7 +278,8 @@ export const SceneSelector = ({
             className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}
-            loading={isGrid ? 'lazy' : 'eager'}
+            loading="lazy"
+            decoding="async"
             onLoad={() => setImageLoaded(true)}
           />
           
