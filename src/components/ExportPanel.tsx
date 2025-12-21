@@ -138,7 +138,7 @@ export const ExportPanel = ({
           <Button 
             onClick={handleExport} 
             disabled={isProcessing} 
-            className={`w-full sm:w-auto sm:min-w-[280px] h-10 text-sm font-bold bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/40 hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+            className={`w-full sm:w-auto sm:min-w-[280px] h-10 text-sm font-bold bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/40 hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
           >
             {/* Shimmer effect when not processing */}
             {!isProcessing && (

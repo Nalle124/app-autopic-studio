@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
-import { Lock, Sparkles, Check, Zap, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lock, Check, Zap, Loader2, ChevronDown, ChevronUp, Star, Quote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import pricingGradientPopular from '@/assets/pricing-gradient-popular.jpg';
 import pricingGradientPremium from '@/assets/pricing-gradient-premium.jpg';
+import oneTimeBg from '@/assets/one-time-bg.png';
 import { Switch } from '@/components/ui/switch';
 
 const features = [
@@ -16,6 +17,13 @@ const features = [
   'Logo & Brand Kit designer',
   'Ingen vattenstämpel på bilder',
   'Galleri med alla dina projekt',
+];
+
+// Reviews for social proof
+const reviews = [
+  { name: 'Erik L.', company: 'Bil & Motor AB', text: 'Fantastiskt verktyg! Sparar oss timmar varje dag.', rating: 5 },
+  { name: 'Anna S.', company: 'Blocket-säljare', text: 'Mina bilar säljs snabbare med professionella bilder.', rating: 5 },
+  { name: 'Johan K.', company: 'Bilhandlare', text: 'Kvaliteten är otrolig, kunderna älskar det!', rating: 5 },
 ];
 
 // Updated pricing tiers matching the landing page design
@@ -72,9 +80,9 @@ export const DemoPaywall = () => {
   const { showPaywall, setShowPaywall, paywallTrigger, generationsUsed, maxFreeGenerations } = useDemo();
   const navigate = useNavigate();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
-  const [isCreatingDemoAccount, setIsCreatingDemoAccount] = useState(false);
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [isYearly, setIsYearly] = useState(false);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
 
   const getTitle = () => {
     switch (paywallTrigger) {
@@ -155,42 +163,6 @@ export const DemoPaywall = () => {
     }
   };
 
-  const handleCreateDemoAccount = async () => {
-    setIsCreatingDemoAccount(true);
-    try {
-      const randomId = Math.random().toString(36).substring(2, 10);
-      const demoEmail = `demo-${randomId}@test.autoshot.se`;
-      const demoPassword = `demo-${randomId}-password`;
-
-      const { data, error } = await supabase.auth.signUp({
-        email: demoEmail,
-        password: demoPassword,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            full_name: 'Demo User',
-            is_demo_account: true
-          }
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.user) {
-        toast.success('Demo-konto skapat! Du är nu inloggad.');
-        handleClose();
-        navigate('/');
-      }
-    } catch (err: any) {
-      console.error('Demo account error:', err);
-      toast.error(err.message || 'Kunde inte skapa demo-konto');
-    } finally {
-      setIsCreatingDemoAccount(false);
-    }
-  };
-
   // Desktop pricing card - horizontal layout, wider
   const DesktopPricingCard = ({ planKey, plan }: { planKey: PlanKey; plan: typeof PRICING_PLANS[PlanKey] }) => {
     const hasGradient = 'gradient' in plan && plan.gradient;
@@ -209,7 +181,7 @@ export const DemoPaywall = () => {
         {/* Background gradient image */}
         {hasGradient && (
           <div 
-            className="absolute inset-0 bg-cover bg-center opacity-40"
+            className="absolute inset-0 bg-cover bg-center opacity-60"
             style={{ backgroundImage: `url(${plan.gradient})` }}
           />
         )}
@@ -233,7 +205,7 @@ export const DemoPaywall = () => {
 
           {/* Price */}
           <div className="mb-3">
-            <span className="font-display text-4xl font-light text-foreground">
+            <span className="font-display text-4xl font-light text-foreground italic">
               {isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price}
             </span>
             <span className="text-base text-foreground/70 ml-1">kr</span>
@@ -257,7 +229,7 @@ export const DemoPaywall = () => {
           {/* CTA Button */}
           <Button 
             variant="outline"
-            className="w-full rounded-full h-10 text-sm font-medium bg-white/10 border-white/20 hover:bg-white/20"
+            className="w-full rounded-full h-10 text-sm font-medium bg-white/10 border-foreground/20 hover:bg-white/20 dark:border-white/20"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -289,7 +261,7 @@ export const DemoPaywall = () => {
         {/* Background gradient image */}
         {hasGradient && (
           <div 
-            className="absolute inset-0 bg-cover bg-center opacity-30"
+            className="absolute inset-0 bg-cover bg-center opacity-50"
             style={{ backgroundImage: `url(${plan.gradient})` }}
           />
         )}
@@ -314,7 +286,7 @@ export const DemoPaywall = () => {
                   )}
                 </div>
                 <div className="text-sm mt-1">
-                  <span className="font-display text-2xl font-light text-foreground">
+                  <span className="font-display text-2xl font-light text-foreground italic">
                     {isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price}
                   </span>
                   <span className="text-foreground/70 ml-1">kr</span>
@@ -328,7 +300,7 @@ export const DemoPaywall = () => {
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline"
-                className="rounded-full h-9 px-5 text-sm font-medium bg-white/10 border-white/20 hover:bg-white/20"
+                className="rounded-full h-9 px-5 text-sm font-medium bg-white/10 border-foreground/20 hover:bg-white/20 dark:border-white/20"
                 disabled={isLoading}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -381,6 +353,41 @@ export const DemoPaywall = () => {
     );
   };
 
+  // Review slideshow component
+  const ReviewSlideshow = () => {
+    const review = reviews[currentReviewIndex];
+    
+    return (
+      <div className="relative py-4 px-6 bg-muted/30 rounded-[10px] border border-border/50">
+        <Quote className="absolute top-3 left-3 w-4 h-4 text-primary/30" />
+        <div className="flex flex-col items-center text-center space-y-2">
+          <div className="flex gap-0.5">
+            {[...Array(review.rating)].map((_, i) => (
+              <Star key={i} className="w-3 h-3 fill-primary text-primary" />
+            ))}
+          </div>
+          <p className="text-sm text-foreground/80 italic">"{review.text}"</p>
+          <p className="text-xs text-muted-foreground">
+            {review.name} — {review.company}
+          </p>
+        </div>
+        
+        {/* Dots indicator */}
+        <div className="flex justify-center gap-1.5 mt-3">
+          {reviews.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentReviewIndex(i)}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                i === currentReviewIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Combined view - USPs + Pricing in one card
   const renderCombinedView = () => (
     <div className="max-h-[90vh] overflow-y-auto">
@@ -416,24 +423,23 @@ export const DemoPaywall = () => {
 
       {/* Pricing section */}
       <div className="p-6">
-        {/* Header with toggle */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
-          <h3 className="font-display text-lg italic text-foreground">Välj ditt paket</h3>
+        {/* Header with toggle - full width toggle */}
+        <div className="flex flex-col items-center gap-4 mb-6">
+          <h3 className="font-display text-lg text-foreground">Välj ditt paket</h3>
           
-          {/* Yearly/Monthly toggle */}
-          <div className="flex items-center gap-2 bg-background/50 rounded-full px-3 py-1.5 border border-border/50">
-            <span className={`text-xs transition-colors ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+          {/* Yearly/Monthly toggle - same width as cards */}
+          <div className="w-full flex items-center justify-center gap-3 bg-background/50 rounded-[10px] px-4 py-2.5 border border-border/50">
+            <span className={`text-sm transition-colors ${!isYearly ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
               Månadsvis
             </span>
             <Switch 
               checked={isYearly} 
               onCheckedChange={setIsYearly}
-              className="scale-90"
             />
-            <span className={`text-xs transition-colors ${isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className={`text-sm transition-colors ${isYearly ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
               Årsvis
             </span>
-            <span className="text-[10px] bg-accent-green/20 text-accent-green px-1.5 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-accent-green/20 text-accent-green px-2 py-0.5 rounded-full font-medium border border-accent-green/30">
               20% rabatt
             </span>
           </div>
@@ -453,8 +459,14 @@ export const DemoPaywall = () => {
           ))}
         </div>
 
-        {/* One-time purchase */}
-        <div className="relative rounded-[10px] overflow-hidden border border-border bg-card/50 p-4">
+        {/* One-time purchase with background image */}
+        <div className="relative rounded-[10px] overflow-hidden border border-border p-4 mb-4">
+          {/* Background image with low brightness */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-20"
+            style={{ backgroundImage: `url(${oneTimeBg})` }}
+          />
+          <div className="absolute inset-0 bg-background/60" />
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10" />
           <div className="relative flex items-center justify-between">
             <div>
@@ -466,43 +478,22 @@ export const DemoPaywall = () => {
               </p>
             </div>
             <Button 
-              className="rounded-full px-5 h-9 text-sm font-medium"
+              variant="outline"
+              className="rounded-full px-5 h-9 text-sm font-medium bg-white/10 border-foreground/20 hover:bg-white/20 dark:border-white/20"
               onClick={() => handleSelectPlan('creditPack')}
               disabled={loadingTier === 'creditPack'}
             >
               {loadingTier === 'creditPack' ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
-                `${PRICING_PLANS.creditPack.price} kr`
+                <span className="font-display italic">{PRICING_PLANS.creditPack.price} kr</span>
               )}
             </Button>
           </div>
         </div>
 
-        {/* Demo account option */}
-        <div className="border-t border-border pt-4 mt-4">
-          <p className="text-xs text-center text-muted-foreground mb-3">
-            Bara testa? Skapa ett gratis demo-konto
-          </p>
-          <Button
-            variant="outline"
-            onClick={handleCreateDemoAccount}
-            disabled={isCreatingDemoAccount}
-            className="w-full h-10 rounded-full text-sm"
-          >
-            {isCreatingDemoAccount ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Skapar konto...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Skapa gratis demo-konto
-              </>
-            )}
-          </Button>
-        </div>
+        {/* Review slideshow for social proof */}
+        <ReviewSlideshow />
 
         {/* Footer CTA */}
         <div className="flex items-center justify-center gap-2 pt-4 mt-2">

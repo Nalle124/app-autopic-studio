@@ -685,7 +685,7 @@ export default function Index() {
             )}
 
             {/* Step 2: Scene Selection */}
-            {uploadedImages.length > 0 && <section id="scene-section" className="border border-border rounded-[10px] p-6 space-y-4" style={{ background: 'hsla(0, 0%, 14%, 0.8)' }}>
+            {uploadedImages.length > 0 && <section id="scene-section" className="border border-border rounded-[10px] p-6 space-y-4 dark:bg-[hsla(0,0%,14%,0.8)]">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-lg not-italic text-primary font-sans font-medium">2</span>
@@ -709,7 +709,7 @@ export default function Index() {
               </section>}
 
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
-            {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="bg-card border border-border rounded-[10px] p-6 space-y-6">
+            {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="dark:bg-card border border-border rounded-[10px] p-6 space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="not-italic text-primary font-sans text-base font-medium">3</span>
@@ -721,7 +721,7 @@ export default function Index() {
               </section>}
 
             {/* Step 4: Results Gallery - show when any image is processing or completed */}
-            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden" style={{ background: 'radial-gradient(ellipse 120% 100% at center, hsla(0, 0%, 87%, 0.6) 0%, hsla(0, 0%, 20%, 0.9) 100%)' }}>
+            {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -732,7 +732,7 @@ export default function Index() {
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                      <Button variant="outline" size="icon" title="Redigera" onClick={() => {
+                      <Button variant="outline" size="icon" className="border-border bg-white dark:bg-transparent" title="Redigera" onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
                   if (completedImages.length === 0) return;
 
@@ -743,7 +743,7 @@ export default function Index() {
                         <Sliders className="w-4 h-4" />
                       </Button>
                       
-                      <Button variant="outline" size="icon" title="Beskär" onClick={() => {
+                      <Button variant="outline" size="icon" className="border-border bg-white dark:bg-transparent" title="Beskär" onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
                   if (completedImages.length === 0) return;
 
@@ -759,7 +759,7 @@ export default function Index() {
                         <Scissors className="w-4 h-4" />
                       </Button>
                       
-                      <Button variant="outline" size="icon" title={selectedImages.size > 0 ? `Ladda ner ${selectedImages.size}` : 'Ladda ner alla'} onClick={() => {
+                      <Button variant="outline" size="icon" className="border-border bg-white dark:bg-transparent" title={selectedImages.size > 0 ? `Ladda ner ${selectedImages.size}` : 'Ladda ner alla'} onClick={() => {
                   // If no images selected, download all
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
                   const imagesToDownload = selectedImages.size > 0 ? completedImages.filter(img => selectedImages.has(img.id)) : completedImages;
@@ -783,7 +783,7 @@ export default function Index() {
                         setSelectedImages(new Set());
                       }
                     }} />
-                    <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer whitespace-nowrap">
+                    <label htmlFor="select-all" className="text-sm text-foreground/70 dark:text-muted-foreground cursor-pointer whitespace-nowrap">
                       Markera alla ({uploadedImages.filter(img => img.status === 'completed').length})
                     </label>
                   </div>
@@ -915,7 +915,7 @@ export default function Index() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="text-muted-foreground hover:text-destructive" 
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10" 
                         onClick={() => {
                           if (originalImagesBeforeLogo.size > 0) {
                             setUploadedImages(prev => prev.map(img => {
