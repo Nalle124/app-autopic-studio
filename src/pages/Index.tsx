@@ -709,7 +709,7 @@ export default function Index() {
               </section>}
 
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
-            {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="dark:bg-card border border-border rounded-[10px] p-6 space-y-6">
+            {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="dark:bg-card border border-foreground/20 dark:border-border rounded-[10px] p-6 space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="not-italic text-primary font-sans text-base font-medium">3</span>
@@ -732,7 +732,7 @@ export default function Index() {
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                      <Button variant="outline" size="icon" className="border-border bg-white dark:bg-transparent" title="Redigera" onClick={() => {
+                      <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Redigera" onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
                   if (completedImages.length === 0) return;
 
@@ -743,7 +743,7 @@ export default function Index() {
                         <Sliders className="w-4 h-4" />
                       </Button>
                       
-                      <Button variant="outline" size="icon" className="border-border bg-white dark:bg-transparent" title="Beskär" onClick={() => {
+                      <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Beskär" onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
                   if (completedImages.length === 0) return;
 
@@ -759,7 +759,7 @@ export default function Index() {
                         <Scissors className="w-4 h-4" />
                       </Button>
                       
-                      <Button variant="outline" size="icon" className="border-border bg-white dark:bg-transparent" title={selectedImages.size > 0 ? `Ladda ner ${selectedImages.size}` : 'Ladda ner alla'} onClick={() => {
+                      <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Ladda ner ${selectedImages.size}` : 'Ladda ner alla'} onClick={() => {
                   // If no images selected, download all
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
                   const imagesToDownload = selectedImages.size > 0 ? completedImages.filter(img => selectedImages.has(img.id)) : completedImages;

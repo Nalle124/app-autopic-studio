@@ -316,14 +316,6 @@ export const Profile = () => {
               <User className="w-5 h-5" />
             </Button>
             
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={handleLogout}
-              title="Logga ut"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
           </div>
         </div>
       </header>
@@ -511,7 +503,7 @@ export const Profile = () => {
           </div>
         </Card>
 
-        {/* Logo Settings */}
+        {/* Logo Settings - Single field with optional second */}
         <Card className="p-6">
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -519,34 +511,65 @@ export const Profile = () => {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground font-heading">
-                Logotyper
+                Logotyp
               </h2>
-              <p className="text-sm text-muted-foreground font-small">Dina standard-logotyper för bilder</p>
+              <p className="text-sm text-muted-foreground font-small">Din standard-logotyp för bilder</p>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <p className="text-sm text-muted-foreground font-small">
-              Ladda upp dina standard-logotyper här. De kommer automatiskt användas när du genererar bilder.
-            </p>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <LogoUploadSection 
-                type="light" 
-                logo={profileData.logo_light} 
-                label="Logo ljus" 
-              />
+          <div className="space-y-4">
+            {/* Primary logo */}
+            <LogoUploadSection 
+              type="light" 
+              logo={profileData.logo_light} 
+              label="Primär logotyp" 
+            />
+            
+            {/* Secondary logo - collapsed hint */}
+            {!profileData.logo_dark ? (
+              <p className="text-xs text-muted-foreground text-center">
+                Har du en variant för mörka bakgrunder?{' '}
+                <button 
+                  className="text-primary hover:underline"
+                  onClick={() => document.getElementById('logo-dark')?.click()}
+                >
+                  Ladda upp här
+                </button>
+                <input
+                  id="logo-dark"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleLogoUpload(file, 'dark');
+                  }}
+                />
+              </p>
+            ) : (
               <LogoUploadSection 
                 type="dark" 
                 logo={profileData.logo_dark} 
-                label="Logo mörk" 
+                label="Logo för mörka bakgrunder" 
               />
-            </div>
+            )}
           </div>
         </Card>
 
         {/* Bug Report Section */}
         <BugReportSection userId={user?.id} />
+
+        {/* Logout Section */}
+        <Card className="p-6 mt-6">
+          <Button 
+            variant="outline" 
+            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logga ut
+          </Button>
+        </Card>
       </main>
     </div>
   );

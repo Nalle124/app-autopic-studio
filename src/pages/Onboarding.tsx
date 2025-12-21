@@ -399,8 +399,7 @@ export const Onboarding = () => {
             <>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  <span className="font-accent italic">Hur hittade du oss?</span>
+                  <span className="font-sans">Hur hittade du oss?</span>
                 </CardTitle>
                 <CardDescription>
                   Vi vill gärna veta hur du kom i kontakt med AutoShot
