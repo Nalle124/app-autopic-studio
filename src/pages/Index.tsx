@@ -657,8 +657,8 @@ export default function Index() {
             {/* Step 1: Upload */}
             <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="not-italic text-primary font-sans text-base">1</span>
+                <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                  <span className="not-italic text-primary font-sans text-base font-medium">1</span>
                 </div>
                 <div className="flex-1">
                   <h2 className="font-sans font-medium text-lg">Ladda upp bilder</h2>
@@ -688,7 +688,7 @@ export default function Index() {
             {uploadedImages.length > 0 && <section id="scene-section" className="border border-border rounded-[10px] p-6 space-y-4 dark:bg-[hsla(0,0%,14%,0.8)]">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                    <span className="text-lg not-italic text-primary font-sans font-medium">2</span>
+                    <span className="not-italic text-primary font-sans text-base font-medium">2</span>
                   </div>
                   <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
                   <Popover>
