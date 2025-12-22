@@ -406,14 +406,14 @@ export const DemoSceneSelector = ({
           {viewMode === 'slideshow' ? (
             <div className="relative">
               <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
-                {categoryScenes.map((scene) => (
+                {categoryScenes.slice(0, 6).map((scene) => (
                   <SceneCard key={scene.id} scene={scene} />
                 ))}
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {categoryScenes.map((scene) => (
+              {categoryScenes.slice(0, 6).map((scene) => (
                 <SceneCard key={scene.id} scene={scene} isGrid />
               ))}
             </div>
