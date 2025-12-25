@@ -225,12 +225,15 @@ export default function Index() {
       }
       let successCount = 0;
       let errorCount = 0;
+      
+      // Set ALL images to 'processing' immediately for consistent loading state
+      setUploadedImages(prev => prev.map(img => ({
+        ...img,
+        status: 'processing'
+      })));
+      
       for (const image of uploadedImages) {
         try {
-          setUploadedImages(prev => prev.map(img => img.id === image.id ? {
-            ...img,
-            status: 'processing'
-          } : img));
           const formData = new FormData();
 
           // CRITICAL: Use original file if no edits, or croppedUrl if edited
