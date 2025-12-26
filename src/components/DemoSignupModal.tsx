@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Check, Loader2, Star, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,6 +83,8 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
       
       onSuccess();
       onClose();
+      // Force page reload to refresh auth state
+      window.location.reload();
     } catch (error: any) {
       console.error('Auth error:', error);
       if (error.message?.includes('already registered')) {
@@ -108,10 +111,10 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card" />
             
             <div className="relative z-10 p-6 pb-8 text-center">
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
                 Skapa gratis konto
               </h2>
-              <p className="text-sm text-white/80">
+              <p className="text-sm text-foreground/80">
                 Testa 3 bilder helt gratis
               </p>
             </div>
@@ -160,9 +163,8 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
 
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-sm">Lösenord</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="Minst 6 tecken"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
