@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -210,7 +211,7 @@ const Auth = () => {
                       Glömt lösenord?
                     </button>
                   </div>
-                  <Input id="login-password" type="password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
+                  <PasswordInput id="login-password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={checked => setRememberMe(checked === true)} disabled={loading} />
@@ -237,7 +238,7 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Lösenord</Label>
-                  <Input id="signup-password" type="password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
+                  <PasswordInput id="signup-password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                   <p className="text-xs text-muted-foreground">
                     Minst 6 tecken
                   </p>
@@ -319,9 +320,8 @@ const ResetPasswordForm = () => {
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="new-password">Nytt lösenord</Label>
-              <Input
+              <PasswordInput
                 id="new-password"
-                type="password"
                 placeholder="••••••"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
@@ -333,9 +333,8 @@ const ResetPasswordForm = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Bekräfta lösenord</Label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 placeholder="••••••"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}

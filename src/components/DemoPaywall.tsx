@@ -164,23 +164,34 @@ export const DemoPaywall = () => {
             {/* Header - compact */}
             <div className="px-6 pt-6 pb-4 text-center">
               <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">
-                Sälj bilar snabbare med proffsbilder
+                Skapa konto
               </h2>
               <p className="text-sm text-muted-foreground">
                 Kom igång på 30 sekunder
               </p>
             </div>
 
-            {/* Benefits - compact */}
-            <div className="px-6 pb-4">
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-                {benefits.map((benefit, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <Check className="w-3 h-3 text-primary flex-shrink-0" />
-                    <span className="text-xs text-foreground/80">{benefit}</span>
-                  </div>
-                ))}
-              </div>
+            {/* Benefits - desktop: 2x2 grid, mobile: column */}
+            <div className="px-6 pb-6">
+              {!isMobile ? (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3 max-w-xl mx-auto">
+                  {benefits.map((benefit, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground/80">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 pb-4">
+                  {benefits.map((benefit, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-foreground/80">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Pricing toggle */}
