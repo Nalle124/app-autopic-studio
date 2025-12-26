@@ -1080,6 +1080,7 @@ const DemoContent = () => {
         onApplyToAll={() => {
           toast.success('Brand kit applicerat på alla bilder');
         }}
+        defaultLogo={autoshotLogo}
       />
     </div>
   );

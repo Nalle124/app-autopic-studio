@@ -37,6 +37,7 @@ interface BrandKitDesignerSimplifiedProps {
   previewImage?: string;
   onSave?: (withLogo: boolean, withoutLogo: boolean) => void;
   onApplyToAll?: () => void;
+  defaultLogo?: string; // Demo mode: pre-fill with a default logo
 }
 
 export const BrandKitDesignerSimplified = ({ 
@@ -46,7 +47,8 @@ export const BrandKitDesignerSimplified = ({
   design, 
   previewImage, 
   onSave, 
-  onApplyToAll 
+  onApplyToAll,
+  defaultLogo
 }: BrandKitDesignerSimplifiedProps) => {
   const { user } = useAuth();
   const previewRef = useRef<HTMLDivElement>(null);
@@ -65,8 +67,18 @@ export const BrandKitDesignerSimplified = ({
     if (user?.id && open) {
       loadProfileLogos();
       loadSavedKits();
+    } else if (!user && open && defaultLogo && !design.logoUrl) {
+      // Demo mode: auto-apply default logo if no user and defaultLogo provided
+      onDesignChange({
+        ...design,
+        enabled: true,
+        logoUrl: defaultLogo,
+        logoX: design.logoX || 15,
+        logoY: design.logoY || 10,
+        logoSize: design.logoSize || 0.12,
+      });
     }
-  }, [user, open]);
+  }, [user, open, defaultLogo]);
 
   // Reset on close
   useEffect(() => {
