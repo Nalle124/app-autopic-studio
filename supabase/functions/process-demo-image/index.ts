@@ -32,13 +32,112 @@ interface SceneMetadata {
 // Fixed seed for consistent results
 const PHOTOROOM_SEED = 117879368;
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_REQUESTS_PER_WINDOW = 5; // 5 requests per hour per IP
+
+// In-memory rate limit store (resets on function cold start, but provides basic protection)
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+function getClientIp(req: Request): string {
+  // Try various headers that might contain the real IP
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    // x-forwarded-for can contain multiple IPs, take the first one
+    return forwardedFor.split(',')[0].trim();
+  }
+  
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp;
+  }
+  
+  const cfConnectingIp = req.headers.get('cf-connecting-ip');
+  if (cfConnectingIp) {
+    return cfConnectingIp;
+  }
+  
+  // Fallback - this may not be the real IP in production
+  return 'unknown';
+}
+
+function checkRateLimit(clientIp: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const record = rateLimitStore.get(clientIp);
+  
+  // Clean up expired entries occasionally
+  if (rateLimitStore.size > 1000) {
+    for (const [ip, data] of rateLimitStore.entries()) {
+      if (data.resetAt < now) {
+        rateLimitStore.delete(ip);
+      }
+    }
+  }
+  
+  if (!record || record.resetAt < now) {
+    // New window - set up fresh limit
+    rateLimitStore.set(clientIp, {
+      count: 1,
+      resetAt: now + RATE_LIMIT_WINDOW_MS,
+    });
+    return { 
+      allowed: true, 
+      remaining: MAX_REQUESTS_PER_WINDOW - 1,
+      resetIn: RATE_LIMIT_WINDOW_MS 
+    };
+  }
+  
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return { 
+      allowed: false, 
+      remaining: 0,
+      resetIn: record.resetAt - now 
+    };
+  }
+  
+  record.count++;
+  return { 
+    allowed: true, 
+    remaining: MAX_REQUESTS_PER_WINDOW - record.count,
+    resetIn: record.resetAt - now 
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Demo endpoint - NO authentication required, but limited functionality
+    // Rate limiting check
+    const clientIp = getClientIp(req);
+    const rateLimit = checkRateLimit(clientIp);
+    
+    console.log(`[DEMO] Request from IP: ${clientIp}, Rate limit remaining: ${rateLimit.remaining}`);
+    
+    if (!rateLimit.allowed) {
+      const resetMinutes = Math.ceil(rateLimit.resetIn / 60000);
+      console.log(`[DEMO] Rate limit exceeded for IP: ${clientIp}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Rate limit exceeded. Please try again in ${resetMinutes} minutes or create an account for more images.`,
+          rateLimited: true,
+          resetIn: rateLimit.resetIn
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil(rateLimit.resetIn / 1000).toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': Math.ceil(rateLimit.resetIn / 1000).toString()
+          } 
+        }
+      );
+    }
+
     console.log('Demo image processing request received');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -88,6 +187,19 @@ serve(async (req) => {
     } catch (e) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid scene data format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate background URL
+    try {
+      const bgUrl = new URL(backgroundImageUrl);
+      if (!['http:', 'https:'].includes(bgUrl.protocol)) {
+        throw new Error('Invalid protocol');
+      }
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid background URL' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -223,9 +335,14 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         finalUrl: finalPublicUrlData.publicUrl,
+        rateLimitRemaining: rateLimit.remaining,
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': rateLimit.remaining.toString()
+        },
       }
     );
   } catch (error) {
