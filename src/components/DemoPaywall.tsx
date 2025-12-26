@@ -97,7 +97,7 @@ export const DemoPaywall = () => {
   const [isYearly, setIsYearly] = useState(true);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [oneTimeOpen, setOneTimeOpen] = useState(false);
-  const [expandedPlan, setExpandedPlan] = useState<PlanKey | null>('blocketkungen');
+  const [expandedPlan, setExpandedPlan] = useState<PlanKey | null>(null);
 
   // Auto-rotate reviews
   useEffect(() => {
@@ -157,7 +157,7 @@ export const DemoPaywall = () => {
 
   return (
     <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
-      <DialogContent className="p-0 gap-0 max-w-4xl max-h-[90vh] overflow-y-auto border-0 bg-transparent shadow-none">
+      <DialogContent className="p-0 gap-0 max-w-4xl border-0 bg-transparent shadow-none">
         {/* Main card */}
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
           <div className="relative z-10">
@@ -253,18 +253,18 @@ export const DemoPaywall = () => {
                               <span className="text-sm font-medium text-white">Skaffa nu</span>
                             </div>
                             
-                            <div className="pt-3 border-t border-white/20">
-                              <p className="text-xs text-white/60 mb-2">Detta ingår</p>
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-sm text-white/90">
+                            <div className="pt-4 border-t border-white/20">
+                              <p className="text-xs text-white/60 mb-3">Detta ingår</p>
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-sm text-white/90">
                                   <Check className="w-4 h-4 flex-shrink-0" />
                                   <span>{plan.credits} bilder/månad</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-white/90">
+                                <div className="flex items-center gap-3 text-sm text-white/90">
                                   <Check className="w-4 h-4 flex-shrink-0" />
                                   <span>Brand kit</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-white/90">
+                                <div className="flex items-center gap-3 text-sm text-white/90">
                                   <Check className="w-4 h-4 flex-shrink-0" />
                                   <span>Support</span>
                                 </div>
@@ -377,31 +377,30 @@ export const DemoPaywall = () => {
             </div>
 
             {/* One-time purchase - expandable */}
-            <div className="px-6 pb-3">
+            <div className="px-6 pb-4">
               <Collapsible open={oneTimeOpen} onOpenChange={setOneTimeOpen}>
                 <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors py-2">
-                    <span>Behöver du bara några bilder?</span>
-                    <ChevronDown className={`w-3 h-3 transition-transform ${oneTimeOpen ? 'rotate-180' : ''}`} />
+                  <button className="w-full flex items-center justify-between text-sm text-muted-foreground hover:text-foreground transition-colors py-3 border border-border/50 rounded-lg px-4">
+                    <span className="font-medium">Behöver du bara några bilder?</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${oneTimeOpen ? 'rotate-180' : ''}`} />
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3 mt-1">
+                  <div className="flex items-center justify-between bg-muted/30 rounded-lg p-4 mt-2">
                     <div>
-                      <p className="text-sm font-medium text-foreground">30 bilder engångsköp</p>
-                      <p className="text-xs text-muted-foreground">Alla funktioner ingår</p>
+                      <p className="text-base font-medium text-foreground">30 bilder engångsköp</p>
+                      <p className="text-sm text-muted-foreground">Alla funktioner ingår</p>
                     </div>
                     <Button
                       variant="outline"
-                      size="sm"
                       onClick={() => handleSelectPlan('creditPack')}
                       disabled={loadingTier === 'creditPack'}
-                      className="rounded-full"
+                      className="rounded-full px-6"
                     >
                       {loadingTier === 'creditPack' ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <span>69 kr</span>
+                        <span className="text-base font-medium">69 kr</span>
                       )}
                     </Button>
                   </div>
