@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, Copy, Sparkles, Save, Check, Star, Trash2, RotateCw, ChevronDown } from 'lucide-react';
+import { Upload, Copy, Sparkles, Save, Check, Star, Trash2, X, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -10,7 +10,6 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export interface LogoDesign {
   enabled: boolean;
@@ -40,14 +39,6 @@ interface BrandKitDesignerSimplifiedProps {
   onApplyToAll?: () => void;
 }
 
-// Quick preset templates with preview info
-const QUICK_PRESETS = [
-  { id: 'top-left', name: 'Topp vänster', logoX: 12, logoY: 12, bannerY: 6, desc: 'Logo i övre vänstra hörnet' },
-  { id: 'top-center', name: 'Topp center', logoX: 50, logoY: 12, bannerY: 6, desc: 'Logo centrerad högst upp' },
-  { id: 'bottom-left', name: 'Botten vänster', logoX: 12, logoY: 88, bannerY: 94, desc: 'Logo i nedre vänstra hörnet' },
-  { id: 'bottom-center', name: 'Botten center', logoX: 50, logoY: 88, bannerY: 94, desc: 'Logo centrerad längst ner' },
-];
-
 export const BrandKitDesignerSimplified = ({ 
   open, 
   onClose, 
@@ -61,7 +52,6 @@ export const BrandKitDesignerSimplified = ({
   const previewRef = useRef<HTMLDivElement>(null);
   
   // State
-  const [showManualControl, setShowManualControl] = useState(false);
   const [logoLight, setLogoLight] = useState<string | null>(null);
   const [logoDark, setLogoDark] = useState<string | null>(null);
   const [loadingLogos, setLoadingLogos] = useState(false);
@@ -70,7 +60,7 @@ export const BrandKitDesignerSimplified = ({
   const [appliedToAll, setAppliedToAll] = useState(false);
   const [isDragging, setIsDragging] = useState<string | null>(null);
 
-  // Load logos and saved kits
+  // Load logos and saved kits, auto-apply profile logo if available
   useEffect(() => {
     if (user?.id && open) {
       loadProfileLogos();
@@ -98,6 +88,19 @@ export const BrandKitDesignerSimplified = ({
       if (data) {
         setLogoLight(data.logo_light);
         setLogoDark(data.logo_dark);
+        
+        // Auto-apply first available logo if none selected
+        if (!design.logoUrl && (data.logo_light || data.logo_dark)) {
+          const autoLogo = data.logo_light || data.logo_dark;
+          onDesignChange({
+            ...design,
+            enabled: true,
+            logoUrl: autoLogo,
+            logoX: design.logoX || 15,
+            logoY: design.logoY || 10,
+            logoSize: design.logoSize || 0.12,
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading profile logos:', error);
@@ -122,23 +125,6 @@ export const BrandKitDesignerSimplified = ({
     }
   };
 
-  const applyQuickPreset = (preset: typeof QUICK_PRESETS[0], logoUrl: string) => {
-    onDesignChange({
-      ...design,
-      enabled: true,
-      logoUrl: logoUrl,
-      logoX: preset.logoX,
-      logoY: preset.logoY,
-      logoSize: 0.12,
-      bannerEnabled: true,
-      bannerX: 50,
-      bannerY: preset.bannerY,
-      bannerHeight: 8,
-      bannerWidth: 100,
-      bannerRotation: 0,
-    });
-  };
-
   const handleFileUpload = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Vänligen välj en bildfil');
@@ -151,8 +137,8 @@ export const BrandKitDesignerSimplified = ({
         ...design,
         enabled: true,
         logoUrl: result,
-        logoX: design.logoX || 15,
-        logoY: design.logoY || 10,
+        logoX: design.logoX || 50,
+        logoY: design.logoY || 15,
         logoSize: design.logoSize || 0.12,
       });
     };
@@ -255,6 +241,32 @@ export const BrandKitDesignerSimplified = ({
     }
   };
 
+  const removeLogo = () => {
+    onDesignChange({
+      ...design,
+      enabled: false,
+      logoUrl: null,
+    });
+  };
+
+  const removeBanner = () => {
+    onDesignChange({
+      ...design,
+      bannerEnabled: false,
+    });
+  };
+
+  const addBanner = () => {
+    onDesignChange({
+      ...design,
+      bannerEnabled: true,
+      bannerY: 90,
+      bannerHeight: 8,
+      bannerColor: design.bannerColor || '#000000',
+      bannerOpacity: design.bannerOpacity || 80,
+    });
+  };
+
   const resetDesign = () => {
     onDesignChange({
       enabled: false,
@@ -276,7 +288,7 @@ export const BrandKitDesignerSimplified = ({
     setAppliedToAll(false);
   };
 
-  const availableLogoUrl = logoLight || logoDark;
+  const hasProfileLogos = logoLight || logoDark;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -291,10 +303,12 @@ export const BrandKitDesignerSimplified = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto max-h-[75vh]">
           {/* Left: Controls */}
           <div className="space-y-4">
-            {/* Logo selection/upload */}
+            {/* Logo Section */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Välj logo</Label>
-              {(logoLight || logoDark) && (
+              <Label className="text-sm font-medium">Logo</Label>
+              
+              {/* Profile logos if available */}
+              {hasProfileLogos && (
                 <div className="flex gap-2">
                   {logoLight && (
                     <Card 
@@ -314,6 +328,8 @@ export const BrandKitDesignerSimplified = ({
                   )}
                 </div>
               )}
+              
+              {/* Upload button */}
               <Button
                 variant="outline"
                 size="sm"
@@ -333,6 +349,99 @@ export const BrandKitDesignerSimplified = ({
                   if (file) handleFileUpload(file);
                 }}
               />
+
+              {/* Logo size slider - only show when logo is active */}
+              {design.logoUrl && (
+                <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Storlek</Label>
+                    <span className="text-xs text-muted-foreground">{Math.round(design.logoSize * 100)}%</span>
+                  </div>
+                  <Slider
+                    value={[design.logoSize * 100]}
+                    onValueChange={(v) => onDesignChange({ ...design, logoSize: v[0] / 100 })}
+                    min={5}
+                    max={40}
+                    step={1}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={removeLogo}
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Ta bort logo
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Banner Section */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Banner</Label>
+              
+              {!design.bannerEnabled ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={addBanner}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Lägg till banner
+                </Button>
+              ) : (
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Färg</Label>
+                    <Input
+                      type="color"
+                      value={design.bannerColor}
+                      onChange={(e) => onDesignChange({ ...design, bannerColor: e.target.value })}
+                      className="h-8 w-full cursor-pointer"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Tjocklek</Label>
+                      <span className="text-xs text-muted-foreground">{design.bannerHeight}%</span>
+                    </div>
+                    <Slider
+                      value={[design.bannerHeight]}
+                      onValueChange={(v) => onDesignChange({ ...design, bannerHeight: v[0] })}
+                      min={3}
+                      max={25}
+                      step={1}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Transparens</Label>
+                      <span className="text-xs text-muted-foreground">{design.bannerOpacity}%</span>
+                    </div>
+                    <Slider
+                      value={[design.bannerOpacity]}
+                      onValueChange={(v) => onDesignChange({ ...design, bannerOpacity: v[0] })}
+                      min={20}
+                      max={100}
+                      step={5}
+                    />
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={removeBanner}
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Ta bort banner
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Saved brand kits */}
@@ -379,124 +488,6 @@ export const BrandKitDesignerSimplified = ({
               </div>
             )}
 
-            {/* Quick position presets */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Snabbval position</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {QUICK_PRESETS.map((preset) => (
-                  <Card
-                    key={preset.id}
-                    className={`p-3 cursor-pointer transition-all hover:bg-accent ${
-                      design.logoX === preset.logoX && design.logoY === preset.logoY ? 'ring-2 ring-primary' : ''
-                    }`}
-                    onClick={() => {
-                      if (availableLogoUrl || design.logoUrl) {
-                        applyQuickPreset(preset, design.logoUrl || availableLogoUrl!);
-                      } else {
-                        toast.error('Ladda upp en logo först');
-                      }
-                    }}
-                  >
-                    <div className="text-sm font-medium">{preset.name}</div>
-                    <div className="text-xs text-muted-foreground">{preset.desc}</div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Manual control dropdown */}
-            <Collapsible open={showManualControl} onOpenChange={setShowManualControl}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
-                  <span>Manuell kontroll</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showManualControl ? 'rotate-180' : ''}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-4 space-y-4">
-                {/* Logo size */}
-                {design.logoUrl && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm">Logo storlek</Label>
-                      <span className="text-xs text-muted-foreground">{Math.round(design.logoSize * 100)}%</span>
-                    </div>
-                    <Slider
-                      value={[design.logoSize * 100]}
-                      onValueChange={(v) => onDesignChange({ ...design, logoSize: v[0] / 100 })}
-                      min={5}
-                      max={40}
-                      step={1}
-                    />
-                  </div>
-                )}
-
-                {/* Banner controls */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">Banner</Label>
-                    <Checkbox
-                      checked={design.bannerEnabled}
-                      onCheckedChange={(checked) => onDesignChange({ ...design, bannerEnabled: checked === true })}
-                    />
-                  </div>
-                  
-                  {design.bannerEnabled && (
-                    <div className="space-y-3 pl-3 border-l-2 border-primary/20">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Färg</Label>
-                        <Input
-                          type="color"
-                          value={design.bannerColor}
-                          onChange={(e) => onDesignChange({ ...design, bannerColor: e.target.value })}
-                          className="h-8 w-full"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs">Transparens</Label>
-                          <span className="text-xs text-muted-foreground">{design.bannerOpacity}%</span>
-                        </div>
-                        <Slider
-                          value={[design.bannerOpacity]}
-                          onValueChange={(v) => onDesignChange({ ...design, bannerOpacity: v[0] })}
-                          min={20}
-                          max={100}
-                          step={5}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs">Tjocklek</Label>
-                          <span className="text-xs text-muted-foreground">{design.bannerHeight}%</span>
-                        </div>
-                        <Slider
-                          value={[design.bannerHeight]}
-                          onValueChange={(v) => onDesignChange({ ...design, bannerHeight: v[0] })}
-                          min={3}
-                          max={25}
-                          step={1}
-                        />
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-xs"
-                        onClick={() => onDesignChange({ ...design, bannerRotation: design.bannerRotation === 0 ? 90 : 0 })}
-                      >
-                        <RotateCw className="w-3 h-3 mr-1" />
-                        Rotera
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Tip */}
-                <p className="text-xs text-muted-foreground text-center">
-                  Tips: Dra logo och banner direkt på förhandsvisningen
-                </p>
-              </CollapsibleContent>
-            </Collapsible>
-
             {/* Save/Reset buttons */}
             <div className="space-y-2 pt-2 border-t border-border">
               <Button
@@ -521,46 +512,46 @@ export const BrandKitDesignerSimplified = ({
             </div>
           </div>
 
-          {/* Right: Preview */}
+          {/* Right: Preview with drag-and-drop canvas */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Förhandsgranskning</Label>
-              <p className="text-xs text-muted-foreground">Dra för att flytta</p>
+              <p className="text-xs text-muted-foreground">Dra för att placera</p>
             </div>
             <div 
               ref={previewRef}
-              className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden border-2 border-border"
+              className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden border-2 border-border select-none"
             >
               {previewImage ? (
-                <img src={previewImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                <img src={previewImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center">
                   <span className="text-sm text-muted-foreground">Ingen bild vald</span>
                 </div>
               )}
               
-              {/* Banner */}
+              {/* Banner - draggable */}
               {design.bannerEnabled && (
                 <div
-                  className="absolute cursor-move select-none touch-none hover:ring-2 hover:ring-primary/50 transition-all"
+                  className={`absolute cursor-move select-none touch-none transition-all ${isDragging === 'banner' ? 'ring-2 ring-primary' : 'hover:ring-2 hover:ring-primary/50'}`}
                   onMouseDown={() => setIsDragging('banner')}
                   onTouchStart={() => setIsDragging('banner')}
                   style={{
                     left: '50%',
                     top: `${design.bannerY}%`,
-                    transform: `translate(-50%, -50%) rotate(${design.bannerRotation}deg)`,
-                    width: design.bannerRotation === 0 ? '120%' : `${design.bannerHeight}%`,
-                    height: design.bannerRotation === 0 ? `${design.bannerHeight}%` : '120%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '120%',
+                    height: `${design.bannerHeight}%`,
                     backgroundColor: design.bannerColor,
                     opacity: design.bannerOpacity / 100,
                   }}
                 />
               )}
               
-              {/* Logo */}
+              {/* Logo - draggable */}
               {design.logoUrl && (
                 <div
-                  className="absolute cursor-move select-none touch-none ring-2 ring-transparent hover:ring-primary/50 rounded transition-all"
+                  className={`absolute cursor-move select-none touch-none rounded transition-all ${isDragging === 'logo' ? 'ring-2 ring-primary scale-105' : 'ring-2 ring-transparent hover:ring-primary/50'}`}
                   onMouseDown={() => setIsDragging('logo')}
                   onTouchStart={() => setIsDragging('logo')}
                   style={{
