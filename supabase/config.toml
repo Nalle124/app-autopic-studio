@@ -3,6 +3,9 @@ project_id = "cfsyxrokdemwkklqflnb"
 [functions.process-car-image]
 verify_jwt = false
 
+[functions.process-demo-image]
+verify_jwt = false
+
 [functions.analyze-scene]
 verify_jwt = false
 

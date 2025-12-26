@@ -223,7 +223,7 @@ const DemoContent = () => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 90000);
 
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-demo-image`, {
             method: 'POST',
             body: formData,
             signal: controller.signal
