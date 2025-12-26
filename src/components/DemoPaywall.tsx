@@ -8,6 +8,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import auraGradient1 from '@/assets/aura-gradient-1.jpg';
+import auraGradient2 from '@/assets/aura-gradient-2.jpg';
+import auraGradient3 from '@/assets/aura-gradient-3.jpg';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Outcome-driven benefits (not features)
 const benefits = [
@@ -44,16 +48,17 @@ const reviews = [
 // Pricing plans
 const PRICING_PLANS = {
   hobbyhandlaren: {
-    name: 'Hobby',
+    name: 'Hobbyhandlaren',
     price: 499,
     yearlyPrice: 399,
     credits: 100,
     priceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n',
     yearlyPriceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n',
     tagline: '100 bilder/mån',
+    background: auraGradient1,
   },
   blocketkungen: {
-    name: 'Blocket',
+    name: 'Blocketkungen',
     price: 699,
     yearlyPrice: 559,
     credits: 300,
@@ -61,15 +66,17 @@ const PRICING_PLANS = {
     yearlyPriceId: 'price_1SbVePJQldzCYD0ZL3pOnmK9',
     tagline: '300 bilder/mån',
     popular: true,
+    background: auraGradient2,
   },
   storafisken: {
-    name: 'Proffs',
+    name: 'Stora fisken',
     price: 1299,
     yearlyPrice: 1039,
     credits: 600,
     priceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk',
     yearlyPriceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk',
     tagline: '600 bilder/mån',
+    background: auraGradient3,
   },
   creditPack: {
     name: '30 bilder',
@@ -85,10 +92,12 @@ type PlanKey = keyof typeof PRICING_PLANS;
 export const DemoPaywall = () => {
   const { showPaywall, setShowPaywall } = useDemo();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [isYearly, setIsYearly] = useState(true);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [oneTimeOpen, setOneTimeOpen] = useState(false);
+  const [expandedPlan, setExpandedPlan] = useState<PlanKey | null>('blocketkungen');
 
   // Auto-rotate reviews
   useEffect(() => {
@@ -144,25 +153,15 @@ export const DemoPaywall = () => {
   };
 
   const review = reviews[currentReviewIndex];
+  const planKeys = ['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const;
 
   return (
     <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
-      <DialogContent className="p-0 gap-0 max-w-lg overflow-hidden border-0 bg-transparent shadow-none">
-        {/* Main card with blurred car background */}
+      <DialogContent className="p-0 gap-0 max-w-4xl overflow-hidden border-0 bg-transparent shadow-none">
+        {/* Main card */}
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
-          {/* Blurred dynamic background - car image */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div 
-              className="absolute inset-0 bg-cover bg-center scale-110 blur-xl opacity-30"
-              style={{ 
-                backgroundImage: `url(https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80)` 
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
-          </div>
-
           <div className="relative z-10">
-            {/* Header - outcome-driven */}
+            {/* Header - compact */}
             <div className="px-6 pt-6 pb-4 text-center">
               <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">
                 Sälj bilar snabbare med proffsbilder
@@ -174,22 +173,19 @@ export const DemoPaywall = () => {
 
             {/* Benefits - compact */}
             <div className="px-6 pb-4">
-              <div className="space-y-2">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
                 {benefits.map((benefit, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Check className="w-2.5 h-2.5 text-primary" />
-                    </div>
-                    <span className="text-sm text-foreground/80">{benefit}</span>
+                  <div key={i} className="flex items-center gap-1.5">
+                    <Check className="w-3 h-3 text-primary flex-shrink-0" />
+                    <span className="text-xs text-foreground/80">{benefit}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Pricing toggle + cards - all in one view */}
+            {/* Pricing toggle */}
             <div className="px-6 pb-4">
-              {/* Toggle */}
-              <div className="flex items-center justify-center gap-3 mb-4 bg-muted/50 rounded-xl px-4 py-2">
+              <div className="flex items-center justify-center gap-3 mb-4">
                 <span className={`text-sm transition-colors ${!isYearly ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                   Månadsvis
                 </span>
@@ -204,61 +200,180 @@ export const DemoPaywall = () => {
                 )}
               </div>
 
-              {/* Price cards - horizontal on mobile too */}
-              <div className="flex gap-2 mb-3">
-                {(['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const).map((key) => {
-                  const plan = PRICING_PLANS[key];
-                  const isPopular = 'popular' in plan && plan.popular;
-                  const isLoading = loadingTier === key;
-                  const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
+              {/* Desktop: Wide cards side by side */}
+              {!isMobile ? (
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {planKeys.map((key) => {
+                    const plan = PRICING_PLANS[key];
+                    const isPopular = 'popular' in plan && plan.popular;
+                    const isLoading = loadingTier === key;
+                    const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
 
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => !isLoading && handleSelectPlan(key)}
-                      disabled={isLoading}
-                      className={`flex-1 relative rounded-xl p-3 transition-all text-left ${
-                        isPopular 
-                          ? 'bg-primary/10 border-2 border-primary ring-2 ring-primary/20' 
-                          : 'bg-muted/50 border border-border hover:border-primary/50'
-                      }`}
-                    >
-                      {isPopular && (
-                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
-                          Bäst värde
-                        </span>
-                      )}
-                      <div className="text-xs text-muted-foreground mb-1">{plan.name}</div>
-                      <div className="flex items-baseline gap-0.5">
-                        <span className="text-lg font-bold text-foreground">{displayPrice}</span>
-                        <span className="text-xs text-muted-foreground">kr</span>
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">{plan.tagline}</div>
-                      {isLoading && (
-                        <div className="absolute inset-0 bg-background/50 rounded-xl flex items-center justify-center">
-                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => !isLoading && handleSelectPlan(key)}
+                        disabled={isLoading}
+                        className={`relative rounded-2xl overflow-hidden transition-all text-left h-64 ${
+                          isPopular 
+                            ? 'ring-2 ring-white/30 scale-[1.02]' 
+                            : 'hover:ring-1 hover:ring-white/20'
+                        }`}
+                      >
+                        {/* Background image */}
+                        {'background' in plan && (
+                          <div 
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{ backgroundImage: `url(${plan.background})` }}
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        
+                        <div className="relative z-10 p-5 h-full flex flex-col">
+                          <div className="flex items-start justify-between mb-auto">
+                            <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                            {isPopular && (
+                              <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full font-medium">
+                                Populär
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="mt-auto">
+                            <div className="flex items-baseline gap-1 mb-1">
+                              <span className="text-3xl font-bold text-white">{displayPrice}</span>
+                              <span className="text-sm text-white/70">kr</span>
+                              <span className="text-sm text-white/70">/månad</span>
+                            </div>
+                            <p className="text-sm text-white/80 mb-4">
+                              Få full tillgång till magisk annonsbild-generering.
+                            </p>
+                            
+                            <div className="bg-white/10 backdrop-blur-sm rounded-full py-2 px-4 text-center">
+                              <span className="text-sm font-medium text-white">Skaffa nu</span>
+                            </div>
+                            
+                            <div className="mt-4 pt-3 border-t border-white/20">
+                              <p className="text-xs text-white/60 mb-2">Detta ingår</p>
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-2 text-xs text-white/90">
+                                  <Check className="w-3 h-3" />
+                                  <span>{plan.credits} bilder</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-white/90">
+                                  <Check className="w-3 h-3" />
+                                  <span>Brand kit</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-white/90">
+                                  <Check className="w-3 h-3" />
+                                  <span>Support</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                        
+                        {isLoading && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 animate-spin text-white" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* Mobile: Dropdown accordion */
+                <div className="space-y-2 mb-4">
+                  {planKeys.map((key) => {
+                    const plan = PRICING_PLANS[key];
+                    const isPopular = 'popular' in plan && plan.popular;
+                    const isLoading = loadingTier === key;
+                    const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
+                    const isExpanded = expandedPlan === key;
 
-              {/* CTA Button */}
-              <Button
-                onClick={() => handleSelectPlan('blocketkungen')}
-                disabled={loadingTier === 'blocketkungen'}
-                className="w-full h-12 rounded-xl text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-              >
-                {loadingTier === 'blocketkungen' ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    Börja sälja snabbare
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
+                    return (
+                      <div
+                        key={key}
+                        className={`rounded-xl overflow-hidden transition-all ${
+                          isPopular ? 'ring-2 ring-primary/50' : ''
+                        }`}
+                      >
+                        {/* Header - always visible */}
+                        <button
+                          onClick={() => setExpandedPlan(isExpanded ? null : key)}
+                          className="w-full relative overflow-hidden"
+                        >
+                          {'background' in plan && (
+                            <div 
+                              className="absolute inset-0 bg-cover bg-center"
+                              style={{ backgroundImage: `url(${plan.background})` }}
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/40" />
+                          
+                          <div className="relative z-10 p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="text-base font-semibold text-white text-left">{plan.name}</h3>
+                                  {isPopular && (
+                                    <span className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded-full">
+                                      Populär
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-white/70 text-left">{plan.tagline}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <span className="text-lg font-bold text-white">{displayPrice} kr</span>
+                                <span className="text-xs text-white/70">/mån</span>
+                              </div>
+                              <ChevronDown className={`w-5 h-5 text-white/70 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                          </div>
+                        </button>
+                        
+                        {/* Expanded content */}
+                        {isExpanded && (
+                          <div className="bg-muted/50 p-4 space-y-3">
+                            <p className="text-sm text-muted-foreground">
+                              Få full tillgång till magisk annonsbild-generering.
+                            </p>
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2 text-sm">
+                                <Check className="w-4 h-4 text-primary" />
+                                <span>{plan.credits} bilder/månad</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Check className="w-4 h-4 text-primary" />
+                                <span>Brand kit</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Check className="w-4 h-4 text-primary" />
+                                <span>Support</span>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => handleSelectPlan(key)}
+                              disabled={isLoading}
+                              className="w-full"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                'Skaffa nu'
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* One-time purchase - expandable */}

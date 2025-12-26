@@ -115,7 +115,7 @@ export const ImageUploader = ({
             {isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
           </h3>
           <p className="text-sm text-muted-foreground mb-2">
-            eller klicka för att välja filer
+            Eller ta bilder direkt
           </p>
           <p className="text-xs text-muted-foreground">
             Max 50 bilder • PNG, JPG, JPEG, WEBP
