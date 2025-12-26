@@ -157,7 +157,7 @@ export const DemoPaywall = () => {
 
   return (
     <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
-      <DialogContent className="p-0 gap-0 max-w-4xl overflow-hidden border-0 bg-transparent shadow-none">
+      <DialogContent className="p-0 gap-0 max-w-4xl max-h-[90vh] overflow-y-auto border-0 bg-transparent shadow-none">
         {/* Main card */}
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
           <div className="relative z-10">
@@ -214,7 +214,7 @@ export const DemoPaywall = () => {
                         key={key}
                         onClick={() => !isLoading && handleSelectPlan(key)}
                         disabled={isLoading}
-                        className={`relative rounded-2xl overflow-hidden transition-all text-left h-64 ${
+                        className={`relative rounded-2xl overflow-hidden transition-all text-left min-h-[320px] ${
                           isPopular 
                             ? 'ring-2 ring-white/30 scale-[1.02]' 
                             : 'hover:ring-1 hover:ring-white/20'
@@ -227,10 +227,10 @@ export const DemoPaywall = () => {
                             style={{ backgroundImage: `url(${plan.background})` }}
                           />
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                         
                         <div className="relative z-10 p-5 h-full flex flex-col">
-                          <div className="flex items-start justify-between mb-auto">
+                          <div className="flex items-start justify-between">
                             <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
                             {isPopular && (
                               <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full font-medium">
@@ -239,33 +239,33 @@ export const DemoPaywall = () => {
                             )}
                           </div>
                           
-                          <div className="mt-auto">
+                          <div className="flex-1 flex flex-col justify-end">
                             <div className="flex items-baseline gap-1 mb-1">
                               <span className="text-3xl font-bold text-white">{displayPrice}</span>
                               <span className="text-sm text-white/70">kr</span>
                               <span className="text-sm text-white/70">/månad</span>
                             </div>
-                            <p className="text-sm text-white/80 mb-4">
+                            <p className="text-sm text-white/80 mb-3">
                               Få full tillgång till magisk annonsbild-generering.
                             </p>
                             
-                            <div className="bg-white/10 backdrop-blur-sm rounded-full py-2 px-4 text-center">
+                            <div className="bg-white/10 backdrop-blur-sm rounded-full py-2.5 px-4 text-center mb-4">
                               <span className="text-sm font-medium text-white">Skaffa nu</span>
                             </div>
                             
-                            <div className="mt-4 pt-3 border-t border-white/20">
+                            <div className="pt-3 border-t border-white/20">
                               <p className="text-xs text-white/60 mb-2">Detta ingår</p>
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-2 text-xs text-white/90">
-                                  <Check className="w-3 h-3" />
-                                  <span>{plan.credits} bilder</span>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm text-white/90">
+                                  <Check className="w-4 h-4 flex-shrink-0" />
+                                  <span>{plan.credits} bilder/månad</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-white/90">
-                                  <Check className="w-3 h-3" />
+                                <div className="flex items-center gap-2 text-sm text-white/90">
+                                  <Check className="w-4 h-4 flex-shrink-0" />
                                   <span>Brand kit</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-white/90">
-                                  <Check className="w-3 h-3" />
+                                <div className="flex items-center gap-2 text-sm text-white/90">
+                                  <Check className="w-4 h-4 flex-shrink-0" />
                                   <span>Support</span>
                                 </div>
                               </div>

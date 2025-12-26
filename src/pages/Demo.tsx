@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DemoSceneSelector } from '@/components/DemoSceneSelector';
 import { DemoPaywall } from '@/components/DemoPaywall';
+import { DemoSignupModal } from '@/components/DemoSignupModal';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { UploadedImage, SceneMetadata, CarAdjustments, ExportSettings } from '@/types/scene';
 import { toast } from 'sonner';
@@ -24,11 +25,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useTheme } from 'next-themes';
+import { useAuth } from '@/contexts/AuthContext';
 
 const FRAMER_LANDING_URL = 'https://olive-buttons-692436.framer.app/#hero';
 
 const DemoContent = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { generationsUsed, maxFreeGenerations, canGenerate, incrementGenerations, triggerPaywall, setShowPaywall } = useDemo();
   const { theme, setTheme } = useTheme();
   
@@ -53,6 +56,9 @@ const DemoContent = () => {
   const [leadEmail, setLeadEmail] = useState('');
   const [pendingDownloadUrl, setPendingDownloadUrl] = useState<string | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  
+  // Signup modal state (for requiring account before action)
+  const [showSignupModal, setShowSignupModal] = useState(false);
   
   // Editing states
   const [editingImage, setEditingImage] = useState<{
@@ -99,9 +105,10 @@ const DemoContent = () => {
     }
   }, [selectedScene]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open: openFilePicker } = useDropzone({
     accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.webp'] },
     maxFiles: 5,
+    noClick: true, // Disable click - we'll handle it manually
     onDrop: (acceptedFiles) => {
       const newImages: UploadedImage[] = acceptedFiles.map(file => ({
         id: `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -113,6 +120,15 @@ const DemoContent = () => {
       setUploadedImages(prev => [...prev, ...newImages]);
     }
   });
+
+  // Handle click on dropzone - require signup if not logged in
+  const handleDropzoneClick = () => {
+    if (!user) {
+      setShowSignupModal(true);
+    } else {
+      openFilePicker();
+    }
+  };
 
   const handleRemoveImage = (id: string) => {
     setUploadedImages(prev => prev.filter(img => img.id !== id));
@@ -382,12 +398,14 @@ const DemoContent = () => {
         {/* Step 1: Upload */}
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">1</div>
-            <h2 className="text-lg font-semibold text-foreground">Ladda upp bilder</h2>
+            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <span className="not-italic text-primary font-sans text-base font-medium">1</span>
+            </div>
+            <h2 className="text-lg font-medium text-foreground">Ladda upp bilder</h2>
           </div>
           
           {/* Dropzone - matching main app border style */}
-          <Card {...getRootProps()} className="cursor-pointer hover:border-primary/80 transition-colors">
+          <Card {...getRootProps()} onClick={handleDropzoneClick} className="cursor-pointer hover:border-primary/80 transition-colors">
             <input {...getInputProps()} />
             <div className="p-6 text-center shadow-none border-primary border border-dashed">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
@@ -397,7 +415,7 @@ const DemoContent = () => {
                 {isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
               </h3>
               <p className="text-sm text-muted-foreground mb-2">
-                eller klicka för att välja filer
+                Eller ta bilder direkt
               </p>
               <p className="text-xs text-muted-foreground">
                 Max 5 bilder • PNG, JPG, JPEG, WEBP
@@ -524,8 +542,10 @@ const DemoContent = () => {
         {/* Step 2: Select background */}
         <Card id="demo-scene-section" className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">2</div>
-            <h2 className="text-lg font-semibold text-foreground">Välj bakgrund</h2>
+            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <span className="not-italic text-primary font-sans text-base font-medium">2</span>
+            </div>
+            <h2 className="text-lg font-medium text-foreground">Välj bakgrund</h2>
             <Popover>
               <PopoverTrigger asChild>
                 <button type="button" className="text-muted-foreground hover:text-foreground transition-colors p-1">
@@ -563,9 +583,11 @@ const DemoContent = () => {
           <div className="relative p-4 space-y-4">
             {/* Header */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">3</div>
+              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                <span className="not-italic text-primary font-sans text-base font-medium">3</span>
+              </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground mb-0.5">
+                <h3 className="text-lg font-medium text-foreground mb-0.5">
                   AI-Generering
                 </h3>
                 <p className="text-xs text-foreground/70">
@@ -704,8 +726,10 @@ const DemoContent = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">4</div>
-                  <h2 className="text-lg font-semibold text-foreground">Redigera och ladda ner</h2>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                    <span className="not-italic text-primary font-sans text-base font-medium">4</span>
+                  </div>
+                  <h2 className="text-lg font-medium text-foreground">Redigera och ladda ner</h2>
                 </div>
               </div>
 
@@ -827,8 +851,8 @@ const DemoContent = () => {
           
           <div className="relative p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center border border-primary/30">
-                <span className="text-primary font-sans text-base font-medium">5</span>
+              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                <span className="not-italic text-primary font-sans text-base font-medium">5</span>
               </div>
               <div>
                 <h2 className="text-foreground font-sans text-lg font-medium">Logo Design</h2>
@@ -1081,6 +1105,16 @@ const DemoContent = () => {
           toast.success('Brand kit applicerat på alla bilder');
         }}
         defaultLogo={autoshotLogo}
+      />
+
+      {/* Signup Modal - shown when user tries to upload without account */}
+      <DemoSignupModal
+        open={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSuccess={() => {
+          toast.success('Välkommen! Du har 3 gratis bilder.');
+          openFilePicker();
+        }}
       />
     </div>
   );
