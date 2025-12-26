@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Check, Loader2, Star, User, Sparkles, ImageIcon } from 'lucide-react';
+import { Check, Loader2, Star, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import auraGradient1 from '@/assets/aura-gradient-1.jpg';
@@ -108,10 +108,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card" />
             
             <div className="relative z-10 p-6 pb-8 text-center">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                <Sparkles className="w-7 h-7 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-white mb-1">
+              <h2 className="text-2xl font-bold text-white mb-2">
                 Skapa gratis konto
               </h2>
               <p className="text-sm text-white/80">
