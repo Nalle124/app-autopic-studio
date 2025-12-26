@@ -67,8 +67,8 @@ export const BrandKitDesignerSimplified = ({
     if (user?.id && open) {
       loadProfileLogos();
       loadSavedKits();
-    } else if (!user && open && defaultLogo && !design.logoUrl) {
-      // Demo mode: auto-apply default logo if no user and defaultLogo provided
+    } else if (open && defaultLogo && !design.logoUrl) {
+      // Demo mode: auto-apply default logo if defaultLogo provided and no logo set
       onDesignChange({
         ...design,
         enabled: true,
