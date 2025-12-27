@@ -32,7 +32,7 @@ const FRAMER_LANDING_URL = 'https://olive-buttons-692436.framer.app/#hero';
 const DemoContent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { generationsUsed, maxFreeGenerations, canGenerate, incrementGenerations, triggerPaywall, setShowPaywall } = useDemo();
+  const { credits, canGenerate, decrementCredits, triggerPaywall, setShowPaywall, refetchCredits } = useDemo();
   const { theme, setTheme } = useTheme();
   
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
@@ -185,12 +185,25 @@ const DemoContent = () => {
       return;
     }
 
+    // Require login to generate
+    if (!user) {
+      setShowSignupModal(true);
+      return;
+    }
+
     if (!canGenerate) {
       triggerPaywall('limit');
       return;
     }
 
     setIsProcessing(true);
+    
+    // Set ALL images to processing status immediately for better UX
+    setUploadedImages(prev => prev.map(img => 
+      img.status === 'pending' || img.status === 'completed' || img.status === 'failed'
+        ? { ...img, status: 'processing' as const }
+        : img
+    ));
     
     setTimeout(() => {
       const section = document.getElementById('demo-results-section');
@@ -206,15 +219,15 @@ const DemoContent = () => {
       let successCount = 0;
       
       for (const image of uploadedImages) {
-        if (generationsUsed + successCount >= maxFreeGenerations) {
-          toast.info(`Gränsen nådd! Max ${maxFreeGenerations} gratis bilder.`);
+        // Check if user has credits left
+        if (credits - successCount <= 0) {
+          toast.info('Inga credits kvar. Köp fler för att fortsätta.');
+          triggerPaywall('limit');
           break;
         }
 
         try {
-          setUploadedImages(prev => prev.map(img => 
-            img.id === image.id ? { ...img, status: 'processing' } : img
-          ));
+          // Status already set to processing above
 
           const formData = new FormData();
           
@@ -254,17 +267,22 @@ const DemoContent = () => {
           const result = await response.json();
 
           if (result.success) {
-            const watermarkedUrl = await addWatermark(result.finalUrl);
+            // For logged in users, don't add watermark and decrement credits
+            let finalImageUrl = result.finalUrl;
+            if (user) {
+              await decrementCredits();
+            } else {
+              finalImageUrl = await addWatermark(result.finalUrl);
+            }
             
             successCount++;
-            incrementGenerations();
             setLoadingImages(prev => new Set([...prev, image.id]));
             
             setUploadedImages(prev => prev.map(img => 
               img.id === image.id ? {
                 ...img,
                 status: 'completed',
-                finalUrl: watermarkedUrl,
+                finalUrl: finalImageUrl,
                 sceneId: selectedScene.id,
                 carAdjustments: { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }
               } : img
@@ -355,7 +373,7 @@ const DemoContent = () => {
   const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
   const processingImages = uploadedImages.filter(img => img.status === 'processing');
   const galleryImages = [...completedImages, ...processingImages];
-  const remainingGenerations = maxFreeGenerations - generationsUsed;
+  const remainingCredits = credits;
 
   return (
     <div className="min-h-screen bg-background">
@@ -382,7 +400,7 @@ const DemoContent = () => {
               )}
             </button>
             <span className="text-sm text-muted-foreground hidden sm:block">
-              {generationsUsed}/{maxFreeGenerations} bilder
+              {credits} credits
             </span>
             <Button 
               onClick={handleCreateAccount}
@@ -691,7 +709,7 @@ const DemoContent = () => {
                 )}
                 
                 <span className="relative z-10">
-                  {isProcessing ? 'Genererar...' : `Starta AI-generering (${remainingGenerations} kvar)`}
+                  {isProcessing ? 'Genererar...' : `Starta AI-generering (${remainingCredits} kvar)`}
                 </span>
               </Button>
             </div>
@@ -1111,9 +1129,10 @@ const DemoContent = () => {
       <DemoSignupModal
         open={showSignupModal}
         onClose={() => setShowSignupModal(false)}
-        onSuccess={() => {
+        onSuccess={async () => {
+          // Refetch credits after signup
+          await refetchCredits();
           toast.success('Välkommen! Du har 3 gratis bilder.');
-          openFilePicker();
         }}
       />
     </div>
