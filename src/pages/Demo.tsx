@@ -139,7 +139,7 @@ const DemoContent = () => {
   };
 
   const handleCreateAccount = () => {
-    triggerPaywall('signup');
+    setShowSignupModal(true);
   };
 
   // Add watermark to image
@@ -399,9 +399,11 @@ const DemoContent = () => {
                 <Moon className="w-4 h-4 text-foreground" />
               )}
             </button>
-            <span className="text-sm text-muted-foreground hidden sm:block">
-              {credits} credits
-            </span>
+            {user && credits > 0 && (
+              <span className="text-sm text-muted-foreground hidden sm:block">
+                {credits} credits
+              </span>
+            )}
             <Button 
               onClick={handleCreateAccount}
               className="bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] rounded-full"

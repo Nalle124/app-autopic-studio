@@ -171,14 +171,16 @@ export const DemoPaywall = () => {
               </p>
             </div>
 
-            {/* Benefits - desktop: 2x2 grid, mobile: column */}
+            {/* Benefits - 2x2 grid on desktop, column on mobile */}
             <div className="px-6 pb-6">
               {!isMobile ? (
-                <div className="grid grid-cols-2 gap-x-8 gap-y-3 max-w-xl mx-auto">
+                <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
                   {benefits.map((benefit, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-foreground/80">{benefit}</span>
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Check className="w-3 h-3 text-primary" />
+                      </div>
+                      <span className="text-sm text-foreground/80 leading-tight">{benefit}</span>
                     </div>
                   ))}
                 </div>
@@ -186,7 +188,9 @@ export const DemoPaywall = () => {
                 <div className="flex flex-col gap-3 pb-4">
                   {benefits.map((benefit, i) => (
                     <div key={i} className="flex items-start gap-3">
-                      <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Check className="w-3 h-3 text-primary" />
+                      </div>
                       <span className="text-sm text-foreground/80">{benefit}</span>
                     </div>
                   ))}
