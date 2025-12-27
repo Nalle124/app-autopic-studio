@@ -239,7 +239,7 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
       <DialogContent className="max-w-6xl max-h-[96vh] flex flex-col p-2 sm:p-4 overflow-hidden">
         {/* Header with undo */}
         <div className="flex items-center justify-between pb-2">
-          <h2 className="font-heading text-xl italic text-center flex-1">Beskär</h2>
+          <h2 className="font-sans text-xl font-medium text-center flex-1">Beskär</h2>
           {history.length > 0 && (
             <Button 
               variant="ghost" 
