@@ -205,6 +205,8 @@ export const DemoSceneSelector = ({
             alt={scene.name}
             className={`w-full h-full object-cover transition-transform duration-500 ${isLocked ? '' : 'group-hover:scale-110'}`}
             loading="lazy"
+            decoding="async"
+            fetchPriority="low"
           />
           
           {/* Selected indicator */}
