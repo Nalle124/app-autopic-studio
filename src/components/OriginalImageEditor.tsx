@@ -207,7 +207,7 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-2 sm:p-4">
         {/* Header with undo */}
         <div className="flex items-center justify-between pb-2">
-          <h2 className="font-heading text-xl italic text-center flex-1">Redigera</h2>
+          <h2 className="font-sans text-xl font-medium text-center flex-1">Redigera</h2>
           {canUndo && (
             <Button 
               variant="ghost" 
@@ -237,7 +237,7 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
               </Button>
             )}
             
-            <div className="flex-1 relative bg-muted rounded-lg overflow-hidden max-h-[50vh] lg:max-h-[60vh]">
+            <div className="flex-1 relative bg-muted rounded-lg overflow-hidden max-h-[50vh] lg:max-h-[70vh]">
               <img
                 src={previewUrl}
                 alt="Preview"

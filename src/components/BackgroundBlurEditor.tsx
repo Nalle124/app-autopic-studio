@@ -416,7 +416,7 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
       <DialogContent className="max-w-5xl max-h-[95vh] p-2 sm:p-4 overflow-y-auto">
         {/* Header with undo */}
         <div className="flex items-center justify-between pb-2">
-          <h2 className="font-heading text-xl italic text-center flex-1">Bakgrundsblur</h2>
+          <h2 className="font-sans text-xl font-medium text-center flex-1">Bakgrundsblur</h2>
           {canUndo && (
             <Button 
               variant="ghost" 

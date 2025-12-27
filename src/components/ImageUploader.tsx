@@ -152,7 +152,7 @@ export const ImageUploader = ({
                     value={registrationNumber || ''} 
                     onChange={e => onRegistrationNumberChange(e.target.value.toUpperCase())} 
                     className="relative text-sm px-3 py-1.5 border border-transparent rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none w-full" 
-                    maxLength={10} 
+                    maxLength={15} 
                   />
                 </div>
               )}

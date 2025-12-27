@@ -22,7 +22,7 @@ export const ExportPanel = ({
   const [settings, setSettings] = useState<ExportSettings>({
     format: 'jpg',
     aspectRatio: 'original',
-    quality: 90,
+    quality: 100,
     includeTransparency: false
   });
   const [settingsOpen, setSettingsOpen] = useState(false);

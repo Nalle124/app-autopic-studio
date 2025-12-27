@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Sun, Moon, Settings2, ChevronDown, Info, Image as ImageIcon, Mail, Palette } from 'lucide-react';
+import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Sun, Moon, Settings2, ChevronDown, Info, Image as ImageIcon, Mail, Palette, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
@@ -47,7 +47,7 @@ const DemoContent = () => {
   const [exportSettings, setExportSettings] = useState<ExportSettings>({
     format: 'jpg',
     aspectRatio: 'original',
-    quality: 90,
+    quality: 100,
     includeTransparency: false
   });
   
@@ -205,15 +205,20 @@ const DemoContent = () => {
         : img
     ));
     
-    setTimeout(() => {
+    // Scroll to results section once it appears (with retry for first generation)
+    const scrollToResults = () => {
       const section = document.getElementById('demo-results-section');
       if (section) {
         const headerOffset = 100;
         const elementPosition = section.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
         window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+      } else {
+        // Retry after a short delay if section doesn't exist yet (first generation)
+        setTimeout(scrollToResults, 200);
       }
-    }, 100);
+    };
+    setTimeout(scrollToResults, 100);
 
     try {
       let successCount = 0;
@@ -370,6 +375,97 @@ const DemoContent = () => {
     setEditingImage(null);
   };
 
+  const handleBlurApplyToAll = (blurredUrl: string) => {
+    // Apply the same blur effect URL to all completed images
+    setUploadedImages(prev => prev.map(img => 
+      img.status === 'completed' && img.finalUrl 
+        ? { ...img, finalUrl: blurredUrl } 
+        : img
+    ));
+  };
+
+  // Retry single failed image
+  const handleRetryImage = async (imageId: string) => {
+    const imageToRetry = uploadedImages.find(img => img.id === imageId);
+    if (!imageToRetry || !selectedScene) return;
+
+    if (!canGenerate) {
+      triggerPaywall('limit');
+      return;
+    }
+
+    // Set to processing
+    setUploadedImages(prev => prev.map(img => 
+      img.id === imageId ? { ...img, status: 'processing' as const } : img
+    ));
+
+    try {
+      const formData = new FormData();
+      
+      if (imageToRetry.croppedUrl) {
+        const response = await fetch(imageToRetry.croppedUrl);
+        const blob = await response.blob();
+        formData.append('image', blob, imageToRetry.file.name);
+      } else {
+        formData.append('image', imageToRetry.file);
+      }
+      
+      formData.append('scene', JSON.stringify(selectedScene));
+      const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') 
+        ? selectedScene.fullResUrl 
+        : `${window.location.origin}${selectedScene.fullResUrl}`;
+      formData.append('backgroundUrl', backgroundUrl);
+      formData.append('orientation', aspectRatio);
+      formData.append('relight', relightEnabled ? 'true' : 'false');
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-demo-image`, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        let finalImageUrl = result.finalUrl;
+        if (user) {
+          await decrementCredits();
+        } else {
+          finalImageUrl = await addWatermark(result.finalUrl);
+        }
+        
+        setLoadingImages(prev => new Set([...prev, imageId]));
+        setUploadedImages(prev => prev.map(img => 
+          img.id === imageId ? {
+            ...img,
+            status: 'completed',
+            finalUrl: finalImageUrl,
+            sceneId: selectedScene.id,
+            carAdjustments: { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }
+          } : img
+        ));
+        toast.success('Bild genererad!');
+      } else {
+        throw new Error(result.error || 'Processing failed');
+      }
+    } catch (error: any) {
+      console.error('Error retrying image:', error);
+      toast.error(`Fel: ${error.message || 'Okänt fel'}`);
+      setUploadedImages(prev => prev.map(img => 
+        img.id === imageId ? { ...img, status: 'failed' } : img
+      ));
+    }
+  };
+
   const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
   const processingImages = uploadedImages.filter(img => img.status === 'processing');
   const galleryImages = [...completedImages, ...processingImages];
@@ -518,10 +614,31 @@ const DemoContent = () => {
                           <span className="text-xs px-2 py-1 rounded-full bg-green-500/90 text-white font-medium">Klar</span>
                         ) : img.status === 'processing' ? (
                           <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/90 text-white font-medium animate-pulse">Bearbetar...</span>
+                        ) : img.status === 'failed' ? (
+                          <span className="text-xs px-2 py-1 rounded-full bg-red-500/90 text-white font-medium">Misslyckad</span>
                         ) : (
                           <span className="text-xs px-2 py-1 rounded-full bg-muted/90 text-foreground font-medium">Uppladdad</span>
                         )}
                       </div>
+                      
+                      {/* Retry button for failed images */}
+                      {img.status === 'failed' && (
+                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+                          <span className="text-xs text-white/80">Generering misslyckades</span>
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRetryImage(img.id);
+                            }}
+                            className="gap-1"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Testa igen
+                          </Button>
+                        </div>
+                      )}
                       
                       {/* Hover overlay with edit buttons - same as main app */}
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -1035,6 +1152,7 @@ const DemoContent = () => {
           open={true}
           onClose={() => setEditingImage(null)}
           onSave={handleBlurSave}
+          onApplyToAll={handleBlurApplyToAll}
         />
       )}
 
