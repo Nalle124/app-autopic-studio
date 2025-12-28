@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface DemoContextType {
   generationsUsed: number;
@@ -14,9 +15,12 @@ interface DemoContextType {
   setShowPaywall: (show: boolean) => void;
   paywallTrigger: string;
   triggerPaywall: (trigger: string) => void;
+  isSubscribed: boolean;
+  subscriptionLoading: boolean;
+  currentProductId: string | null;
 }
 
-export type PaywallTriggerType = 'logo' | 'gallery' | 'limit' | 'premium-scene' | 'signup' | 'default';
+export type PaywallTriggerType = 'logo' | 'gallery' | 'limit' | 'premium-scene' | 'signup' | 'default' | 'subscriber-limit';
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
@@ -24,6 +28,7 @@ const MAX_FREE_GENERATIONS = 3; // 3 free credits for new accounts
 
 export const DemoProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const { subscribed, productId, loading: subscriptionLoading } = useSubscription();
   const [credits, setCredits] = useState(0);
   const [creditsLoading, setCreditsLoading] = useState(true);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -116,7 +121,10 @@ export const DemoProvider = ({ children }: { children: ReactNode }) => {
       showPaywall,
       setShowPaywall,
       paywallTrigger,
-      triggerPaywall
+      triggerPaywall,
+      isSubscribed: subscribed,
+      subscriptionLoading,
+      currentProductId: productId
     }}>
       {children}
     </DemoContext.Provider>

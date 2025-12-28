@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserCredits } from "@/hooks/useUserCredits";
+import { useSubscription } from "@/hooks/useSubscription";
 import autoshotLogo from "@/assets/autoshot-logo.png";
 
 interface HeaderProps {
@@ -22,6 +23,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const { credits, loading: creditsLoading } = useUserCredits();
+  const { subscribed, loading: subscriptionLoading } = useSubscription();
 
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
@@ -45,19 +47,21 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
           <nav className="flex items-center gap-4">
             {user ? (
               <>
-                {/* Upgrade button - always visible for logged in users */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onUpgradeClick}
-                  className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                >
-                  <Crown className="w-4 h-4" />
-                  <span className="hidden sm:inline">Skaffa Pro</span>
-                </Button>
+                {/* Upgrade button - only show for non-subscribers */}
+                {!subscriptionLoading && !subscribed && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onUpgradeClick}
+                    className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                  >
+                    <Crown className="w-4 h-4" />
+                    <span className="hidden sm:inline">Skaffa Pro</span>
+                  </Button>
+                )}
 
-                {/* Credits Display - only show if user has credits */}
-                {!creditsLoading && credits > 0 && (
+                {/* Credits Display - only show for non-subscribers if user has credits */}
+                {!subscriptionLoading && !subscribed && !creditsLoading && credits > 0 && (
                   <button
                     onClick={() => navigate('/profil')}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"

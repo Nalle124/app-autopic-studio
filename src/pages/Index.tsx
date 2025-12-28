@@ -38,7 +38,7 @@ function IndexContent() {
     user,
     loading
   } = useAuth();
-  const { credits, canGenerate, triggerPaywall, refetchCredits } = useDemo();
+  const { credits, canGenerate, triggerPaywall, refetchCredits, isSubscribed, subscriptionLoading } = useDemo();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   // Initialize uploaded images from localStorage for persistence
@@ -184,6 +184,13 @@ function IndexContent() {
   const handleExport = async (settings: ExportSettings) => {
     if (!selectedScene || uploadedImages.length === 0) {
       toast.error('Välj en scen och ladda upp bilder först');
+      return;
+    }
+    
+    // Check if user has credits
+    if (!canGenerate) {
+      // Show different paywall based on subscription status
+      triggerPaywall(isSubscribed ? 'subscriber-limit' : 'limit');
       return;
     }
     try {
@@ -593,19 +600,21 @@ function IndexContent() {
           </button>
           
           <div className="flex items-center gap-3">
-            {/* Skaffa Pro button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => triggerPaywall('limit')}
-              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-            >
-              <Crown className="w-4 h-4" />
-              <span className="hidden sm:inline">Skaffa Pro</span>
-            </Button>
+            {/* Skaffa Pro button - only for non-subscribers */}
+            {!subscriptionLoading && !isSubscribed && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => triggerPaywall('limit')}
+                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Crown className="w-4 h-4" />
+                <span className="hidden sm:inline">Skaffa Pro</span>
+              </Button>
+            )}
 
-            {/* Credits Display - only show if user has credits */}
-            {credits > 0 && (
+            {/* Credits Display - only for non-subscribers with credits */}
+            {!subscriptionLoading && !isSubscribed && credits > 0 && (
               <button
                 onClick={() => navigate('/profil')}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
