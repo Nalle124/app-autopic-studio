@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Crown, Coins } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Coins } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -614,8 +614,7 @@ function IndexContent() {
                 onClick={() => triggerPaywall('limit')}
                 className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
               >
-                <Crown className="w-4 h-4" />
-                <span className="hidden sm:inline">Skaffa Pro</span>
+                <span>Skaffa Pro</span>
               </Button>
             )}
 
