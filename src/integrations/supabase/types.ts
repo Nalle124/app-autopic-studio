@@ -370,6 +370,7 @@ export type Database = {
         Args: { amount: number; description: string; target_user_id: string }
         Returns: number
       }
+      admin_delete_user: { Args: { target_user_id: string }; Returns: boolean }
       admin_get_all_users: {
         Args: never
         Returns: {
