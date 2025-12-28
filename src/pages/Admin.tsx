@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
-import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images, Coins, Plus, Minus } from 'lucide-react';
+import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images, Coins, Plus, Minus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Table,
@@ -57,6 +57,10 @@ const Admin = () => {
   const [creditAmount, setCreditAmount] = useState('');
   const [creditDescription, setCreditDescription] = useState('');
   const [adjusting, setAdjusting] = useState(false);
+  
+  // Delete user dialog
+  const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     // Wait for both auth and admin check to complete
@@ -127,6 +131,28 @@ const Admin = () => {
       toast.error('Kunde inte justera credits');
     } finally {
       setAdjusting(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc('admin_delete_user', {
+        target_user_id: userToDelete.id
+      });
+
+      if (error) throw error;
+
+      toast.success(`Användare ${userToDelete.email} raderad`);
+      setUserToDelete(null);
+      loadData();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(error.message || 'Kunde inte radera användare');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -275,14 +301,25 @@ const Admin = () => {
                           {new Date(user.created_at).toLocaleDateString('sv-SE')}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedUser(user)}
-                          >
-                            <Coins className="h-4 w-4 mr-1" />
-                            Justera
-                          </Button>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedUser(user)}
+                            >
+                              <Coins className="h-4 w-4 mr-1" />
+                              Justera
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setUserToDelete(user)}
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              disabled={user.roles?.includes('admin')}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -343,6 +380,45 @@ const Admin = () => {
             >
               <Plus className="h-4 w-4 mr-1" />
               Lägg till credits
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Radera användare</DialogTitle>
+            <DialogDescription>
+              Är du säker på att du vill radera användaren <strong>{userToDelete?.email}</strong>?
+              <br /><br />
+              Detta kommer permanent radera:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Användarens konto</li>
+                <li>Profil och företagsinformation</li>
+                <li>Alla credits ({userToDelete?.credits || 0} st)</li>
+                <li>Alla genererade bilder</li>
+              </ul>
+              <br />
+              <strong className="text-destructive">Denna åtgärd kan inte ångras.</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setUserToDelete(null)}
+              disabled={deleting}
+            >
+              Avbryt
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={deleting}
+            >
+              {deleting ? 'Raderar...' : 'Radera användare'}
             </Button>
           </DialogFooter>
         </DialogContent>
