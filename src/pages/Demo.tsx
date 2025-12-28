@@ -31,9 +31,16 @@ const FRAMER_LANDING_URL = 'https://olive-buttons-692436.framer.app/#hero';
 
 const DemoContent = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { credits, canGenerate, decrementCredits, triggerPaywall, setShowPaywall, refetchCredits } = useDemo();
   const { theme, setTheme } = useTheme();
+  
+  // Redirect logged-in users to the main app
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/');
+    }
+  }, [user, loading, navigate]);
   
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
@@ -135,7 +142,8 @@ const DemoContent = () => {
   };
 
   const handleLogoClick = () => {
-    setShowBrandKit(true);
+    // In demo, show signup modal instead of brand kit
+    setShowSignupModal(true);
   };
 
   const handleCreateAccount = () => {
@@ -495,16 +503,11 @@ const DemoContent = () => {
                 <Moon className="w-4 h-4 text-foreground" />
               )}
             </button>
-            {user && credits > 0 && (
-              <span className="text-sm text-muted-foreground hidden sm:block">
-                {credits} credits
-              </span>
-            )}
             <Button 
               onClick={handleCreateAccount}
               className="bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] rounded-full"
             >
-              <span>Skapa konto</span>
+              <span>Skapa gratis konto</span>
             </Button>
           </div>
         </div>
@@ -813,11 +816,8 @@ const DemoContent = () => {
             <div className="flex justify-center">
               <Button 
                 onClick={() => {
-                  if (!canGenerate) {
-                    triggerPaywall('limit');
-                    return;
-                  }
-                  generateImages();
+                  // Always show signup for demo (not logged in)
+                  setShowSignupModal(true);
                 }} 
                 disabled={isProcessing || uploadedImages.length === 0 || !selectedScene} 
                 className={`h-10 px-8 text-sm font-bold bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/40 hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
@@ -828,20 +828,18 @@ const DemoContent = () => {
                 )}
                 
                 <span className="relative z-10">
-                  {isProcessing ? 'Genererar...' : `Starta AI-generering (${remainingCredits} kvar)`}
+                  {isProcessing ? 'Genererar...' : 'Starta AI-generering'}
                 </span>
               </Button>
             </div>
               
-            {/* Limit reached message */}
-            {!canGenerate && (
-              <p className="text-sm text-center text-muted-foreground">
-                Du har använt alla gratis genereringar. 
-                <button onClick={() => triggerPaywall('limit')} className="text-primary ml-1 underline">
-                  Skapa konto för fler
-                </button>
-              </p>
-            )}
+            {/* CTA to create account */}
+            <p className="text-sm text-center text-muted-foreground">
+              <button onClick={handleCreateAccount} className="text-primary underline">
+                Skapa gratis konto
+              </button>
+              {' '}för att generera bilder
+            </p>
           </div>
         </Card>
 
