@@ -89,8 +89,24 @@ const PRICING_PLANS = {
 
 type PlanKey = keyof typeof PRICING_PLANS;
 
+// Map product IDs to plan keys for upgrade suggestions
+const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
+  'prod_SbwMYqcNVj1jXI': 'hobbyhandlaren',
+  'prod_SbwNAXyeqEJJO6': 'blocketkungen',
+  'prod_SbwOuoIRRDZXvC': 'storafisken',
+};
+
+// Get next tier for upgrade
+const getNextTier = (currentProductId: string | null): PlanKey | null => {
+  if (!currentProductId) return 'hobbyhandlaren';
+  const currentPlan = PRODUCT_TO_PLAN[currentProductId];
+  if (currentPlan === 'hobbyhandlaren') return 'blocketkungen';
+  if (currentPlan === 'blocketkungen') return 'storafisken';
+  return null; // Already on highest tier
+};
+
 export const DemoPaywall = () => {
-  const { showPaywall, setShowPaywall } = useDemo();
+  const { showPaywall, setShowPaywall, paywallTrigger, isSubscribed, currentProductId } = useDemo();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
@@ -98,6 +114,10 @@ export const DemoPaywall = () => {
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [oneTimeOpen, setOneTimeOpen] = useState(false);
   const [expandedPlan, setExpandedPlan] = useState<PlanKey | null>(null);
+
+  // Check if this is a subscriber who ran out of credits
+  const isSubscriberLimit = paywallTrigger === 'subscriber-limit' || (isSubscribed && paywallTrigger === 'limit');
+  const nextTier = getNextTier(currentProductId);
 
   // Auto-rotate reviews
   useEffect(() => {
@@ -154,6 +174,82 @@ export const DemoPaywall = () => {
 
   const review = reviews[currentReviewIndex];
   const planKeys = ['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const;
+
+  // Subscriber paywall - simplified view for refill/upgrade
+  if (isSubscriberLimit) {
+    return (
+      <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
+        <DialogContent className="p-0 gap-0 max-w-md border-0 bg-transparent shadow-none">
+          <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
+            <div className="relative z-10">
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4 text-center">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">
+                  Du har slut på credits
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Fyll på eller uppgradera för att fortsätta
+                </p>
+              </div>
+
+              {/* Options */}
+              <div className="px-6 pb-6 space-y-3">
+                {/* Credit pack - always available */}
+                <button
+                  onClick={() => handleSelectPlan('creditPack')}
+                  disabled={loadingTier === 'creditPack'}
+                  className="w-full p-4 rounded-xl bg-muted/50 border border-border hover:border-primary/50 transition-all flex items-center justify-between"
+                >
+                  <div className="text-left">
+                    <p className="font-medium text-foreground">Fyll på 30 bilder</p>
+                    <p className="text-sm text-muted-foreground">Engångsköp</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {loadingTier === 'creditPack' ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    ) : (
+                      <span className="font-bold text-lg">69 kr</span>
+                    )}
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </button>
+
+                {/* Upgrade option - only if not on highest tier */}
+                {nextTier && (
+                  <button
+                    onClick={() => handleSelectPlan(nextTier)}
+                    disabled={loadingTier === nextTier}
+                    className="w-full p-4 rounded-xl bg-primary/10 border border-primary/30 hover:border-primary/50 transition-all flex items-center justify-between"
+                  >
+                    <div className="text-left">
+                      <p className="font-medium text-foreground">Uppgradera till {PRICING_PLANS[nextTier].name}</p>
+                      <p className="text-sm text-muted-foreground">{PRICING_PLANS[nextTier].credits} bilder/månad</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {loadingTier === nextTier ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      ) : (
+                        <span className="font-bold text-lg">{isYearly && 'yearlyPrice' in PRICING_PLANS[nextTier] ? (PRICING_PLANS[nextTier] as typeof PRICING_PLANS['hobbyhandlaren']).yearlyPrice : PRICING_PLANS[nextTier].price} kr/mån</span>
+                      )}
+                      <ArrowRight className="w-4 h-4 text-primary" />
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {/* Close button */}
+              <button
+                onClick={handleClose}
+                className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors border-t border-border"
+              >
+                Stäng
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
