@@ -91,9 +91,10 @@ type PlanKey = keyof typeof PRICING_PLANS;
 
 // Map product IDs to plan keys for upgrade suggestions
 const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
-  'prod_SbwMYqcNVj1jXI': 'hobbyhandlaren',
-  'prod_SbwNAXyeqEJJO6': 'blocketkungen',
-  'prod_SbwOuoIRRDZXvC': 'storafisken',
+  // Current live Stripe product IDs (see src/config/pricing.ts)
+  'prod_TYctfRKGdxjyIo': 'hobbyhandlaren', // 100 credits
+  'prod_TYcu2RNAGGthF9': 'blocketkungen',   // 300 credits
+  'prod_TYcuc2xBrRbgIR': 'storafisken',     // 600 credits
 };
 
 // Tier order for determining available upgrades
@@ -106,7 +107,6 @@ const getAvailableUpgradeTiers = (currentProductId: string | null): PlanKey[] =>
   if (!currentPlan) return TIER_ORDER;
   const currentIndex = TIER_ORDER.indexOf(currentPlan);
   if (currentIndex === -1) return TIER_ORDER;
-  // Return only tiers higher than current
   return TIER_ORDER.slice(currentIndex + 1);
 };
 
@@ -135,8 +135,10 @@ export const DemoPaywall = () => {
   const [oneTimeOpen, setOneTimeOpen] = useState(false);
   const [expandedPlan, setExpandedPlan] = useState<PlanKey | null>(null);
 
-  // Check if this is a subscriber who ran out of credits
+  // Views
   const isSubscriberLimit = paywallTrigger === 'subscriber-limit' || (isSubscribed && paywallTrigger === 'limit');
+  const isProfileBuy = paywallTrigger === 'profile-buy';
+
   const nextTier = getNextTier(currentProductId);
   const onHighestTier = isOnHighestTier(currentProductId);
   const availableUpgradeTiers = getAvailableUpgradeTiers(currentProductId);
@@ -197,8 +199,8 @@ export const DemoPaywall = () => {
   const review = reviews[currentReviewIndex];
   const planKeys = ['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const;
 
-  // Subscriber paywall - simplified view for refill/upgrade
-  if (isSubscriberLimit) {
+  // Subscriber paywall - simplified view for refill/upgrade (and profile buy)
+  if (isSubscriberLimit || isProfileBuy) {
     return (
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
         <DialogContent className="p-0 gap-0 max-w-md border-0 bg-transparent shadow-none">
@@ -207,10 +209,10 @@ export const DemoPaywall = () => {
               {/* Header */}
               <div className="px-6 pt-6 pb-4 text-center">
                 <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">
-                  Du har slut på credits
+                  {isProfileBuy ? 'Fyll på credits' : 'Du har slut på credits'}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Fyll på eller uppgradera för att fortsätta
+                  {isProfileBuy ? 'Välj engångsköp eller uppgradera abonnemang' : 'Fyll på eller uppgradera för att fortsätta'}
                 </p>
               </div>
 
@@ -236,36 +238,44 @@ export const DemoPaywall = () => {
                   </div>
                 </button>
 
-                {/* Upgrade option - only if not on highest tier */}
-                {nextTier && (
-                  <button
-                    onClick={() => handleSelectPlan(nextTier)}
-                    disabled={loadingTier === nextTier}
-                    className="w-full p-4 rounded-xl bg-primary/10 border border-primary/30 hover:border-primary/50 transition-all flex items-center justify-between"
-                  >
-                    <div className="text-left">
-                      <p className="font-medium text-foreground">Uppgradera till {PRICING_PLANS[nextTier].name}</p>
-                      <p className="text-sm text-muted-foreground">{PRICING_PLANS[nextTier].credits} bilder/månad</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {loadingTier === nextTier ? (
-                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                      ) : (
-                        <span className="font-bold text-lg">{isYearly && 'yearlyPrice' in PRICING_PLANS[nextTier] ? (PRICING_PLANS[nextTier] as typeof PRICING_PLANS['hobbyhandlaren']).yearlyPrice : PRICING_PLANS[nextTier].price} kr/mån</span>
-                      )}
-                      <ArrowRight className="w-4 h-4 text-primary" />
-                    </div>
-                  </button>
-                )}
-                
+                {/* Upgrade options - only tiers ABOVE current plan */}
+                {availableUpgradeTiers.length > 0 ? (
+                  <div className="space-y-2">
+                    {availableUpgradeTiers.map((tier) => {
+                      const plan = PRICING_PLANS[tier];
+                      const isLoading = loadingTier === tier;
+                      const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
+
+                      return (
+                        <button
+                          key={tier}
+                          onClick={() => handleSelectPlan(tier)}
+                          disabled={isLoading}
+                          className="w-full p-4 rounded-xl bg-primary/10 border border-primary/30 hover:border-primary/50 transition-all flex items-center justify-between"
+                        >
+                          <div className="text-left">
+                            <p className="font-medium text-foreground">Uppgradera till {plan.name}</p>
+                            <p className="text-sm text-muted-foreground">{plan.credits} bilder/månad</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isLoading ? (
+                              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                            ) : (
+                              <span className="font-bold text-lg">{displayPrice} kr/mån</span>
+                            )}
+                            <ArrowRight className="w-4 h-4 text-primary" />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
                 {/* Contact for highest tier users */}
                 {onHighestTier && (
                   <div className="text-center pt-2 text-sm text-muted-foreground">
                     <p>Behöver du fler credits?</p>
-                    <a 
-                      href="mailto:hej@autoshot.se" 
-                      className="text-primary hover:underline"
-                    >
+                    <a href="mailto:hej@autoshot.se" className="text-primary hover:underline">
                       Kontakta oss för företagsanpassad lösning
                     </a>
                   </div>

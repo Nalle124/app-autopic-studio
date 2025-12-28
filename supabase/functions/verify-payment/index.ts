@@ -90,6 +90,31 @@ serve(async (req) => {
     const creditsToAdd = productId ? PRODUCT_CREDITS[productId] || 0 : 0;
     logStep("Credits to add", { productId, creditsToAdd });
 
+    // Idempotency: don't apply the same Stripe session more than once
+    const sessionMarker = `stripe_session:${sessionId}`;
+    const { data: existingTx, error: existingTxError } = await supabaseClient
+      .from('credit_transactions')
+      .select('id')
+      .eq('user_id', user.id)
+      .like('description', `%${sessionMarker}%`)
+      .limit(1);
+
+    if (existingTxError) {
+      logStep("Idempotency check error (continuing)", { error: existingTxError.message });
+    }
+
+    if (existingTx && existingTx.length > 0) {
+      logStep("Session already processed", { sessionId });
+      return new Response(JSON.stringify({
+        success: true,
+        credits_added: 0,
+        mode: session.mode,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     if (creditsToAdd > 0) {
       // Get current credits
       const { data: currentCredits, error: creditsError } = await supabaseClient
@@ -111,14 +136,14 @@ serve(async (req) => {
         .upsert({
           user_id: user.id,
           credits: newBalance,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         }, { onConflict: 'user_id' });
 
       if (updateError) {
         throw new Error(`Error updating credits: ${updateError.message}`);
       }
 
-      // Log transaction
+      // Log transaction (includes session marker for idempotency)
       const { error: transactionError } = await supabaseClient
         .from('credit_transactions')
         .insert({
@@ -126,9 +151,7 @@ serve(async (req) => {
           amount: creditsToAdd,
           balance_after: newBalance,
           transaction_type: session.mode === 'subscription' ? 'subscription' : 'purchase',
-          description: session.mode === 'subscription' 
-            ? `Prenumeration: ${creditsToAdd} credits` 
-            : `Engångsköp: ${creditsToAdd} credits`
+          description: `${session.mode === 'subscription' ? 'Prenumeration' : 'Engångsköp'}: ${creditsToAdd} credits (${sessionMarker})`,
         });
 
       if (transactionError) {
@@ -137,7 +160,7 @@ serve(async (req) => {
 
       logStep("Credits updated", { previousBalance: currentBalance, newBalance, creditsAdded: creditsToAdd });
 
-      // Send payment confirmation email
+      // Send payment confirmation email (best-effort)
       try {
         const { data: profile } = await supabaseClient
           .from('profiles')
@@ -151,22 +174,21 @@ serve(async (req) => {
             name: profile.full_name || profile.email.split('@')[0],
             amount: session.amount_total || 0,
             credits: creditsToAdd,
-            transactionId: session.id
+            transactionId: session.id,
           };
 
-          // Call the send-payment-confirmation function
           const supabaseUrl = Deno.env.get("SUPABASE_URL");
           const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-          
+
           await fetch(`${supabaseUrl}/functions/v1/send-payment-confirmation`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseAnonKey}`
+              'Authorization': `Bearer ${supabaseAnonKey}`,
             },
-            body: JSON.stringify(emailPayload)
+            body: JSON.stringify(emailPayload),
           });
-          
+
           logStep("Payment confirmation email sent", { email: profile.email });
         }
       } catch (emailError) {

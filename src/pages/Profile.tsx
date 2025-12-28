@@ -18,7 +18,6 @@ import autoshotLogo from '@/assets/autoshot-logo.png';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { useSubscription } from '@/hooks/useSubscription';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface ProfileData {
   full_name: string | null;
@@ -33,20 +32,13 @@ interface ProfileData {
   logo_dark: string | null;
 }
 
-// Plan name mapping
-const PLAN_NAMES: Record<string, string> = {
-  'prod_SbwMYqcNVj1jXI': 'Hobbyhandlaren',
-  'prod_SbwNAXyeqEJJO6': 'Blocketkungen',
-  'prod_SbwOuoIRRDZXvC': 'Stora fisken',
-};
 
 const ProfileContent = () => {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const { credits, triggerPaywall } = useDemo();
-  const { subscribed: isSubscribed, productId: currentProductId, planName } = useSubscription();
-  const [showCreditsDialog, setShowCreditsDialog] = useState(false);
+  const { subscribed: isSubscribed, planName } = useSubscription();
   
   const handleLogout = async () => {
     await signOut();
@@ -68,25 +60,14 @@ const ProfileContent = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleBuyCredits = () => {
-    // Show centered credits dialog for profile button
-    setShowCreditsDialog(true);
+    // Profile buy should NOT show the "Du har slut på credits" message
+    triggerPaywall('profile-buy');
   };
-  
-  const handleBuyFromDialog = (type: 'pack' | 'upgrade') => {
-    setShowCreditsDialog(false);
-    if (type === 'pack') {
-      // Go straight to credit pack checkout
-      triggerPaywall('subscriber-limit');
-    } else {
-      // Show full paywall for upgrade options
-      triggerPaywall(isSubscribed ? 'subscriber-limit' : 'default');
-    }
-  };
-  
+
   // Get the display name for the current plan
   const getCurrentPlanName = () => {
-    if (!isSubscribed || !currentProductId) return null;
-    return PLAN_NAMES[currentProductId] || planName || 'Aktiv prenumeration';
+    if (!isSubscribed) return null;
+    return planName || 'Aktiv prenumeration';
   };
 
   useEffect(() => {
@@ -361,46 +342,6 @@ const ProfileContent = () => {
             </Button>
           </div>
         </Card>
-        
-        {/* Credits Dialog - centered popup */}
-        <Dialog open={showCreditsDialog} onOpenChange={setShowCreditsDialog}>
-          <DialogContent className="max-w-md">
-            <div className="text-center space-y-4">
-              <h2 className="text-xl font-bold">Fyll på credits</h2>
-              <p className="text-sm text-muted-foreground">
-                Välj hur du vill fylla på dina credits
-              </p>
-              
-              <div className="space-y-3 pt-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-between py-6"
-                  onClick={() => handleBuyFromDialog('pack')}
-                >
-                  <div className="text-left">
-                    <p className="font-medium">Fyll på 30 bilder</p>
-                    <p className="text-xs text-muted-foreground">Engångsköp</p>
-                  </div>
-                  <span className="font-bold">69 kr</span>
-                </Button>
-                
-                <Button 
-                  className="w-full justify-between py-6"
-                  onClick={() => handleBuyFromDialog('upgrade')}
-                >
-                  <div className="text-left">
-                    <p className="font-medium">
-                      {isSubscribed ? 'Uppgradera abonnemang' : 'Skaffa abonnemang'}
-                    </p>
-                    <p className="text-xs opacity-80">Månadsvis credits</p>
-                  </div>
-                  <span className="font-bold">Från 499 kr/mån</span>
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
         {/* Theme Settings */}
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-border">

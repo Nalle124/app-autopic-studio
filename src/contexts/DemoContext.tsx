@@ -20,7 +20,7 @@ interface DemoContextType {
   currentProductId: string | null;
 }
 
-export type PaywallTriggerType = 'logo' | 'gallery' | 'limit' | 'premium-scene' | 'signup' | 'default' | 'subscriber-limit';
+export type PaywallTriggerType = 'logo' | 'gallery' | 'limit' | 'premium-scene' | 'signup' | 'default' | 'subscriber-limit' | 'profile-buy';
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
