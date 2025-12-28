@@ -181,25 +181,25 @@ export const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 50%, hsl(var(--background)) 100%)' }}>
       <div className="w-full max-w-xl">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <img 
             src={autoshotLogo} 
             alt="AutoShot" 
-            className="h-12 w-auto mx-auto mb-6"
+            className="h-10 w-auto mx-auto mb-4"
           />
-          <h1 className="font-display text-3xl font-semibold text-foreground mb-2">
+          <h1 className="font-display text-2xl font-semibold text-foreground mb-1">
             Välkommen till AutoShot
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Låt oss ställa in ditt konto
           </p>
         </div>
 
         {/* Progress */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex justify-between mb-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -209,15 +209,15 @@ export const Onboarding = () => {
               return (
                 <div 
                   key={step.id}
-                  className={`flex items-center gap-2 text-sm ${
+                  className={`flex items-center gap-1.5 text-xs ${
                     isActive ? 'text-foreground' : isCompleted ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                     isActive ? 'bg-primary text-primary-foreground' : 
                     isCompleted ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
                   }`}>
-                    {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                    {isCompleted ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
                   </div>
                   <span className="hidden sm:inline">{step.label}</span>
                 </div>
@@ -228,7 +228,7 @@ export const Onboarding = () => {
         </div>
 
         {/* Content */}
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className="border-border/30 bg-gradient-to-br from-card/80 via-card to-muted/30 backdrop-blur-sm shadow-xl">
           {currentStep === 'type' && (
             <>
               <CardHeader>

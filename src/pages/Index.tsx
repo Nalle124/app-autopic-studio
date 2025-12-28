@@ -375,6 +375,12 @@ function IndexContent() {
         }
       }
       setIsProcessing(false);
+      
+      // Refetch credits after processing completes
+      if (successCount > 0) {
+        refetchCredits();
+      }
+      
       // Don't auto-scroll after completion - scroll happens when clicking generate button
       if (errorCount > 0) {
         toast.error(`${errorCount} bilder misslyckades`);

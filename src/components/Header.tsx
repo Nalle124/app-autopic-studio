@@ -1,4 +1,4 @@
-import { LogOut, Shield, User, Sparkles, Coins, Crown } from "lucide-react";
+import { LogOut, Shield, User, Sparkles, Coins } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -55,8 +55,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
                     onClick={onUpgradeClick}
                     className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
                   >
-                    <Crown className="w-4 h-4" />
-                    <span className="hidden sm:inline">Skaffa Pro</span>
+                    <span>Skaffa Pro</span>
                   </Button>
                 )}
 
