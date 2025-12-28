@@ -106,12 +106,11 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      
+
       // Safely parse subscription end date
       const periodEnd = subscription.current_period_end;
       if (periodEnd) {
         try {
-          // Handle both Unix timestamp (number) and ISO string formats
           if (typeof periodEnd === 'number') {
             subscriptionEnd = new Date(periodEnd * 1000).toISOString();
           } else if (typeof periodEnd === 'string') {
@@ -121,20 +120,67 @@ serve(async (req) => {
           logStep("Warning: Could not parse subscription end date", { periodEnd });
         }
       }
-      
+
       productId = subscription.items.data[0].price.product as string;
       creditsPerMonth = PRODUCT_CREDITS[productId] || 0;
-      
+
       // Get plan name from product
       const product = await stripe.products.retrieve(productId);
       planName = product.name;
-      
-      logStep("Active subscription found", { 
-        subscriptionId: subscription.id, 
-        productId, 
+
+      // Monthly top-up WITHOUT webhooks:
+      // On each check, ensure we only top up once per Stripe billing period.
+      // We use credit_transactions as the idempotency store.
+      const periodKey = `${subscription.id}:${subscription.current_period_start}`;
+      const topupMarker = `sub_period:${periodKey}`;
+
+      if (creditsPerMonth > 0) {
+        const { data: existingTopup } = await supabaseClient
+          .from('credit_transactions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('transaction_type', 'subscription_topup')
+          .like('description', `%${topupMarker}%`)
+          .limit(1);
+
+        if (!existingTopup || existingTopup.length === 0) {
+          const { data: currentCredits } = await supabaseClient
+            .from('user_credits')
+            .select('credits')
+            .eq('user_id', user.id)
+            .single();
+
+          const currentBalance = currentCredits?.credits || 0;
+          const newBalance = currentBalance + creditsPerMonth;
+
+          await supabaseClient
+            .from('user_credits')
+            .upsert({
+              user_id: user.id,
+              credits: newBalance,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id' });
+
+          await supabaseClient
+            .from('credit_transactions')
+            .insert({
+              user_id: user.id,
+              amount: creditsPerMonth,
+              balance_after: newBalance,
+              transaction_type: 'subscription_topup',
+              description: `Månadspåfyllning: ${planName} (+${creditsPerMonth}) (${topupMarker})`,
+            });
+
+          logStep('Monthly top-up applied', { creditsPerMonth, newBalance, periodKey });
+        }
+      }
+
+      logStep("Active subscription found", {
+        subscriptionId: subscription.id,
+        productId,
         planName,
         creditsPerMonth,
-        subscriptionEnd
+        subscriptionEnd,
       });
     } else {
       logStep("No active subscription found");

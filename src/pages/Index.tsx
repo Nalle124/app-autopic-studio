@@ -621,13 +621,17 @@ function IndexContent() {
             {/* Credits Display - only for non-subscribers with credits */}
             {!subscriptionLoading && !isSubscribed && credits > 0 && (
               <button
-                onClick={() => navigate('/profil')}
+                onClick={() => {
+                  if (isProcessing) {
+                    toast.error('Vänta tills genereringen är klar innan du går till Profil');
+                    return;
+                  }
+                  navigate('/profil');
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
               >
                 <Coins className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">
-                  {credits}
-                </span>
+                <span className="text-sm font-medium text-foreground">{credits}</span>
               </button>
             )}
 
@@ -649,9 +653,22 @@ function IndexContent() {
               </TabsList>
             </Tabs>
             
-            {user && <Button variant="ghost" size="icon" onClick={() => navigate('/profil')} title="Profil">
+            {user && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  if (isProcessing) {
+                    toast.error('Vänta tills genereringen är klar innan du går till Profil');
+                    return;
+                  }
+                  navigate('/profil');
+                }}
+                title="Profil"
+              >
                 <User className="w-5 h-5" />
-              </Button>}
+              </Button>
+            )}
           </div>
         </div>
       </header>
