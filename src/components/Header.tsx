@@ -1,4 +1,4 @@
-import { LogOut, Shield, User, Sparkles, Coins } from "lucide-react";
+import { LogOut, Shield, User, Sparkles, Coins, Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserCredits } from "@/hooks/useUserCredits";
 import autoshotLogo from "@/assets/autoshot-logo.png";
 
-export const Header = () => {
+interface HeaderProps {
+  onUpgradeClick?: () => void;
+}
+
+export const Header = ({ onUpgradeClick }: HeaderProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const { credits, loading: creditsLoading } = useUserCredits();
@@ -41,6 +45,17 @@ export const Header = () => {
           <nav className="flex items-center gap-4">
             {user ? (
               <>
+                {/* Upgrade button - always visible for logged in users */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onUpgradeClick}
+                  className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  <Crown className="w-4 h-4" />
+                  <span className="hidden sm:inline">Skaffa Pro</span>
+                </Button>
+
                 {/* Credits Display - only show if user has credits */}
                 {!creditsLoading && credits > 0 && (
                   <button

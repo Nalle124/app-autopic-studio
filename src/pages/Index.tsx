@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Crown, Coins } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -27,14 +27,18 @@ import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserCredits } from '@/hooks/useUserCredits';
+import { DemoPaywall } from '@/components/DemoPaywall';
+import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import autoshotLogo from '@/assets/autoshot-logo.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
-export default function Index() {
+function IndexContent() {
   const navigate = useNavigate();
   const {
     user,
     loading
   } = useAuth();
+  const { credits, canGenerate, triggerPaywall, refetchCredits } = useDemo();
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   // Initialize uploaded images from localStorage for persistence
@@ -578,7 +582,9 @@ export default function Index() {
       });
     });
   };
-  return <div className="min-h-screen">
+  return (
+    <>
+    <div className="min-h-screen">
       {/* Header */}
       <header className="border-b border-border/30 bg-card/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)]" style={{ top: 0, marginTop: 0 }}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -587,6 +593,30 @@ export default function Index() {
           </button>
           
           <div className="flex items-center gap-3">
+            {/* Skaffa Pro button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => triggerPaywall('limit')}
+              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Crown className="w-4 h-4" />
+              <span className="hidden sm:inline">Skaffa Pro</span>
+            </Button>
+
+            {/* Credits Display - only show if user has credits */}
+            {credits > 0 && (
+              <button
+                onClick={() => navigate('/profil')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
+              >
+                <Coins className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">
+                  {credits}
+                </span>
+              </button>
+            )}
+
             {/* Back button - only show when on history tab or coming from somewhere */}
             {activeTab === 'history' && <Button variant="ghost" size="icon" onClick={() => setActiveTab('new')} title="Tillbaka">
                 <ChevronLeft className="w-5 h-5" />
@@ -1558,5 +1588,18 @@ export default function Index() {
 
     {/* Scroll to top button - only show from results gallery onwards, hide at steps 3-5 on mobile */}
     <ScrollToTopButton threshold={600} hideBeforeElementId="results-section" hideAfterElementId="export-section" />
-    </div>;
+    </div>
+    
+    {/* Paywall Dialog */}
+    <DemoPaywall />
+    </>
+  );
+}
+
+export default function Index() {
+  return (
+    <DemoProvider>
+      <IndexContent />
+    </DemoProvider>
+  );
 }
