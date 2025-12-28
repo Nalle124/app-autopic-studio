@@ -96,7 +96,27 @@ const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
   'prod_SbwOuoIRRDZXvC': 'storafisken',
 };
 
-// Get next tier for upgrade
+// Tier order for determining available upgrades
+const TIER_ORDER: PlanKey[] = ['hobbyhandlaren', 'blocketkungen', 'storafisken'];
+
+// Get available tiers for upgrade (tiers higher than current)
+const getAvailableUpgradeTiers = (currentProductId: string | null): PlanKey[] => {
+  if (!currentProductId) return TIER_ORDER; // Free user sees all tiers
+  const currentPlan = PRODUCT_TO_PLAN[currentProductId];
+  if (!currentPlan) return TIER_ORDER;
+  const currentIndex = TIER_ORDER.indexOf(currentPlan);
+  if (currentIndex === -1) return TIER_ORDER;
+  // Return only tiers higher than current
+  return TIER_ORDER.slice(currentIndex + 1);
+};
+
+// Check if user is on the highest tier
+const isOnHighestTier = (currentProductId: string | null): boolean => {
+  if (!currentProductId) return false;
+  return PRODUCT_TO_PLAN[currentProductId] === 'storafisken';
+};
+
+// Get next tier for upgrade (single next tier)
 const getNextTier = (currentProductId: string | null): PlanKey | null => {
   if (!currentProductId) return 'hobbyhandlaren';
   const currentPlan = PRODUCT_TO_PLAN[currentProductId];
@@ -118,6 +138,8 @@ export const DemoPaywall = () => {
   // Check if this is a subscriber who ran out of credits
   const isSubscriberLimit = paywallTrigger === 'subscriber-limit' || (isSubscribed && paywallTrigger === 'limit');
   const nextTier = getNextTier(currentProductId);
+  const onHighestTier = isOnHighestTier(currentProductId);
+  const availableUpgradeTiers = getAvailableUpgradeTiers(currentProductId);
 
   // Auto-rotate reviews
   useEffect(() => {
@@ -234,6 +256,19 @@ export const DemoPaywall = () => {
                       <ArrowRight className="w-4 h-4 text-primary" />
                     </div>
                   </button>
+                )}
+                
+                {/* Contact for highest tier users */}
+                {onHighestTier && (
+                  <div className="text-center pt-2 text-sm text-muted-foreground">
+                    <p>Behöver du fler credits?</p>
+                    <a 
+                      href="mailto:hej@autoshot.se" 
+                      className="text-primary hover:underline"
+                    >
+                      Kontakta oss för företagsanpassad lösning
+                    </a>
+                  </div>
                 )}
               </div>
 
