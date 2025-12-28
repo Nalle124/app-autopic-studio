@@ -30,7 +30,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
   };
 
   return (
-    <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
+    <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)] before:absolute before:inset-0 before:bg-card/90 before:-z-10">
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <button 
@@ -47,30 +47,6 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
           <nav className="flex items-center gap-4">
             {user ? (
               <>
-                {/* Upgrade button - only show for non-subscribers */}
-                {!subscriptionLoading && !subscribed && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onUpgradeClick}
-                    className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                  >
-                    <span>Skaffa Pro</span>
-                  </Button>
-                )}
-
-                {/* Credits Display - only show for non-subscribers if user has credits */}
-                {!subscriptionLoading && !subscribed && !creditsLoading && credits > 0 && (
-                  <button
-                    onClick={() => navigate('/profil')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
-                  >
-                    <Coins className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium text-foreground">
-                      {credits}
-                    </span>
-                  </button>
-                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

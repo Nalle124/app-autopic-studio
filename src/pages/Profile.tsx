@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -304,10 +304,10 @@ const ProfileContent = () => {
         </div>
       </header>
       
-      <main className="container mx-auto px-6 py-12 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground font-heading">Profil</h1>
-          <p className="text-muted-foreground font-small mt-2">
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl pb-[env(safe-area-inset-bottom)]">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-heading">Profil</h1>
+          <p className="text-sm sm:text-base text-muted-foreground font-small mt-1 sm:mt-2">
             Hantera dina uppgifter och inställningar
           </p>
         </div>
@@ -337,10 +337,10 @@ const ProfileContent = () => {
         {/* Theme Settings */}
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-border">
-            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <Palette className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-base sm:text-lg font-semibold text-foreground font-heading">
                 Utseende
               </h2>
@@ -348,24 +348,52 @@ const ProfileContent = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              {theme === 'dark' ? (
-                <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
-              ) : (
-                <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
-              )}
-              <div>
-                <Label className="text-xs sm:text-sm font-medium">Ljust läge</Label>
-                <p className="text-xs text-muted-foreground font-small hidden sm:block">
-                  Växla mellan mörkt och ljust tema
-                </p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                {theme === 'dark' ? (
+                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground flex-shrink-0" />
+                ) : (
+                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground flex-shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <Label className="text-sm font-medium">Ljust läge</Label>
+                  <p className="text-xs text-muted-foreground font-small hidden sm:block">
+                    Växla mellan mörkt och ljust tema
+                  </p>
+                </div>
               </div>
+              <Switch
+                checked={theme === 'light'}
+                onCheckedChange={(checked) => setTheme(checked ? 'light' : 'dark')}
+                className="flex-shrink-0"
+              />
             </div>
-            <Switch
-              checked={theme === 'light'}
-              onCheckedChange={(checked) => setTheme(checked ? 'light' : 'dark')}
-            />
+            
+            {/* Install App */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <button className="w-full flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm font-medium">Installera app</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="ml-6 sm:ml-8 mt-2 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Lägg till AutoShot på din hemskärm för snabb åtkomst:
+                  </p>
+                  <ol className="text-xs sm:text-sm text-muted-foreground mt-2 space-y-1 list-decimal list-inside">
+                    <li>Tryck på delningsikonen i din webbläsare</li>
+                    <li>Välj "Lägg till på hemskärmen"</li>
+                    <li>Klart! Appen finns nu på din hemskärm</li>
+                  </ol>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </Card>
 
