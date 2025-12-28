@@ -267,31 +267,11 @@ export const DemoPaywall = () => {
               </p>
             </div>
 
-            {/* Benefits - 2x2 grid on desktop, column on mobile */}
-            <div className="px-6 pb-6">
-              {!isMobile ? (
-                <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
-                  {benefits.map((benefit, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Check className="w-3 h-3 text-primary" />
-                      </div>
-                      <span className="text-sm text-foreground/80 leading-tight">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3 pb-4">
-                  {benefits.map((benefit, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Check className="w-3 h-3 text-primary" />
-                      </div>
-                      <span className="text-sm text-foreground/80">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+            {/* Single benefit line */}
+            <div className="px-6 pb-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Inga fler timmar med redigering. Färdiga miljöer och smart AI-positionering.
+              </p>
             </div>
 
             {/* Pricing toggle */}
@@ -365,21 +345,9 @@ export const DemoPaywall = () => {
                             </div>
                             
                             <div className="pt-4 border-t border-white/20">
-                              <p className="text-xs text-white/60 mb-3">Detta ingår</p>
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-3 text-sm text-white/90">
-                                  <Check className="w-4 h-4 flex-shrink-0" />
-                                  <span>{plan.credits} bilder/månad</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-sm text-white/90">
-                                  <Check className="w-4 h-4 flex-shrink-0" />
-                                  <span>Brand kit</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-sm text-white/90">
-                                  <Check className="w-4 h-4 flex-shrink-0" />
-                                  <span>Support</span>
-                                </div>
-                              </div>
+                              <p className="text-xs text-white/60">
+                                {plan.credits} bilder/mån • Brand kit • Support
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -451,22 +419,8 @@ export const DemoPaywall = () => {
                         {isExpanded && (
                           <div className="bg-muted/50 p-4 space-y-3">
                             <p className="text-sm text-muted-foreground">
-                              Få full tillgång till magisk annonsbild-generering.
+                              {plan.credits} bilder/mån • Brand kit • Support
                             </p>
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-2 text-sm">
-                                <Check className="w-4 h-4 text-primary" />
-                                <span>{plan.credits} bilder/månad</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Check className="w-4 h-4 text-primary" />
-                                <span>Brand kit</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Check className="w-4 h-4 text-primary" />
-                                <span>Support</span>
-                              </div>
-                            </div>
                             <Button
                               onClick={() => handleSelectPlan(key)}
                               disabled={isLoading}

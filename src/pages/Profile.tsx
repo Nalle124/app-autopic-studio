@@ -15,6 +15,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import autoshotLogo from '@/assets/autoshot-logo.png';
+import { DemoProvider, useDemo } from '@/contexts/DemoContext';
+import { DemoPaywall } from '@/components/DemoPaywall';
 
 interface ProfileData {
   full_name: string | null;
@@ -29,11 +31,11 @@ interface ProfileData {
   logo_dark: string | null;
 }
 
-export const Profile = () => {
+const ProfileContent = () => {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
-  const { credits } = useUserCredits();
+  const { credits, isSubscribed, triggerPaywall } = useDemo();
   
   const handleLogout = async () => {
     await signOut();
@@ -53,28 +55,10 @@ export const Profile = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isBuyingCredits, setIsBuyingCredits] = useState(false);
 
-  const handleBuyCredits = async () => {
-    setIsBuyingCredits(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          priceId: 'price_1SbVf4JQldzCYD0Z11oZm3qb', // 30 credits pack
-          mode: 'payment',
-        },
-      });
-
-      if (error) throw new Error(error.message);
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      toast.error('Kunde inte starta betalning. Försök igen.');
-    } finally {
-      setIsBuyingCredits(false);
-    }
+  const handleBuyCredits = () => {
+    // Show paywall - subscriber-limit for subscribers, default for free users
+    triggerPaywall(isSubscribed ? 'subscriber-limit' : 'default');
   };
 
   useEffect(() => {
@@ -344,15 +328,8 @@ export const Profile = () => {
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={handleBuyCredits} disabled={isBuyingCredits}>
-              {isBuyingCredits ? (
-                <>
-                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2 animate-spin" />
-                  Laddar...
-                </>
-              ) : (
-                'Köp credits'
-              )}
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={handleBuyCredits}>
+              Köp credits
             </Button>
           </div>
         </Card>
@@ -571,6 +548,9 @@ export const Profile = () => {
           </Button>
         </Card>
       </main>
+      
+      {/* Paywall */}
+      <DemoPaywall />
     </div>
   );
 };
@@ -674,5 +654,14 @@ const BugReportSection = ({ userId }: { userId?: string }) => {
         </CollapsibleContent>
       </Card>
     </Collapsible>
+  );
+};
+
+// Wrap ProfileContent in DemoProvider
+export const Profile = () => {
+  return (
+    <DemoProvider>
+      <ProfileContent />
+    </DemoProvider>
   );
 };
