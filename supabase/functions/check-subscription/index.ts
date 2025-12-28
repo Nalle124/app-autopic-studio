@@ -80,7 +80,22 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      
+      // Safely parse subscription end date
+      const periodEnd = subscription.current_period_end;
+      if (periodEnd) {
+        try {
+          // Handle both Unix timestamp (number) and ISO string formats
+          if (typeof periodEnd === 'number') {
+            subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+          } else if (typeof periodEnd === 'string') {
+            subscriptionEnd = new Date(periodEnd).toISOString();
+          }
+        } catch (e) {
+          logStep("Warning: Could not parse subscription end date", { periodEnd });
+        }
+      }
+      
       productId = subscription.items.data[0].price.product as string;
       creditsPerMonth = PRODUCT_CREDITS[productId] || 0;
       
@@ -92,7 +107,8 @@ serve(async (req) => {
         subscriptionId: subscription.id, 
         productId, 
         planName,
-        creditsPerMonth 
+        creditsPerMonth,
+        subscriptionEnd
       });
     } else {
       logStep("No active subscription found");
