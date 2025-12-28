@@ -294,7 +294,7 @@ export const SceneSelector = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 relative bg-gradient-to-t from-background via-background to-transparent">
+        <div className="p-5 relative bg-card">
           <h3 className="font-bold text-base text-foreground mb-1.5">
             {scene.name}
           </h3>

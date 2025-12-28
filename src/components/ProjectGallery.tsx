@@ -677,7 +677,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                 ) : (
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-lg flex-1">
-                      {isOrphan ? 'Utan registreringsnummer' : project.registration_number}
+                      {isOrphan ? 'Utan Reg nr' : project.registration_number}
                     </h3>
                     {!isOrphan && (
                       <Button 

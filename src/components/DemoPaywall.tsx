@@ -110,7 +110,7 @@ export const DemoPaywall = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
-  const [isYearly, setIsYearly] = useState(true);
+  const [isYearly, setIsYearly] = useState(false);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [oneTimeOpen, setOneTimeOpen] = useState(false);
   const [expandedPlan, setExpandedPlan] = useState<PlanKey | null>(null);
@@ -284,11 +284,9 @@ export const DemoPaywall = () => {
                 <span className={`text-sm transition-colors ${isYearly ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                   Årsvis
                 </span>
-                {isYearly && (
-                  <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
-                    -20%
-                  </span>
-                )}
+                <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
+                  20% rabatt
+                </span>
               </div>
 
               {/* Desktop: Wide cards side by side */}
@@ -344,10 +342,19 @@ export const DemoPaywall = () => {
                               <span className="text-sm font-medium text-white">Skaffa nu</span>
                             </div>
                             
-                            <div className="pt-4 border-t border-white/20">
-                              <p className="text-xs text-white/60">
-                                {plan.credits} bilder/mån • Brand kit • Support
-                              </p>
+                            <div className="pt-4 border-t border-white/20 space-y-1.5">
+                              <div className="flex items-center gap-2 text-xs text-white/80">
+                                <Check className="w-3.5 h-3.5 text-white/70" />
+                                <span>{plan.credits} bilder/mån</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-white/80">
+                                <Check className="w-3.5 h-3.5 text-white/70" />
+                                <span>Brand kit</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-white/80">
+                                <Check className="w-3.5 h-3.5 text-white/70" />
+                                <span>Support</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -418,9 +425,20 @@ export const DemoPaywall = () => {
                         {/* Expanded content */}
                         {isExpanded && (
                           <div className="bg-muted/50 p-4 space-y-3">
-                            <p className="text-sm text-muted-foreground">
-                              {plan.credits} bilder/mån • Brand kit • Support
-                            </p>
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span>{plan.credits} bilder/mån</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span>Brand kit</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span>Support</span>
+                              </div>
+                            </div>
                             <Button
                               onClick={() => handleSelectPlan(key)}
                               disabled={isLoading}
