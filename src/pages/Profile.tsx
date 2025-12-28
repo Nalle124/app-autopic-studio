@@ -17,6 +17,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import autoshotLogo from '@/assets/autoshot-logo.png';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
+import { useSubscription } from '@/hooks/useSubscription';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface ProfileData {
   full_name: string | null;
@@ -31,11 +33,20 @@ interface ProfileData {
   logo_dark: string | null;
 }
 
+// Plan name mapping
+const PLAN_NAMES: Record<string, string> = {
+  'prod_SbwMYqcNVj1jXI': 'Hobbyhandlaren',
+  'prod_SbwNAXyeqEJJO6': 'Blocketkungen',
+  'prod_SbwOuoIRRDZXvC': 'Stora fisken',
+};
+
 const ProfileContent = () => {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
-  const { credits, isSubscribed, triggerPaywall } = useDemo();
+  const { credits, triggerPaywall } = useDemo();
+  const { subscribed: isSubscribed, productId: currentProductId, planName } = useSubscription();
+  const [showCreditsDialog, setShowCreditsDialog] = useState(false);
   
   const handleLogout = async () => {
     await signOut();
@@ -57,8 +68,25 @@ const ProfileContent = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleBuyCredits = () => {
-    // Show paywall - subscriber-limit for subscribers, default for free users
-    triggerPaywall(isSubscribed ? 'subscriber-limit' : 'default');
+    // Show centered credits dialog for profile button
+    setShowCreditsDialog(true);
+  };
+  
+  const handleBuyFromDialog = (type: 'pack' | 'upgrade') => {
+    setShowCreditsDialog(false);
+    if (type === 'pack') {
+      // Go straight to credit pack checkout
+      triggerPaywall('subscriber-limit');
+    } else {
+      // Show full paywall for upgrade options
+      triggerPaywall(isSubscribed ? 'subscriber-limit' : 'default');
+    }
+  };
+  
+  // Get the display name for the current plan
+  const getCurrentPlanName = () => {
+    if (!isSubscribed || !currentProductId) return null;
+    return PLAN_NAMES[currentProductId] || planName || 'Aktiv prenumeration';
   };
 
   useEffect(() => {
@@ -312,7 +340,7 @@ const ProfileContent = () => {
           </p>
         </div>
 
-        {/* Credits Card */}
+        {/* Subscription & Credits Card */}
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -321,7 +349,7 @@ const ProfileContent = () => {
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-foreground font-heading">
-                  Dina credits
+                  {isSubscribed ? getCurrentPlanName() : 'Dina credits'}
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground font-small">
                   {credits} credits kvar
@@ -333,6 +361,45 @@ const ProfileContent = () => {
             </Button>
           </div>
         </Card>
+        
+        {/* Credits Dialog - centered popup */}
+        <Dialog open={showCreditsDialog} onOpenChange={setShowCreditsDialog}>
+          <DialogContent className="max-w-md">
+            <div className="text-center space-y-4">
+              <h2 className="text-xl font-bold">Fyll på credits</h2>
+              <p className="text-sm text-muted-foreground">
+                Välj hur du vill fylla på dina credits
+              </p>
+              
+              <div className="space-y-3 pt-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-between py-6"
+                  onClick={() => handleBuyFromDialog('pack')}
+                >
+                  <div className="text-left">
+                    <p className="font-medium">Fyll på 30 bilder</p>
+                    <p className="text-xs text-muted-foreground">Engångsköp</p>
+                  </div>
+                  <span className="font-bold">69 kr</span>
+                </Button>
+                
+                <Button 
+                  className="w-full justify-between py-6"
+                  onClick={() => handleBuyFromDialog('upgrade')}
+                >
+                  <div className="text-left">
+                    <p className="font-medium">
+                      {isSubscribed ? 'Uppgradera abonnemang' : 'Skaffa abonnemang'}
+                    </p>
+                    <p className="text-xs opacity-80">Månadsvis credits</p>
+                  </div>
+                  <span className="font-bold">Från 499 kr/mån</span>
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Theme Settings */}
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
@@ -382,14 +449,14 @@ const ProfileContent = () => {
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="ml-6 sm:ml-8 mt-2 p-3 bg-muted/50 rounded-lg">
+                <div className="mt-2 p-4 bg-muted/50 rounded-lg text-center">
                   <p className="text-xs sm:text-sm text-muted-foreground">
                     Lägg till AutoShot på din hemskärm för snabb åtkomst:
                   </p>
-                  <ol className="text-xs sm:text-sm text-muted-foreground mt-2 space-y-1 list-decimal list-inside">
-                    <li>Tryck på delningsikonen i din webbläsare</li>
-                    <li>Välj "Lägg till på hemskärmen"</li>
-                    <li>Klart! Appen finns nu på din hemskärm</li>
+                  <ol className="text-xs sm:text-sm text-muted-foreground mt-3 space-y-1.5 text-left inline-block">
+                    <li>1. Tryck på delningsikonen i din webbläsare</li>
+                    <li>2. Välj "Lägg till på hemskärmen"</li>
+                    <li>3. Klart! Appen finns nu på din hemskärm</li>
                   </ol>
                 </div>
               </CollapsibleContent>
