@@ -315,58 +315,58 @@ const ProfileContent = () => {
       
       <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl pb-[env(safe-area-inset-bottom)]">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground font-heading">Profil</h1>
-          <p className="text-sm sm:text-base text-muted-foreground font-small mt-1 sm:mt-2">
+          <h1 className="text-3xl sm:text-3xl font-bold text-foreground font-heading">Profil</h1>
+          <p className="text-base sm:text-base text-muted-foreground font-small mt-1 sm:mt-2">
             Hantera dina uppgifter och inställningar
           </p>
         </div>
 
         {/* Subscription & Credits Card */}
-        <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
+        <Card className="p-5 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Coins className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-semibold text-foreground font-heading">
+                <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
                   {isSubscribed ? getCurrentPlanName() : 'Dina credits'}
                 </h2>
-                <p className="text-xs sm:text-sm text-muted-foreground font-small">
+                <p className="text-sm sm:text-sm text-muted-foreground font-small">
                   {credits} credits kvar
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={handleBuyCredits}>
+            <Button variant="outline" size="sm" className="text-sm" onClick={handleBuyCredits}>
               Köp credits
             </Button>
           </div>
         </Card>
         {/* Theme Settings */}
-        <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-border">
-            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Palette className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+        <Card className="p-5 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex items-center gap-4 mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-border">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Palette className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-semibold text-foreground font-heading">
+              <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
                 Utseende
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground font-small">Anpassa appens utseende</p>
+              <p className="text-sm sm:text-sm text-muted-foreground font-small">Anpassa appens utseende</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 {theme === 'dark' ? (
-                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground flex-shrink-0" />
+                  <Moon className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 ) : (
-                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground flex-shrink-0" />
+                  <Sun className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 )}
                 <div className="min-w-0">
                   <Label className="text-sm font-medium">Ljust läge</Label>
-                  <p className="text-xs text-muted-foreground font-small hidden sm:block">
+                  <p className="text-sm text-muted-foreground font-small hidden sm:block">
                     Växla mellan mörkt och ljust tema
                   </p>
                 </div>
@@ -382,19 +382,19 @@ const ProfileContent = () => {
             <Collapsible>
               <CollapsibleTrigger asChild>
                 <button className="w-full flex items-center justify-between py-2">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground flex-shrink-0" />
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                     <span className="text-sm font-medium">Installera app</span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="mt-2 p-4 bg-muted/50 rounded-lg text-center">
-                  <p className="text-xs sm:text-sm text-muted-foreground">
+                <div className="mt-2 p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-3">
                     Lägg till AutoShot på din hemskärm för snabb åtkomst:
                   </p>
-                  <ol className="text-xs sm:text-sm text-muted-foreground mt-3 space-y-1.5 text-left inline-block">
+                  <ol className="text-sm text-muted-foreground space-y-1.5">
                     <li>1. Tryck på delningsikonen i din webbläsare</li>
                     <li>2. Välj "Lägg till på hemskärmen"</li>
                     <li>3. Klart! Appen finns nu på din hemskärm</li>
@@ -406,20 +406,20 @@ const ProfileContent = () => {
         </Card>
 
         {/* Customer Info */}
-        <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-border">
-            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+        <Card className="p-5 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex items-center gap-4 mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-border">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
               {isCompany ? (
-                <Building2 className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               ) : (
-                <User className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               )}
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-semibold text-foreground font-heading">
+              <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
                 {isCompany ? 'Företagsuppgifter' : 'Kontaktuppgifter'}
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground font-small">
+              <p className="text-sm sm:text-sm text-muted-foreground font-small">
                 {isCompany ? 'Ditt företags information' : 'Din personliga information'}
               </p>
             </div>
