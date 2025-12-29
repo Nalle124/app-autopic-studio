@@ -245,23 +245,34 @@ export const DemoPaywall = () => {
                       const plan = PRICING_PLANS[tier];
                       const isLoading = loadingTier === tier;
                       const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
+                      const hasBackground = 'background' in plan;
 
                       return (
                         <button
                           key={tier}
                           onClick={() => handleSelectPlan(tier)}
                           disabled={isLoading}
-                          className="w-full p-4 rounded-xl bg-primary/10 border border-primary/30 hover:border-primary/50 transition-all flex items-center justify-between"
+                          className="relative w-full p-4 rounded-xl overflow-hidden border border-primary/30 hover:border-primary/50 transition-all flex items-center justify-between"
                         >
-                          <div className="text-left">
-                            <p className="font-medium text-foreground">Uppgradera till {plan.name}</p>
-                            <p className="text-sm text-muted-foreground">{plan.credits} bilder/månad</p>
+                          {/* Aura background */}
+                          {hasBackground && (
+                            <>
+                              <div 
+                                className="absolute inset-0 bg-cover bg-center"
+                                style={{ backgroundImage: `url(${plan.background})` }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60" />
+                            </>
+                          )}
+                          <div className="relative z-10 text-left">
+                            <p className="font-medium text-white">Uppgradera till {plan.name}</p>
+                            <p className="text-sm text-white/70">{plan.credits} bilder/månad</p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="relative z-10 flex items-center gap-2">
                             {isLoading ? (
                               <Loader2 className="w-5 h-5 animate-spin text-primary" />
                             ) : (
-                              <span className="font-bold text-lg">{displayPrice} kr/mån</span>
+                              <span className="font-bold text-lg text-white">{displayPrice} kr/mån</span>
                             )}
                             <ArrowRight className="w-4 h-4 text-primary" />
                           </div>
