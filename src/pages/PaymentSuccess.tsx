@@ -82,10 +82,7 @@ const PaymentSuccess = () => {
           {status === 'success' && (
             <>
               <p className="text-muted-foreground">
-                {mode === 'subscription' 
-                  ? `Ditt konto har nu ${creditsAdded} credits per månad.`
-                  : `${creditsAdded} credits har lagts till på ditt konto.`
-                }
+                Ditt konto har uppdaterats.
               </p>
               <Button onClick={() => navigate('/')} className="w-full">
                 Börja skapa bilder
