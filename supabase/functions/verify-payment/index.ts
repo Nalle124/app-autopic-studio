@@ -128,7 +128,27 @@ serve(async (req) => {
       }
 
       const currentBalance = currentCredits?.credits || 0;
-      const newBalance = currentBalance + creditsToAdd;
+      
+      // Determine new balance based on payment mode
+      // Subscription: REPLACE credits with plan amount (new subscription)
+      // One-time purchase: ADD credits to existing balance
+      let newBalance: number;
+      let transactionType: string;
+      let transactionDescription: string;
+      
+      if (session.mode === 'subscription') {
+        // New subscription - replace credits with plan amount
+        newBalance = creditsToAdd;
+        transactionType = 'subscription';
+        transactionDescription = `Prenumeration: ${creditsToAdd} credits/månad (${sessionMarker})`;
+      } else {
+        // One-time purchase - add to existing balance
+        newBalance = currentBalance + creditsToAdd;
+        transactionType = 'purchase';
+        transactionDescription = `Engångsköp: +${creditsToAdd} credits (${sessionMarker})`;
+      }
+      
+      logStep("Credit calculation", { currentBalance, creditsToAdd, newBalance, mode: session.mode });
 
       // Update credits
       const { error: updateError } = await supabaseClient
@@ -150,8 +170,8 @@ serve(async (req) => {
           user_id: user.id,
           amount: creditsToAdd,
           balance_after: newBalance,
-          transaction_type: session.mode === 'subscription' ? 'subscription' : 'purchase',
-          description: `${session.mode === 'subscription' ? 'Prenumeration' : 'Engångsköp'}: ${creditsToAdd} credits (${sessionMarker})`,
+          transaction_type: transactionType,
+          description: transactionDescription,
         });
 
       if (transactionError) {

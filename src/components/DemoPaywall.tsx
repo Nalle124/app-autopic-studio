@@ -394,8 +394,15 @@ export const DemoPaywall = () => {
                               Få full tillgång till magisk annonsbild-generering.
                             </p>
                             
-                            <div className="bg-white/10 backdrop-blur-sm rounded-full py-2.5 px-4 text-center mb-4">
-                              <span className="text-sm font-medium text-white">Skaffa nu</span>
+                            <div className="bg-white/10 backdrop-blur-sm rounded-full py-2.5 px-4 text-center mb-4 flex items-center justify-center gap-2">
+                              {isLoading ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                  <span className="text-sm font-medium text-white">Laddar...</span>
+                                </>
+                              ) : (
+                                <span className="text-sm font-medium text-white">Skaffa nu</span>
+                              )}
                             </div>
                             
                             <div className="pt-4 border-t border-white/20 space-y-1.5">
@@ -415,11 +422,6 @@ export const DemoPaywall = () => {
                           </div>
                         </div>
                         
-                        {isLoading && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <Loader2 className="w-6 h-6 animate-spin text-white" />
-                          </div>
-                        )}
                       </button>
                     );
                   })}
