@@ -30,6 +30,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
+import { useOnboardingCheck } from '@/hooks/useOnboardingCheck';
 import autoshotLogo from '@/assets/autoshot-logo.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
 function IndexContent() {
@@ -39,6 +40,15 @@ function IndexContent() {
     loading
   } = useAuth();
   const { credits, canGenerate, triggerPaywall, refetchCredits, isSubscribed, subscriptionLoading } = useDemo();
+  const { needsOnboarding, checking } = useOnboardingCheck();
+
+  // Redirect subscribed users to onboarding if not completed
+  useEffect(() => {
+    if (loading || checking || subscriptionLoading) return;
+    if (user && isSubscribed && needsOnboarding) {
+      navigate('/onboarding');
+    }
+  }, [user, loading, checking, subscriptionLoading, isSubscribed, needsOnboarding, navigate]);
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   // Initialize uploaded images from localStorage for persistence

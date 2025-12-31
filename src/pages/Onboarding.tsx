@@ -188,7 +188,7 @@ export const Onboarding = () => {
           <img 
             src={autopicLogo} 
             alt="AutoPic" 
-            className="h-10 w-auto mx-auto mb-4"
+            className="h-14 w-auto mx-auto mb-4"
           />
           <h1 className="font-display text-2xl font-semibold text-foreground mb-1">
             Välkommen till AutoPic
