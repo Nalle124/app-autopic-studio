@@ -13,7 +13,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserCredits } from "@/hooks/useUserCredits";
 import { useSubscription } from "@/hooks/useSubscription";
-import autoshotLogo from "@/assets/autoshot-logo.png";
+import autopicLogo from "@/assets/autopic-logo.png";
 
 interface HeaderProps {
   onUpgradeClick?: () => void;
@@ -38,8 +38,8 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <img 
-              src={autoshotLogo} 
-              alt="AutoShot" 
+              src={autopicLogo} 
+              alt="AutoPic" 
               className="h-10 w-auto object-contain"
             />
           </button>

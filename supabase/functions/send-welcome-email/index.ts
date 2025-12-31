@@ -34,16 +34,16 @@ const handler = async (req: Request): Promise<Response> => {
     const displayName = name || email.split('@')[0];
 
     const emailResponse = await resend.emails.send({
-      from: "AutoShot <onboarding@resend.dev>",
+      from: "AutoPic <onboarding@resend.dev>",
       to: [email],
-      subject: "Välkommen till AutoShot! 🚗",
+      subject: "Välkommen till AutoPic! 🚗",
       html: `
 <!DOCTYPE html>
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Välkommen till AutoShot</title>
+  <title>Välkommen till AutoPic</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #18181b 0%, #27272a 100%); padding: 40px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">AutoShot</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">AutoPic</h1>
               <p style="margin: 8px 0 0 0; color: #a1a1aa; font-size: 14px;">Professionella bilbilder på sekunder</p>
             </td>
           </tr>
@@ -67,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
               </h2>
               
               <p style="margin: 0 0 24px 0; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Tack för att du skapade ett konto hos AutoShot. Nu kan du enkelt skapa professionella bilbilder med AI-driven bakgrundsbyte.
+                Tack för att du skapade ett konto hos AutoPic. Nu kan du enkelt skapa professionella bilbilder med AI-driven bakgrundsbyte.
               </p>
               
               <div style="background-color: #f4f4f5; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
@@ -84,8 +84,8 @@ const handler = async (req: Request): Promise<Response> => {
               <table role="presentation" style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td align="center">
-                    <a href="https://app.autoshot.se" style="display: inline-block; background-color: #18181b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
-                      Gå till AutoShot →
+                    <a href="https://app.autopic.studio" style="display: inline-block; background-color: #18181b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                      Gå till AutoPic →
                     </a>
                   </td>
                 </tr>
@@ -100,12 +100,12 @@ const handler = async (req: Request): Promise<Response> => {
                 Har du frågor? Kontakta oss gärna!
               </p>
               <div style="margin-bottom: 16px;">
-                <a href="https://instagram.com/autoshot.se" style="display: inline-block; margin: 0 8px; color: #52525b; text-decoration: none; font-size: 13px;">Instagram</a>
+                <a href="https://instagram.com/autopic.studio" style="display: inline-block; margin: 0 8px; color: #52525b; text-decoration: none; font-size: 13px;">Instagram</a>
                 <span style="color: #d4d4d8;">•</span>
-                <a href="https://linkedin.com/company/autoshot" style="display: inline-block; margin: 0 8px; color: #52525b; text-decoration: none; font-size: 13px;">LinkedIn</a>
+                <a href="https://linkedin.com/company/autopic" style="display: inline-block; margin: 0 8px; color: #52525b; text-decoration: none; font-size: 13px;">LinkedIn</a>
               </div>
               <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
-                © ${new Date().getFullYear()} AutoShot. Alla rättigheter förbehållna.
+                © ${new Date().getFullYear()} AutoPic. Alla rättigheter förbehållna.
               </p>
             </td>
           </tr>

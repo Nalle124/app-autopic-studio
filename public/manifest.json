@@ -1,6 +1,6 @@
 {
-  "name": "AutoShot",
-  "short_name": "AutoShot",
+  "name": "AutoPic",
+  "short_name": "AutoPic",
   "description": "Professionella bilbackgrunder på sekunder",
   "start_url": "/",
   "display": "standalone",
