@@ -45,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const emailResponse = await resend.emails.send({
-      from: "AutoShot <onboarding@resend.dev>",
+      from: "AutoPic <hello@hello.autopic.studio>",
       to: [email],
       subject: `Betalningsbekräftelse - ${formattedAmount}`,
       html: `
@@ -65,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #18181b 0%, #27272a 100%); padding: 40px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">AutoShot</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">AutoPic</h1>
               <p style="margin: 8px 0 0 0; color: #a1a1aa; font-size: 14px;">Betalningsbekräftelse</p>
             </td>
           </tr>
@@ -124,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
               <table role="presentation" style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td align="center">
-                    <a href="https://app.autoshot.se" style="display: inline-block; background-color: #18181b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                    <a href="https://app.autopic.studio" style="display: inline-block; background-color: #18181b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
                       Börja skapa bilder →
                     </a>
                   </td>
@@ -140,12 +140,12 @@ const handler = async (req: Request): Promise<Response> => {
                 Spara detta mail som kvitto.
               </p>
               <div style="margin-bottom: 16px;">
-                <a href="https://instagram.com/autoshot.se" style="display: inline-block; margin: 0 8px; color: #52525b; text-decoration: none; font-size: 13px;">Instagram</a>
+                <a href="https://instagram.com/autopic.studio" style="display: inline-block; margin: 0 8px; color: #52525b; text-decoration: none; font-size: 13px;">Instagram</a>
                 <span style="color: #d4d4d8;">•</span>
-                <a href="https://linkedin.com/company/autoshot" style="display: inline-block; margin: 0 8px; color: #52525b; text-decoration: none; font-size: 13px;">LinkedIn</a>
+                <a href="https://linkedin.com/company/autopic" style="display: inline-block; margin: 0 8px; color: #52525b; text-decoration: none; font-size: 13px;">LinkedIn</a>
               </div>
               <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
-                © ${new Date().getFullYear()} AutoShot. Alla rättigheter förbehållna.
+                © ${new Date().getFullYear()} AutoPic. Alla rättigheter förbehållna.
               </p>
             </td>
           </tr>

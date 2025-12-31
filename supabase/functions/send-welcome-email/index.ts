@@ -34,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
     const displayName = name || email.split('@')[0];
 
     const emailResponse = await resend.emails.send({
-      from: "AutoPic <onboarding@resend.dev>",
+      from: "AutoPic <hello@hello.autopic.studio>",
       to: [email],
       subject: "Välkommen till AutoPic! 🚗",
       html: `
