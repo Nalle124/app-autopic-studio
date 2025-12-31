@@ -128,30 +128,24 @@ serve(async (req) => {
       const product = await stripe.products.retrieve(productId);
       planName = product.name;
 
-      // Monthly top-up WITHOUT webhooks:
-      // On each check, ensure we only top up once per Stripe billing period.
-      // We use credit_transactions as the idempotency store.
-      const periodKey = `${subscription.id}:${subscription.current_period_start}`;
-      const topupMarker = `sub_period:${periodKey}`;
+      // Monthly credit RESET mechanism (credits are REPLACED, not accumulated)
+      // Uses current_period_end as the period identifier (always exists)
+      const periodEndTimestamp = subscription.current_period_end;
+      const periodKey = `${subscription.id}:${periodEndTimestamp}`;
 
       if (creditsPerMonth > 0) {
-        const { data: existingTopup } = await supabaseClient
+        // Check if we already applied credits for this billing period
+        const { data: existingReset } = await supabaseClient
           .from('credit_transactions')
           .select('id')
           .eq('user_id', user.id)
-          .eq('transaction_type', 'subscription_topup')
-          .like('description', `%${topupMarker}%`)
-          .limit(1);
+          .eq('transaction_type', 'subscription_renewal')
+          .eq('description', periodKey)
+          .maybeSingle();
 
-        if (!existingTopup || existingTopup.length === 0) {
-          const { data: currentCredits } = await supabaseClient
-            .from('user_credits')
-            .select('credits')
-            .eq('user_id', user.id)
-            .single();
-
-          const currentBalance = currentCredits?.credits || 0;
-          const newBalance = currentBalance + creditsPerMonth;
+        if (!existingReset) {
+          // REPLACE credits with the plan amount (unused credits don't carry over)
+          const newBalance = creditsPerMonth;
 
           await supabaseClient
             .from('user_credits')
@@ -167,11 +161,11 @@ serve(async (req) => {
               user_id: user.id,
               amount: creditsPerMonth,
               balance_after: newBalance,
-              transaction_type: 'subscription_topup',
-              description: `Månadspåfyllning: ${planName} (+${creditsPerMonth}) (${topupMarker})`,
+              transaction_type: 'subscription_renewal',
+              description: periodKey,  // Use periodKey for idempotency
             });
 
-          logStep('Monthly top-up applied', { creditsPerMonth, newBalance, periodKey });
+          logStep('Monthly credits reset', { creditsPerMonth, newBalance, periodKey });
         }
       }
 
