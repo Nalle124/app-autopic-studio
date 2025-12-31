@@ -40,7 +40,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
             <img 
               src={autopicLogo} 
               alt="AutoPic" 
-              className="h-10 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
           </button>
           
