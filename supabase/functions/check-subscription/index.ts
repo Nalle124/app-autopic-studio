@@ -130,6 +130,7 @@ serve(async (req) => {
 
       // Monthly credit RESET mechanism (credits are REPLACED, not accumulated)
       // Uses current_period_end as the period identifier (always exists)
+      // This only triggers when the billing period changes (monthly renewal)
       const periodEndTimestamp = subscription.current_period_end;
       const periodKey = `${subscription.id}:${periodEndTimestamp}`;
 
@@ -143,9 +144,47 @@ serve(async (req) => {
           .eq('description', periodKey)
           .maybeSingle();
 
-        if (!existingReset) {
-          // REPLACE credits with the plan amount (unused credits don't carry over)
-          const newBalance = creditsPerMonth;
+        // Also check if this is a NEW subscription (handled by verify-payment)
+        // A new subscription will have a 'subscription' transaction from verify-payment
+        const { data: recentSubscription } = await supabaseClient
+          .from('credit_transactions')
+          .select('id, created_at')
+          .eq('user_id', user.id)
+          .eq('transaction_type', 'subscription')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        // If subscription was just created (within 5 minutes), don't reset credits
+        // verify-payment already set the credits correctly
+        const isNewSubscription = recentSubscription && 
+          (Date.now() - new Date(recentSubscription.created_at).getTime() < 5 * 60 * 1000);
+
+        if (!existingReset && !isNewSubscription) {
+          // Get current balance to check for recent purchases
+          const { data: currentCredits } = await supabaseClient
+            .from('user_credits')
+            .select('credits')
+            .eq('user_id', user.id)
+            .single();
+
+          // Check if user bought additional credits recently (within last hour)
+          // We don't want to lose those on renewal
+          const { data: recentPurchase } = await supabaseClient
+            .from('credit_transactions')
+            .select('amount')
+            .eq('user_id', user.id)
+            .eq('transaction_type', 'purchase')
+            .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+            .maybeSingle();
+
+          // Calculate new balance
+          // If recent purchase exists, add those credits on top of plan credits
+          let newBalance = creditsPerMonth;
+          if (recentPurchase) {
+            newBalance = creditsPerMonth + recentPurchase.amount;
+            logStep('Preserving recent purchase on renewal', { purchaseAmount: recentPurchase.amount });
+          }
 
           await supabaseClient
             .from('user_credits')
@@ -166,6 +205,8 @@ serve(async (req) => {
             });
 
           logStep('Monthly credits reset', { creditsPerMonth, newBalance, periodKey });
+        } else if (isNewSubscription) {
+          logStep('Skipping reset - new subscription just created by verify-payment');
         }
       }
 

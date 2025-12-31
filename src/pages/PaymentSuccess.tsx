@@ -14,6 +14,7 @@ const PaymentSuccess = () => {
   const { refetch: refetchCredits } = useUserCredits();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [creditsAdded, setCreditsAdded] = useState(0);
+  const [mode, setMode] = useState<'subscription' | 'payment' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,6 +39,7 @@ const PaymentSuccess = () => {
         if (data.success) {
           setStatus('success');
           setCreditsAdded(data.credits_added);
+          setMode(data.mode || 'payment');
           await refetchCredits();
         } else {
           setStatus('error');
@@ -80,7 +82,10 @@ const PaymentSuccess = () => {
           {status === 'success' && (
             <>
               <p className="text-muted-foreground">
-                {creditsAdded} credits har lagts till på ditt konto.
+                {mode === 'subscription' 
+                  ? `Ditt konto har nu ${creditsAdded} credits per månad.`
+                  : `${creditsAdded} credits har lagts till på ditt konto.`
+                }
               </p>
               <Button onClick={() => navigate('/')} className="w-full">
                 Börja skapa bilder
