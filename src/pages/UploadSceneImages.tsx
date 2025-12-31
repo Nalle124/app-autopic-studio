@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,9 +7,25 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Upload, Check } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const UploadSceneImages = () => {
+  const { isAdmin, loading, adminLoading } = useAuth();
+  const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!loading && !adminLoading && !isAdmin) {
+      toast.error('Du har inte behörighet att se denna sida');
+      navigate('/');
+    }
+  }, [isAdmin, loading, adminLoading, navigate]);
+
+  // Show nothing while checking auth or if not admin
+  if (loading || adminLoading || !isAdmin) {
+    return null;
+  }
   const [sceneId, setSceneId] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
