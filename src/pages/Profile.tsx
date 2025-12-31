@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import autoshotLogo from '@/assets/autoshot-logo.png';
+import autopicLogo from '@/assets/autopic-logo.png';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -239,7 +239,7 @@ const ProfileContent = () => {
         <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
             <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
-              <img src={autoshotLogo} alt="AutoShot" className="h-10 w-auto object-contain" />
+              <img src={autopicLogo} alt="AutoPic" className="h-10 w-auto object-contain" />
             </button>
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Tillbaka">
@@ -278,7 +278,7 @@ const ProfileContent = () => {
         <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
-            <img src={autoshotLogo} alt="AutoShot" className="h-10 w-auto object-contain" />
+            <img src={autopicLogo} alt="AutoPic" className="h-10 w-auto object-contain" />
           </button>
           
           <div className="flex items-center gap-3">
@@ -392,7 +392,7 @@ const ProfileContent = () => {
               <CollapsibleContent>
                 <div className="mt-2 p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-3">
-                    Lägg till AutoShot på din hemskärm för snabb åtkomst:
+                    Lägg till AutoPic på din hemskärm för snabb åtkomst:
                   </p>
                   <ol className="text-sm text-muted-foreground space-y-1.5">
                     <li>1. Tryck på delningsikonen i din webbläsare</li>

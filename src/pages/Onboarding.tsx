@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Building2, Upload, ChevronRight, ChevronLeft, Check, ImageIcon, X, Sparkles, UserCircle, Plus } from 'lucide-react';
-import autoshotLogo from '@/assets/autoshot-logo.png';
+import autopicLogo from '@/assets/autopic-logo.png';
 
 type OnboardingStep = 'type' | 'info' | 'source' | 'logos';
 type CustomerType = 'company' | 'private';
@@ -186,12 +186,12 @@ export const Onboarding = () => {
         {/* Header */}
         <div className="text-center mb-6">
           <img 
-            src={autoshotLogo} 
-            alt="AutoShot" 
+            src={autopicLogo} 
+            alt="AutoPic" 
             className="h-10 w-auto mx-auto mb-4"
           />
           <h1 className="font-display text-2xl font-semibold text-foreground mb-1">
-            Välkommen till AutoShot
+            Välkommen till AutoPic
           </h1>
           <p className="text-sm text-muted-foreground">
             Låt oss ställa in ditt konto
@@ -402,7 +402,7 @@ export const Onboarding = () => {
                   <span className="font-sans">Hur hittade du oss?</span>
                 </CardTitle>
                 <CardDescription>
-                  Vi vill gärna veta hur du kom i kontakt med AutoShot
+                  Vi vill gärna veta hur du kom i kontakt med AutoPic
                 </CardDescription>
               </CardHeader>
               <CardContent>
