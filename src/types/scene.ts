@@ -59,6 +59,8 @@ export interface UploadedImage {
   carAnalysis?: CarAnalysis;
   carAdjustments?: CarAdjustments;
   isOriginal?: boolean; // Flag to distinguish original uploads from generated results
+  originalWidth?: number; // Original image width for quality calculation
+  originalHeight?: number; // Original image height for quality calculation
 }
 
 export interface ExportSettings {

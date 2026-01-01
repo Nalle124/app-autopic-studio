@@ -296,10 +296,50 @@ serve(async (req) => {
       console.log('AI Relight enabled with preserve-hue-and-saturation');
     }
     
-    // Output size based on orientation - increased for higher quality (~11MP)
-    const outputSize = orientation === 'portrait' ? '2732x4096' : '4096x2732';
+    // Dynamic output size based on original image dimensions
+    // This prevents upscaling small images which causes blurriness
+    const originalWidth = parseInt(formData.get('originalWidth') as string || '0');
+    const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
+    console.log('Original dimensions:', originalWidth, 'x', originalHeight);
+    
+    // Max dimensions for PhotoRoom (4096x2732 landscape, 2732x4096 portrait)
+    const maxWidth = orientation === 'portrait' ? 2732 : 4096;
+    const maxHeight = orientation === 'portrait' ? 4096 : 2732;
+    
+    let outputWidth: number;
+    let outputHeight: number;
+    
+    if (originalWidth > 0 && originalHeight > 0) {
+      // Calculate output size that doesn't exceed original dimensions
+      // but also doesn't exceed PhotoRoom max
+      const aspectRatio = originalWidth / originalHeight;
+      
+      if (orientation === 'portrait') {
+        // Portrait: height is the primary constraint
+        outputHeight = Math.min(originalHeight, maxHeight);
+        outputWidth = Math.round(outputHeight * aspectRatio);
+        if (outputWidth > maxWidth) {
+          outputWidth = maxWidth;
+          outputHeight = Math.round(outputWidth / aspectRatio);
+        }
+      } else {
+        // Landscape: width is the primary constraint
+        outputWidth = Math.min(originalWidth, maxWidth);
+        outputHeight = Math.round(outputWidth / aspectRatio);
+        if (outputHeight > maxHeight) {
+          outputHeight = maxHeight;
+          outputWidth = Math.round(outputHeight * aspectRatio);
+        }
+      }
+    } else {
+      // Fallback if dimensions not provided
+      outputWidth = maxWidth;
+      outputHeight = maxHeight;
+    }
+    
+    const outputSize = `${outputWidth}x${outputHeight}`;
     photoroomFormData.append('outputSize', outputSize);
-    console.log('Output size:', outputSize);
+    console.log('Calculated output size:', outputSize, '(original:', originalWidth, 'x', originalHeight, ')');
     
     console.log('Photoroom request prepared:');
     console.log('- Reference URL:', backgroundImageUrl);
