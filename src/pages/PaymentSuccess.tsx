@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,17 +16,22 @@ const PaymentSuccess = () => {
   const [creditsAdded, setCreditsAdded] = useState(0);
   const [mode, setMode] = useState<'subscription' | 'payment' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const hasVerified = useRef(false);
 
   useEffect(() => {
-    const verifyPayment = async () => {
-      const sessionId = searchParams.get('session_id');
-      
-      if (!sessionId || !user) {
-        setStatus('error');
-        setError('Ingen betalningssession hittades');
-        return;
-      }
+    // Prevent duplicate verification calls
+    if (hasVerified.current) return;
+    
+    const sessionId = searchParams.get('session_id');
+    if (!sessionId || !user) {
+      setStatus('error');
+      setError('Ingen betalningssession hittades');
+      return;
+    }
 
+    hasVerified.current = true;
+
+    const verifyPayment = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('verify-payment', {
           body: { sessionId },
@@ -53,7 +58,7 @@ const PaymentSuccess = () => {
     };
 
     verifyPayment();
-  }, [searchParams, user, refetchCredits]);
+  }, [searchParams, user]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
