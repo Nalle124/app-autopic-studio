@@ -10,7 +10,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   adminLoading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any; needsEmailConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -93,7 +93,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       },
     });
     
-    if (!error && data.user) {
+    // Check if email confirmation is required
+    if (!error && data.user && !data.session) {
+      // User created but needs email confirmation
+      return { error: null, needsEmailConfirmation: true };
+    }
+    
+    if (!error && data.user && data.session) {
       toast.success('Konto skapat! Du är nu inloggad.');
       
       // Send welcome email (non-blocking)
@@ -108,7 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       navigate('/onboarding');
     }
     
-    return { error };
+    return { error, needsEmailConfirmation: false };
   };
 
   const signIn = async (email: string, password: string) => {

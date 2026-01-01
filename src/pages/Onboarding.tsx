@@ -14,7 +14,7 @@ import autopicLogo from '@/assets/autopic-logo.png';
 
 type OnboardingStep = 'type' | 'info' | 'source' | 'logos';
 type CustomerType = 'company' | 'private';
-type ReferralSource = 'social' | 'search' | 'recommendation' | 'event' | 'other';
+type ReferralSource = 'social' | 'search' | 'recommendation' | 'other';
 
 interface CustomerInfo {
   full_name: string;
@@ -462,22 +462,6 @@ export const Onboarding = () => {
                     </div>
                   </label>
                   
-                  <label
-                    htmlFor="event"
-                    className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all ${
-                      referralSource === 'event' 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <RadioGroupItem value="event" id="event" />
-                    <div className="flex-1">
-                      <div className="font-medium">Event eller mässa</div>
-                      <div className="text-sm text-muted-foreground">
-                        Bilmässa, branschevent, etc.
-                      </div>
-                    </div>
-                  </label>
                   
                   <label
                     htmlFor="other"
