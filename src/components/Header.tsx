@@ -1,4 +1,5 @@
 import { LogOut, Shield, User, Sparkles, Coins } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserCredits } from "@/hooks/useUserCredits";
 import { useSubscription } from "@/hooks/useSubscription";
 import autopicLogo from "@/assets/autopic-logo.png";
+import autopicLogoLight from "@/assets/autopic-logo-light.png";
 
 interface HeaderProps {
   onUpgradeClick?: () => void;
@@ -21,6 +23,7 @@ interface HeaderProps {
 
 export const Header = ({ onUpgradeClick }: HeaderProps) => {
   const { user, isAdmin, signOut } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const { credits, loading: creditsLoading } = useUserCredits();
   const { subscribed, loading: subscriptionLoading } = useSubscription();
@@ -38,7 +41,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <img 
-              src={autopicLogo} 
+              src={theme === 'light' ? autopicLogoLight : autopicLogo} 
               alt="AutoPic" 
               className="h-12 w-auto object-contain"
             />

@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import autopicLogo from '@/assets/autopic-logo.png';
+import autopicLogoLight from '@/assets/autopic-logo-light.png';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -239,7 +240,7 @@ const ProfileContent = () => {
         <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
             <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
-              <img src={autopicLogo} alt="AutoPic" className="h-12 w-auto object-contain" />
+              <img src={theme === 'light' ? autopicLogoLight : autopicLogo} alt="AutoPic" className="h-12 w-auto object-contain" />
             </button>
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Tillbaka">
@@ -278,7 +279,7 @@ const ProfileContent = () => {
         <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
-            <img src={autopicLogo} alt="AutoPic" className="h-12 w-auto object-contain" />
+            <img src={theme === 'light' ? autopicLogoLight : autopicLogo} alt="AutoPic" className="h-12 w-auto object-contain" />
           </button>
           
           <div className="flex items-center gap-3">

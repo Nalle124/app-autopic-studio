@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Building2, Upload, ChevronRight, ChevronLeft, Check, ImageIcon, X, Sparkles, UserCircle, Plus } from 'lucide-react';
 import autopicLogo from '@/assets/autopic-logo.png';
+import autopicLogoLight from '@/assets/autopic-logo-light.png';
 
 type OnboardingStep = 'type' | 'info' | 'source' | 'logos';
 type CustomerType = 'company' | 'private';
@@ -28,6 +30,7 @@ interface CustomerInfo {
 
 export const Onboarding = () => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('type');
   const [customerType, setCustomerType] = useState<CustomerType>('company');
@@ -186,7 +189,7 @@ export const Onboarding = () => {
         {/* Header */}
         <div className="text-center mb-6">
           <img 
-            src={autopicLogo} 
+            src={theme === 'light' ? autopicLogoLight : autopicLogo} 
             alt="AutoPic" 
             className="h-12 w-auto mx-auto mb-4"
           />
