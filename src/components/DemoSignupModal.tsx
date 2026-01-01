@@ -144,6 +144,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
                   onChange={(e) => setFullName(e.target.value)}
                   className="h-11"
                   autoComplete="name"
+                  autoFocus={false}
                 />
               </div>
             )}
