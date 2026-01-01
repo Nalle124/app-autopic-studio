@@ -293,11 +293,11 @@ const Auth = () => {
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
                   Genom att skapa konto godkänner du våra{' '}
-                  <a href="https://autoshot.se/villkor" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  <a href="https://www.autopic.studio/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                     villkor
                   </a>{' '}
                   och{' '}
-                  <a href="https://autoshot.se/integritetspolicy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  <a href="https://www.autopic.studio/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                     integritetspolicy
                   </a>
                 </p>
