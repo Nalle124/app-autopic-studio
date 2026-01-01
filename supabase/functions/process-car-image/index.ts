@@ -94,11 +94,11 @@ serve(async (req) => {
       );
     }
 
-    // Validate file size (max 10MB)
-    const maxFileSize = 10 * 1024 * 1024;
+    // Validate file size (max 20MB for higher quality images)
+    const maxFileSize = 20 * 1024 * 1024;
     if (imageFile.size > maxFileSize) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Image too large. Maximum 10MB allowed' }),
+        JSON.stringify({ success: false, error: 'Image too large. Maximum 20MB allowed' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -296,8 +296,8 @@ serve(async (req) => {
       console.log('AI Relight enabled with preserve-hue-and-saturation');
     }
     
-    // Output size based on orientation
-    const outputSize = orientation === 'portrait' ? '2048x3072' : '3072x2048';
+    // Output size based on orientation - increased for higher quality (~11MP)
+    const outputSize = orientation === 'portrait' ? '2732x4096' : '4096x2732';
     photoroomFormData.append('outputSize', outputSize);
     console.log('Output size:', outputSize);
     
