@@ -609,25 +609,25 @@ export const Onboarding = () => {
           )}
 
           {/* Actions */}
-          <div className="p-6 pt-0 flex items-center justify-between">
-            <div>
+          <div className="p-6 pt-0 flex flex-wrap items-center justify-between gap-2">
+            <div className="shrink-0">
               {currentStep !== 'type' && (
-                <Button variant="ghost" onClick={handleBack} disabled={loading}>
+                <Button variant="ghost" onClick={handleBack} disabled={loading} size="sm" className="md:size-default">
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Tillbaka
                 </Button>
               )}
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {currentStep === 'logos' && (
-                <Button variant="ghost" onClick={handleComplete} disabled={loading}>
+                <Button variant="ghost" onClick={handleComplete} disabled={loading} size="sm" className="md:size-default">
                   Hoppa över
                 </Button>
               )}
               
               {currentStep === 'logos' ? (
-                <Button onClick={handleComplete} disabled={loading}>
+                <Button onClick={handleComplete} disabled={loading} size="sm" className="md:size-default">
                   {loading ? (
                     <div className="animate-spin w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full" />
                   ) : (
@@ -638,7 +638,7 @@ export const Onboarding = () => {
                   )}
                 </Button>
               ) : (
-                <Button onClick={handleNext}>
+                <Button onClick={handleNext} size="sm" className="md:size-default">
                   Nästa
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
