@@ -37,6 +37,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignIn, setIsSignIn] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +59,9 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         
         if (error) throw error;
         toast.success('Välkommen tillbaka!');
+        onSuccess();
+        onClose();
+        window.location.reload();
       } else {
         // Sign up
         if (!fullName) {
@@ -66,7 +70,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -78,13 +82,17 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         });
         
         if (error) throw error;
-        toast.success('Konto skapat! Du har 3 gratis bilder.');
+        
+        // Check if email confirmation is needed
+        if (data.user && !data.session) {
+          setShowEmailVerification(true);
+        } else {
+          toast.success('Konto skapat! Du har 3 gratis bilder.');
+          onSuccess();
+          onClose();
+          window.location.reload();
+        }
       }
-      
-      onSuccess();
-      onClose();
-      // Force page reload to refresh auth state
-      window.location.reload();
     } catch (error: any) {
       console.error('Auth error:', error);
       if (error.message?.includes('already registered')) {
@@ -112,16 +120,41 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
             
             <div className="relative z-10 p-6 pb-8 text-center">
               <h2 className="text-2xl font-bold text-foreground mb-2">
-                Skapa gratis konto
+                {showEmailVerification ? 'Bekräfta din e-post' : 'Skapa gratis konto'}
               </h2>
               <p className="text-sm text-foreground/80">
-                Testa 3 bilder helt gratis
+                {showEmailVerification ? 'Vi har skickat en verifieringslänk' : 'Testa 3 bilder helt gratis'}
               </p>
             </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 pt-0 space-y-4">
+          {showEmailVerification ? (
+            <div className="p-6 pt-0 space-y-4 text-center">
+              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="font-medium text-lg">{email}</p>
+              <p className="text-muted-foreground text-sm">
+                Klicka på länken i mailet för att aktivera ditt konto.
+              </p>
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400">
+                <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+              </div>
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  setShowEmailVerification(false);
+                  onClose();
+                }}
+                className="text-muted-foreground"
+              >
+                Stäng
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="p-6 pt-0 space-y-4">
             {/* Trust badges */}
             <div className="flex items-center justify-center gap-4 pb-2">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -238,6 +271,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
               </div>
             </div>
           </form>
+          )}
         </div>
       </DialogContent>
     </Dialog>

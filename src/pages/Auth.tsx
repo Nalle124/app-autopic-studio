@@ -20,6 +20,7 @@ const Auth = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
   const {
     signUp,
     signIn,
@@ -45,10 +46,14 @@ const Auth = () => {
       return;
     }
     setLoading(true);
-    const {
-      error
-    } = await signUp(email, password, fullName);
+    const { error, needsEmailConfirmation } = await signUp(email, password, fullName);
     setLoading(false);
+    
+    if (needsEmailConfirmation) {
+      setShowEmailVerification(true);
+      return;
+    }
+    
     if (error) {
       if (error.message.includes('already registered')) {
         toast.error('E-postadressen är redan registrerad');
@@ -108,6 +113,45 @@ const Auth = () => {
 
   if (isResetMode) {
     return <ResetPasswordForm />;
+  }
+
+  if (showEmailVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <CardTitle className="text-2xl">Bekräfta din e-post</CardTitle>
+            <CardDescription>
+              Vi har skickat en verifieringslänk till
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="font-medium text-lg">{email}</p>
+            <p className="text-muted-foreground text-sm">
+              Klicka på länken i mailet för att aktivera ditt konto.
+            </p>
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400">
+              <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+            </div>
+            <div className="pt-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowEmailVerification(false)}
+                className="text-muted-foreground"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Tillbaka till inloggning
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (showForgotPassword) {
