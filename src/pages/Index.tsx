@@ -319,6 +319,9 @@ function IndexContent() {
           formData.append('userId', user.id);
           formData.append('orientation', aspectRatio);
           formData.append('relight', relightEnabled ? 'true' : 'false');
+          // Send original dimensions for dynamic output sizing (prevents upscaling)
+          if (image.originalWidth) formData.append('originalWidth', image.originalWidth.toString());
+          if (image.originalHeight) formData.append('originalHeight', image.originalHeight.toString());
           if (projectId) {
             formData.append('projectId', projectId);
           }
@@ -1144,6 +1147,9 @@ function IndexContent() {
                   const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
                   formData.append('backgroundUrl', backgroundUrl);
                   formData.append('userId', user.id);
+                  // Send original dimensions for dynamic output sizing (prevents upscaling)
+                  if (currentImage.originalWidth) formData.append('originalWidth', currentImage.originalWidth.toString());
+                  if (currentImage.originalHeight) formData.append('originalHeight', currentImage.originalHeight.toString());
                   if (currentProjectId) {
                     formData.append('projectId', currentProjectId);
                   }

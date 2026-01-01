@@ -45,7 +45,7 @@ export const ImageUploader = ({
   const navigate = useNavigate();
   const uploadedImages = propUploadedImages || localImages;
   
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!user) {
       toast.error('Du måste logga in för att ladda upp bilder');
       navigate('/auth');
@@ -55,13 +55,44 @@ export const ImageUploader = ({
       toast.error('Max 50 bilder åt gången');
       return;
     }
-    const newImages: UploadedImage[] = acceptedFiles.map(file => ({
-      id: `${Date.now()}-${Math.random()}`,
-      file,
-      preview: URL.createObjectURL(file),
-      status: 'pending' as const,
-      isOriginal: true
-    }));
+    
+    // Extract original dimensions from each image
+    const newImages: UploadedImage[] = await Promise.all(
+      acceptedFiles.map(async (file) => {
+        const preview = URL.createObjectURL(file);
+        
+        // Get original image dimensions
+        const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            resolve({ width: img.naturalWidth, height: img.naturalHeight });
+          };
+          img.onerror = () => {
+            resolve({ width: 0, height: 0 });
+          };
+          img.src = preview;
+        });
+        
+        return {
+          id: `${Date.now()}-${Math.random()}`,
+          file,
+          preview,
+          status: 'pending' as const,
+          isOriginal: true,
+          originalWidth: dimensions.width,
+          originalHeight: dimensions.height
+        };
+      })
+    );
+    
+    // Warn if any image is low resolution
+    const lowResImages = newImages.filter(img => (img.originalWidth || 0) < 2500);
+    if (lowResImages.length > 0) {
+      toast.warning(`${lowResImages.length} bild(er) har låg upplösning (<2500px). Resultatet kan bli suddigt.`, {
+        duration: 5000
+      });
+    }
+    
     setLocalImages(prev => [...prev, ...newImages]);
     onImagesUploaded(newImages);
     toast.success(`${acceptedFiles.length} bilder uppladdade`);
