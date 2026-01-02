@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,9 +60,27 @@ const ProfileContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [portalLoading, setPortalLoading] = useState(false);
+
   const handleBuyCredits = () => {
     // Profile buy should NOT show the "Du har slut på credits" message
     triggerPaywall('profile-buy');
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err) {
+      console.error('Error opening customer portal:', err);
+      toast.error('Kunde inte öppna prenumerationshantering');
+    } finally {
+      setPortalLoading(false);
+    }
   };
 
   // Get the display name for the current plan
@@ -338,9 +356,29 @@ const ProfileContent = () => {
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="text-sm" onClick={handleBuyCredits}>
-              Köp credits
-            </Button>
+            <div className="flex items-center gap-2">
+              {isSubscribed && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-sm text-muted-foreground"
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                >
+                  {portalLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 mr-1" />
+                      Hantera
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" className="text-sm" onClick={handleBuyCredits}>
+                Köp credits
+              </Button>
+            </div>
           </div>
         </Card>
         {/* Theme Settings */}

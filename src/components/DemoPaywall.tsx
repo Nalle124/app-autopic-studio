@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
-import { Check, Loader2, ChevronDown, Star, User, ArrowRight } from 'lucide-react';
+import { Check, Loader2, ChevronDown, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,30 +20,6 @@ const benefits = [
   'Inga fler timmar med redigering – klar på sekunder',
 ];
 
-// Reviews with real-feeling data and placeholders for faces
-const reviews = [
-  { 
-    name: 'Erik L.', 
-    role: 'Bilhandlare, Göteborg',
-    text: 'Sålde en Volvo på 2 dagar istället för 2 veckor. Bilderna gjorde hela skillnaden.',
-    rating: 5,
-    avatar: null // placeholder
-  },
-  { 
-    name: 'Anna S.', 
-    role: 'Blocket-säljare',
-    text: 'Kunderna tror att jag har proffsig studio. Det har jag – på 30 sekunder.',
-    rating: 5,
-    avatar: null
-  },
-  { 
-    name: 'Johan K.', 
-    role: 'Privatförsäljare',
-    text: 'Fick 3 intresserade på första dagen. Bästa köpet jag gjort.',
-    rating: 5,
-    avatar: null
-  },
-];
 
 // Pricing plans
 const PRICING_PLANS = {
@@ -131,7 +107,6 @@ export const DemoPaywall = () => {
   const isMobile = useIsMobile();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [isYearly, setIsYearly] = useState(false);
-  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [oneTimeOpen, setOneTimeOpen] = useState(false);
   const [expandedPlan, setExpandedPlan] = useState<PlanKey | null>(null);
 
@@ -142,15 +117,6 @@ export const DemoPaywall = () => {
   const nextTier = getNextTier(currentProductId);
   const onHighestTier = isOnHighestTier(currentProductId);
   const availableUpgradeTiers = getAvailableUpgradeTiers(currentProductId);
-
-  // Auto-rotate reviews
-  useEffect(() => {
-    if (!showPaywall) return;
-    const interval = setInterval(() => {
-      setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [showPaywall]);
 
   const handleClose = () => {
     setShowPaywall(false);
@@ -196,7 +162,7 @@ export const DemoPaywall = () => {
     }
   };
 
-  const review = reviews[currentReviewIndex];
+
   const planKeys = ['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const;
 
   // Subscriber paywall - simplified view for refill/upgrade (and profile buy)
@@ -549,44 +515,13 @@ export const DemoPaywall = () => {
               </Collapsible>
             </div>
 
-            {/* Review - compact social proof */}
+            {/* Founder quote */}
             <div className="px-6 pb-6">
-              <div className="bg-muted/30 rounded-xl p-4 relative overflow-hidden">
-                {/* Subtle glow */}
-                <div className="absolute -top-10 -right-10 w-20 h-20 bg-primary/10 rounded-full blur-2xl" />
-                
-                <div className="relative flex items-start gap-3">
-                  {/* Avatar placeholder */}
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                    <User className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1 mb-1">
-                      {[...Array(review.rating)].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-primary text-primary" />
-                      ))}
-                    </div>
-                    <p className="text-sm text-foreground/90 mb-1 line-clamp-2">
-                      "{review.text}"
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {review.name} — {review.role}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Dots */}
-                <div className="flex justify-center gap-1.5 mt-3">
-                  {reviews.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentReviewIndex(i)}
-                      className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                        i === currentReviewIndex ? 'bg-primary' : 'bg-muted-foreground/30'
-                      }`}
-                    />
-                  ))}
-                </div>
+              <div className="text-center py-4">
+                <blockquote className="text-sm italic text-muted-foreground">
+                  "Skapad med passion, kaffe och bakgrundsjazz."
+                </blockquote>
+                <p className="text-xs text-muted-foreground/60 mt-2">— Grundaren</p>
               </div>
             </div>
 
