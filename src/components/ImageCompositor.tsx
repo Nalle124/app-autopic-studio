@@ -24,9 +24,10 @@ export const ImageCompositor = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Set canvas size to landscape format (3:2 ratio like iPhone landscape)
-      canvas.width = 3072;
-      canvas.height = 2048;
+      // Canvas size will be set dynamically based on original image dimensions
+      // Placeholder values - will be updated after loading images
+      let targetWidth = 3072;
+      let targetHeight = 2048;
 
       try {
         // Load background image - convert to absolute URL
@@ -51,6 +52,16 @@ export const ImageCompositor = ({
           };
           bgImage.src = absoluteBgUrl;
         });
+
+        // Set canvas size based on background image (up to 4096px max dimension)
+        const maxDim = 4096;
+        const bgScale = Math.min(1, maxDim / Math.max(bgImage.width, bgImage.height));
+        targetWidth = Math.round(bgImage.width * bgScale);
+        targetHeight = Math.round(bgImage.height * bgScale);
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        console.log('Canvas size set to:', targetWidth, 'x', targetHeight, '(original bg:', bgImage.width, 'x', bgImage.height, ')');
 
         // Draw background
         ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);

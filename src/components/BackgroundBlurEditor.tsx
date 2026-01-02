@@ -164,7 +164,8 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
     
     img.onload = () => {
       try {
-        const maxDim = 1200;
+        // Use full resolution for high-quality output (max 4096 for performance)
+        const maxDim = 4096;
         const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
         const workWidth = Math.round(img.width * scale);
         const workHeight = Math.round(img.height * scale);
@@ -234,7 +235,8 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
         }
         
         ctx.putImageData(resultData, 0, 0);
-        setProcessedUrl(canvas.toDataURL('image/jpeg', 0.92));
+        // Export as PNG for lossless quality (important for ad images)
+        setProcessedUrl(canvas.toDataURL('image/png', 1.0));
         setIsProcessing(false);
       } catch (err) {
         console.error('Blur processing error:', err);
