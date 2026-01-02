@@ -305,7 +305,8 @@ function IndexContent() {
               const ctx = canvas.getContext('2d');
               if (ctx) {
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.92));
+                // Send PNG (lossless) to PhotoRoom for best AI input quality
+                const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/png', 1.0));
                 console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
                 const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '.jpg';
                 formData.append('image', blob, fileName);
