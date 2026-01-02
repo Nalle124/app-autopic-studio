@@ -244,7 +244,8 @@ serve(async (req) => {
     
     // Use reference/guidance image for background
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    const referenceScale = scene.referenceScale ?? 1.0;
+    // Lower reference scale gives AI more freedom to generate cleaner backgrounds
+    const referenceScale = scene.referenceScale ?? 0.7;
     photoroomFormData.append('background.guidance.scale', referenceScale.toString());
     console.log('Reference scale:', referenceScale);
     
@@ -266,13 +267,7 @@ serve(async (req) => {
     photoroomFormData.append('background.prompt', prompt);
     console.log('Using prompt:', prompt);
     
-    // Negative prompt to prevent common issues including off-center / floating placement
-    photoroomFormData.append(
-      'background.negativePrompt',
-      'floating car, flying car, car in sky, car above ground, car too high in frame, car near top edge, ' +
-        'distorted, blurry, unrealistic scale, wrong perspective, car too small, car too large, multiple cars, ' +
-        'off-center car, car on right side, car on left side, asymmetric placement, cropped car'
-    );
+    // Note: negativePrompt is not effective with Studio model, removed
     
     // Add PhotoRoom AI shadow if specified
     const shadowMode = scene.photoroomShadowMode || 'none';
@@ -302,9 +297,9 @@ serve(async (req) => {
     const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
     console.log('Original dimensions:', originalWidth, 'x', originalHeight);
     
-    // Max dimensions for PhotoRoom (4096x2732 landscape, 2732x4096 portrait)
-    const maxWidth = orientation === 'portrait' ? 2732 : 4096;
-    const maxHeight = orientation === 'portrait' ? 4096 : 2732;
+    // Max dimensions for PhotoRoom (up to 5000px on longest side)
+    const maxWidth = 5000;
+    const maxHeight = 5000;
     
     let outputWidth: number;
     let outputHeight: number;
@@ -341,6 +336,9 @@ serve(async (req) => {
     photoroomFormData.append('outputSize', outputSize);
     console.log('Calculated output size:', outputSize, '(original:', originalWidth, 'x', originalHeight, ')');
     
+    // Request PNG output for lossless quality
+    photoroomFormData.append('export.format', 'png');
+    
     console.log('Photoroom request prepared:');
     console.log('- Reference URL:', backgroundImageUrl);
     console.log('- Seed:', PHOTOROOM_SEED);
@@ -348,6 +346,7 @@ serve(async (req) => {
     console.log('- Padding:', paddingValue);
     console.log('- Orientation:', orientation);
     console.log('- Relight:', relightEnabled);
+    console.log('- Output format: PNG');
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',

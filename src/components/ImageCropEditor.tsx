@@ -66,8 +66,8 @@ async function getCroppedImg(
     pixelCrop.height
   );
 
-  // Use JPEG with quality 0.9 for much smaller file size
-  return canvas.toDataURL('image/jpeg', 0.9);
+  // Use PNG for lossless quality (important for ad images)
+  return canvas.toDataURL('image/png', 1.0);
 }
 
 export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRatio, onPrevious, onNext, currentIndex, totalCount }: ImageCropEditorProps) => {
