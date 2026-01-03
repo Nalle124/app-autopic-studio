@@ -74,30 +74,25 @@ export const BrandKitDesignerSimplified = ({
     }
   }, [previewImage]);
 
-  // Load logos and saved kits, auto-apply profile logo if available
+  // Load logos and saved kits on open (do NOT auto-apply logos)
   useEffect(() => {
     if (user?.id && open) {
       loadProfileLogos();
       loadSavedKits();
-    } else if (open && defaultLogo && !design.logoUrl) {
-      // Demo mode: auto-apply default logo if defaultLogo provided and no logo set
-      onDesignChange({
-        ...design,
-        enabled: true,
-        logoUrl: defaultLogo,
-        logoX: design.logoX || 15,
-        logoY: design.logoY || 10,
-        logoSize: design.logoSize || 0.12,
-      });
     }
-  }, [user, open, defaultLogo]);
+    // Note: Removed auto-apply logic to prevent unwanted logo additions
+  }, [user, open]);
 
   // Reset on close
   useEffect(() => {
     if (!open) {
       setAppliedToAll(false);
+      setSelectedElement(null);
     }
   }, [open]);
+
+  // Track selected element for deletion/adjustment
+  const [selectedElement, setSelectedElement] = useState<'logo' | 'banner' | null>(null);
 
   const loadProfileLogos = async () => {
     try {
@@ -112,19 +107,7 @@ export const BrandKitDesignerSimplified = ({
       if (data) {
         setLogoLight(data.logo_light);
         setLogoDark(data.logo_dark);
-        
-        // Auto-apply first available logo if none selected
-        if (!design.logoUrl && (data.logo_light || data.logo_dark)) {
-          const autoLogo = data.logo_light || data.logo_dark;
-          onDesignChange({
-            ...design,
-            enabled: true,
-            logoUrl: autoLogo,
-            logoX: design.logoX || 15,
-            logoY: design.logoY || 10,
-            logoSize: design.logoSize || 0.12,
-          });
-        }
+        // Don't auto-apply logos - let user choose explicitly
       }
     } catch (error) {
       console.error('Error loading profile logos:', error);
@@ -553,12 +536,19 @@ export const BrandKitDesignerSimplified = ({
                 </div>
               )}
               
-              {/* Banner - draggable */}
+              {/* Banner - draggable and clickable for selection */}
               {design.bannerEnabled && (
                 <div
-                  className={`absolute cursor-move select-none touch-none transition-all ${isDragging === 'banner' ? 'ring-2 ring-primary' : 'hover:ring-2 hover:ring-primary/50'}`}
-                  onMouseDown={() => setIsDragging('banner')}
-                  onTouchStart={() => setIsDragging('banner')}
+                  className={`absolute cursor-move select-none touch-none transition-all ${
+                    selectedElement === 'banner' 
+                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' 
+                      : isDragging === 'banner' 
+                        ? 'ring-2 ring-primary' 
+                        : 'hover:ring-2 hover:ring-primary/50'
+                  }`}
+                  onClick={(e) => { e.stopPropagation(); setSelectedElement('banner'); }}
+                  onMouseDown={(e) => { e.stopPropagation(); setIsDragging('banner'); setSelectedElement('banner'); }}
+                  onTouchStart={(e) => { e.stopPropagation(); setIsDragging('banner'); setSelectedElement('banner'); }}
                   style={{
                     left: '50%',
                     top: `${design.bannerY}%`,
@@ -571,12 +561,19 @@ export const BrandKitDesignerSimplified = ({
                 />
               )}
               
-              {/* Logo - draggable */}
+              {/* Logo - draggable and clickable for selection */}
               {design.logoUrl && (
                 <div
-                  className={`absolute cursor-move select-none touch-none rounded transition-all ${isDragging === 'logo' ? 'ring-2 ring-primary scale-105' : 'ring-2 ring-transparent hover:ring-primary/50'}`}
-                  onMouseDown={() => setIsDragging('logo')}
-                  onTouchStart={() => setIsDragging('logo')}
+                  className={`absolute cursor-move select-none touch-none rounded transition-all ${
+                    selectedElement === 'logo'
+                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-105'
+                      : isDragging === 'logo' 
+                        ? 'ring-2 ring-primary scale-105' 
+                        : 'ring-2 ring-transparent hover:ring-primary/50'
+                  }`}
+                  onClick={(e) => { e.stopPropagation(); setSelectedElement('logo'); }}
+                  onMouseDown={(e) => { e.stopPropagation(); setIsDragging('logo'); setSelectedElement('logo'); }}
+                  onTouchStart={(e) => { e.stopPropagation(); setIsDragging('logo'); setSelectedElement('logo'); }}
                   style={{
                     left: `${design.logoX}%`,
                     top: `${design.logoY}%`,
@@ -592,7 +589,37 @@ export const BrandKitDesignerSimplified = ({
                   />
                 </div>
               )}
+              
+              {/* Click anywhere else to deselect */}
+              <div 
+                className="absolute inset-0 -z-10" 
+                onClick={() => setSelectedElement(null)}
+              />
             </div>
+
+            {/* Selected element actions */}
+            {selectedElement && (
+              <div className="flex items-center justify-between p-2 bg-primary/10 rounded-lg border border-primary/30">
+                <span className="text-sm font-medium text-primary">
+                  {selectedElement === 'logo' ? 'Logo vald' : 'Banner vald'}
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    if (selectedElement === 'logo') {
+                      removeLogo();
+                    } else {
+                      removeBanner();
+                    }
+                    setSelectedElement(null);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Ta bort
+                </Button>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="space-y-3 pt-2">

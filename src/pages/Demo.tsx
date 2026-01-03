@@ -19,7 +19,8 @@ import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 import { BrandKitDesignerSimplified, LogoDesign } from '@/components/BrandKitDesignerSimplified';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
-import autoshotLogo from '@/assets/autoshot-logo.png';
+import autopicLogo from '@/assets/autopic-logo.png';
+import autopicLogoLight from '@/assets/autopic-logo-light.png';
 import auraGradient from '@/assets/aura-gradient-step3.jpg';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -484,7 +485,7 @@ const DemoContent = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <img src={autoshotLogo} alt="Autoshot" className="h-8" />
+              <img src={theme === 'light' ? autopicLogoLight : autopicLogo} alt="Autopic" className="h-10" />
             </a>
             <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full font-medium">Demo</span>
           </div>
@@ -1237,7 +1238,7 @@ const DemoContent = () => {
         previewImage={completedImages[0]?.finalUrl || uploadedImages[0]?.preview}
         onApplyToAll={() => {
         }}
-        defaultLogo={autoshotLogo}
+        defaultLogo={autopicLogo}
       />
 
       {/* Signup Modal - shown when user tries to upload without account */}
