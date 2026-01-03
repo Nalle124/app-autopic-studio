@@ -238,7 +238,7 @@ export const DemoPaywall = () => {
                             {isLoading ? (
                               <Loader2 className="w-5 h-5 animate-spin text-primary" />
                             ) : (
-                              <span className="font-bold text-lg text-white">{displayPrice} kr/mån</span>
+                              <span className="font-bold text-lg text-white whitespace-nowrap">{displayPrice}&nbsp;kr/mån</span>
                             )}
                             <ArrowRight className="w-4 h-4 text-primary" />
                           </div>
@@ -437,8 +437,8 @@ export const DemoPaywall = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              <div className="text-right">
-                                <span className="text-lg font-bold text-white">{displayPrice} kr</span>
+                              <div className="text-right whitespace-nowrap">
+                                <span className="text-lg font-bold text-white">{displayPrice}&nbsp;kr</span>
                                 <span className="text-xs text-white/70">/mån</span>
                               </div>
                               <ChevronDown className={`w-5 h-5 text-white/70 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />

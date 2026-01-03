@@ -159,7 +159,6 @@ export const BrandKitDesignerSimplified = ({
 
   const applySavedKit = (kit: any) => {
     onDesignChange(kit.design as LogoDesign);
-    toast.success(`"${kit.name}" applicerad`);
   };
 
   const saveCurrentKit = async () => {
@@ -176,7 +175,6 @@ export const BrandKitDesignerSimplified = ({
       });
 
       if (error) throw error;
-      toast.success('Brand kit sparat!');
       loadSavedKits();
     } catch (error) {
       console.error('Error saving kit:', error);
@@ -188,7 +186,6 @@ export const BrandKitDesignerSimplified = ({
     try {
       const { error } = await supabase.from('brand_kits').delete().eq('id', kitId);
       if (error) throw error;
-      toast.success('Brand kit borttaget');
       loadSavedKits();
     } catch (error) {
       toast.error('Kunde inte ta bort');
@@ -364,7 +361,7 @@ export const BrandKitDesignerSimplified = ({
 
               {/* Logo size slider - only show when logo is active */}
               {design.logoUrl && (
-                <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">Storlek</Label>
                     <span className="text-xs text-muted-foreground">{Math.round(design.logoSize * 100)}%</span>
@@ -376,15 +373,17 @@ export const BrandKitDesignerSimplified = ({
                     max={40}
                     step={1}
                   />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={removeLogo}
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Ta bort logo
-                  </Button>
+                  <div className="pt-4 mt-4 border-t border-border/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={removeLogo}
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Ta bort logo
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -405,13 +404,13 @@ export const BrandKitDesignerSimplified = ({
                 </Button>
               ) : (
                 <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Färg</Label>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs shrink-0">Färg</Label>
                     <Input
                       type="color"
                       value={design.bannerColor}
                       onChange={(e) => onDesignChange({ ...design, bannerColor: e.target.value })}
-                      className="h-8 w-full cursor-pointer"
+                      className="h-8 w-16 cursor-pointer p-0 border-0"
                     />
                   </div>
                   

@@ -150,7 +150,6 @@ const ProfileContent = () => {
         .eq('id', user.id);
 
       if (error) throw error;
-      toast.success('Profil sparad');
     } catch (error) {
       console.error('Error saving profile:', error);
       toast.error('Kunde inte spara profil');

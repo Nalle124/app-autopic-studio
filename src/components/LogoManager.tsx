@@ -76,7 +76,6 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled, 
       const result = e.target?.result as string;
       setActiveVariant('custom');
       onLogoChange(result, logoPosition, logoEnabled, logoSize);
-      toast.success('Logo uppladdad');
     };
     reader.readAsDataURL(file);
   };
@@ -86,7 +85,6 @@ export const LogoManager = ({ onLogoChange, logoUrl, logoPosition, logoEnabled, 
     if (selectedLogo) {
       setActiveVariant(variant);
       onLogoChange(selectedLogo, logoPosition, logoEnabled, logoSize);
-      toast.success(`${variant === 'light' ? 'Ljus' : 'Mörk'} logo vald`);
     }
   };
 
