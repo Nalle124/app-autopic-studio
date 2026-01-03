@@ -361,22 +361,6 @@ const ProfileContent = () => {
                 Köp credits
               </Button>
             </div>
-            {isSubscribed && (
-              <button
-                onClick={handleManageSubscription}
-                disabled={portalLoading}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors ml-auto"
-              >
-                {portalLoading ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <>
-                    <CreditCard className="w-3 h-3" />
-                    Hantera prenumeration
-                  </>
-                )}
-              </button>
-            )}
           </div>
         </Card>
         {/* Theme Settings */}
@@ -607,7 +591,7 @@ const ProfileContent = () => {
         </Card>
 
         {/* Bug Report Section */}
-        <BugReportSection userId={user?.id} />
+        <BugReportSection userId={user?.id} isSubscribed={isSubscribed} onManageSubscription={handleManageSubscription} portalLoading={portalLoading} />
 
         {/* Logout Section */}
         <Card className="p-6 mt-6">
@@ -629,7 +613,7 @@ const ProfileContent = () => {
 };
 
 // Bug Report Component - Collapsible dropdown version
-const BugReportSection = ({ userId }: { userId?: string }) => {
+const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLoading }: { userId?: string; isSubscribed?: boolean; onManageSubscription?: () => void; portalLoading?: boolean }) => {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -701,6 +685,20 @@ const BugReportSection = ({ userId }: { userId?: string }) => {
         
         <CollapsibleContent className="pt-4">
           <div className="space-y-3">
+            {isSubscribed && onManageSubscription && (
+              <button
+                onClick={onManageSubscription}
+                disabled={portalLoading}
+                className="w-full flex items-center gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left"
+              >
+                {portalLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                )}
+                <span className="text-sm">{portalLoading ? 'Laddar...' : 'Hantera prenumeration'}</span>
+              </button>
+            )}
             <Textarea
               id="bug-message"
               placeholder="Beskriv vad som hände eller vad du tycker vi borde förbättra..."
