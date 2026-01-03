@@ -100,7 +100,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0 max-w-md overflow-hidden border-0 bg-transparent shadow-none">
+      <DialogContent className="p-0 gap-0 max-w-md overflow-hidden border-0 bg-transparent shadow-none" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
           {/* Header with gradient */}
           <div className="relative overflow-hidden">

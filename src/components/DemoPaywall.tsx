@@ -230,8 +230,8 @@ export const DemoPaywall = () => {
                               <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60" />
                             </>
                           )}
-                          <div className="relative z-10 text-left">
-                            <p className="font-medium text-white">Uppgradera till {plan.name}</p>
+                          <div className="relative z-10 text-left min-w-0">
+                            <p className="font-medium text-white">{plan.name}</p>
                             <p className="text-sm text-white/70">{plan.credits} bilder/månad</p>
                           </div>
                           <div className="relative z-10 flex items-center gap-2">
