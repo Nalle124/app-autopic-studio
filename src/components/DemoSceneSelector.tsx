@@ -7,6 +7,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import {
   Select,
@@ -23,14 +24,13 @@ interface DemoSceneSelectorProps {
   onOrientationChange?: (orientation: 'landscape' | 'portrait') => void;
 }
 
-// Specific demo scene IDs
+// Specific demo scene IDs (popular/free scenes)
 const DEMO_SCENE_IDS = [
   'wood-slat-studio',
   'nordic-showroom',
   'platvagg-studio',
   'svart-platvagg',
   'verkstad-ljus',
-  'warszawa-showroom',
   'gra-enkel-studio',
   'stiftsgarden',
   'hostgata',
@@ -40,7 +40,7 @@ const DEMO_SCENE_IDS = [
 
 // Category config matching main app
 const categoryConfig: Record<string, { order: number; description: string }> = {
-  'demo': { order: 0, description: 'Gratis demo-bakgrunder' },
+  'demo': { order: 0, description: 'Populära bakgrunder för alla' },
   'studio-light': { order: 1, description: 'Ljusa studiomiljöer med rena ytor' },
   'studio-dark': { order: 2, description: 'Mörka studios med dramatisk belysning' },
   'studio-colored': { order: 3, description: 'Färgstarka studios med personlighet' },
@@ -76,8 +76,13 @@ export const DemoSceneSelector = ({
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('demo');
   const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('grid');
-  const { triggerPaywall } = useDemo();
+  const { triggerPaywall, isSubscribed } = useDemo();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
+  
+  // Users with subscription have access to all categories
+  // Free users (logged in without subscription) only have access to demo category
+  const hasFullAccess = isSubscribed;
 
   useEffect(() => {
     loadScenes();
@@ -233,7 +238,8 @@ export const DemoSceneSelector = ({
   };
 
   const categoryScenes = getScenesByCategory(activeCategory);
-  const isLockedCategory = activeCategory !== 'demo';
+  // Lock categories for free users (non-subscribers), except demo category
+  const isLockedCategory = activeCategory !== 'demo' && !hasFullAccess;
 
   return (
     <div className="space-y-4">
@@ -269,11 +275,11 @@ export const DemoSceneSelector = ({
                 {activeCategory === 'demo' ? (
                   <span className="flex items-center gap-2">
                     <Star className="w-4 h-4 fill-current text-primary" />
-                    Demo
+                    Populära
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <Lock className="w-3 h-3" />
+                    {!hasFullAccess && <Lock className="w-3 h-3" />}
                     {getCategoryDisplayName(activeCategory)}
                   </span>
                 )}
@@ -285,11 +291,11 @@ export const DemoSceneSelector = ({
                   {category === 'demo' ? (
                     <span className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-current text-primary" />
-                      Demo
+                      Populära
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      <Lock className="w-3 h-3 text-muted-foreground" />
+                      {!hasFullAccess && <Lock className="w-3 h-3 text-muted-foreground" />}
                       {getCategoryDisplayName(category)}
                     </span>
                   )}
@@ -313,11 +319,11 @@ export const DemoSceneSelector = ({
                 {category === 'demo' ? (
                   <span className="flex items-center gap-2">
                     <Star className="w-4 h-4 fill-current" />
-                    Demo
+                    Populära
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    {category !== 'demo' && <Lock className="w-3 h-3" />}
+                    {!hasFullAccess && <Lock className="w-3 h-3" />}
                     {getCategoryDisplayName(category)}
                   </span>
                 )}
