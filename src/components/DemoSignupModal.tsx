@@ -100,7 +100,11 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0 max-w-md overflow-hidden border-0 bg-transparent shadow-none" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent 
+        className="p-0 gap-0 max-w-md overflow-hidden border-0 bg-transparent shadow-none max-h-[90vh] overflow-y-auto" 
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
           {/* Header with gradient */}
           <div className="relative overflow-hidden">
@@ -167,9 +171,10 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
                   placeholder="Ditt namn"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="h-11"
+                  className="h-11 text-base"
                   autoComplete="name"
                   autoFocus={false}
+                  inputMode="text"
                 />
               </div>
             )}
@@ -182,8 +187,9 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
                 placeholder="din@email.se"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
+                className="h-11 text-base"
                 autoComplete="email"
+                inputMode="email"
               />
             </div>
 
@@ -194,7 +200,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
                 placeholder="Minst 6 tecken"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-11"
+                className="h-11 text-base"
                 autoComplete={isSignIn ? "current-password" : "new-password"}
               />
             </div>

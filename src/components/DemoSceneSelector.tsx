@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, Lock, Star, LayoutGrid, GalleryHorizontal, Info } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
@@ -244,22 +244,6 @@ export const DemoSceneSelector = ({
 
   return (
     <div className="space-y-4">
-      {/* Info disclaimer */}
-      <Alert className="bg-muted/30 border-border/30 py-2.5">
-        <Info className="h-4 w-4 text-muted-foreground" />
-        <AlertDescription className="text-xs text-muted-foreground">
-          Olika bakgrunder passar olika bilar.{' '}
-          <a 
-            href="https://docs.autopic.se/guide" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="underline hover:text-foreground transition-colors"
-          >
-            Läs guiden
-          </a>{' '}
-          för bästa resultat.
-        </AlertDescription>
-      </Alert>
       {/* Orientation toggle - compact on mobile */}
       {isMobile && onOrientationChange && (
         <div className="flex items-center justify-between text-sm">
