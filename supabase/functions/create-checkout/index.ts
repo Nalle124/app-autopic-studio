@@ -94,6 +94,38 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://cfsyxrokdemwkklqflnb.lovableproject.com";
 
+    // Check if user already has an active subscription (only for subscription mode)
+    if ((mode === "subscription" || !mode) && customerId) {
+      const existingSubscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 1,
+      });
+
+      if (existingSubscriptions.data.length > 0) {
+        logStep("User has existing subscription, redirecting to portal for upgrade", { 
+          subscriptionId: existingSubscriptions.data[0].id 
+        });
+        
+        // Redirect to customer portal with subscription update flow
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: `${origin}/profile?from=stripe`,
+          flow_data: {
+            type: 'subscription_update',
+            subscription_update: {
+              subscription: existingSubscriptions.data[0].id,
+            },
+          },
+        });
+
+        return new Response(JSON.stringify({ url: portalSession.url }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,

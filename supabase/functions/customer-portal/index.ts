@@ -52,7 +52,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://cfsyxrokdemwkklqflnb.lovableproject.com";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/profile`,
+      return_url: `${origin}/profile?from=stripe`,
     });
     logStep("Customer portal session created", { url: portalSession.url });
 

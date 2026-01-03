@@ -252,7 +252,7 @@ export const DemoPaywall = () => {
                 {onHighestTier && (
                   <div className="text-center pt-2 text-sm text-muted-foreground">
                     <p>Behöver du fler credits?</p>
-                    <a href="mailto:hej@autoshot.se" className="text-primary hover:underline">
+                    <a href="mailto:jacob@autopic.studio" className="text-primary hover:underline">
                       Kontakta oss för företagsanpassad lösning
                     </a>
                   </div>

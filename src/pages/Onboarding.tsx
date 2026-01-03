@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,6 +35,7 @@ export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('type');
   const [customerType, setCustomerType] = useState<CustomerType>('company');
   const [loading, setLoading] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     full_name: '',
     company_name: '',
@@ -51,6 +52,45 @@ export const Onboarding = () => {
   const [referralOther, setReferralOther] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const secondLogoInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if user has already completed onboarding
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      if (!user) {
+        setCheckingOnboarding(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single();
+
+        if (!error && data?.onboarding_completed) {
+          // User already completed onboarding, redirect to home
+          navigate('/', { replace: true });
+          return;
+        }
+      } catch (err) {
+        console.error('Error checking onboarding status:', err);
+      }
+      
+      setCheckingOnboarding(false);
+    };
+
+    checkOnboardingStatus();
+  }, [user, navigate]);
+
+  // Show loading while checking onboarding status
+  if (checkingOnboarding) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Laddar...</div>
+      </div>
+    );
+  }
 
   const steps = [
     { id: 'type', label: 'Kundtyp', icon: UserCircle },
