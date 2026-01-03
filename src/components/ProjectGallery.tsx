@@ -71,9 +71,10 @@ const ProjectImagePreviewContent = ({
       <img
         src={displayUrl}
         alt={projectName}
-        className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-300 ${
+        className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${
           isLoading ? 'opacity-0' : 'opacity-100'
         }`}
+        style={{ willChange: 'opacity', contain: 'layout' }}
         loading="lazy"
         onLoad={() => setIsLoading(false)}
       />
@@ -111,7 +112,8 @@ const DialogJobCard = ({
       <img
         src={displayUrl!}
         alt={projectName}
-        className={`w-full h-full object-cover group-hover:scale-105 transition-all ${isImgLoading ? 'opacity-0' : 'opacity-100'}`}
+        className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${isImgLoading ? 'opacity-0' : 'opacity-100'}`}
+        style={{ willChange: 'opacity', contain: 'layout' }}
         loading="lazy"
         onLoad={() => setIsImgLoading(false)}
       />
