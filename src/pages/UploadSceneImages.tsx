@@ -12,7 +12,13 @@ import { useAuth } from '@/contexts/AuthContext';
 const UploadSceneImages = () => {
   const { isAdmin, loading, adminLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // All hooks must be declared before any early returns
   const [uploading, setUploading] = useState(false);
+  const [sceneId, setSceneId] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -26,10 +32,6 @@ const UploadSceneImages = () => {
   if (loading || adminLoading || !isAdmin) {
     return null;
   }
-  const [sceneId, setSceneId] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
