@@ -337,7 +337,6 @@ const DemoContent = () => {
     // Simulate sending email (in production, this would call an edge function)
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    toast.success('Bilderna skickas till din e-post inom kort!');
     setShowEmailCapture(false);
     setLeadEmail('');
     setPendingDownloadUrl(null);
@@ -461,7 +460,6 @@ const DemoContent = () => {
             carAdjustments: { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }
           } : img
         ));
-        toast.success('Bild genererad!');
       } else {
         throw new Error(result.error || 'Processing failed');
       }
@@ -1238,7 +1236,6 @@ const DemoContent = () => {
         onDesignChange={setLogoDesign}
         previewImage={completedImages[0]?.finalUrl || uploadedImages[0]?.preview}
         onApplyToAll={() => {
-          toast.success('Brand kit applicerat på alla bilder');
         }}
         defaultLogo={autoshotLogo}
       />
@@ -1250,7 +1247,6 @@ const DemoContent = () => {
         onSuccess={async () => {
           // Refetch credits after signup
           await refetchCredits();
-          toast.success('Välkommen! Du har 3 gratis bilder.');
         }}
       />
     </div>

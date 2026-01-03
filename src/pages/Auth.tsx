@@ -103,7 +103,6 @@ const Auth = () => {
       toast.error(error.message || 'Kunde inte skicka återställningsmail');
     } else {
       setResetEmailSent(true);
-      toast.success('Återställningslänk skickad till din e-post');
     }
   };
 

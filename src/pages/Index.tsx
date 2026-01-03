@@ -449,9 +449,6 @@ function IndexContent() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      if (!isMobile) {
-        toast.success('Bild nedladdad');
-      }
     } catch (error) {
       console.error('Download failed:', error);
       toast.error('Nedladdning misslyckades');
@@ -622,14 +619,14 @@ function IndexContent() {
             <img src={theme === 'light' ? autopicLogoLight : autopicLogo} alt="AutoPic" className="h-12 w-auto object-contain" />
           </button>
           
-          <div className="flex items-center gap-3">
-            {/* Skaffa Pro button - only for non-subscribers */}
+          <div className="flex items-center gap-2">
+            {/* Skaffa Pro button - only for non-subscribers, hide on small mobile */}
             {!subscriptionLoading && !isSubscribed && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => triggerPaywall('limit')}
-                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hidden sm:flex"
               >
                 <span>Skaffa Pro</span>
               </Button>
@@ -640,7 +637,6 @@ function IndexContent() {
               <button
                 onClick={() => {
                   if (isProcessing) {
-                    toast.error('Vänta tills genereringen är klar innan du går till Profil');
                     return;
                   }
                   navigate('/profil');
@@ -676,7 +672,6 @@ function IndexContent() {
                 size="icon"
                 onClick={() => {
                   if (isProcessing) {
-                    toast.error('Vänta tills genereringen är klar innan du går till Profil');
                     return;
                   }
                   navigate('/profil');
@@ -1007,7 +1002,6 @@ function IndexContent() {
                               return img;
                             }));
                             setOriginalImagesBeforeLogo(new Map());
-                            toast.success('Originalbilder återställda');
                           }
                           setLogoDesign({
                             enabled: false,
@@ -1375,7 +1369,6 @@ function IndexContent() {
           setGalleryIndex(0);
           setPreviewImage(croppedUrl);
         }
-        toast.success(`Beskärning applicerad på ${updates.size} bilder`);
       }} aspectRatio={aspectRatio} />;
     })()}
 
@@ -1426,7 +1419,6 @@ function IndexContent() {
           setGalleryIndex(index);
           setPreviewImage(adjustedUrl);
         }
-        toast.success('Justeringar sparade');
       }} onApplyToAll={async adjustments => {
         // Mark all completed images as loading
         const completedIds = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl).map(img => img.id);
@@ -1519,7 +1511,6 @@ function IndexContent() {
         } : img));
         
         setTimeout(() => setAnimatingImages(new Set()), 500);
-        toast.success('Blur applicerad');
       }} />;
     })()}
 
@@ -1632,9 +1623,7 @@ function IndexContent() {
           console.error('Error applying logo:', error);
         }
       }
-      toast.success(withoutLogo ? 'Sparade med och utan logo' : 'Logo design sparad på alla bilder');
     }} onApplyToAll={() => {
-      toast.success('Design kommer appliceras vid sparning');
     }} />
 
     {/* Scroll to top button - only show from results gallery onwards, hide at steps 3-5 on mobile */}

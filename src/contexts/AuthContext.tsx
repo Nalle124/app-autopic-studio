@@ -100,7 +100,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     
     if (!error && data.user && data.session) {
-      toast.success('Konto skapat! Du är nu inloggad.');
       
       // Send welcome email (non-blocking)
       supabase.functions.invoke('send-welcome-email', {
@@ -124,7 +123,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
     
     if (!error) {
-      toast.success('Inloggad!');
       navigate('/');
     }
     
@@ -134,7 +132,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
-    toast.success('Utloggad');
     navigate('/auth');
   };
 

@@ -4,26 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
-import { Check, Loader2, Star, User } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import auraGradient1 from '@/assets/aura-gradient-1.jpg';
 
-// Reviews for trust
-const reviews = [
-  { 
-    name: 'Erik L.', 
-    role: 'Bilhandlare, Göteborg',
-    text: 'Sålde en Volvo på 2 dagar istället för 2 veckor.',
-    rating: 5,
-  },
-  { 
-    name: 'Anna S.', 
-    role: 'Blocket-säljare',
-    text: 'Kunderna tror att jag har proffsig studio.',
-    rating: 5,
-  },
-];
+// Founder quote component
+const FounderQuote = () => (
+  <div className="text-center py-4">
+    <blockquote className="text-sm italic text-muted-foreground">
+      "Skapad med passion, kaffe och bakgrundsjazz."
+    </blockquote>
+    <p className="text-xs text-muted-foreground/60 mt-2">— Grundaren</p>
+  </div>
+);
 
 interface DemoSignupModalProps {
   open: boolean;
@@ -58,7 +52,6 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         });
         
         if (error) throw error;
-        toast.success('Välkommen tillbaka!');
         onSuccess();
         onClose();
         window.location.reload();
@@ -87,7 +80,6 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         if (data.user && !data.session) {
           setShowEmailVerification(true);
         } else {
-          toast.success('Konto skapat! Du har 3 gratis bilder.');
           onSuccess();
           onClose();
           window.location.reload();
@@ -247,28 +239,9 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
               )}
             </p>
 
-            {/* Review */}
+            {/* Founder quote */}
             <div className="pt-3 border-t border-border">
-              <div className="bg-muted/30 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {reviews[0].name} — {reviews[0].role}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm text-foreground/80 italic">
-                  "{reviews[0].text}"
-                </p>
-              </div>
+              <FounderQuote />
             </div>
           </form>
           )}
