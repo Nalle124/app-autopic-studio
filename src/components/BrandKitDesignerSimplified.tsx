@@ -61,6 +61,18 @@ export const BrandKitDesignerSimplified = ({
   const [saveWithoutLogo, setSaveWithoutLogo] = useState(false);
   const [appliedToAll, setAppliedToAll] = useState(false);
   const [isDragging, setIsDragging] = useState<string | null>(null);
+  const [imageOrientation, setImageOrientation] = useState<'landscape' | 'portrait'>('landscape');
+
+  // Detect image orientation for dynamic preview aspect ratio
+  useEffect(() => {
+    if (previewImage) {
+      const img = new Image();
+      img.onload = () => {
+        setImageOrientation(img.height > img.width ? 'portrait' : 'landscape');
+      };
+      img.src = previewImage;
+    }
+  }, [previewImage]);
 
   // Load logos and saved kits, auto-apply profile logo if available
   useEffect(() => {
@@ -531,10 +543,10 @@ export const BrandKitDesignerSimplified = ({
             </div>
             <div 
               ref={previewRef}
-              className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden border-2 border-border select-none"
+              className={`relative w-full ${imageOrientation === 'portrait' ? 'aspect-[3/4]' : 'aspect-video'} bg-muted rounded-lg overflow-hidden border-2 border-border select-none`}
             >
               {previewImage ? (
-                <img src={previewImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+                <img src={previewImage} alt="Preview" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center">
                   <span className="text-sm text-muted-foreground">Ingen bild vald</span>
