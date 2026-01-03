@@ -25,17 +25,74 @@ interface SceneMetadata {
     fade: number;
   };
   aiPrompt?: string;
-  photoroomShadowMode?: string; // 'none', 'ai.soft', 'ai.hard', 'ai.floating'
-  referenceScale?: number; // How closely to match the reference image (0.0-1.0, default 1.0)
+  photoroomShadowMode?: string;
+  referenceScale?: number;
 }
 
 // Fixed seed for consistent results across generations (PhotoRoom recommended)
 const PHOTOROOM_SEED = 117879368;
 
+// Helper function to compress image if too large
+async function compressImageIfNeeded(
+  imageBuffer: ArrayBuffer,
+  maxSizeBytes: number = 50 * 1024 * 1024 // 50MB threshold
+): Promise<{ buffer: ArrayBuffer; contentType: string; wasCompressed: boolean }> {
+  if (imageBuffer.byteLength <= maxSizeBytes) {
+    return { buffer: imageBuffer, contentType: 'image/png', wasCompressed: false };
+  }
+
+  console.log(`Image too large (${(imageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB), compressing to JPEG...`);
+  
+  // Use PhotoRoom's API to convert to JPEG with compression
+  // This is a simple conversion - we re-encode as JPEG
+  const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
+  
+  if (!PHOTOROOM_API_KEY) {
+    // If no API key, just return the original
+    console.warn('No PhotoRoom API key for compression, using original');
+    return { buffer: imageBuffer, contentType: 'image/png', wasCompressed: false };
+  }
+
+  try {
+    // Create a blob from the buffer
+    const blob = new Blob([imageBuffer], { type: 'image/png' });
+    
+    const formData = new FormData();
+    formData.append('image_file', blob, 'image.png');
+    formData.append('format', 'jpg');
+    formData.append('quality', '85');
+
+    const response = await fetch('https://image-api.photoroom.com/v2/edit', {
+      method: 'POST',
+      headers: {
+        'x-api-key': PHOTOROOM_API_KEY,
+      },
+      body: formData,
+    });
+
+    if (response.ok) {
+      const compressedBuffer = await response.arrayBuffer();
+      console.log(`Compressed to ${(compressedBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
+      return { buffer: compressedBuffer, contentType: 'image/jpeg', wasCompressed: true };
+    }
+  } catch (err) {
+    console.error('Compression failed:', err);
+  }
+
+  // Fallback: return original
+  return { buffer: imageBuffer, contentType: 'image/png', wasCompressed: false };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Track if we've deducted credits so we know if we need to refund
+  let creditDeducted = false;
+  let userId: string | null = null;
+  let originalCredits = 0;
+  let supabase: any = null;
 
   try {
     // SECURITY: Require authentication
@@ -50,7 +107,7 @@ serve(async (req) => {
     // Initialize Supabase client for auth verification
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey);
 
     // Verify the user's JWT token
     const token = authHeader.replace('Bearer ', '');
@@ -65,7 +122,7 @@ serve(async (req) => {
     }
 
     // Use authenticated user ID - never trust client-supplied userId
-    const userId = user.id;
+    userId = user.id;
     console.log(`Authenticated user: ${userId}`);
 
     const formData = await req.formData();
@@ -73,7 +130,6 @@ serve(async (req) => {
     const sceneData = formData.get('scene') as string;
     const backgroundImageUrl = formData.get('backgroundUrl') as string;
     const projectId = formData.get('projectId') as string | null;
-    // Note: userId from formData is now ignored - we use authenticated user ID
     const orientation = formData.get('orientation') as string || 'landscape';
     const relightEnabled = formData.get('relight') === 'true';
     
@@ -154,10 +210,9 @@ serve(async (req) => {
     console.log(`Orientation: ${orientation}`);
     console.log(`Relight enabled: ${relightEnabled}`);
 
-    // Always check and deduct credits - authentication is required
+    // Check credits BEFORE doing any work (but don't deduct yet)
     console.log(`Checking credits for user: ${userId}`);
     
-    // Get current credits
     const { data: creditsData, error: creditsError } = await supabase
       .from('user_credits')
       .select('credits')
@@ -169,10 +224,10 @@ serve(async (req) => {
       throw new Error('Kunde inte hämta credits. Försök igen.');
     }
 
-    const currentCredits = creditsData?.credits || 0;
-    console.log(`Current credits: ${currentCredits}`);
+    originalCredits = creditsData?.credits || 0;
+    console.log(`Current credits: ${originalCredits}`);
 
-    if (currentCredits < 1) {
+    if (originalCredits < 1) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -185,29 +240,6 @@ serve(async (req) => {
         }
       );
     }
-
-    // Deduct 1 credit
-    const newBalance = currentCredits - 1;
-    const { error: updateError } = await supabase
-      .from('user_credits')
-      .update({ credits: newBalance, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
-
-    if (updateError) {
-      console.error('Error deducting credit:', updateError);
-      throw new Error('Kunde inte dra credit. Försök igen.');
-    }
-
-    // Log the transaction
-    await supabase.from('credit_transactions').insert({
-      user_id: userId,
-      amount: -1,
-      balance_after: newBalance,
-      transaction_type: 'generation',
-      description: `Bildgenerering: ${scene.name}`,
-    });
-
-    console.log(`Credit deducted. New balance: ${newBalance}`);
 
     // Step 1: Upload original image to storage to get a URL
     const imageBuffer = await imageFile.arrayBuffer();
@@ -237,23 +269,16 @@ serve(async (req) => {
     
     const photoroomFormData = new FormData();
     
-    // Use imageUrl instead of imageFile - more reliable with Deno
-    // We already uploaded the image to storage, so use that public URL
     photoroomFormData.append('imageUrl', originalImageUrl);
     console.log('Using imageUrl:', originalImageUrl);
     
-    // Use reference/guidance image for background
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    // Lower reference scale gives AI more freedom to generate cleaner backgrounds
     const referenceScale = scene.referenceScale ?? 0.7;
     photoroomFormData.append('background.guidance.scale', referenceScale.toString());
     console.log('Reference scale:', referenceScale);
     
-    // Fixed seed for consistent results
     photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
     
-    // Scene-specific AI prompt (or default if not provided)
-    // Add a small orientation hint to reduce "car too high" issues in portrait.
     const basePrompt = scene.aiPrompt ||
       `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
       `Realistic scale, perspective and lighting for professional automotive photography.`;
@@ -267,50 +292,38 @@ serve(async (req) => {
     photoroomFormData.append('background.prompt', prompt);
     console.log('Using prompt:', prompt);
     
-    // Note: negativePrompt is not effective with Studio model, removed
-    
-    // Add PhotoRoom AI shadow if specified
     const shadowMode = scene.photoroomShadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
       photoroomFormData.append('shadow.mode', shadowMode);
       console.log('Adding PhotoRoom shadow:', shadowMode);
     }
     
-    // Fixed padding based on orientation
-    // Portrait needs a bit more padding to avoid cropping close-ups.
     const paddingValue = orientation === 'portrait' ? '0.08' : '0.10';
     photoroomFormData.append('padding', paddingValue);
     
-    // Set positioning to fit the vehicle naturally within the frame
     photoroomFormData.append('scaling', 'fit');
     photoroomFormData.append('referenceBox', 'originalImage');
     
-    // Add AI relight if enabled (preserve hue and saturation for accurate car colors)
     if (relightEnabled) {
       photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
       console.log('AI Relight enabled with preserve-hue-and-saturation');
     }
     
-    // Dynamic output size based on original image dimensions
-    // This prevents upscaling small images which causes blurriness
     const originalWidth = parseInt(formData.get('originalWidth') as string || '0');
     const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
     console.log('Original dimensions:', originalWidth, 'x', originalHeight);
     
-    // Max dimensions for PhotoRoom (up to 5000px on longest side)
-    const maxWidth = 5000;
-    const maxHeight = 5000;
+    // Max dimensions - reduced to 4000 to help with file size
+    const maxWidth = 4000;
+    const maxHeight = 4000;
     
     let outputWidth: number;
     let outputHeight: number;
     
     if (originalWidth > 0 && originalHeight > 0) {
-      // Calculate output size that doesn't exceed original dimensions
-      // but also doesn't exceed PhotoRoom max
       const aspectRatio = originalWidth / originalHeight;
       
       if (orientation === 'portrait') {
-        // Portrait: height is the primary constraint
         outputHeight = Math.min(originalHeight, maxHeight);
         outputWidth = Math.round(outputHeight * aspectRatio);
         if (outputWidth > maxWidth) {
@@ -318,7 +331,6 @@ serve(async (req) => {
           outputHeight = Math.round(outputWidth / aspectRatio);
         }
       } else {
-        // Landscape: width is the primary constraint
         outputWidth = Math.min(originalWidth, maxWidth);
         outputHeight = Math.round(outputWidth / aspectRatio);
         if (outputHeight > maxHeight) {
@@ -327,7 +339,6 @@ serve(async (req) => {
         }
       }
     } else {
-      // Fallback if dimensions not provided
       outputWidth = maxWidth;
       outputHeight = maxHeight;
     }
@@ -352,7 +363,6 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'x-api-key': PHOTOROOM_API_KEY,
-        // Use the Studio model for best photorealistic results
         'pr-ai-background-model-version': 'background-studio-beta-2025-03-17',
       },
       body: photoroomFormData,
@@ -362,6 +372,9 @@ serve(async (req) => {
       const errorText = await editResponse.text();
       console.error('Photoroom error:', editResponse.status, errorText);
       
+      // Clean up temp file before returning error
+      await supabase.storage.from('processed-cars').remove([uploadFilename]);
+      
       if (editResponse.status === 402) {
         throw new Error(`Photoroom: Out of API credits. Visit https://app.photoroom.com/api-dashboard to upgrade.`);
       }
@@ -369,14 +382,45 @@ serve(async (req) => {
         throw new Error(`Photoroom: Invalid API key. Please check your API key.`);
       }
       
-      throw new Error(`AI background processing failed: ${editResponse.status} - ${errorText}`);
+      // PhotoRoom failed = no charge from them = no credit deduction from user
+      throw new Error(`Bildbearbetning misslyckades. Ingen credit drogs. (${editResponse.status})`);
     }
 
     const finalImageBuffer = await editResponse.arrayBuffer();
     console.log('✅ Photoroom processed successfully!');
+    console.log(`Result size: ${(finalImageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
 
-    // Step 3: Save final image
-    console.log('Uploading final image...');
+    // *** CRITICAL: Deduct credit NOW - PhotoRoom has successfully processed and charged us ***
+    const newBalance = originalCredits - 1;
+    const { error: updateError } = await supabase
+      .from('user_credits')
+      .update({ credits: newBalance, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('Error deducting credit:', updateError);
+      // This is a serious issue - PhotoRoom charged us but we couldn't deduct
+      // Log it but continue - we'll need to handle this manually
+      console.error('CRITICAL: PhotoRoom processed image but credit deduction failed!');
+    } else {
+      creditDeducted = true;
+      console.log(`Credit deducted. New balance: ${newBalance}`);
+      
+      // Log the transaction
+      await supabase.from('credit_transactions').insert({
+        user_id: userId,
+        amount: -1,
+        balance_after: newBalance,
+        transaction_type: 'generation',
+        description: `Bildgenerering: ${scene.name}`,
+      });
+    }
+
+    // Step 3: Compress if needed and save final image
+    console.log('Preparing final image for upload...');
+    
+    const { buffer: uploadBuffer, contentType, wasCompressed } = await compressImageIfNeeded(finalImageBuffer);
+    const fileExtension = wasCompressed ? 'jpg' : 'png';
     
     // Sanitize scene ID for filename
     const sanitizedSceneId = scene.id
@@ -386,17 +430,48 @@ serve(async (req) => {
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
     
-    const finalFilename = `${crypto.randomUUID()}-${sanitizedSceneId}.png`;
-    const { data: finalUploadData, error: finalUploadError } = await supabase.storage
-      .from('processed-cars')
-      .upload(finalFilename, finalImageBuffer, {
-        contentType: 'image/png',
-        upsert: false,
-      });
+    const finalFilename = `${crypto.randomUUID()}-${sanitizedSceneId}.${fileExtension}`;
+    
+    // Retry logic for upload
+    let uploadSuccess = false;
+    let finalUploadError: any = null;
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log(`Upload attempt ${attempt}...`);
+      
+      const { data: finalUploadData, error } = await supabase.storage
+        .from('processed-cars')
+        .upload(finalFilename, uploadBuffer, {
+          contentType,
+          upsert: false,
+        });
 
-    if (finalUploadError) {
-      console.error('Final upload error:', finalUploadError);
-      throw new Error(`Final upload failed: ${finalUploadError.message}`);
+      if (!error) {
+        uploadSuccess = true;
+        break;
+      }
+      
+      finalUploadError = error;
+      console.error(`Upload attempt ${attempt} failed:`, error);
+      
+      // Don't retry on size errors - they won't succeed
+      if (error.message?.includes('exceeded') || error.statusCode === '413') {
+        console.error('File size error - not retrying');
+        break;
+      }
+      
+      // Wait before retry
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
+    }
+
+    if (!uploadSuccess) {
+      console.error('All upload attempts failed:', finalUploadError);
+      // Credit was already deducted (PhotoRoom charged us), so we can't refund
+      // But we should still clean up and return an error
+      await supabase.storage.from('processed-cars').remove([uploadFilename]);
+      throw new Error(`Bilden bearbetades men kunde inte sparas. Din credit användes. Kontakta support om problemet kvarstår.`);
     }
 
     const { data: finalPublicUrlData } = supabase.storage
@@ -405,20 +480,12 @@ serve(async (req) => {
 
     console.log('✅ Final image uploaded:', finalPublicUrlData.publicUrl);
 
-    // Step 4: Generate thumbnail (400px wide JPEG for fast gallery loading)
+    // Step 4: Generate thumbnail
     console.log('Generating thumbnail...');
     let thumbnailUrl: string | null = null;
     
     try {
-      // Create a thumbnail using canvas-like approach in Deno
-      // We'll use the Supabase Image Transformation if available, or create a smaller copy
-      const thumbnailFilename = `thumbnails/${crypto.randomUUID()}-${sanitizedSceneId}-thumb.jpg`;
-      
-      // For now, we'll upload a reference to use Supabase's transform API
-      // The thumbnail URL will use the transform parameter for resizing
       const transformedUrl = `${finalPublicUrlData.publicUrl}?width=400&quality=70`;
-      
-      // Store the original URL with transform parameters as thumbnail
       thumbnailUrl = transformedUrl;
       console.log('✅ Thumbnail URL generated:', thumbnailUrl);
     } catch (thumbError) {
@@ -431,7 +498,7 @@ serve(async (req) => {
       .from('processed-cars')
       .remove([uploadFilename]);
 
-    // Save to processing_jobs - user is always authenticated
+    // Save to processing_jobs
     let jobId: string | null = null;
     const { data: jobData, error: jobError } = await supabase
       .from('processing_jobs')
@@ -468,6 +535,11 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error processing image:', error);
+    
+    // Note: We do NOT refund credits here because if we reached the credit deduction point,
+    // it means PhotoRoom successfully processed and charged us.
+    // The error would be in storage upload, which doesn't warrant a refund.
+    
     return new Response(
       JSON.stringify({
         success: false,
