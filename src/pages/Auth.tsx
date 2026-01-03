@@ -137,14 +137,23 @@ const Auth = () => {
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400">
               <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
             </div>
-            <div className="pt-4">
+            <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+              Har du redan ett konto?{' '}
+              <button 
+                onClick={() => setShowEmailVerification(false)}
+                className="text-primary hover:underline font-medium"
+              >
+                Logga in istället
+              </button>
+            </div>
+            <div className="pt-2">
               <Button 
                 variant="ghost" 
                 onClick={() => setShowEmailVerification(false)}
                 className="text-muted-foreground"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Tillbaka till inloggning
+                Tillbaka
               </Button>
             </div>
           </CardContent>

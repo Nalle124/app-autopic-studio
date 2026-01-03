@@ -64,8 +64,10 @@ function IndexContent() {
         // Only restore completed images with valid finalUrl (not base64)
         return parsed.filter((img: any) => img.finalUrl && img.status === 'completed').map((img: any) => ({
           ...img,
-          preview: img.finalUrl,
-          // Use finalUrl as preview since original is lost
+          // Use originalPreview (segmented/background-removed) if available, otherwise fall back to finalUrl
+          preview: img.originalPreview || img.finalUrl,
+          // Keep original preview separate from generated result
+          originalPreview: img.originalPreview,
           file: new File([], img.fileName || 'restored.jpg', {
             type: 'image/jpeg'
           })
@@ -135,6 +137,8 @@ function IndexContent() {
           id: img.id,
           // Only store preview if it's a URL, not base64
           preview: img.preview?.startsWith('blob:') || img.preview?.startsWith('data:') ? null : img.preview,
+          // Store original preview separately (segmented/background-removed image)
+          originalPreview: (img as any).originalPreview?.startsWith('blob:') || (img as any).originalPreview?.startsWith('data:') ? null : (img as any).originalPreview,
           // Only store croppedUrl if it's a URL, not base64
           croppedUrl: img.croppedUrl?.startsWith('data:') ? null : img.croppedUrl,
           finalUrl: img.finalUrl,
