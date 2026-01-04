@@ -383,13 +383,136 @@ const DemoContent = () => {
     setEditingImage(null);
   };
 
-  const handleBlurApplyToAll = (blurredUrl: string) => {
-    // Apply the same blur effect URL to all completed images
-    setUploadedImages(prev => prev.map(img => 
-      img.status === 'completed' && img.finalUrl 
-        ? { ...img, finalUrl: blurredUrl } 
-        : img
-    ));
+  const handleBlurApplyToAll = async (blurredUrl: string, blurSettings?: any) => {
+    // Apply blur settings to all completed images
+    const completedImgs = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
+    
+    // If we have blur settings, apply them to each image individually
+    if (blurSettings && editingImage) {
+      const applyBlurToImage = async (imageUrl: string): Promise<string> => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            try {
+              const maxDim = 4096;
+              const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+              const workWidth = Math.round(img.width * scale);
+              const workHeight = Math.round(img.height * scale);
+              
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d', { willReadFrequently: true });
+              if (!ctx) { resolve(imageUrl); return; }
+              
+              canvas.width = workWidth;
+              canvas.height = workHeight;
+              ctx.drawImage(img, 0, 0, workWidth, workHeight);
+              
+              const originalData = ctx.getImageData(0, 0, workWidth, workHeight);
+              const blurRadius = Math.max(1, Math.round(blurSettings.blurAmount * scale));
+              
+              // Simple box blur
+              const boxBlur = (imageData: ImageData, radius: number): ImageData => {
+                const pixels = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                const output = new Uint8ClampedArray(pixels);
+                
+                for (let y = 0; y < height; y++) {
+                  for (let x = 0; x < width; x++) {
+                    let r = 0, g = 0, b = 0, a = 0, count = 0;
+                    for (let kx = -radius; kx <= radius; kx++) {
+                      const px = Math.min(Math.max(x + kx, 0), width - 1);
+                      const idx = (y * width + px) * 4;
+                      r += pixels[idx]; g += pixels[idx + 1]; b += pixels[idx + 2]; a += pixels[idx + 3];
+                      count++;
+                    }
+                    const idx = (y * width + x) * 4;
+                    output[idx] = r / count; output[idx + 1] = g / count; output[idx + 2] = b / count; output[idx + 3] = a / count;
+                  }
+                }
+                for (let i = 0; i < pixels.length; i++) pixels[i] = output[i];
+                for (let x = 0; x < width; x++) {
+                  for (let y = 0; y < height; y++) {
+                    let r = 0, g = 0, b = 0, a = 0, count = 0;
+                    for (let ky = -radius; ky <= radius; ky++) {
+                      const py = Math.min(Math.max(y + ky, 0), height - 1);
+                      const idx = (py * width + x) * 4;
+                      r += pixels[idx]; g += pixels[idx + 1]; b += pixels[idx + 2]; a += pixels[idx + 3];
+                      count++;
+                    }
+                    const idx = (y * width + x) * 4;
+                    output[idx] = r / count; output[idx + 1] = g / count; output[idx + 2] = b / count; output[idx + 3] = a / count;
+                  }
+                }
+                return new ImageData(output, width, height);
+              };
+              
+              let blurredData = new ImageData(new Uint8ClampedArray(originalData.data), workWidth, workHeight);
+              const passes = Math.min(3, Math.ceil(blurSettings.blurAmount / 8));
+              for (let p = 0; p < passes; p++) {
+                blurredData = boxBlur(blurredData, Math.ceil(blurRadius / passes));
+              }
+              
+              const centerX = (blurSettings.ovalX / 100) * workWidth;
+              const centerY = (blurSettings.ovalY / 100) * workHeight;
+              const radiusX = (blurSettings.ovalSize / 100) * workWidth * 0.65;
+              const radiusY = (blurSettings.ovalHeight / 100) * workHeight * 0.65;
+              const rotationRad = (blurSettings.rotation * Math.PI) / 180;
+              
+              const resultData = ctx.createImageData(workWidth, workHeight);
+              for (let y = 0; y < workHeight; y++) {
+                for (let x = 0; x < workWidth; x++) {
+                  const idx = (y * workWidth + x) * 4;
+                  const dx = x - centerX;
+                  const dy = y - centerY;
+                  const rotatedX = dx * Math.cos(-rotationRad) - dy * Math.sin(-rotationRad);
+                  const rotatedY = dx * Math.sin(-rotationRad) + dy * Math.cos(-rotationRad);
+                  const normalizedX = rotatedX / radiusX;
+                  const normalizedY = rotatedY / radiusY;
+                  const dist = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
+                  
+                  let blend = dist < 0.5 ? 0 : dist < 1.0 ? ((dist - 0.5) * 2) ** 2 : 1;
+                  resultData.data[idx] = originalData.data[idx] * (1 - blend) + blurredData.data[idx] * blend;
+                  resultData.data[idx + 1] = originalData.data[idx + 1] * (1 - blend) + blurredData.data[idx + 1] * blend;
+                  resultData.data[idx + 2] = originalData.data[idx + 2] * (1 - blend) + blurredData.data[idx + 2] * blend;
+                  resultData.data[idx + 3] = 255;
+                }
+              }
+              
+              ctx.putImageData(resultData, 0, 0);
+              resolve(canvas.toDataURL('image/png', 1.0));
+            } catch (err) {
+              resolve(imageUrl);
+            }
+          };
+          img.onerror = () => resolve(imageUrl);
+          img.src = imageUrl;
+        });
+      };
+      
+      // Apply blur to all images except the current one (which already has the blur applied)
+      for (const img of completedImgs) {
+        if (img.id !== editingImage.id && img.finalUrl) {
+          const blurredImageUrl = await applyBlurToImage(img.finalUrl);
+          setUploadedImages(prev => prev.map(prevImg => 
+            prevImg.id === img.id ? { ...prevImg, finalUrl: blurredImageUrl } : prevImg
+          ));
+        }
+      }
+      
+      // Update the current image with the processed URL
+      setUploadedImages(prev => prev.map(img => 
+        img.id === editingImage.id ? { ...img, finalUrl: blurredUrl } : img
+      ));
+    } else {
+      // Fallback: just set the same URL for all (old behavior)
+      setUploadedImages(prev => prev.map(img => 
+        img.status === 'completed' && img.finalUrl 
+          ? { ...img, finalUrl: blurredUrl } 
+          : img
+      ));
+    }
   };
 
   // Retry single failed image
@@ -1011,7 +1134,32 @@ const DemoContent = () => {
       {/* Preview Modal */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-4xl p-0 bg-background border-border">
-          <div className="relative">
+          <div 
+            className="relative touch-pan-y"
+            onTouchStart={(e) => {
+              const touch = e.touches[0];
+              (e.currentTarget as any)._touchStartX = touch.clientX;
+            }}
+            onTouchEnd={(e) => {
+              const touchStartX = (e.currentTarget as any)._touchStartX;
+              const touchEndX = e.changedTouches[0].clientX;
+              const diff = touchStartX - touchEndX;
+              
+              if (Math.abs(diff) > 50 && completedImages.length > 1) {
+                if (diff > 0) {
+                  // Swiped left - next image
+                  const newIndex = (galleryIndex + 1) % completedImages.length;
+                  setGalleryIndex(newIndex);
+                  setPreviewImage(completedImages[newIndex].finalUrl!);
+                } else {
+                  // Swiped right - previous image
+                  const newIndex = (galleryIndex - 1 + completedImages.length) % completedImages.length;
+                  setGalleryIndex(newIndex);
+                  setPreviewImage(completedImages[newIndex].finalUrl!);
+                }
+              }
+            }}
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -1026,7 +1174,7 @@ const DemoContent = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm hidden sm:flex"
                   onClick={() => {
                     const newIndex = (galleryIndex - 1 + completedImages.length) % completedImages.length;
                     setGalleryIndex(newIndex);
@@ -1038,7 +1186,7 @@ const DemoContent = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm hidden sm:flex"
                   onClick={() => {
                     const newIndex = (galleryIndex + 1) % completedImages.length;
                     setGalleryIndex(newIndex);
@@ -1051,7 +1199,7 @@ const DemoContent = () => {
             )}
 
             {previewImage && (
-              <img src={previewImage} alt="Preview" className="w-full h-auto" />
+              <img src={previewImage} alt="Preview" className="w-full h-auto select-none" draggable={false} />
             )}
 
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-background/80 backdrop-blur-sm p-2 rounded-full">
