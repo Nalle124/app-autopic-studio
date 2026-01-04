@@ -736,14 +736,7 @@ function IndexContent() {
           </section> : <div className={`space-y-8 ${selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing') ? 'pb-[70vh]' : 'pb-16'}`}>
             {/* Step 1: Upload */}
             <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                  <span className="not-italic text-primary font-sans text-base font-medium">1</span>
-                </div>
-                <div className="flex-1">
-                  <h2 className="font-sans font-medium text-lg">Ladda upp bilder</h2>
-                </div>
-              </div>
+              <h2 className="font-sans font-medium text-lg mb-4">Ladda upp bilder</h2>
               <ImageUploader onImagesUploaded={newImages => {
             setUploadedImages(prev => [...prev, ...newImages]);
           }} onRemoveImage={imageId => {
@@ -766,10 +759,7 @@ function IndexContent() {
 
             {/* Step 2: Scene Selection */}
             {uploadedImages.length > 0 && <section id="scene-section" className="border border-border rounded-[10px] p-6 space-y-4 dark:bg-[hsla(0,0%,14%,0.8)]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                    <span className="not-italic text-primary font-sans text-base font-medium">2</span>
-                  </div>
+                <div className="flex items-center gap-3 mb-4">
                   <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -790,12 +780,7 @@ function IndexContent() {
 
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
             {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="dark:bg-card border border-foreground/20 dark:border-border rounded-[10px] p-6 space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                    <span className="not-italic text-primary font-sans text-base font-medium">3</span>
-                  </div>
-                  <h2 className="font-sans font-medium text-lg text-foreground">Generera</h2>
-                </div>
+                <h2 className="font-sans font-medium text-lg text-foreground mb-4">Generera</h2>
                 
                 <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
               </section>}
@@ -804,12 +789,7 @@ function IndexContent() {
             {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                        <span className="not-italic text-primary font-sans text-base font-medium">4</span>
-                      </div>
-                      <h2 className="font-sans font-medium text-lg text-foreground">Redigera och ladda ner</h2>
-                    </div>
+                    <h2 className="font-sans font-medium text-lg text-foreground">Redigera och ladda ner</h2>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                       <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Redigera" onClick={() => {
@@ -972,14 +952,9 @@ function IndexContent() {
                 </div>
                 
                 <div className="relative p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                      <span className="text-primary font-sans text-base font-medium">5</span>
-                    </div>
-                    <div>
-                      <h2 className="text-foreground font-sans text-lg font-medium">Logo Design</h2>
-                      <p className="text-muted-foreground text-sm">Lägg till ditt varumärke på bilderna</p>
-                    </div>
+                  <div>
+                    <h2 className="text-foreground font-sans text-lg font-medium">Logo Design</h2>
+                    <p className="text-muted-foreground text-sm">Lägg till ditt varumärke på bilderna</p>
                   </div>
                   
                   <div className="flex items-center gap-3 w-full sm:w-auto">

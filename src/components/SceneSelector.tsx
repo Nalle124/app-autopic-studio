@@ -36,38 +36,43 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
     description: 'Våra mest populära bakgrunder',
     gradient: 'from-primary/20 via-accent-pink/10 to-background/5'
   },
-  'studio-light': { 
+  'studio-basic': { 
     order: 1, 
+    description: 'Enkla och rena studiomiljöer',
+    gradient: 'from-muted/20 via-background/10 to-background/5'
+  },
+  'studio-light': { 
+    order: 2, 
     description: 'Ljusa studiomiljöer med rena ytor',
     gradient: 'from-accent-orange/20 via-accent-pink/10 to-background/5'
   },
   'studio-dark': { 
-    order: 2, 
+    order: 3, 
     description: 'Mörka studios med dramatisk belysning',
     gradient: 'from-primary/20 via-accent-pink/10 to-background/5'
   },
   'studio-colored': { 
-    order: 3, 
+    order: 4, 
     description: 'Färgstarka studios med personlighet',
     gradient: 'from-accent-green/20 via-accent-orange/10 to-accent-pink/5'
   },
   'autumn': { 
-    order: 4, 
+    order: 5, 
     description: 'Höstmiljöer med varma färger',
     gradient: 'from-accent-orange/30 via-primary/10 to-background/5'
   },
   'winter': { 
-    order: 5, 
+    order: 6, 
     description: 'Vintermiljöer med nordisk känsla',
     gradient: 'from-accent-blue/20 via-white/10 to-background/5'
   },
   'outdoor': { 
-    order: 6, 
+    order: 7, 
     description: 'Utomhusmiljöer och naturliga scener',
     gradient: 'from-accent-blue/20 via-accent-green/10 to-background/5'
   },
   'premium': { 
-    order: 7, 
+    order: 8, 
     description: 'Exklusiva miljöer för lyxbilar',
     gradient: 'from-accent-pink/20 via-primary/10 to-background/5'
   },
@@ -87,6 +92,7 @@ const getCategoryDisplayName = (category: string) => {
   const names: Record<string, string> = {
     'favorites': 'Favoriter',
     'popular': 'Populära',
+    'studio-basic': 'Enkla Studios',
     'studio-light': 'Ljusa Studios',
     'studio-dark': 'Mörka Studios',
     'studio-colored': 'Färgade Studios',

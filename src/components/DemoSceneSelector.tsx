@@ -42,18 +42,20 @@ const DEMO_SCENE_IDS = [
 // Category config matching main app
 const categoryConfig: Record<string, { order: number; description: string }> = {
   'demo': { order: 0, description: 'Populära bakgrunder för alla' },
-  'studio-light': { order: 1, description: 'Ljusa studiomiljöer med rena ytor' },
-  'studio-dark': { order: 2, description: 'Mörka studios med dramatisk belysning' },
-  'studio-colored': { order: 3, description: 'Färgstarka studios med personlighet' },
-  'autumn': { order: 4, description: 'Höstmiljöer med varma färger' },
-  'winter': { order: 5, description: 'Vintermiljöer med nordisk känsla' },
-  'outdoor': { order: 6, description: 'Utomhusmiljöer och naturliga scener' },
-  'premium': { order: 7, description: 'Exklusiva miljöer för lyxbilar' },
+  'studio-basic': { order: 1, description: 'Enkla och rena studiomiljöer' },
+  'studio-light': { order: 2, description: 'Ljusa studiomiljöer med rena ytor' },
+  'studio-dark': { order: 3, description: 'Mörka studios med dramatisk belysning' },
+  'studio-colored': { order: 4, description: 'Färgstarka studios med personlighet' },
+  'autumn': { order: 5, description: 'Höstmiljöer med varma färger' },
+  'winter': { order: 6, description: 'Vintermiljöer med nordisk känsla' },
+  'outdoor': { order: 7, description: 'Utomhusmiljöer och naturliga scener' },
+  'premium': { order: 8, description: 'Exklusiva miljöer för lyxbilar' },
 };
 
 const getCategoryDisplayName = (category: string) => {
   const names: Record<string, string> = {
     'demo': 'Demo',
+    'studio-basic': 'Enkla Studios',
     'studio-light': 'Ljusa Studios',
     'studio-dark': 'Mörka Studios',
     'studio-colored': 'Färgade Studios',
