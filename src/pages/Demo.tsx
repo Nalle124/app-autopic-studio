@@ -638,12 +638,7 @@ const DemoContent = () => {
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* Step 1: Upload */}
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px]">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <span className="not-italic text-primary font-sans text-base font-medium">1</span>
-            </div>
-            <h2 className="text-lg font-medium text-foreground">Ladda upp bilder</h2>
-          </div>
+          <h2 className="text-lg font-medium text-foreground mb-6">Ladda upp bilder</h2>
           
           {/* Dropzone - matching main app border style */}
           <Card {...getRootProps()} onClick={handleDropzoneClick} className="cursor-pointer hover:border-primary/80 transition-colors">
@@ -804,9 +799,6 @@ const DemoContent = () => {
         {/* Step 2: Select background */}
         <Card id="demo-scene-section" className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <span className="not-italic text-primary font-sans text-base font-medium">2</span>
-            </div>
             <h2 className="text-lg font-medium text-foreground">Välj bakgrund</h2>
             <Popover>
               <PopoverTrigger asChild>
@@ -844,18 +836,13 @@ const DemoContent = () => {
 
           <div className="relative p-4 space-y-4">
             {/* Header */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                <span className="not-italic text-primary font-sans text-base font-medium">3</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-foreground mb-0.5">
-                  AI-Generering
-                </h3>
-                <p className="text-xs text-foreground/70">
-                  Välj inställningar och starta genereringen
-                </p>
-              </div>
+            <div>
+              <h3 className="text-lg font-medium text-foreground mb-0.5">
+                AI-Generering
+              </h3>
+              <p className="text-xs text-foreground/70">
+                Välj inställningar och starta genereringen
+              </p>
             </div>
 
             {/* Settings Collapsible - same as ExportPanel */}
@@ -981,14 +968,7 @@ const DemoContent = () => {
             </div>
             
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                    <span className="not-italic text-primary font-sans text-base font-medium">4</span>
-                  </div>
-                  <h2 className="text-lg font-medium text-foreground">Redigera och ladda ner</h2>
-                </div>
-              </div>
+              <h2 className="text-lg font-medium text-foreground mb-6">Redigera och ladda ner</h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {galleryImages.map((image) => (
@@ -1107,14 +1087,9 @@ const DemoContent = () => {
           </div>
           
           <div className="relative p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                <span className="not-italic text-primary font-sans text-base font-medium">5</span>
-              </div>
-              <div>
-                <h2 className="text-foreground font-sans text-lg font-medium">Logo Design</h2>
-                <p className="text-muted-foreground text-sm">Lägg till ditt varumärke på bilderna</p>
-              </div>
+            <div>
+              <h2 className="text-foreground font-sans text-lg font-medium">Logo Design</h2>
+              <p className="text-muted-foreground text-sm">Lägg till ditt varumärke på bilderna</p>
             </div>
             
             <div className="flex items-center gap-3 w-full sm:w-auto">
