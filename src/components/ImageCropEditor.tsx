@@ -398,16 +398,20 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
                     handleApplyToAll();
                   }
                 }} 
-                className={`flex-1 h-9 text-sm ${appliedToAll ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`} 
+                className={`flex-1 h-9 text-xs sm:text-sm px-2 sm:px-4 ${appliedToAll ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`} 
                 disabled={isSaving}
               >
                 {appliedToAll ? (
                   <>
-                    <Check className="w-3.5 h-3.5 mr-1.5" />
-                    Applicerat på alla
+                    <Check className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                    <span className="hidden sm:inline">Applicerat på alla</span>
+                    <span className="sm:hidden">Alla</span>
                   </>
                 ) : (
-                  'Applicera på alla'
+                  <>
+                    <span className="hidden sm:inline">Applicera på alla</span>
+                    <span className="sm:hidden">Alla bilder</span>
+                  </>
                 )}
               </Button>
             )}

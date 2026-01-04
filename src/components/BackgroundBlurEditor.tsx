@@ -10,14 +10,14 @@ interface BackgroundBlurEditorProps {
   open: boolean;
   onClose: () => void;
   onSave: (blurredUrl: string) => void;
-  onApplyToAll?: (blurredUrl: string) => void;
+  onApplyToAll?: (blurredUrl: string, blurSettings?: BlurSettings) => void;
   onPrevious?: () => void;
   onNext?: () => void;
   currentIndex?: number;
   totalCount?: number;
 }
 
-interface BlurSettings {
+export interface BlurSettings {
   blurAmount: number;
   ovalSize: number;
   ovalHeight: number; // separate height control for oval thickness
@@ -290,7 +290,8 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
 
   const handleApplyToAll = () => {
     if (processedUrl && onApplyToAll) {
-      onApplyToAll(processedUrl);
+      // Pass both the processed URL and the settings so parent can apply to other images
+      onApplyToAll(processedUrl, settings);
       setAppliedToAll(true);
     }
   };
@@ -635,15 +636,19 @@ export const BackgroundBlurEditor = ({ imageUrl, open, onClose, onSave, onApplyT
                 variant={appliedToAll ? "default" : "outline"}
                 onClick={handleApplyToAll}
                 disabled={isProcessing || !processedUrl}
-                className={`flex-1 sm:flex-none text-sm ${appliedToAll ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                className={`flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-4 ${appliedToAll ? 'bg-green-600 hover:bg-green-700' : ''}`}
               >
                 {appliedToAll ? (
                   <>
-                    <Check className="w-4 h-4 mr-1" />
-                    Applicerat på alla
+                    <Check className="w-4 h-4 mr-1 flex-shrink-0" />
+                    <span className="hidden sm:inline">Applicerat på alla</span>
+                    <span className="sm:hidden">Alla</span>
                   </>
                 ) : (
-                  'Applicera på alla'
+                  <>
+                    <span className="hidden sm:inline">Applicera på alla</span>
+                    <span className="sm:hidden">Alla bilder</span>
+                  </>
                 )}
               </Button>
             )}
