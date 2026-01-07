@@ -259,7 +259,7 @@ const ProfileContent = () => {
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
             {/* Logo - hidden on mobile to give space for nav */}
           <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity hidden sm:block">
-              <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-12 w-auto object-contain" />
+              <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
             </button>
             <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial justify-between sm:justify-end">
               <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Tillbaka" className="flex-shrink-0">
@@ -299,7 +299,7 @@ const ProfileContent = () => {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           {/* Logo - hidden on mobile to give space for nav */}
           <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity hidden sm:block">
-            <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-12 w-auto object-contain" />
+            <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
           </button>
           
           <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial justify-between sm:justify-end">

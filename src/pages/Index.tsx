@@ -620,7 +620,7 @@ function IndexContent() {
       <header className="border-b border-border/30 bg-card/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)]" style={{ top: 0, marginTop: 0 }}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => setActiveTab('new')} className="hover:opacity-80 transition-opacity">
-            <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-12 w-auto object-contain" />
+            <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
           </button>
           
           <div className="flex items-center gap-2">

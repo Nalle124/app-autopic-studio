@@ -608,7 +608,7 @@ const DemoContent = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-10" />
+              <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-6 w-auto" />
             </a>
             <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full font-medium">Demo</span>
           </div>
