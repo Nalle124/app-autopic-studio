@@ -43,7 +43,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
             <img 
               src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} 
               alt="AutoPic" 
-              className="h-12 w-auto object-contain"
+              className="h-6 w-auto"
             />
           </button>
           
