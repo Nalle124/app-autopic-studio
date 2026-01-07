@@ -30,8 +30,8 @@
     --border: 0 0% 85%;
     --input: 0 0% 85%;
     --ring: 0 38% 33%;
-    --radius: 0.625rem;
-    --radius-card: 0.625rem;
+    --radius: 0.9375rem;
+    --radius-card: 0.9375rem;
     --radius-button: 3rem;
     
     /* Gradients */
@@ -341,12 +341,12 @@
   
   /* Glass morphism card effect */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-[10px];
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-[15px];
   }
   
   /* Section card styling */
   .section-card {
-    @apply bg-card border border-border rounded-[10px] p-6;
+    @apply bg-card border border-border rounded-[15px] p-6;
   }
   
   /* Premium button glow */
