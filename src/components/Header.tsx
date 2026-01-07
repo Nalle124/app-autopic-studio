@@ -14,8 +14,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useUserCredits } from "@/hooks/useUserCredits";
 import { useSubscription } from "@/hooks/useSubscription";
-import autopicLogo from "@/assets/autopic-logo.png";
-import autopicLogoLight from "@/assets/autopic-logo-light.png";
+import autopicLogoDark from "@/assets/autopic-logo-dark.png";
+import autopicLogoWhite from "@/assets/autopic-logo-white.png";
 
 interface HeaderProps {
   onUpgradeClick?: () => void;
@@ -41,7 +41,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <img 
-              src={theme === 'light' ? autopicLogoLight : autopicLogo} 
+              src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} 
               alt="AutoPic" 
               className="h-12 w-auto object-contain"
             />

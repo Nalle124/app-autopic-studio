@@ -11,8 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Building2, Upload, ChevronRight, ChevronLeft, Check, ImageIcon, X, Sparkles, UserCircle, Plus } from 'lucide-react';
-import autopicLogo from '@/assets/autopic-logo.png';
-import autopicLogoLight from '@/assets/autopic-logo-light.png';
+import autopicLogoDark from '@/assets/autopic-logo-dark.png';
+import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 
 type OnboardingStep = 'type' | 'info' | 'source' | 'logos';
 type CustomerType = 'company' | 'private';
@@ -229,7 +229,7 @@ export const Onboarding = () => {
         {/* Header */}
         <div className="text-center mb-6">
           <img 
-            src={theme === 'light' ? autopicLogoLight : autopicLogo} 
+            src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} 
             alt="AutoPic" 
             className="h-12 w-auto mx-auto mb-4"
           />
