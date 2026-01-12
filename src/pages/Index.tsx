@@ -616,7 +616,7 @@ function IndexContent() {
     <>
     <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-border/30 bg-card/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)]" style={{ top: 0, marginTop: 0 }}>
+      <header className="border-b border-border/30 bg-card/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10" style={{ top: 0, marginTop: 0 }}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => setActiveTab('new')} className="hover:opacity-80 transition-opacity">
             <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
@@ -1204,8 +1204,8 @@ function IndexContent() {
                     </div>
                     
                     <Button size="sm" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber || 'bild'}_${currentImage.id}.jpg`)}>
-                      <Share2 className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">Dela</span>
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Ladda ner</span>
                     </Button>
                   </div>
                 </div>

@@ -918,7 +918,7 @@ const DemoContent = () => {
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Generate Button - centered, black with subtle glow */}
+            {/* Generate Button - gray variant with subtle glow */}
             <div className="flex justify-center">
               <Button 
                 onClick={() => {
@@ -926,7 +926,7 @@ const DemoContent = () => {
                   setShowSignupModal(true);
                 }} 
                 disabled={isProcessing || uploadedImages.length === 0 || !selectedScene} 
-                className={`h-10 px-8 text-sm font-bold bg-foreground hover:bg-foreground/90 text-background hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+                className={`h-10 px-8 text-sm font-bold bg-muted-foreground hover:bg-muted-foreground/90 text-background hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(128,128,128,0.3)] hover:shadow-[0_0_30px_rgba(128,128,128,0.4)] transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
               >
                 {/* Shimmer effect when not processing */}
                 {!isProcessing && (

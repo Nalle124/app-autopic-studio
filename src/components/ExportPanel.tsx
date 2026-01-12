@@ -133,16 +133,16 @@ export const ExportPanel = ({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Generate Button */}
+        {/* Generate Button - gray variant with subtle glow */}
         <div className="flex flex-col items-center space-y-2">
           <Button 
             onClick={handleExport} 
             disabled={isProcessing} 
-            className={`w-full sm:w-auto sm:min-w-[280px] h-10 text-sm font-bold bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/40 hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+            className={`w-full sm:w-auto sm:min-w-[280px] h-10 text-sm font-bold bg-muted-foreground hover:bg-muted-foreground/90 text-background hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(128,128,128,0.3)] hover:shadow-[0_0_30px_rgba(128,128,128,0.4)] transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
           >
             {/* Shimmer effect when not processing */}
             {!isProcessing && (
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             )}
             
             <span className="relative z-10">
