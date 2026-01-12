@@ -14,10 +14,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        accent: ['Playfair Display', 'ui-serif', 'Georgia', 'serif'],
+        accent: ['Host Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         heading: ['Host Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        sans: ['Host Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        small: ['Host Grotesk', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        small: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'monospace']
       },
       colors: {

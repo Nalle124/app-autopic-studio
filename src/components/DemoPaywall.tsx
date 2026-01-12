@@ -8,9 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import auraGradient1 from '@/assets/aura-gradient-1.jpg';
-import auraGradient2 from '@/assets/aura-gradient-2.jpg';
-import auraGradient3 from '@/assets/aura-gradient-3.jpg';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Outcome-driven benefits (not features)
@@ -21,20 +18,19 @@ const benefits = [
 ];
 
 
-// Pricing plans
+// Pricing plans - Updated names: Start, Pro, Business
 const PRICING_PLANS = {
-  hobbyhandlaren: {
-    name: 'Hobbyhandlaren',
+  start: {
+    name: 'Start',
     price: 499,
     yearlyPrice: 399,
     credits: 100,
     priceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n',
     yearlyPriceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n',
     tagline: '100 bilder/mån',
-    background: auraGradient1,
   },
-  blocketkungen: {
-    name: 'Blocketkungen',
+  pro: {
+    name: 'Pro',
     price: 699,
     yearlyPrice: 559,
     credits: 300,
@@ -42,17 +38,15 @@ const PRICING_PLANS = {
     yearlyPriceId: 'price_1SbVePJQldzCYD0ZL3pOnmK9',
     tagline: '300 bilder/mån',
     popular: true,
-    background: auraGradient2,
   },
-  storafisken: {
-    name: 'Stora fisken',
+  business: {
+    name: 'Business',
     price: 1299,
     yearlyPrice: 1039,
     credits: 600,
     priceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk',
     yearlyPriceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk',
     tagline: '600 bilder/mån',
-    background: auraGradient3,
   },
   creditPack: {
     name: '30 bilder',
@@ -68,13 +62,13 @@ type PlanKey = keyof typeof PRICING_PLANS;
 // Map product IDs to plan keys for upgrade suggestions
 const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
   // Current live Stripe product IDs (see src/config/pricing.ts)
-  'prod_TYctfRKGdxjyIo': 'hobbyhandlaren', // 100 credits
-  'prod_TYcu2RNAGGthF9': 'blocketkungen',   // 300 credits
-  'prod_TYcuc2xBrRbgIR': 'storafisken',     // 600 credits
+  'prod_TYctfRKGdxjyIo': 'start', // 100 credits
+  'prod_TYcu2RNAGGthF9': 'pro',   // 300 credits
+  'prod_TYcuc2xBrRbgIR': 'business',     // 600 credits
 };
 
 // Tier order for determining available upgrades
-const TIER_ORDER: PlanKey[] = ['hobbyhandlaren', 'blocketkungen', 'storafisken'];
+const TIER_ORDER: PlanKey[] = ['start', 'pro', 'business'];
 
 // Get available tiers for upgrade (tiers higher than current)
 const getAvailableUpgradeTiers = (currentProductId: string | null): PlanKey[] => {
@@ -89,15 +83,15 @@ const getAvailableUpgradeTiers = (currentProductId: string | null): PlanKey[] =>
 // Check if user is on the highest tier
 const isOnHighestTier = (currentProductId: string | null): boolean => {
   if (!currentProductId) return false;
-  return PRODUCT_TO_PLAN[currentProductId] === 'storafisken';
+  return PRODUCT_TO_PLAN[currentProductId] === 'business';
 };
 
 // Get next tier for upgrade (single next tier)
 const getNextTier = (currentProductId: string | null): PlanKey | null => {
-  if (!currentProductId) return 'hobbyhandlaren';
+  if (!currentProductId) return 'start';
   const currentPlan = PRODUCT_TO_PLAN[currentProductId];
-  if (currentPlan === 'hobbyhandlaren') return 'blocketkungen';
-  if (currentPlan === 'blocketkungen') return 'storafisken';
+  if (currentPlan === 'start') return 'pro';
+  if (currentPlan === 'pro') return 'business';
   return null; // Already on highest tier
 };
 
@@ -163,7 +157,7 @@ export const DemoPaywall = () => {
   };
 
 
-  const planKeys = ['hobbyhandlaren', 'blocketkungen', 'storafisken'] as const;
+  const planKeys = ['start', 'pro', 'business'] as const;
 
   // Subscriber paywall - simplified view for refill/upgrade (and profile buy)
   if (isSubscriberLimit || isProfileBuy) {
@@ -211,36 +205,30 @@ export const DemoPaywall = () => {
                       const plan = PRICING_PLANS[tier];
                       const isLoading = loadingTier === tier;
                       const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
-                      const hasBackground = 'background' in plan;
+                      const isBusiness = tier === 'business';
 
                       return (
                         <button
                           key={tier}
                           onClick={() => handleSelectPlan(tier)}
                           disabled={isLoading}
-                          className="relative w-full p-4 rounded-xl overflow-hidden border border-primary/30 hover:border-primary/50 transition-all flex items-center justify-between"
+                          className={`relative w-full p-4 rounded-xl overflow-hidden border transition-all flex items-center justify-between ${
+                            isBusiness 
+                              ? 'border-primary/50 gradient-premium' 
+                              : 'border-border bg-muted/30 hover:border-primary/30'
+                          }`}
                         >
-                          {/* Aura background */}
-                          {hasBackground && (
-                            <>
-                              <div 
-                                className="absolute inset-0 bg-cover bg-center"
-                                style={{ backgroundImage: `url(${plan.background})` }}
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60" />
-                            </>
-                          )}
                           <div className="relative z-10 text-left min-w-0">
-                            <p className="font-medium text-white">{plan.name}</p>
-                            <p className="text-sm text-white/70">{plan.credits} bilder/månad</p>
+                            <p className={`font-medium ${isBusiness ? 'text-white' : 'text-foreground'}`}>{plan.name}</p>
+                            <p className={`text-sm ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.credits} bilder/månad</p>
                           </div>
                           <div className="relative z-10 flex items-center gap-2">
                             {isLoading ? (
                               <Loader2 className="w-5 h-5 animate-spin text-primary" />
                             ) : (
-                              <span className="font-bold text-lg text-white whitespace-nowrap">{displayPrice}&nbsp;kr/mån</span>
+                              <span className={`font-bold text-lg whitespace-nowrap ${isBusiness ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr/mån</span>
                             )}
-                            <ArrowRight className="w-4 h-4 text-primary" />
+                            <ArrowRight className={`w-4 h-4 ${isBusiness ? 'text-white/70' : 'text-primary'}`} />
                           </div>
                         </button>
                       );
@@ -317,6 +305,7 @@ export const DemoPaywall = () => {
                   {planKeys.map((key) => {
                     const plan = PRICING_PLANS[key];
                     const isPopular = 'popular' in plan && plan.popular;
+                    const isBusiness = key === 'business';
                     const isLoading = loadingTier === key;
                     const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
 
@@ -326,25 +315,23 @@ export const DemoPaywall = () => {
                         onClick={() => !isLoading && handleSelectPlan(key)}
                         disabled={isLoading}
                         className={`relative rounded-2xl overflow-hidden transition-all text-left min-h-[320px] ${
-                          isPopular 
-                            ? 'ring-2 ring-white/30 scale-[1.02]' 
-                            : 'hover:ring-1 hover:ring-white/20'
+                          isBusiness 
+                            ? 'gradient-premium ring-2 ring-primary/30' 
+                            : isPopular 
+                              ? 'bg-muted/50 border border-primary/30 ring-1 ring-primary/20' 
+                              : 'bg-muted/30 border border-border hover:border-primary/20'
                         }`}
                       >
-                        {/* Background image */}
-                        {'background' in plan && (
-                          <div 
-                            className="absolute inset-0 bg-cover bg-center"
-                            style={{ backgroundImage: `url(${plan.background})` }}
-                          />
+                        {/* Dark overlay for non-business cards */}
+                        {!isBusiness && (
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                         
                         <div className="relative z-10 p-5 h-full flex flex-col">
                           <div className="flex items-start justify-between">
-                            <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                            <h3 className={`text-lg font-semibold ${isBusiness ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
                             {isPopular && (
-                              <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full font-medium">
+                              <span className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded-full font-medium">
                                 Populär
                               </span>
                             )}
@@ -352,36 +339,40 @@ export const DemoPaywall = () => {
                           
                           <div className="flex-1 flex flex-col justify-end">
                             <div className="flex items-baseline gap-1 mb-1">
-                              <span className="text-3xl font-bold text-white">{displayPrice}</span>
-                              <span className="text-sm text-white/70">kr</span>
-                              <span className="text-sm text-white/70">/månad</span>
+                              <span className={`text-3xl font-bold ${isBusiness ? 'text-white' : 'text-foreground'}`}>{displayPrice}</span>
+                              <span className={`text-sm ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>kr</span>
+                              <span className={`text-sm ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>/månad</span>
                             </div>
-                            <p className="text-sm text-white/80 mb-3">
+                            <p className={`text-sm mb-3 ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
                               Få full tillgång till magisk annonsbild-generering.
                             </p>
                             
-                            <div className="bg-white/10 backdrop-blur-sm rounded-full py-2.5 px-4 text-center mb-4 flex items-center justify-center gap-2">
+                            <div className={`rounded-full py-2.5 px-4 text-center mb-4 flex items-center justify-center gap-2 ${
+                              isBusiness 
+                                ? 'bg-white/20 backdrop-blur-sm' 
+                                : 'bg-primary/10'
+                            }`}>
                               {isLoading ? (
                                 <>
-                                  <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                  <span className="text-sm font-medium text-white">Laddar...</span>
+                                  <Loader2 className={`w-4 h-4 animate-spin ${isBusiness ? 'text-white' : 'text-primary'}`} />
+                                  <span className={`text-sm font-medium ${isBusiness ? 'text-white' : 'text-primary'}`}>Laddar...</span>
                                 </>
                               ) : (
-                                <span className="text-sm font-medium text-white">Skaffa nu</span>
+                                <span className={`text-sm font-medium ${isBusiness ? 'text-white' : 'text-primary'}`}>Skaffa nu</span>
                               )}
                             </div>
                             
-                            <div className="pt-4 border-t border-white/20 space-y-1.5">
-                              <div className="flex items-center gap-2 text-xs text-white/80">
-                                <Check className="w-3.5 h-3.5 text-white/70" />
+                            <div className={`pt-4 border-t space-y-1.5 ${isBusiness ? 'border-white/20' : 'border-border'}`}>
+                              <div className={`flex items-center gap-2 text-xs ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>{plan.credits} bilder/mån</span>
                               </div>
-                              <div className="flex items-center gap-2 text-xs text-white/80">
-                                <Check className="w-3.5 h-3.5 text-white/70" />
+                              <div className={`flex items-center gap-2 text-xs ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>Brand kit</span>
                               </div>
-                              <div className="flex items-center gap-2 text-xs text-white/80">
-                                <Check className="w-3.5 h-3.5 text-white/70" />
+                              <div className={`flex items-center gap-2 text-xs ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>Support</span>
                               </div>
                             </div>
@@ -398,6 +389,7 @@ export const DemoPaywall = () => {
                   {planKeys.map((key) => {
                     const plan = PRICING_PLANS[key];
                     const isPopular = 'popular' in plan && plan.popular;
+                    const isBusiness = key === 'business';
                     const isLoading = loadingTier === key;
                     const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
                     const isExpanded = expandedPlan === key;
@@ -406,7 +398,11 @@ export const DemoPaywall = () => {
                       <div
                         key={key}
                         className={`rounded-xl overflow-hidden transition-all ${
-                          isPopular ? 'ring-2 ring-primary/50' : ''
+                          isBusiness 
+                            ? 'gradient-premium' 
+                            : isPopular 
+                              ? 'ring-2 ring-primary/50 bg-muted/50' 
+                              : 'bg-muted/30 border border-border'
                         }`}
                       >
                         {/* Header - always visible */}
@@ -414,59 +410,51 @@ export const DemoPaywall = () => {
                           onClick={() => setExpandedPlan(isExpanded ? null : key)}
                           className="w-full relative overflow-hidden"
                         >
-                          {'background' in plan && (
-                            <div 
-                              className="absolute inset-0 bg-cover bg-center"
-                              style={{ backgroundImage: `url(${plan.background})` }}
-                            />
-                          )}
-                          <div className="absolute inset-0 bg-black/40" />
-                          
                           <div className="relative z-10 p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <h3 className="text-base font-semibold text-white text-left">{plan.name}</h3>
+                                  <h3 className={`text-base font-semibold text-left ${isBusiness ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
                                   {isPopular && (
-                                    <span className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded-full">
+                                    <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
                                       Populär
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-white/70 text-left">{plan.tagline}</p>
+                                <p className={`text-xs text-left ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.tagline}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-right whitespace-nowrap">
-                                <span className="text-lg font-bold text-white">{displayPrice}&nbsp;kr</span>
-                                <span className="text-xs text-white/70">/mån</span>
+                                <span className={`text-lg font-bold ${isBusiness ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr</span>
+                                <span className={`text-xs ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>/mån</span>
                               </div>
-                              <ChevronDown className={`w-5 h-5 text-white/70 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              <ChevronDown className={`w-5 h-5 transition-transform ${isBusiness ? 'text-white/70' : 'text-muted-foreground'} ${isExpanded ? 'rotate-180' : ''}`} />
                             </div>
                           </div>
                         </button>
                         
                         {/* Expanded content */}
                         {isExpanded && (
-                          <div className="bg-muted/50 p-4 space-y-3">
+                          <div className={`p-4 space-y-3 ${isBusiness ? 'bg-black/20' : 'bg-muted/50'}`}>
                             <div className="space-y-1.5">
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                              <div className={`flex items-center gap-2 text-sm ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>{plan.credits} bilder/mån</span>
                               </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                              <div className={`flex items-center gap-2 text-sm ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>Brand kit</span>
                               </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                              <div className={`flex items-center gap-2 text-sm ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>Support</span>
                               </div>
                             </div>
                             <Button
                               onClick={() => handleSelectPlan(key)}
                               disabled={isLoading}
-                              className="w-full"
+                              className={`w-full ${isBusiness ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
                             >
                               {isLoading ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
