@@ -61,11 +61,11 @@ function IndexContent() {
       const saved = localStorage.getItem('autoshot_uploaded_images');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Only restore completed images with valid finalUrl (not base64)
-        return parsed.filter((img: any) => img.finalUrl && img.status === 'completed').map((img: any) => ({
+        // Restore all images that have preview or finalUrl
+        return parsed.filter((img: any) => img.preview || img.finalUrl).map((img: any) => ({
           ...img,
-          // Use originalPreview (segmented/background-removed) if available, otherwise fall back to finalUrl
-          preview: img.originalPreview || img.finalUrl,
+          // Use preview if available, otherwise fall back to finalUrl
+          preview: img.preview || img.originalPreview || img.finalUrl,
           // Keep original preview separate from generated result
           originalPreview: img.originalPreview,
           file: new File([], img.fileName || 'restored.jpg', {
@@ -128,19 +128,19 @@ function IndexContent() {
     }
   }, [user, loading, navigate]);
 
-  // Persist uploaded images to localStorage - only store URLs, not base64 data
+  // Persist uploaded images to localStorage - store all images with URLs
   useEffect(() => {
     if (uploadedImages.length > 0) {
       try {
-        // Only store metadata and URLs that are NOT base64 (to avoid quota errors)
+        // Store all images that have valid URLs (not blob: which are temporary)
         const toSave = uploadedImages.map(img => ({
           id: img.id,
-          // Only store preview if it's a URL, not base64
-          preview: img.preview?.startsWith('blob:') || img.preview?.startsWith('data:') ? null : img.preview,
+          // Store preview if it's a valid URL (http/https), not blob or base64
+          preview: img.preview?.startsWith('http') ? img.preview : (img.finalUrl || null),
           // Store original preview separately (segmented/background-removed image)
-          originalPreview: (img as any).originalPreview?.startsWith('blob:') || (img as any).originalPreview?.startsWith('data:') ? null : (img as any).originalPreview,
+          originalPreview: (img as any).originalPreview?.startsWith('http') ? (img as any).originalPreview : null,
           // Only store croppedUrl if it's a URL, not base64
-          croppedUrl: img.croppedUrl?.startsWith('data:') ? null : img.croppedUrl,
+          croppedUrl: img.croppedUrl?.startsWith('http') ? img.croppedUrl : null,
           finalUrl: img.finalUrl,
           status: img.status,
           fileName: img.file?.name,
@@ -428,7 +428,6 @@ function IndexContent() {
             files: [file],
             title: 'Spara till Bilder'
           });
-          toast.success('Välj "Spara bild" för att lägga till i kamerarullen');
           return;
         }
       } catch (error: any) {

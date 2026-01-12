@@ -235,7 +235,6 @@ const DemoContent = () => {
       for (const image of uploadedImages) {
         // Check if user has credits left
         if (credits - successCount <= 0) {
-          toast.info('Inga credits kvar. Köp fler för att fortsätta.');
           triggerPaywall('limit');
           break;
         }
@@ -605,18 +604,16 @@ const DemoContent = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-6 w-auto" />
-            </a>
-            <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full font-medium">Demo</span>
-          </div>
-          <div className="flex items-center gap-3">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-2">
+          <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
+            <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-5 sm:h-6 w-auto" />
+          </a>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full font-medium hidden xs:inline">Demo</span>
             {/* Theme toggle - sun/moon */}
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="w-9 h-9 rounded-full bg-muted/50 border border-border/50 flex items-center justify-center hover:bg-muted transition-colors"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-muted/50 border border-border/50 flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0"
               title={theme === 'dark' ? 'Ljust läge' : 'Mörkt läge'}
             >
               {theme === 'dark' ? (
@@ -627,9 +624,11 @@ const DemoContent = () => {
             </button>
             <Button 
               onClick={handleCreateAccount}
-              className="rounded-full"
+              className="rounded-full text-sm px-3 sm:px-4 h-9"
+              size="sm"
             >
-              <span>Skapa gratis konto</span>
+              <span className="hidden xs:inline">Skapa gratis konto</span>
+              <span className="xs:hidden">Skapa konto</span>
             </Button>
           </div>
         </div>
@@ -919,7 +918,7 @@ const DemoContent = () => {
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Generate Button - centered, same style as main app */}
+            {/* Generate Button - centered, black with subtle glow */}
             <div className="flex justify-center">
               <Button 
                 onClick={() => {
@@ -927,11 +926,11 @@ const DemoContent = () => {
                   setShowSignupModal(true);
                 }} 
                 disabled={isProcessing || uploadedImages.length === 0 || !selectedScene} 
-                className={`h-10 px-8 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/40 hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+                className={`h-10 px-8 text-sm font-bold bg-foreground hover:bg-foreground/90 text-background hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
               >
                 {/* Shimmer effect when not processing */}
                 {!isProcessing && (
-                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                 )}
                 
                 <span className="relative z-10">
@@ -941,8 +940,8 @@ const DemoContent = () => {
             </div>
               
             {/* CTA to create account */}
-            <p className="text-sm text-center text-muted-foreground">
-              <button onClick={handleCreateAccount} className="text-primary underline">
+            <p className="text-sm text-center text-foreground/90">
+              <button onClick={handleCreateAccount} className="text-foreground font-medium underline">
                 Skapa gratis konto
               </button>
               {' '}för att generera bilder

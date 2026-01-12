@@ -270,18 +270,20 @@ export const ImageCropEditor = ({ image, onClose, onSave, onApplyToAll, aspectRa
                 }}
                 onCropComplete={onCropComplete}
                 onZoomChange={setZoom}
-                restrictPosition={localAspectRatio !== 'free'}
-                minZoom={0.5}
+                restrictPosition={false}
+                minZoom={0.3}
                 maxZoom={3}
                 showGrid={true}
                 objectFit="contain"
+                cropSize={undefined}
                 style={{
                   containerStyle: {
                     background: 'hsl(var(--muted))',
                   },
+                  mediaStyle: {},
                   cropAreaStyle: {
-                    border: '2px solid hsl(var(--accent))',
-                    boxShadow: '0 0 0 9999em rgba(0, 0, 0, 0.5)',
+                    border: '2px solid hsl(var(--primary))',
+                    boxShadow: '0 0 0 9999em rgba(0, 0, 0, 0.6)',
                   },
                 }}
               />

@@ -208,7 +208,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-11 bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)]"
+              className="w-full h-11 bg-primary hover:bg-primary/90"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
