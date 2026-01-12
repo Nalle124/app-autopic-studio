@@ -58,6 +58,13 @@ const Admin = () => {
   const [creditDescription, setCreditDescription] = useState('');
   const [adjusting, setAdjusting] = useState(false);
   
+  // Confirmation dialog for large adjustments
+  const [pendingAdjustment, setPendingAdjustment] = useState<{ isPositive: boolean } | null>(null);
+  
+  // Security limits
+  const MAX_CREDIT_ADJUSTMENT = 10000;
+  const LARGE_ADJUSTMENT_THRESHOLD = 100;
+  
   // Delete user dialog
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -102,26 +109,55 @@ const Admin = () => {
     }
   };
 
-  const handleAddCredits = async (isPositive: boolean) => {
+  const initiateAdjustment = (isPositive: boolean) => {
+    if (!selectedUser || !creditAmount) return;
+    
+    const amount = parseInt(creditAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Ange ett giltigt positivt antal');
+      return;
+    }
+    
+    // Validate maximum limit
+    if (amount > MAX_CREDIT_ADJUSTMENT) {
+      toast.error(`Maximal justering är ${MAX_CREDIT_ADJUSTMENT.toLocaleString('sv-SE')} credits per operation`);
+      return;
+    }
+    
+    // Require description for adjustments
+    if (!creditDescription.trim()) {
+      toast.error('Ange en beskrivning för justeringen');
+      return;
+    }
+    
+    // Show confirmation for large adjustments
+    if (amount > LARGE_ADJUSTMENT_THRESHOLD) {
+      setPendingAdjustment({ isPositive });
+      return;
+    }
+    
+    // Proceed directly for small adjustments
+    executeAdjustment(isPositive);
+  };
+  
+  const executeAdjustment = async (isPositive: boolean) => {
     if (!selectedUser || !creditAmount) return;
     
     const amount = parseInt(creditAmount) * (isPositive ? 1 : -1);
-    if (isNaN(amount)) {
-      toast.error('Ogiltig mängd');
-      return;
-    }
-
+    
     setAdjusting(true);
+    setPendingAdjustment(null);
+    
     try {
       const { data, error } = await supabase.rpc('admin_add_credits', {
         target_user_id: selectedUser.id,
         amount: amount,
-        description: creditDescription || (isPositive ? 'Admin: Lagt till credits' : 'Admin: Dragit credits')
+        description: creditDescription
       });
 
       if (error) throw error;
 
-      toast.success(`${Math.abs(amount)} credits ${isPositive ? 'tillagda' : 'borttagna'}`);
+      toast.success(`${Math.abs(amount)} credits ${isPositive ? 'tillagda till' : 'borttagna från'} ${selectedUser.email}`);
       setSelectedUser(null);
       setCreditAmount('');
       setCreditDescription('');
@@ -346,21 +382,28 @@ const Admin = () => {
           
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">Antal credits</label>
+              <label className="text-sm font-medium">Antal credits (max {MAX_CREDIT_ADJUSTMENT.toLocaleString('sv-SE')})</label>
               <Input
                 type="number"
                 min="1"
+                max={MAX_CREDIT_ADJUSTMENT}
                 value={creditAmount}
                 onChange={(e) => setCreditAmount(e.target.value)}
                 placeholder="Ange antal"
               />
+              {parseInt(creditAmount) > LARGE_ADJUSTMENT_THRESHOLD && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ Stora justeringar ({'>'}100) kräver bekräftelse
+                </p>
+              )}
             </div>
             <div>
-              <label className="text-sm font-medium">Beskrivning (valfritt)</label>
+              <label className="text-sm font-medium">Beskrivning (obligatorisk)</label>
               <Input
                 value={creditDescription}
                 onChange={(e) => setCreditDescription(e.target.value)}
-                placeholder="T.ex. 'Bonus för testkonto'"
+                placeholder="T.ex. 'Bonus för testkonto' eller 'Korrigering för order #123'"
+                required
               />
             </div>
           </div>
@@ -368,16 +411,16 @@ const Admin = () => {
           <DialogFooter className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => handleAddCredits(false)}
-              disabled={adjusting || !creditAmount}
+              onClick={() => initiateAdjustment(false)}
+              disabled={adjusting || !creditAmount || !creditDescription.trim()}
               className="text-destructive"
             >
               <Minus className="h-4 w-4 mr-1" />
               Dra credits
             </Button>
             <Button
-              onClick={() => handleAddCredits(true)}
-              disabled={adjusting || !creditAmount}
+              onClick={() => initiateAdjustment(true)}
+              disabled={adjusting || !creditAmount || !creditDescription.trim()}
             >
               <Plus className="h-4 w-4 mr-1" />
               Lägg till credits
@@ -420,6 +463,42 @@ const Admin = () => {
               disabled={deleting}
             >
               {deleting ? 'Raderar...' : 'Radera användare'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Large Adjustment Confirmation Dialog */}
+      <Dialog open={!!pendingAdjustment} onOpenChange={() => setPendingAdjustment(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-amber-600">⚠️ Bekräfta stor justering</DialogTitle>
+            <DialogDescription>
+              Du är på väg att {pendingAdjustment?.isPositive ? 'lägga till' : 'dra'}{' '}
+              <strong className="text-foreground">{creditAmount}</strong> credits{' '}
+              {pendingAdjustment?.isPositive ? 'till' : 'från'}{' '}
+              <strong className="text-foreground">{selectedUser?.email}</strong>.
+              <br /><br />
+              <span className="text-muted-foreground">Anledning: {creditDescription}</span>
+              <br /><br />
+              Denna åtgärd loggas i systemet.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setPendingAdjustment(null)}
+              disabled={adjusting}
+            >
+              Avbryt
+            </Button>
+            <Button
+              variant={pendingAdjustment?.isPositive ? 'default' : 'destructive'}
+              onClick={() => pendingAdjustment && executeAdjustment(pendingAdjustment.isPositive)}
+              disabled={adjusting}
+            >
+              {adjusting ? 'Justerar...' : `Bekräfta ${pendingAdjustment?.isPositive ? 'tillägg' : 'avdrag'}`}
             </Button>
           </DialogFooter>
         </DialogContent>
