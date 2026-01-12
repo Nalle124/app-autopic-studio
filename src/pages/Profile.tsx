@@ -266,12 +266,12 @@ const ProfileContent = () => {
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               <Tabs value="profile" className="w-auto flex-shrink-0">
-                <TabsList className="bg-background/80 backdrop-blur-sm">
-                  <TabsTrigger value="new" className="gap-1.5 sm:gap-2 px-2 sm:px-3" onClick={() => navigate('/')}>
+                <TabsList className="bg-background/80 backdrop-blur-sm h-10">
+                  <TabsTrigger value="new" className="gap-1.5 sm:gap-2 px-3 sm:px-4 h-8" onClick={() => navigate('/')}>
                     <Plus className="w-4 h-4" />
                     <span className="hidden xs:inline sm:inline">Projekt</span>
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-1.5 sm:gap-2 px-2 sm:px-3" onClick={() => navigate('/')}>
+                  <TabsTrigger value="history" className="gap-1.5 sm:gap-2 px-3 sm:px-4 h-8" onClick={() => navigate('/')}>
                     <History className="w-4 h-4" />
                     <span className="hidden xs:inline sm:inline">Galleri</span>
                   </TabsTrigger>
@@ -315,12 +315,12 @@ const ProfileContent = () => {
             </Button>
             
             <Tabs value="profile" className="w-auto flex-shrink-0">
-              <TabsList className="bg-background/80 backdrop-blur-sm">
-                <TabsTrigger value="new" className="gap-1.5 sm:gap-2 px-2 sm:px-3" onClick={() => navigate('/')}>
+              <TabsList className="bg-background/80 backdrop-blur-sm h-10">
+                <TabsTrigger value="new" className="gap-1.5 sm:gap-2 px-3 sm:px-4 h-8" onClick={() => navigate('/')}>
                   <Plus className="w-4 h-4" />
                   <span className="hidden xs:inline sm:inline">Projekt</span>
                 </TabsTrigger>
-                <TabsTrigger value="history" className="gap-1.5 sm:gap-2 px-2 sm:px-3" onClick={() => navigate('/')}>
+                <TabsTrigger value="history" className="gap-1.5 sm:gap-2 px-3 sm:px-4 h-8" onClick={() => navigate('/')}>
                   <History className="w-4 h-4" />
                   <span className="hidden xs:inline sm:inline">Galleri</span>
                 </TabsTrigger>
