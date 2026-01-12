@@ -56,17 +56,17 @@ const handler = async (req: Request): Promise<Response> => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Betalningsbekräftelse</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #1a1615;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #121212;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #231f1e; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(139, 75, 75, 0.15);">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #1a1a1a; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
           
-          <!-- Header with gradient -->
+          <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #231f1e 0%, #2d2524 50%, #1e1a19 100%); padding: 40px 40px; text-align: center;">
-              <img src="https://autopic.studio/logo-white.png" alt="AutoPic" style="height: 48px; margin-bottom: 12px;" onerror="this.style.display='none'"/>
-              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 14px;">Betalningsbekräftelse</p>
+            <td style="background: linear-gradient(135deg, #1a1a1a 0%, #252525 50%, #1a1a1a 100%); padding: 40px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">AutoPic</h1>
+              <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.7); font-size: 14px;">Betalningsbekräftelse</p>
             </td>
           </tr>
           
@@ -74,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="padding: 40px 40px 20px 40px; text-align: center;">
               <div style="display: inline-block; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-radius: 50%; width: 64px; height: 64px; line-height: 64px;">
-                <span style="color: #ffffff; font-size: 32px;">✓</span>
+                <span style="color: #ffffff; font-size: 32px;">&#10003;</span>
               </div>
             </td>
           </tr>
@@ -91,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
               </p>
               
               <!-- Receipt Box -->
-              <div style="background-color: rgba(139, 75, 75, 0.1); border: 1px solid rgba(139, 75, 75, 0.25); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+              <div style="background-color: rgba(77, 97, 133, 0.15); border: 1px solid rgba(77, 97, 133, 0.3); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 8px 0; color: rgba(255,255,255,0.5); font-size: 14px;">Datum</td>
@@ -108,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
                   </tr>
                   ` : ''}
                   <tr>
-                    <td colspan="2" style="padding: 12px 0 0 0; border-top: 1px solid rgba(139, 75, 75, 0.25);"></td>
+                    <td colspan="2" style="padding: 12px 0 0 0; border-top: 1px solid rgba(77, 97, 133, 0.3);"></td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #ffffff; font-size: 16px; font-weight: 600;">Totalt</td>
@@ -124,8 +124,8 @@ const handler = async (req: Request): Promise<Response> => {
               <table role="presentation" style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td align="center">
-                    <a href="https://autopic.studio" style="display: inline-block; background: linear-gradient(135deg, #8B4A4A 0%, #a05555 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
-                      Börja skapa bilder →
+                    <a href="https://autopic.studio" style="display: inline-block; background: #4D6185; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                      Börja skapa bilder
                     </a>
                   </td>
                 </tr>
@@ -141,11 +141,11 @@ const handler = async (req: Request): Promise<Response> => {
               </p>
               <div style="margin-bottom: 16px;">
                 <a href="https://instagram.com/autopic.studio" style="display: inline-block; margin: 0 8px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px;">Instagram</a>
-                <span style="color: rgba(255,255,255,0.3);">•</span>
+                <span style="color: rgba(255,255,255,0.3);">|</span>
                 <a href="https://linkedin.com/company/autopic" style="display: inline-block; margin: 0 8px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px;">LinkedIn</a>
               </div>
               <p style="margin: 0; color: rgba(255,255,255,0.4); font-size: 12px;">
-                © ${new Date().getFullYear()} AutoPic. Alla rättigheter förbehållna.
+                ${new Date().getFullYear()} AutoPic. Alla rättigheter förbehållna.
               </p>
             </td>
           </tr>

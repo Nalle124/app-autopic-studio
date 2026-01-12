@@ -231,7 +231,7 @@ export const Onboarding = () => {
           <img 
             src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} 
             alt="AutoPic" 
-            className="h-6 w-auto mx-auto mb-4"
+            className="h-[7.2rem] w-auto mx-auto mb-4"
           />
           <h1 className="font-display text-2xl font-semibold text-foreground mb-1">
             Välkommen till AutoPic

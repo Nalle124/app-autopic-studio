@@ -820,19 +820,17 @@ const DemoContent = () => {
         </Card>
 
         {/* Step 3: Generate - ExportPanel style matching main app */}
-        <Card id="demo-export-section" className="relative overflow-hidden rounded-[10px]" style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.3))' }}>
-          {/* Aura gradient background */}
+        <Card id="demo-export-section" className="relative overflow-hidden rounded-[10px] gradient-premium">
+          {/* Noise texture overlay */}
           <div 
-            className="absolute inset-0 opacity-80 transition-opacity duration-500"
+            className="absolute inset-0 opacity-[0.03] pointer-events-none"
             style={{
-              backgroundImage: `url(${auraGradient})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
             }}
           />
           
-          {/* Dark overlay for contrast */}
-          <div className="absolute inset-0 bg-background/30" />
+          {/* Subtle shine overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
 
           <div className="relative p-4 space-y-4">
             {/* Header */}
@@ -929,7 +927,7 @@ const DemoContent = () => {
                   setShowSignupModal(true);
                 }} 
                 disabled={isProcessing || uploadedImages.length === 0 || !selectedScene} 
-                className={`h-10 px-8 text-sm font-bold bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/40 hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+                className={`h-10 px-8 text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/40 hover:shadow-xl transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
               >
                 {/* Shimmer effect when not processing */}
                 {!isProcessing && (
