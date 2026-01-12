@@ -106,11 +106,11 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         onInteractOutside={(e) => e.preventDefault()}
       >
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
-          {/* Header with gradient */}
+          {/* Header with brand gradient (blue-black-orange) */}
           <div className="relative overflow-hidden">
             <div 
-              className="absolute inset-0 bg-cover bg-center opacity-80"
-              style={{ backgroundImage: `url(${auraGradient1})` }}
+              className="absolute inset-0 opacity-90"
+              style={{ background: 'linear-gradient(135deg, hsl(220, 27%, 41%) 0%, hsl(0, 0%, 7%) 50%, hsl(26, 73%, 38%) 100%)' }}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card" />
             

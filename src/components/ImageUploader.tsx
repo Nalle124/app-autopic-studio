@@ -136,23 +136,21 @@ export const ImageUploader = ({
   
   return (
     <div className="space-y-6">
-      <Card {...getRootProps()} className="cursor-pointer hover:border-primary/80 transition-colors">
+      <div {...getRootProps()} className="cursor-pointer hover:border-primary/80 transition-colors border-2 border-dashed border-primary rounded-xl p-6 text-center bg-card">
         <input {...getInputProps()} />
-        <div className="p-6 text-center shadow-none border-primary border border-dashed">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-            <Upload className="w-6 h-6 text-primary" />
-          </div>
-          <h3 className="text-base font-semibold text-foreground mb-1">
-            {isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
-          </h3>
-          <p className="text-sm text-muted-foreground mb-2">
-            Eller ta bilder direkt
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Max 50 bilder • PNG, JPG, JPEG, WEBP
-          </p>
+        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+          <Upload className="w-6 h-6 text-primary" />
         </div>
-      </Card>
+        <h3 className="text-base font-semibold text-foreground mb-1">
+          {isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
+        </h3>
+        <p className="text-sm text-muted-foreground mb-2">
+          Eller ta bilder direkt
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Max 50 bilder • PNG, JPG, JPEG, WEBP
+        </p>
+      </div>
 
       {/* Clear all - centered text with lines */}
       {uploadedImages.length > 0 && (

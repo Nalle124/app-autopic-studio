@@ -33,7 +33,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
   };
 
   return (
-    <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[env(safe-area-inset-top)] before:absolute before:inset-0 before:bg-card/90 before:-z-10">
+    <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10">
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <button 
