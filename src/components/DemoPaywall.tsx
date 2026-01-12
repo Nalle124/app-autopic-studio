@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
+import proCardBg from '@/assets/pro-card-bg.jpg';
 
 // Outcome-driven benefits (not features)
 const benefits = [
@@ -318,20 +319,31 @@ export const DemoPaywall = () => {
                           isBusiness 
                             ? 'gradient-premium ring-2 ring-primary/30' 
                             : isPopular 
-                              ? 'bg-muted/50 border border-primary/30 ring-1 ring-primary/20' 
+                              ? 'bg-[#1a1a1a] border border-primary/30 ring-1 ring-primary/20' 
                               : 'bg-muted/30 border border-border hover:border-primary/20'
                         }`}
                       >
+                        {/* Pro card background image */}
+                        {isPopular && (
+                          <div 
+                            className="absolute inset-0 opacity-40"
+                            style={{
+                              backgroundImage: `url(${proCardBg})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center top',
+                            }}
+                          />
+                        )}
                         {/* Dark overlay for non-business cards */}
                         {!isBusiness && (
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                         )}
                         
                         <div className="relative z-10 p-5 h-full flex flex-col">
                           <div className="flex items-start justify-between">
-                            <h3 className={`text-lg font-semibold ${isBusiness ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
+                            <h3 className={`text-lg font-semibold ${isBusiness || isPopular ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
                             {isPopular && (
-                              <span className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded-full font-medium">
+                              <span className="text-[10px] bg-white/20 text-white px-2 py-1 rounded-full font-medium">
                                 Populär
                               </span>
                             )}
@@ -339,40 +351,40 @@ export const DemoPaywall = () => {
                           
                           <div className="flex-1 flex flex-col justify-end">
                             <div className="flex items-baseline gap-1 mb-1">
-                              <span className={`text-3xl font-bold ${isBusiness ? 'text-white' : 'text-foreground'}`}>{displayPrice}</span>
-                              <span className={`text-sm ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>kr</span>
-                              <span className={`text-sm ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>/månad</span>
+                              <span className={`text-3xl font-bold ${isBusiness || isPopular ? 'text-white' : 'text-foreground'}`}>{displayPrice}</span>
+                              <span className={`text-sm ${isBusiness || isPopular ? 'text-white/70' : 'text-muted-foreground'}`}>kr</span>
+                              <span className={`text-sm ${isBusiness || isPopular ? 'text-white/70' : 'text-muted-foreground'}`}>/månad</span>
                             </div>
-                            <p className={`text-sm mb-3 ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
+                            <p className={`text-sm mb-3 ${isBusiness || isPopular ? 'text-white/80' : 'text-muted-foreground'}`}>
                               Få full tillgång till magisk annonsbild-generering.
                             </p>
                             
                             <div className={`rounded-full py-2.5 px-4 text-center mb-4 flex items-center justify-center gap-2 ${
-                              isBusiness 
+                              isBusiness || isPopular 
                                 ? 'bg-white/20 backdrop-blur-sm' 
                                 : 'bg-primary/10'
                             }`}>
                               {isLoading ? (
                                 <>
-                                  <Loader2 className={`w-4 h-4 animate-spin ${isBusiness ? 'text-white' : 'text-primary'}`} />
-                                  <span className={`text-sm font-medium ${isBusiness ? 'text-white' : 'text-primary'}`}>Laddar...</span>
+                                  <Loader2 className={`w-4 h-4 animate-spin ${isBusiness || isPopular ? 'text-white' : 'text-primary'}`} />
+                                  <span className={`text-sm font-medium ${isBusiness || isPopular ? 'text-white' : 'text-primary'}`}>Laddar...</span>
                                 </>
                               ) : (
-                                <span className={`text-sm font-medium ${isBusiness ? 'text-white' : 'text-primary'}`}>Skaffa nu</span>
+                                <span className={`text-sm font-medium ${isBusiness || isPopular ? 'text-white' : 'text-primary'}`}>Skaffa nu</span>
                               )}
                             </div>
                             
-                            <div className={`pt-4 border-t space-y-1.5 ${isBusiness ? 'border-white/20' : 'border-border'}`}>
-                              <div className={`flex items-center gap-2 text-xs ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
+                            <div className={`pt-4 border-t space-y-1.5 ${isBusiness || isPopular ? 'border-white/20' : 'border-border'}`}>
+                              <div className={`flex items-center gap-2 text-xs ${isBusiness || isPopular ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness || isPopular ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>{plan.credits} bilder/mån</span>
                               </div>
-                              <div className={`flex items-center gap-2 text-xs ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
+                              <div className={`flex items-center gap-2 text-xs ${isBusiness || isPopular ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness || isPopular ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>Brand kit</span>
                               </div>
-                              <div className={`flex items-center gap-2 text-xs ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
+                              <div className={`flex items-center gap-2 text-xs ${isBusiness || isPopular ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                <Check className={`w-3.5 h-3.5 ${isBusiness || isPopular ? 'text-white/70' : 'text-primary/70'}`} />
                                 <span>Support</span>
                               </div>
                             </div>

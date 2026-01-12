@@ -36,7 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "AutoPic <hej@autopic.studio>",
       to: [email],
-      subject: "Välkommen till AutoPic! 🚗",
+      subject: "Välkommen till AutoPic",
       html: `
 <!DOCTYPE html>
 <html lang="sv">
@@ -45,17 +45,17 @@ const handler = async (req: Request): Promise<Response> => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Välkommen till AutoPic</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0d0912;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #121212;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #1a1625; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #1a1a1a; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
           
-          <!-- Header with gradient -->
+          <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1a1625 0%, #2d1f3d 50%, #1e1a2e 100%); padding: 40px 40px; text-align: center;">
-              <img src="https://www.autopic.studio/logo-white.png" alt="AutoPic" style="height: 48px; margin-bottom: 12px;" onerror="this.style.display='none'"/>
-              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 14px;">Professionella bilbilder på sekunder</p>
+            <td style="background: linear-gradient(135deg, #1a1a1a 0%, #252525 50%, #1a1a1a 100%); padding: 40px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">AutoPic</h1>
+              <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.7); font-size: 14px;">Professionella bilbilder på sekunder</p>
             </td>
           </tr>
           
@@ -63,14 +63,14 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="padding: 40px;">
               <h2 style="margin: 0 0 16px 0; color: #ffffff; font-size: 24px; font-weight: 600;">
-                Välkommen, ${displayName}! 👋
+                Välkommen, ${displayName}!
               </h2>
               
               <p style="margin: 0 0 24px 0; color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.6;">
                 Tack för att du skapade ett konto hos AutoPic. Nu kan du enkelt skapa professionella bilbilder med AI-driven bakgrundsbyte.
               </p>
               
-              <div style="background-color: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+              <div style="background-color: rgba(77, 97, 133, 0.15); border: 1px solid rgba(77, 97, 133, 0.3); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
                 <h3 style="margin: 0 0 12px 0; color: #ffffff; font-size: 16px; font-weight: 600;">
                   Kom igång snabbt:
                 </h3>
@@ -84,8 +84,8 @@ const handler = async (req: Request): Promise<Response> => {
               <table role="presentation" style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td align="center">
-                    <a href="https://app.autopic.studio" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
-                      Gå till AutoPic →
+                    <a href="https://app.autopic.studio" style="display: inline-block; background: #4D6185; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                      Gå till AutoPic
                     </a>
                   </td>
                 </tr>
@@ -101,11 +101,11 @@ const handler = async (req: Request): Promise<Response> => {
               </p>
               <div style="margin-bottom: 16px;">
                 <a href="https://instagram.com/autopic.studio" style="display: inline-block; margin: 0 8px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px;">Instagram</a>
-                <span style="color: rgba(255,255,255,0.3);">•</span>
+                <span style="color: rgba(255,255,255,0.3);">|</span>
                 <a href="https://linkedin.com/company/autopic" style="display: inline-block; margin: 0 8px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px;">LinkedIn</a>
               </div>
               <p style="margin: 0; color: rgba(255,255,255,0.4); font-size: 12px;">
-                © ${new Date().getFullYear()} AutoPic. Alla rättigheter förbehållna.
+                ${new Date().getFullYear()} AutoPic. Alla rättigheter förbehållna.
               </p>
             </td>
           </tr>
