@@ -1,7 +1,7 @@
 // Stripe pricing configuration
 export const PRICING_TIERS = {
-  starter: {
-    name: "Starter",
+  start: {
+    name: "Start",
     price: 399,
     credits: 100,
     priceId: "price_1SbVe8JQldzCYD0ZCCX8RK4n",
@@ -14,8 +14,8 @@ export const PRICING_TIERS = {
       "Hög upplösning"
     ]
   },
-  professional: {
-    name: "Professional",
+  pro: {
+    name: "Pro",
     price: 699,
     credits: 300,
     priceId: "price_1SbVePJQldzCYD0ZL3pOnmK9",

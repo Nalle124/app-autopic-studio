@@ -627,7 +627,7 @@ const DemoContent = () => {
             </button>
             <Button 
               onClick={handleCreateAccount}
-              className="bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)] rounded-full"
+              className="rounded-full"
             >
               <span>Skapa gratis konto</span>
             </Button>
