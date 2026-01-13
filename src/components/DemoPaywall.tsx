@@ -23,8 +23,8 @@ const benefits = [
 const PRICING_PLANS = {
   start: {
     name: 'Start',
-    price: 499,
-    yearlyPrice: 399,
+    price: 399,
+    yearlyPrice: 319,
     credits: 100,
     priceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe',
     yearlyPriceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe',
@@ -325,11 +325,11 @@ export const DemoPaywall = () => {
                         {/* Pro card background image */}
                         {isPopular && (
                           <div 
-                            className="absolute inset-0 opacity-40"
+                            className="absolute inset-0 opacity-70"
                             style={{
                               backgroundImage: `url(${proCardBg})`,
                               backgroundSize: 'cover',
-                              backgroundPosition: 'center top',
+                              backgroundPosition: 'center',
                             }}
                           />
                         )}
