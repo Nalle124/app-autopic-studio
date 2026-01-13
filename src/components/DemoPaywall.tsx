@@ -182,7 +182,7 @@ export const DemoPaywall = () => {
                 <button
                   onClick={() => handleSelectPlan('creditPack')}
                   disabled={loadingTier === 'creditPack'}
-                  className="w-full p-4 rounded-xl bg-muted/50 border border-border hover:border-primary/50 transition-all flex items-center justify-between"
+                  className="w-full p-4 rounded-xl bg-gray-100 dark:bg-gray-800/50 border border-border hover:border-primary/50 transition-all flex items-center justify-between"
                 >
                   <div className="text-left">
                     <p className="font-medium text-foreground">Fyll på 30 bilder</p>
@@ -218,9 +218,18 @@ export const DemoPaywall = () => {
                               ? 'border-primary/50 gradient-premium' 
                               : isPro
                                 ? 'border-border'
-                                : 'border-border bg-muted/30 hover:border-primary/30'
+                                : 'border-border'
                           }`}
                         >
+                          {/* Start card - blue to black gradient */}
+                          {tier === 'start' && (
+                            <div 
+                              className="absolute inset-0"
+                              style={{
+                                background: 'linear-gradient(135deg, hsl(217, 91%, 50%) 0%, hsl(0, 0%, 5%) 100%)',
+                              }}
+                            />
+                          )}
                           {/* Pro card background image */}
                           {isPro && (
                             <div 
@@ -234,16 +243,16 @@ export const DemoPaywall = () => {
                           )}
                           {isPro && <div className="absolute inset-0 bg-black/30" />}
                           <div className="relative z-10 text-left min-w-0">
-                            <p className={`font-medium ${isBusiness || isPro ? 'text-white' : 'text-foreground'}`}>{plan.name}</p>
-                            <p className={`text-sm ${isBusiness || isPro ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.credits} bilder/månad</p>
+                            <p className={`font-medium ${isBusiness || isPro || tier === 'start' ? 'text-white' : 'text-foreground'}`}>{plan.name}</p>
+                            <p className={`text-sm ${isBusiness || isPro || tier === 'start' ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.credits} bilder/månad</p>
                           </div>
                           <div className="relative z-10 flex items-center gap-2">
                             {isLoading ? (
                               <Loader2 className="w-5 h-5 animate-spin text-primary" />
                             ) : (
-                              <span className={`font-bold text-lg whitespace-nowrap ${isBusiness || isPro ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr/mån</span>
+                              <span className={`font-bold text-lg whitespace-nowrap ${isBusiness || isPro || tier === 'start' ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr/mån</span>
                             )}
-                            <ArrowRight className={`w-4 h-4 ${isBusiness || isPro ? 'text-white/70' : 'text-primary'}`} />
+                            <ArrowRight className={`w-4 h-4 ${isBusiness || isPro || tier === 'start' ? 'text-white/70' : 'text-primary'}`} />
                           </div>
                         </button>
                       );
