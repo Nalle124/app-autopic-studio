@@ -221,12 +221,12 @@ export const DemoPaywall = () => {
                                 : 'border-border'
                           }`}
                         >
-                          {/* Start card - blue accent to black gradient */}
+                          {/* Start card - dark gray gradient */}
                           {tier === 'start' && (
                             <div 
                               className="absolute inset-0"
                               style={{
-                                background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(0, 0%, 5%) 40%)',
+                                background: 'linear-gradient(135deg, hsl(0, 0%, 35%) 0%, hsl(0, 0%, 10%) 100%)',
                               }}
                             />
                           )}
