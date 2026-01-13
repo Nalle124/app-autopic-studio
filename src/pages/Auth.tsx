@@ -7,12 +7,17 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Loader2, ArrowLeft, Sparkles, Check } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
+import { PRICING_TIERS, type PricingTier } from '@/config/pricing';
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
+  const planParam = searchParams.get('plan') as PricingTier | null;
+  const selectedPlan = planParam && PRICING_TIERS[planParam] ? planParam : null;
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -31,9 +36,25 @@ const Auth = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/');
+      // If user is already logged in and has a plan param, go to payment-pending
+      if (selectedPlan) {
+        localStorage.setItem('pendingPlan', selectedPlan);
+        navigate('/payment-pending');
+      } else {
+        navigate('/');
+      }
     }
-  }, [user, navigate]);
+  }, [user, navigate, selectedPlan]);
+
+  // Handle successful authentication - navigate to payment or onboarding
+  const handleAuthSuccess = () => {
+    if (selectedPlan) {
+      localStorage.setItem('pendingPlan', selectedPlan);
+      navigate('/payment-pending');
+    } else {
+      navigate('/onboarding');
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +81,10 @@ const Auth = () => {
       } else {
         toast.error(error.message || 'Kunde inte skapa konto');
       }
+    } else {
+      // Successfully signed up - auth context will handle the redirect via useEffect
+      // But if we need immediate redirect:
+      handleAuthSuccess();
     }
   };
 
@@ -80,8 +105,25 @@ const Auth = () => {
       } else {
         toast.error(error.message || 'Kunde inte logga in');
       }
+    } else {
+      handleAuthSuccess();
     }
   };
+
+  // Get plan info for display
+  const getPlanInfo = () => {
+    if (!selectedPlan) return null;
+    const tier = PRICING_TIERS[selectedPlan];
+    return {
+      name: tier.name,
+      price: tier.price,
+      credits: tier.credits,
+      isSubscription: !tier.oneTime,
+      features: tier.features.slice(0, 3) // Show first 3 features
+    };
+  };
+
+  const planInfo = getPlanInfo();
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,15 +274,43 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md overflow-hidden">
+        {/* Plan header - show if coming from landing page with plan */}
+        {planInfo && (
+          <div className="gradient-premium p-4 text-white">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Aktivera</p>
+                <p className="font-semibold text-lg">{planInfo.name} – {planInfo.price} kr{planInfo.isSubscription ? '/mån' : ''}</p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {planInfo.features.map((feature, i) => (
+                <span key={i} className="inline-flex items-center gap-1 text-xs bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
+                  <Check className="w-3 h-3" />
+                  {feature}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Välkommen</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            {selectedPlan ? 'Skapa konto för att fortsätta' : 'Välkommen'}
+          </CardTitle>
           <CardDescription className="text-center">
-            Logga in eller skapa ett konto för att fortsätta
+            {selectedPlan 
+              ? 'Fyll i dina uppgifter så tar vi dig direkt till betalningen'
+              : 'Logga in eller skapa ett konto för att fortsätta'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue={selectedPlan ? "signup" : "login"} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Logga in</TabsTrigger>
               <TabsTrigger value="signup">Skapa konto</TabsTrigger>
@@ -297,7 +367,7 @@ const Auth = () => {
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Skapa konto
+                  {selectedPlan ? `Skapa konto & fortsätt till betalning` : 'Skapa konto'}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
                   Genom att skapa konto godkänner du våra{' '}

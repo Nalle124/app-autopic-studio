@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import { Profile } from "./pages/Profile";
 import { Onboarding } from "./pages/Onboarding";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentPending from "./pages/PaymentPending";
 import NotFound from "./pages/NotFound";
 import UploadSceneImages from "./pages/UploadSceneImages";
 
@@ -38,6 +39,7 @@ function App() {
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+              <Route path="/payment-pending" element={<ProtectedRoute><PaymentPending /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/upload-scenes" element={<ProtectedRoute><UploadSceneImages /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
