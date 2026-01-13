@@ -17,6 +17,7 @@ const PaymentSuccess = () => {
   const [creditsAdded, setCreditsAdded] = useState(0);
   const [mode, setMode] = useState<'subscription' | 'payment' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const hasVerified = useRef(false);
 
   useEffect(() => {
@@ -34,6 +35,11 @@ const PaymentSuccess = () => {
 
     const verifyPayment = async () => {
       try {
+        // Clear any pending plan
+        localStorage.removeItem('pendingPlan');
+        // Mark that user just paid (for onboarding congratulations)
+        localStorage.setItem('cameFromPayment', 'true');
+
         const { data, error } = await supabase.functions.invoke('verify-payment', {
           body: { sessionId },
         });
@@ -47,6 +53,15 @@ const PaymentSuccess = () => {
           setCreditsAdded(data.credits_added);
           setMode(data.mode || 'payment');
           await refetchCredits();
+          
+          // Check if user needs onboarding
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', user.id)
+            .single();
+          
+          setNeedsOnboarding(!profile?.onboarding_completed);
         } else {
           setStatus('error');
           setError(data.message || 'Betalningen kunde inte verifieras');
@@ -60,6 +75,14 @@ const PaymentSuccess = () => {
 
     verifyPayment();
   }, [searchParams, user]);
+
+  const handleContinue = () => {
+    if (needsOnboarding) {
+      navigate('/onboarding');
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -104,10 +127,10 @@ const PaymentSuccess = () => {
               )}
               
               <Button 
-                onClick={() => navigate('/')} 
+                onClick={handleContinue} 
                 className="w-full bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)]"
               >
-                Börja skapa bilder
+                {needsOnboarding ? 'Slutför registrering' : 'Börja skapa bilder'}
               </Button>
             </CardContent>
           </>

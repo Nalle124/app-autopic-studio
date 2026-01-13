@@ -1,5 +1,18 @@
 // Stripe pricing configuration - REAL Stripe price IDs
-export const PRICING_TIERS = {
+
+interface PricingTierConfig {
+  name: string;
+  price: number;
+  credits: number;
+  priceId: string;
+  productId: string;
+  description: string;
+  features: string[];
+  popular?: boolean;
+  oneTime?: boolean;
+}
+
+export const PRICING_TIERS: Record<string, PricingTierConfig> = {
   start: {
     name: "Start",
     price: 399,
@@ -7,6 +20,7 @@ export const PRICING_TIERS = {
     priceId: "price_1SbV8AR5EFc7nWvhDcyFNiMe",
     productId: "prod_TYcMOi23KMqOh6",
     description: "100 credits per månad för bildigenerering",
+    oneTime: false,
     features: [
       "100 bildgenereringar/månad",
       "Alla bakgrunder",
@@ -22,6 +36,7 @@ export const PRICING_TIERS = {
     productId: "prod_TYcNnx01K8TR0F",
     description: "300 credits per månad för bildigenerering",
     popular: true,
+    oneTime: false,
     features: [
       "300 bildgenereringar/månad",
       "Alla bakgrunder",
@@ -37,6 +52,7 @@ export const PRICING_TIERS = {
     priceId: "price_1SbV9KR5EFc7nWvhAvP0jDbX",
     productId: "prod_TYcO3bE3Ec2Amv",
     description: "600 credits per månad för bildigenerering",
+    oneTime: false,
     features: [
       "600 bildgenereringar/månad",
       "Alla bakgrunder",
@@ -61,6 +77,6 @@ export const PRICING_TIERS = {
       "Brand Kit"
     ]
   }
-} as const;
+};
 
 export type PricingTier = keyof typeof PRICING_TIERS;

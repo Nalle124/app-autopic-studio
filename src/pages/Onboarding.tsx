@@ -36,6 +36,7 @@ export const Onboarding = () => {
   const [customerType, setCustomerType] = useState<CustomerType>('company');
   const [loading, setLoading] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [cameFromPayment, setCameFromPayment] = useState(false);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     full_name: '',
     company_name: '',
@@ -53,12 +54,19 @@ export const Onboarding = () => {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const secondLogoInputRef = useRef<HTMLInputElement>(null);
 
-  // Check if user has already completed onboarding
+  // Check if user has already completed onboarding and if they came from payment
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       if (!user) {
         setCheckingOnboarding(false);
         return;
+      }
+
+      // Check if user just completed payment
+      const fromPayment = localStorage.getItem('cameFromPayment') === 'true';
+      if (fromPayment) {
+        setCameFromPayment(true);
+        localStorage.removeItem('cameFromPayment');
       }
 
       try {
@@ -233,12 +241,29 @@ export const Onboarding = () => {
             alt="AutoPic" 
             className="h-8 w-auto mx-auto mb-4"
           />
-          <h1 className="font-display text-2xl font-semibold text-foreground mb-1">
-            Välkommen till AutoPic
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Låt oss ställa in ditt konto
-          </p>
+          {cameFromPayment ? (
+            <>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 mb-3">
+                <Check className="w-4 h-4 text-green-500" />
+                <span className="text-sm font-medium text-green-600 dark:text-green-400">Betalning genomförd!</span>
+              </div>
+              <h1 className="font-display text-2xl font-semibold text-foreground mb-1">
+                🎉 Ditt konto är aktiverat!
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Slutför bara några snabba uppgifter så är du redo
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="font-display text-2xl font-semibold text-foreground mb-1">
+                Välkommen till AutoPic
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Låt oss ställa in ditt konto
+              </p>
+            </>
+          )}
         </div>
 
         {/* Progress */}
