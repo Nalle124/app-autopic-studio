@@ -333,91 +333,96 @@ export const DemoPaywall = () => {
                     const isLoading = loadingTier === key;
                     const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
 
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => !isLoading && handleSelectPlan(key)}
-                        disabled={isLoading}
-                        className={`relative rounded-2xl overflow-hidden transition-all text-left min-h-[320px] ${
-                          isBusiness 
-                            ? 'gradient-premium ring-2 ring-primary/30' 
-                            : isPopular 
-                              ? 'bg-[#1a1a1a] border border-primary/30 ring-1 ring-primary/20' 
-                              : 'bg-muted/30 border border-border hover:border-primary/20'
-                        }`}
-                      >
-                        {/* Pro card background image */}
-                        {isPopular && (
-                          <div 
-                            className="absolute inset-0 opacity-70"
-                            style={{
-                              backgroundImage: `url(${proCardBg})`,
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                            }}
-                          />
-                        )}
-                        {/* Dark overlay for non-business cards */}
-                        {!isBusiness && (
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                        )}
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => !isLoading && handleSelectPlan(key)}
+                          disabled={isLoading}
+                          className={`relative rounded-2xl overflow-hidden transition-all text-left min-h-[320px] ${
+                            isBusiness 
+                              ? 'gradient-premium ring-2 ring-primary/30' 
+                              : isPopular 
+                                ? 'bg-[#1a1a1a] border border-primary/30 ring-1 ring-primary/20' 
+                                : 'bg-[#1a1a1a] border border-border hover:border-primary/20'
+                          }`}
+                        >
+                          {/* Start card background gradient - blue to black */}
+                          {key === 'start' && (
+                            <div 
+                              className="absolute inset-0"
+                              style={{
+                                background: 'linear-gradient(180deg, #4D5F85 0%, hsl(0, 0%, 0%) 100%)',
+                              }}
+                            />
+                          )}
+                          {/* Pro card background image */}
+                          {isPopular && (
+                            <div 
+                              className="absolute inset-0 opacity-70"
+                              style={{
+                                backgroundImage: `url(${proCardBg})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                              }}
+                            />
+                          )}
+                          {/* Dark overlay for Pro cards */}
+                          {isPopular && (
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                          )}
                         
-                        <div className="relative z-10 p-5 h-full flex flex-col">
-                          <div className="flex items-start justify-between">
-                            <h3 className={`text-lg font-semibold ${isBusiness || isPopular ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
-                            {isPopular && (
-                              <span className="text-[10px] bg-white/20 text-white px-2 py-1 rounded-full font-medium">
-                                Populär
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex-1 flex flex-col justify-end">
-                            <div className="flex items-baseline gap-1 mb-1">
-                              <span className={`text-3xl font-bold ${isBusiness || isPopular ? 'text-white' : 'text-foreground'}`}>{displayPrice}</span>
-                              <span className={`text-sm ${isBusiness || isPopular ? 'text-white/70' : 'text-muted-foreground'}`}>kr</span>
-                              <span className={`text-sm ${isBusiness || isPopular ? 'text-white/70' : 'text-muted-foreground'}`}>/månad</span>
-                            </div>
-                            <p className={`text-sm mb-3 ${isBusiness || isPopular ? 'text-white/80' : 'text-muted-foreground'}`}>
-                              Få full tillgång till magisk annonsbild-generering.
-                            </p>
-                            
-                            <div className={`rounded-full py-2.5 px-4 text-center mb-4 flex items-center justify-center gap-2 ${
-                              isBusiness || isPopular 
-                                ? 'bg-white/20 backdrop-blur-sm' 
-                                : 'bg-primary/10'
-                            }`}>
-                              {isLoading ? (
-                                <>
-                                  <Loader2 className={`w-4 h-4 animate-spin ${isBusiness || isPopular ? 'text-white' : 'text-primary'}`} />
-                                  <span className={`text-sm font-medium ${isBusiness || isPopular ? 'text-white' : 'text-primary'}`}>Laddar...</span>
-                                </>
-                              ) : (
-                                <span className={`text-sm font-medium ${isBusiness || isPopular ? 'text-white' : 'text-primary'}`}>Skaffa nu</span>
+                          <div className="relative z-10 p-5 h-full flex flex-col">
+                            <div className="flex items-start justify-between">
+                              <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                              {isPopular && (
+                                <span className="text-[10px] bg-white/20 text-white px-2 py-1 rounded-full font-medium">
+                                  Populär
+                                </span>
                               )}
                             </div>
                             
-                            <div className={`pt-4 border-t space-y-1.5 ${isBusiness || isPopular ? 'border-white/20' : 'border-border'}`}>
-                              <div className={`flex items-center gap-2 text-xs ${isBusiness || isPopular ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness || isPopular ? 'text-white/70' : 'text-primary/70'}`} />
-                                <span>{plan.credits} bilder/mån</span>
+                            <div className="flex-1 flex flex-col justify-end">
+                              <div className="flex items-baseline gap-1 mb-1">
+                                <span className="text-3xl font-bold text-white">{displayPrice}</span>
+                                <span className="text-sm text-white/70">kr</span>
+                                <span className="text-sm text-white/70">/månad</span>
                               </div>
-                              <div className={`flex items-center gap-2 text-xs ${isBusiness || isPopular ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness || isPopular ? 'text-white/70' : 'text-primary/70'}`} />
-                                <span>Brand kit</span>
+                              <p className="text-sm mb-3 text-white/80">
+                                Få full tillgång till magisk annonsbild-generering.
+                              </p>
+                              
+                              <div className="rounded-full py-2.5 px-4 text-center mb-4 flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm">
+                                {isLoading ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                    <span className="text-sm font-medium text-white">Laddar...</span>
+                                  </>
+                                ) : (
+                                  <span className="text-sm font-medium text-white">Skaffa nu</span>
+                                )}
                               </div>
-                              <div className={`flex items-center gap-2 text-xs ${isBusiness || isPopular ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness || isPopular ? 'text-white/70' : 'text-primary/70'}`} />
-                                <span>Support</span>
+                              
+                              <div className="pt-4 border-t border-white/20 space-y-1.5">
+                                <div className="flex items-center gap-2 text-xs text-white/80">
+                                  <Check className="w-3.5 h-3.5 text-white/70" />
+                                  <span>{plan.credits} bilder/mån</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-white/80">
+                                  <Check className="w-3.5 h-3.5 text-white/70" />
+                                  <span>Brand kit</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-white/80">
+                                  <Check className="w-3.5 h-3.5 text-white/70" />
+                                  <span>Support</span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                        
-                      </button>
-                    );
-                  })}
-                </div>
+                          
+                        </button>
+                      );
+                    })}
+                  </div>
               ) : (
                 /* Mobile: Dropdown accordion */
                 <div className="space-y-2 mb-4">
@@ -429,81 +434,90 @@ export const DemoPaywall = () => {
                     const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
                     const isExpanded = expandedPlan === key;
 
-                    return (
-                      <div
-                        key={key}
-                        className={`rounded-xl overflow-hidden transition-all ${
-                          isBusiness 
-                            ? 'gradient-premium' 
-                            : isPopular 
-                              ? 'ring-2 ring-primary/50 bg-muted/50' 
-                              : 'bg-muted/30 border border-border'
-                        }`}
-                      >
-                        {/* Header - always visible */}
-                        <button
-                          onClick={() => setExpandedPlan(isExpanded ? null : key)}
-                          className="w-full relative overflow-hidden"
+                      return (
+                        <div
+                          key={key}
+                          className={`relative rounded-xl overflow-hidden transition-all ${
+                            isBusiness 
+                              ? 'gradient-premium' 
+                              : isPopular 
+                                ? 'ring-2 ring-primary/50 bg-muted/50' 
+                                : 'bg-[#1a1a1a] border border-border'
+                          }`}
                         >
-                          <div className="relative z-10 p-4 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <h3 className={`text-base font-semibold text-left ${isBusiness ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
-                                  {isPopular && (
-                                    <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-                                      Populär
-                                    </span>
-                                  )}
+                          {/* Start card background gradient - blue to black */}
+                          {key === 'start' && (
+                            <div 
+                              className="absolute inset-0"
+                              style={{
+                                background: 'linear-gradient(180deg, #4D5F85 0%, hsl(0, 0%, 0%) 100%)',
+                              }}
+                            />
+                          )}
+                          {/* Header - always visible */}
+                          <button
+                            onClick={() => setExpandedPlan(isExpanded ? null : key)}
+                            className="w-full relative overflow-hidden"
+                          >
+                            <div className="relative z-10 p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className={`text-base font-semibold text-left ${isBusiness || key === 'start' ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
+                                    {isPopular && (
+                                      <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+                                        Populär
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className={`text-xs text-left ${isBusiness || key === 'start' ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.tagline}</p>
                                 </div>
-                                <p className={`text-xs text-left ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.tagline}</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="text-right whitespace-nowrap">
+                                  <span className={`text-lg font-bold ${isBusiness || key === 'start' ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr</span>
+                                  <span className={`text-xs ${isBusiness || key === 'start' ? 'text-white/70' : 'text-muted-foreground'}`}>/mån</span>
+                                </div>
+                                <ChevronDown className={`w-5 h-5 transition-transform ${isBusiness || key === 'start' ? 'text-white/70' : 'text-muted-foreground'} ${isExpanded ? 'rotate-180' : ''}`} />
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <div className="text-right whitespace-nowrap">
-                                <span className={`text-lg font-bold ${isBusiness ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr</span>
-                                <span className={`text-xs ${isBusiness ? 'text-white/70' : 'text-muted-foreground'}`}>/mån</span>
-                              </div>
-                              <ChevronDown className={`w-5 h-5 transition-transform ${isBusiness ? 'text-white/70' : 'text-muted-foreground'} ${isExpanded ? 'rotate-180' : ''}`} />
-                            </div>
-                          </div>
-                        </button>
+                          </button>
                         
-                        {/* Expanded content */}
-                        {isExpanded && (
-                          <div className={`p-4 space-y-3 ${isBusiness ? 'bg-black/20' : 'bg-muted/50'}`}>
-                            <div className="space-y-1.5">
-                              <div className={`flex items-center gap-2 text-sm ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
-                                <span>{plan.credits} bilder/mån</span>
+                          {/* Expanded content */}
+                          {isExpanded && (
+                            <div className={`relative z-10 p-4 space-y-3 ${isBusiness || key === 'start' ? 'bg-black/20' : 'bg-muted/50'}`}>
+                              <div className="space-y-1.5">
+                                <div className={`flex items-center gap-2 text-sm ${isBusiness || key === 'start' ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                  <Check className={`w-3.5 h-3.5 ${isBusiness || key === 'start' ? 'text-white/70' : 'text-primary/70'}`} />
+                                  <span>{plan.credits} bilder/mån</span>
+                                </div>
+                                <div className={`flex items-center gap-2 text-sm ${isBusiness || key === 'start' ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                  <Check className={`w-3.5 h-3.5 ${isBusiness || key === 'start' ? 'text-white/70' : 'text-primary/70'}`} />
+                                  <span>Brand kit</span>
+                                </div>
+                                <div className={`flex items-center gap-2 text-sm ${isBusiness || key === 'start' ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                  <Check className={`w-3.5 h-3.5 ${isBusiness || key === 'start' ? 'text-white/70' : 'text-primary/70'}`} />
+                                  <span>Support</span>
+                                </div>
                               </div>
-                              <div className={`flex items-center gap-2 text-sm ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
-                                <span>Brand kit</span>
-                              </div>
-                              <div className={`flex items-center gap-2 text-sm ${isBusiness ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                <Check className={`w-3.5 h-3.5 ${isBusiness ? 'text-white/70' : 'text-primary/70'}`} />
-                                <span>Support</span>
-                              </div>
+                              <Button
+                                onClick={() => handleSelectPlan(key)}
+                                disabled={isLoading}
+                                className={`w-full ${isBusiness || key === 'start' ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
+                              >
+                                {isLoading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  'Skaffa nu'
+                                )}
+                              </Button>
                             </div>
-                            <Button
-                              onClick={() => handleSelectPlan(key)}
-                              disabled={isLoading}
-                              className={`w-full ${isBusiness ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
-                            >
-                              {isLoading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                'Skaffa nu'
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
             </div>
 
             {/* One-time purchase - expandable */}
