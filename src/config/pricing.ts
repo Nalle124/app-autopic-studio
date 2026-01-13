@@ -1,11 +1,11 @@
-// Stripe pricing configuration
+// Stripe pricing configuration - REAL Stripe price IDs
 export const PRICING_TIERS = {
   start: {
     name: "Start",
     price: 399,
     credits: 100,
-    priceId: "price_1SbVe8JQldzCYD0ZCCX8RK4n",
-    productId: "prod_TYctfRKGdxjyIo",
+    priceId: "price_1SbV8AR5EFc7nWvhDcyFNiMe",
+    productId: "prod_TYcMOi23KMqOh6",
     description: "100 credits per månad för bildigenerering",
     features: [
       "100 bildgenereringar/månad",
@@ -18,8 +18,8 @@ export const PRICING_TIERS = {
     name: "Pro",
     price: 699,
     credits: 300,
-    priceId: "price_1SbVePJQldzCYD0ZL3pOnmK9",
-    productId: "prod_TYcu2RNAGGthF9",
+    priceId: "price_1SbV94R5EFc7nWvhHlWgPKsp",
+    productId: "prod_TYcNnx01K8TR0F",
     description: "300 credits per månad för bildigenerering",
     popular: true,
     features: [
@@ -34,8 +34,8 @@ export const PRICING_TIERS = {
     name: "Business",
     price: 1299,
     credits: 600,
-    priceId: "price_1SbVeaJQldzCYD0ZG5wXtwAk",
-    productId: "prod_TYcuc2xBrRbgIR",
+    priceId: "price_1SbV9KR5EFc7nWvhAvP0jDbX",
+    productId: "prod_TYcO3bE3Ec2Amv",
     description: "600 credits per månad för bildigenerering",
     features: [
       "600 bildgenereringar/månad",
@@ -50,8 +50,8 @@ export const PRICING_TIERS = {
     name: "Credit Pack",
     price: 69,
     credits: 30,
-    priceId: "price_1SbVf4JQldzCYD0Z11oZm3qb",
-    productId: "prod_TYcuBp46lGYZDL",
+    priceId: "price_1SbV9dR5EFc7nWvhOwgnPGX0",
+    productId: "prod_TYcOcv9ORqRLYH",
     description: "30 credits engångsköp",
     oneTime: true,
     features: [

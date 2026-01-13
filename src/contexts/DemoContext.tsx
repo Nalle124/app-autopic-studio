@@ -24,7 +24,7 @@ export type PaywallTriggerType = 'logo' | 'gallery' | 'limit' | 'premium-scene' 
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
-const MAX_FREE_GENERATIONS = 3; // 3 free credits for new accounts
+const MAX_FREE_GENERATIONS = 2; // 2 free credits for new accounts
 
 export const DemoProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
