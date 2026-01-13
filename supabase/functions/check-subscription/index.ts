@@ -12,11 +12,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product to credits mapping
+// Product to credits mapping - REAL product IDs
 const PRODUCT_CREDITS: Record<string, number> = {
-  "prod_TYctfRKGdxjyIo": 100, // Starter
-  "prod_TYcu2RNAGGthF9": 300, // Professional
-  "prod_TYcuc2xBrRbgIR": 600, // Business
+  "prod_TYcMOi23KMqOh6": 100, // Start (399 kr)
+  "prod_TYcNnx01K8TR0F": 300, // Pro (699 kr)
+  "prod_TYcO3bE3Ec2Amv": 600, // Business (1299 kr)
 };
 
 serve(async (req) => {

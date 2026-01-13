@@ -6,8 +6,6 @@ import { Sparkles, Settings2, ChevronDown } from 'lucide-react';
 import { ExportSettings } from '@/types/scene';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import auraGradient from '@/assets/aura-gradient-step3.jpg';
-
 interface ExportPanelProps {
   onExport: (settings: ExportSettings) => void;
   isProcessing: boolean;
@@ -32,19 +30,17 @@ export const ExportPanel = ({
   };
 
   return (
-    <Card className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--accent) / 0.3))' }}>
-      {/* Aura gradient background - inline fallback gradient + lazy loaded image */}
+    <Card className="relative overflow-hidden">
+      {/* Brand gradient background - blue to orange */}
       <div 
-        className="absolute inset-0 opacity-80 transition-opacity duration-500"
+        className="absolute inset-0"
         style={{
-          backgroundImage: `url(${auraGradient})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          background: 'linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(25, 95%, 53%) 100%)',
         }}
       />
       
       {/* Dark overlay for contrast */}
-      <div className="absolute inset-0 bg-background/30" />
+      <div className="absolute inset-0 bg-background/20" />
 
       <div className="relative p-4 space-y-4">
         {/* Header */}
@@ -133,12 +129,12 @@ export const ExportPanel = ({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Generate Button - gray variant with subtle glow */}
+        {/* Generate Button - consistent light style in both themes */}
         <div className="flex flex-col items-center space-y-2">
           <Button 
             onClick={handleExport} 
             disabled={isProcessing} 
-            className={`w-full sm:w-auto sm:min-w-[280px] h-10 text-sm font-bold bg-muted-foreground hover:bg-muted-foreground/90 text-background hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(128,128,128,0.3)] hover:shadow-[0_0_30px_rgba(128,128,128,0.4)] transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
+            className={`w-full sm:w-auto sm:min-w-[280px] h-10 text-sm font-bold bg-white hover:bg-white/90 text-black hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all duration-300 gap-2 relative overflow-hidden group ${isProcessing ? 'animate-ai-loading' : ''}`}
           >
             {/* Shimmer effect when not processing */}
             {!isProcessing && (

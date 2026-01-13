@@ -1,4 +1,4 @@
-import { LogOut, Shield, User, Sparkles, Coins } from "lucide-react";
+import { LogOut, Shield, User, Sparkles } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -12,8 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useUserCredits } from "@/hooks/useUserCredits";
-import { useSubscription } from "@/hooks/useSubscription";
 import autopicLogoDark from "@/assets/autopic-logo-dark.png";
 import autopicLogoWhite from "@/assets/autopic-logo-white.png";
 
@@ -25,8 +23,6 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const { credits, loading: creditsLoading } = useUserCredits();
-  const { subscribed, loading: subscriptionLoading } = useSubscription();
 
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
@@ -65,18 +61,12 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
                     <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none">{user.email}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {isAdmin && (
-                            <span className="flex items-center gap-1">
-                              <Shield className="w-3 h-3" />
-                              Admin
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Coins className="w-3 h-3" />
-                            {credits} credits
-                          </span>
-                        </div>
+                        {isAdmin && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Shield className="w-3 h-3" />
+                            Admin
+                          </div>
+                        )}
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />

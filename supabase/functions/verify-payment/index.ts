@@ -12,12 +12,12 @@ const logStep = (step: string, details?: any) => {
   console.log(`[VERIFY-PAYMENT] ${step}${detailsStr}`);
 };
 
-// Product to credits mapping
+// Product to credits mapping - REAL product IDs
 const PRODUCT_CREDITS: Record<string, number> = {
-  "prod_TYctfRKGdxjyIo": 100, // Starter subscription
-  "prod_TYcu2RNAGGthF9": 300, // Professional subscription
-  "prod_TYcuc2xBrRbgIR": 600, // Business subscription
-  "prod_TYcuBp46lGYZDL": 30,  // One-time credit pack
+  "prod_TYcMOi23KMqOh6": 100, // Start subscription (399 kr)
+  "prod_TYcNnx01K8TR0F": 300, // Pro subscription (699 kr)
+  "prod_TYcO3bE3Ec2Amv": 600, // Business subscription (1299 kr)
+  "prod_TYcOcv9ORqRLYH": 30,  // One-time credit pack (69 kr)
 };
 
 serve(async (req) => {

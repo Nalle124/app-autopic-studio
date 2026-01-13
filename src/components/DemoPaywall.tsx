@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
-import proCardBg from '@/assets/pro-card-bg.jpg';
+import proCardBg from '@/assets/pro-card-bg-new.jpg';
 
 // Outcome-driven benefits (not features)
 const benefits = [
@@ -19,15 +19,15 @@ const benefits = [
 ];
 
 
-// Pricing plans - Updated names: Start, Pro, Business
+// Pricing plans - Updated names: Start, Pro, Business - with REAL Stripe price IDs
 const PRICING_PLANS = {
   start: {
     name: 'Start',
     price: 499,
     yearlyPrice: 399,
     credits: 100,
-    priceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n',
-    yearlyPriceId: 'price_1SbVe8JQldzCYD0ZCCX8RK4n',
+    priceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe',
+    yearlyPriceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe',
     tagline: '100 bilder/mån',
   },
   pro: {
@@ -35,8 +35,8 @@ const PRICING_PLANS = {
     price: 699,
     yearlyPrice: 559,
     credits: 300,
-    priceId: 'price_1SbVePJQldzCYD0ZL3pOnmK9',
-    yearlyPriceId: 'price_1SbVePJQldzCYD0ZL3pOnmK9',
+    priceId: 'price_1SbV94R5EFc7nWvhHlWgPKsp',
+    yearlyPriceId: 'price_1SbV94R5EFc7nWvhHlWgPKsp',
     tagline: '300 bilder/mån',
     popular: true,
   },
@@ -45,27 +45,26 @@ const PRICING_PLANS = {
     price: 1299,
     yearlyPrice: 1039,
     credits: 600,
-    priceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk',
-    yearlyPriceId: 'price_1SbVeaJQldzCYD0ZG5wXtwAk',
+    priceId: 'price_1SbV9KR5EFc7nWvhAvP0jDbX',
+    yearlyPriceId: 'price_1SbV9KR5EFc7nWvhAvP0jDbX',
     tagline: '600 bilder/mån',
   },
   creditPack: {
     name: '30 bilder',
     price: 69,
     credits: 30,
-    priceId: 'price_1SbVf4JQldzCYD0Z11oZm3qb',
+    priceId: 'price_1SbV9dR5EFc7nWvhOwgnPGX0',
     oneTime: true,
   },
 } as const;
 
 type PlanKey = keyof typeof PRICING_PLANS;
 
-// Map product IDs to plan keys for upgrade suggestions
+// Map product IDs to plan keys for upgrade suggestions - REAL product IDs
 const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
-  // Current live Stripe product IDs (see src/config/pricing.ts)
-  'prod_TYctfRKGdxjyIo': 'start', // 100 credits
-  'prod_TYcu2RNAGGthF9': 'pro',   // 300 credits
-  'prod_TYcuc2xBrRbgIR': 'business',     // 600 credits
+  'prod_TYcMOi23KMqOh6': 'start',    // 100 credits
+  'prod_TYcNnx01K8TR0F': 'pro',      // 300 credits
+  'prod_TYcO3bE3Ec2Amv': 'business', // 600 credits
 };
 
 // Tier order for determining available upgrades
