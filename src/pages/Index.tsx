@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Coins } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -633,22 +633,6 @@ function IndexContent() {
               >
                 <span>Skaffa Pro</span>
               </Button>
-            )}
-
-            {/* Credits Display - only for non-subscribers with credits */}
-            {!subscriptionLoading && !isSubscribed && credits > 0 && (
-              <button
-                onClick={() => {
-                  if (isProcessing) {
-                    return;
-                  }
-                  navigate('/profil');
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
-              >
-                <Coins className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">{credits}</span>
-              </button>
             )}
 
             {/* Back button - only show when on history tab or coming from somewhere */}
