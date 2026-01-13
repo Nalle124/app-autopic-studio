@@ -30,17 +30,7 @@ export const ExportPanel = ({
   };
 
   return (
-    <Card className="relative overflow-hidden">
-      {/* Brand gradient background - blue to orange */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(25, 95%, 53%) 100%)',
-        }}
-      />
-      
-      {/* Dark overlay for contrast */}
-      <div className="absolute inset-0 bg-background/20" />
+    <Card className="relative overflow-hidden gradient-premium">
 
       <div className="relative p-4 space-y-4">
         {/* Header */}
