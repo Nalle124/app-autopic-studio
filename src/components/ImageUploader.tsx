@@ -26,6 +26,7 @@ interface ImageUploaderProps {
   animatingImages?: Set<string>;
   relightEnabled?: boolean;
   onRelightChange?: (enabled: boolean) => void;
+  availableCredits?: number;
 }
 
 export const ImageUploader = ({
@@ -38,7 +39,8 @@ export const ImageUploader = ({
   onEditImage,
   animatingImages,
   relightEnabled,
-  onRelightChange
+  onRelightChange,
+  availableCredits
 }: ImageUploaderProps) => {
   const [localImages, setLocalImages] = useState<UploadedImage[]>([]);
   const { user } = useAuth();
@@ -54,6 +56,15 @@ export const ImageUploader = ({
     if (acceptedFiles.length > 50) {
       toast.error('Max 50 bilder åt gången');
       return;
+    }
+    
+    // Warn if user is uploading more images than their available credits
+    const currentPendingCount = uploadedImages.filter(img => img.status === 'pending').length;
+    const totalAfterUpload = currentPendingCount + acceptedFiles.length;
+    if (availableCredits !== undefined && totalAfterUpload > availableCredits) {
+      toast.warning(`Du har ${availableCredits} credits. Endast de första ${availableCredits} bilderna kommer att kunna genereras.`, {
+        duration: 5000
+      });
     }
     
     // Extract original dimensions from each image
@@ -107,7 +118,7 @@ export const ImageUploader = ({
         });
       }
     }, 300);
-  }, [onImagesUploaded, user, navigate]);
+  }, [onImagesUploaded, user, navigate, uploadedImages, availableCredits]);
   
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
