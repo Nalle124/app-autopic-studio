@@ -118,7 +118,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
                 {showEmailVerification ? 'Bekräfta din e-post' : 'Skapa gratis konto'}
               </h2>
               <p className="text-sm text-foreground/80">
-                {showEmailVerification ? 'Vi har skickat en verifieringslänk' : 'Testa 3 bilder helt gratis'}
+                {showEmailVerification ? 'Vi har skickat en verifieringslänk' : 'Testa 2 bilder helt gratis'}
               </p>
             </div>
           </div>
@@ -154,7 +154,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
             <div className="flex items-center justify-center gap-4 pb-2">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Check className="w-3.5 h-3.5 text-primary" />
-                <span>3 gratis bilder</span>
+                <span>2 gratis bilder</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Check className="w-3.5 h-3.5 text-primary" />
