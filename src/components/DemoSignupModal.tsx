@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, ArrowLeft, AlertTriangle, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import auraGradient1 from '@/assets/aura-gradient-1.jpg';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 // Founder quote component
 const FounderQuote = () => (
@@ -30,7 +30,36 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignIn, setIsSignIn] = useState(false);
+  
+  // Email verification states
   const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [pendingSignupData, setPendingSignupData] = useState<{
+    email: string;
+    password: string;
+    fullName: string;
+  } | null>(null);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const sendVerificationCode = async (emailToVerify: string, name: string) => {
+    const { error } = await supabase.functions.invoke('send-verification-code', {
+      body: { email: emailToVerify, name }
+    });
+    
+    if (error) {
+      console.error('Error sending verification code:', error);
+      throw new Error('Kunde inte skicka verifieringskod');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,43 +84,36 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         onClose();
         window.location.reload();
       } else {
-        // Sign up
+        // Sign up - first validate
         if (!fullName) {
           toast.error('Ange ditt namn');
           setIsLoading(false);
           return;
         }
 
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              full_name: fullName,
-            },
-          },
-        });
-        
-        if (error) throw error;
-        
-        // Notify about new lead (non-blocking)
-        supabase.functions.invoke('notify-new-lead', {
-          body: {
-            email: email,
-            name: fullName,
-            stage: 'signup'
-          }
-        }).catch(err => console.error('Lead notification error:', err));
-        
-        // Check if email confirmation is needed
-        if (data.user && !data.session) {
-          setShowEmailVerification(true);
-        } else {
-          onSuccess();
-          onClose();
-          window.location.reload();
+        if (password.length < 6) {
+          toast.error('Lösenordet måste vara minst 6 tecken');
+          setIsLoading(false);
+          return;
         }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          toast.error('Ange en giltig e-postadress');
+          setIsLoading(false);
+          return;
+        }
+
+        // Send verification code first
+        await sendVerificationCode(email, fullName);
+        
+        // Store signup data for after verification
+        setPendingSignupData({ email, password, fullName });
+        setShowEmailVerification(true);
+        setResendCooldown(60);
+        
+        toast.success('Verifieringskod skickad!');
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -104,6 +126,109 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleVerifyCode = async () => {
+    if (verificationCode.length !== 4) {
+      toast.error('Ange en 4-siffrig kod');
+      return;
+    }
+    
+    if (!pendingSignupData) {
+      toast.error('Något gick fel, försök igen');
+      setShowEmailVerification(false);
+      return;
+    }
+    
+    setVerifying(true);
+    
+    try {
+      // Verify the code
+      const { data, error } = await supabase.functions.invoke('verify-code', {
+        body: { email: pendingSignupData.email, code: verificationCode }
+      });
+      
+      if (error || !data?.valid) {
+        toast.error(data?.error || 'Fel verifieringskod');
+        setVerifying(false);
+        return;
+      }
+      
+      // Code is valid - now create the account
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: pendingSignupData.email,
+        password: pendingSignupData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: pendingSignupData.fullName,
+          },
+        },
+      });
+      
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          toast.error('E-postadressen är redan registrerad');
+        } else {
+          toast.error(signUpError.message || 'Kunde inte skapa konto');
+        }
+        setVerifying(false);
+        return;
+      }
+
+      // Notify about new lead (non-blocking)
+      supabase.functions.invoke('notify-new-lead', {
+        body: {
+          email: pendingSignupData.email,
+          name: pendingSignupData.fullName,
+          stage: 'signup'
+        }
+      }).catch(err => console.error('Lead notification error:', err));
+
+      // Send welcome email (non-blocking)
+      if (signUpData.user) {
+        supabase.functions.invoke('send-welcome-email', {
+          body: {
+            userId: signUpData.user.id,
+            email: pendingSignupData.email,
+            name: pendingSignupData.fullName
+          }
+        }).catch(err => console.error('Welcome email error:', err));
+      }
+      
+      // Success!
+      toast.success('Konto skapat!');
+      onSuccess();
+      onClose();
+      window.location.reload();
+      
+    } catch (error: any) {
+      toast.error('Något gick fel, försök igen');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || !pendingSignupData) return;
+    
+    setIsLoading(true);
+    try {
+      await sendVerificationCode(pendingSignupData.email, pendingSignupData.fullName);
+      setResendCooldown(60);
+      setVerificationCode('');
+      toast.success('Ny kod skickad!');
+    } catch (error: any) {
+      toast.error(error.message || 'Kunde inte skicka ny kod');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackFromVerification = () => {
+    setShowEmailVerification(false);
+    setPendingSignupData(null);
+    setVerificationCode('');
   };
 
   return (
@@ -124,38 +249,84 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
             
             <div className="relative z-10 p-6 pb-8 text-center">
               <h2 className="text-2xl font-bold text-foreground mb-2">
-                {showEmailVerification ? 'Bekräfta din e-post' : 'Skapa gratis konto'}
+                {showEmailVerification ? 'Verifiera din e-post' : 'Skapa gratis konto'}
               </h2>
               <p className="text-sm text-foreground/80">
-                {showEmailVerification ? 'Vi har skickat en verifieringslänk' : 'Testa 2 bilder helt gratis'}
+                {showEmailVerification ? 'Ange koden du fick på mail' : 'Testa 2 bilder helt gratis'}
               </p>
             </div>
           </div>
 
-          {showEmailVerification ? (
-            <div className="p-6 pt-0 space-y-4 text-center">
+          {showEmailVerification && pendingSignupData ? (
+            <div className="p-6 pt-0 space-y-5">
+              {/* Email icon */}
               <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Mail className="w-8 h-8 text-primary" />
               </div>
-              <p className="font-medium text-lg">{email}</p>
-              <p className="text-muted-foreground text-sm">
-                Klicka på länken i mailet för att aktivera ditt konto.
-              </p>
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400">
-                <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+              
+              <p className="font-medium text-lg text-center">{pendingSignupData.email}</p>
+              
+              {/* OTP Input */}
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={4}
+                  value={verificationCode}
+                  onChange={setVerificationCode}
+                  disabled={verifying}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} className="w-14 h-14 text-2xl" />
+                    <InputOTPSlot index={1} className="w-14 h-14 text-2xl" />
+                    <InputOTPSlot index={2} className="w-14 h-14 text-2xl" />
+                    <InputOTPSlot index={3} className="w-14 h-14 text-2xl" />
+                  </InputOTPGroup>
+                </InputOTP>
               </div>
+              
               <Button 
-                variant="ghost" 
-                onClick={() => {
-                  setShowEmailVerification(false);
-                  onClose();
-                }}
-                className="text-muted-foreground"
+                onClick={handleVerifyCode}
+                className="w-full h-11 bg-primary hover:bg-primary/90"
+                disabled={verifying || verificationCode.length !== 4}
               >
-                Stäng
+                {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Verifiera & skapa konto
               </Button>
+              
+              {/* Spam folder tip */}
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+                </div>
+              </div>
+              
+              {/* Resend code */}
+              <div className="text-center text-sm text-muted-foreground">
+                Fick du ingen kod?{' '}
+                {resendCooldown > 0 ? (
+                  <span>Vänta {resendCooldown}s</span>
+                ) : (
+                  <button 
+                    onClick={handleResendCode}
+                    disabled={isLoading}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    {isLoading ? 'Skickar...' : 'Skicka ny kod'}
+                  </button>
+                )}
+              </div>
+              
+              {/* Back button */}
+              <div className="pt-2 text-center">
+                <Button 
+                  variant="ghost" 
+                  onClick={handleBackFromVerification}
+                  className="text-muted-foreground"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Ändra e-post
+                </Button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="p-6 pt-0 space-y-4">
