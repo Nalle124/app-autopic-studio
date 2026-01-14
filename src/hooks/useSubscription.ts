@@ -26,7 +26,16 @@ export const useSubscription = () => {
 
   const checkSubscription = useCallback(async () => {
     if (!user) {
-      setStatus(prev => ({ ...prev, loading: false }));
+      // No user - set defaults without error
+      setStatus({
+        subscribed: false,
+        productId: null,
+        planName: null,
+        subscriptionEnd: null,
+        creditsPerMonth: 0,
+        loading: false,
+        error: null,
+      });
       return;
     }
 
@@ -36,7 +45,13 @@ export const useSubscription = () => {
       const { data, error } = await supabase.functions.invoke('check-subscription');
 
       if (error) {
-        throw new Error(error.message);
+        // Silently handle network errors for non-critical subscription checks
+        setStatus(prev => ({
+          ...prev,
+          loading: false,
+          error: null, // Don't show error to user for this
+        }));
+        return;
       }
 
       setStatus({
@@ -49,11 +64,11 @@ export const useSubscription = () => {
         error: null,
       });
     } catch (err) {
-      console.error('Error checking subscription:', err);
+      // Silently handle errors - subscription check is not critical
       setStatus(prev => ({
         ...prev,
         loading: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
+        error: null,
       }));
     }
   }, [user]);

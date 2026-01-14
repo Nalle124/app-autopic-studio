@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.send-payment-confirmation]
 verify_jwt = false
+
+[functions.create-guest-checkout]
+verify_jwt = false
+
+[functions.get-stripe-session]
+verify_jwt = false
