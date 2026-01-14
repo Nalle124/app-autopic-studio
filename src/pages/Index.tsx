@@ -210,6 +210,13 @@ function IndexContent() {
       triggerPaywall(isSubscribed ? 'subscriber-limit' : 'limit');
       return;
     }
+    
+    // Count pending images and check against available credits
+    const pendingImages = uploadedImages.filter(img => img.status === 'pending' || img.status === 'failed');
+    if (pendingImages.length > credits) {
+      toast.warning(`Du har ${credits} credits men försöker generera ${pendingImages.length} bilder. Endast de första ${credits} bilderna kommer att processas.`);
+    }
+    
     try {
       setIsProcessing(true);
       
@@ -348,7 +355,20 @@ function IndexContent() {
               body: formData,
               signal: controller.signal
             });
-            clearTimeout(timeoutId);
+          clearTimeout(timeoutId);
+            
+            // Handle insufficient credits (402) - stop processing more images
+            if (response.status === 402) {
+              const result = await response.json();
+              toast.error(result.error === 'insufficient_credits' ? 'Dina credits är slut' : 'Betalning krävs');
+              triggerPaywall(isSubscribed ? 'subscriber-limit' : 'limit');
+              // Mark remaining images as pending again
+              setUploadedImages(prev => prev.map(img => 
+                img.status === 'processing' ? { ...img, status: 'pending' } : img
+              ));
+              break; // Stop processing more images
+            }
+            
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -724,7 +744,7 @@ function IndexContent() {
             setUploadedImages(prev => [...prev, ...newImages]);
           }} onRemoveImage={imageId => {
             setUploadedImages(prev => prev.filter(img => img.id !== imageId));
-          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} />
+          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} />
             </section>
 
             {/* Explore Scenes - Always visible */}
