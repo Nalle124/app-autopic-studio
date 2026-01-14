@@ -222,6 +222,23 @@ export const Onboarding = () => {
 
       if (error) throw error;
 
+      // Notify about lead with full onboarding data (non-blocking)
+      supabase.functions.invoke('notify-new-lead', {
+        body: {
+          email: user.email,
+          name: customerInfo.full_name,
+          phone: customerInfo.phone,
+          company_name: customerInfo.company_name,
+          organization_number: customerInfo.organization_number,
+          customer_type: customerType,
+          referral_source: referralSource,
+          address: customerInfo.address,
+          city: customerInfo.city,
+          postal_code: customerInfo.postal_code,
+          stage: 'onboarding_complete'
+        }
+      }).catch(err => console.error('Lead notification error:', err));
+
       navigate('/');
     } catch (error) {
       console.error('Error completing onboarding:', error);

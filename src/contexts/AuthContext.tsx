@@ -110,6 +110,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }).catch(err => console.error('Welcome email error:', err));
       
+      // Notify about new lead (non-blocking)
+      supabase.functions.invoke('notify-new-lead', {
+        body: {
+          email: email,
+          name: fullName,
+          stage: 'signup'
+        }
+      }).catch(err => console.error('Lead notification error:', err));
+      
       navigate('/onboarding');
     }
     

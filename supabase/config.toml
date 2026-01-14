@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.get-stripe-session]
 verify_jwt = false
+
+[functions.notify-new-lead]
+verify_jwt = false

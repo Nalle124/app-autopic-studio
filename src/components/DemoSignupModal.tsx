@@ -75,6 +75,15 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         
         if (error) throw error;
         
+        // Notify about new lead (non-blocking)
+        supabase.functions.invoke('notify-new-lead', {
+          body: {
+            email: email,
+            name: fullName,
+            stage: 'signup'
+          }
+        }).catch(err => console.error('Lead notification error:', err));
+        
         // Check if email confirmation is needed
         if (data.user && !data.session) {
           setShowEmailVerification(true);
