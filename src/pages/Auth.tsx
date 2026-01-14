@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Sparkles, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Check, Mail, AlertTriangle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { PRICING_TIERS, type PricingTier } from '@/config/pricing';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -25,7 +26,18 @@ const Auth = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  
+  // Email verification states
   const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [pendingSignupData, setPendingSignupData] = useState<{
+    email: string;
+    password: string;
+    fullName: string;
+  } | null>(null);
+  
   const {
     signUp,
     signIn,
@@ -36,7 +48,6 @@ const Auth = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      // If user is already logged in and has a plan param, go to payment-pending
       if (selectedPlan) {
         localStorage.setItem('pendingPlan', selectedPlan);
         navigate('/payment-pending');
@@ -46,13 +57,31 @@ const Auth = () => {
     }
   }, [user, navigate, selectedPlan]);
 
-  // Handle successful authentication - navigate to payment or onboarding
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
   const handleAuthSuccess = () => {
     if (selectedPlan) {
       localStorage.setItem('pendingPlan', selectedPlan);
       navigate('/payment-pending');
     } else {
       navigate('/onboarding');
+    }
+  };
+
+  const sendVerificationCode = async (emailToVerify: string, name: string) => {
+    const { error } = await supabase.functions.invoke('send-verification-code', {
+      body: { email: emailToVerify, name }
+    });
+    
+    if (error) {
+      console.error('Error sending verification code:', error);
+      throw new Error('Kunde inte skicka verifieringskod');
     }
   };
 
@@ -66,25 +95,107 @@ const Auth = () => {
       toast.error('Lösenordet måste vara minst 6 tecken');
       return;
     }
-    setLoading(true);
-    const { error, needsEmailConfirmation } = await signUp(email, password, fullName);
-    setLoading(false);
     
-    if (needsEmailConfirmation) {
-      setShowEmailVerification(true);
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Ange en giltig e-postadress');
       return;
     }
     
-    if (error) {
-      if (error.message.includes('already registered')) {
-        toast.error('E-postadressen är redan registrerad');
-      } else {
-        toast.error(error.message || 'Kunde inte skapa konto');
+    setLoading(true);
+    
+    try {
+      // Send verification code first
+      await sendVerificationCode(email, fullName);
+      
+      // Store signup data for after verification
+      setPendingSignupData({ email, password, fullName });
+      setShowEmailVerification(true);
+      setResendCooldown(60);
+      
+      toast.success('Verifieringskod skickad!');
+    } catch (error: any) {
+      toast.error(error.message || 'Kunde inte skicka verifieringskod');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (verificationCode.length !== 4) {
+      toast.error('Ange en 4-siffrig kod');
+      return;
+    }
+    
+    if (!pendingSignupData) {
+      toast.error('Något gick fel, försök igen');
+      setShowEmailVerification(false);
+      return;
+    }
+    
+    setVerifying(true);
+    
+    try {
+      // Verify the code
+      const { data, error } = await supabase.functions.invoke('verify-code', {
+        body: { email: pendingSignupData.email, code: verificationCode }
+      });
+      
+      if (error || !data?.valid) {
+        toast.error(data?.error || 'Fel verifieringskod');
+        setVerifying(false);
+        return;
       }
-    } else {
-      // Successfully signed up - auth context will handle the redirect via useEffect
-      // But if we need immediate redirect:
+      
+      // Code is valid - now create the account
+      const { error: signUpError, needsEmailConfirmation } = await signUp(
+        pendingSignupData.email, 
+        pendingSignupData.password, 
+        pendingSignupData.fullName
+      );
+      
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          toast.error('E-postadressen är redan registrerad');
+        } else {
+          toast.error(signUpError.message || 'Kunde inte skapa konto');
+        }
+        setVerifying(false);
+        return;
+      }
+      
+      // If email confirmation is still required by Supabase (shouldn't happen with our setup)
+      if (needsEmailConfirmation) {
+        toast.success('Konto skapat! Kolla din e-post för att aktivera.');
+        setVerifying(false);
+        return;
+      }
+      
+      // Success!
+      toast.success('Konto skapat!');
       handleAuthSuccess();
+      
+    } catch (error: any) {
+      toast.error('Något gick fel, försök igen');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || !pendingSignupData) return;
+    
+    setLoading(true);
+    try {
+      await sendVerificationCode(pendingSignupData.email, pendingSignupData.fullName);
+      setResendCooldown(60);
+      setVerificationCode('');
+      toast.success('Ny kod skickad!');
+    } catch (error: any) {
+      toast.error(error.message || 'Kunde inte skicka ny kod');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,13 +206,13 @@ const Auth = () => {
       return;
     }
     setLoading(true);
-    const {
-      error
-    } = await signIn(email, password);
+    const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Felaktiga inloggningsuppgifter');
+      } else if (error.message.includes('Email not confirmed')) {
+        toast.error('E-postadressen är inte verifierad');
       } else {
         toast.error(error.message || 'Kunde inte logga in');
       }
@@ -110,7 +221,6 @@ const Auth = () => {
     }
   };
 
-  // Get plan info for display
   const getPlanInfo = () => {
     if (!selectedPlan) return null;
     const tier = PRICING_TIERS[selectedPlan];
@@ -119,7 +229,7 @@ const Auth = () => {
       price: tier.price,
       credits: tier.credits,
       isSubscription: !tier.oneTime,
-      features: tier.features.slice(0, 3) // Show first 3 features
+      features: tier.features.slice(0, 3)
     };
   };
 
@@ -148,7 +258,6 @@ const Auth = () => {
     }
   };
 
-  // Check if we're in password reset mode
   const urlParams = new URLSearchParams(window.location.search);
   const isResetMode = urlParams.get('reset') === 'true';
 
@@ -156,46 +265,86 @@ const Auth = () => {
     return <ResetPasswordForm />;
   }
 
-  if (showEmailVerification) {
+  // Email verification screen with OTP input
+  if (showEmailVerification && pendingSignupData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+              <Mail className="w-8 h-8 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Bekräfta din e-post</CardTitle>
+            <CardTitle className="text-2xl">Verifiera din e-post</CardTitle>
             <CardDescription>
-              Vi har skickat en verifieringslänk till
+              Vi har skickat en 4-siffrig kod till
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="font-medium text-lg">{email}</p>
-            <p className="text-muted-foreground text-sm">
-              Klicka på länken i mailet för att aktivera ditt konto.
-            </p>
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400">
-              <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
-            </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
-              Har du redan ett konto?{' '}
-              <button 
-                onClick={() => setShowEmailVerification(false)}
-                className="text-primary hover:underline font-medium"
+          <CardContent className="space-y-6">
+            <p className="font-medium text-lg text-center">{pendingSignupData.email}</p>
+            
+            {/* OTP Input */}
+            <div className="flex justify-center">
+              <InputOTP
+                maxLength={4}
+                value={verificationCode}
+                onChange={setVerificationCode}
+                disabled={verifying}
               >
-                Logga in istället
-              </button>
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} className="w-14 h-14 text-2xl" />
+                  <InputOTPSlot index={1} className="w-14 h-14 text-2xl" />
+                  <InputOTPSlot index={2} className="w-14 h-14 text-2xl" />
+                  <InputOTPSlot index={3} className="w-14 h-14 text-2xl" />
+                </InputOTPGroup>
+              </InputOTP>
             </div>
-            <div className="pt-2">
+            
+            <Button 
+              onClick={handleVerifyCode}
+              className="w-full"
+              disabled={verifying || verificationCode.length !== 4}
+            >
+              {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verifiera & skapa konto
+            </Button>
+            
+            {/* Spam folder tip */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+              </div>
+            </div>
+            
+            {/* Resend code */}
+            <div className="text-center text-sm text-muted-foreground">
+              Fick du ingen kod?{' '}
+              {resendCooldown > 0 ? (
+                <span>Vänta {resendCooldown}s</span>
+              ) : (
+                <button 
+                  onClick={handleResendCode}
+                  disabled={loading}
+                  className="text-primary hover:underline font-medium"
+                >
+                  {loading ? 'Skickar...' : 'Skicka ny kod'}
+                </button>
+              )}
+            </div>
+            
+            {/* Back button */}
+            <div className="pt-2 text-center">
               <Button 
                 variant="ghost" 
-                onClick={() => setShowEmailVerification(false)}
+                onClick={() => {
+                  setShowEmailVerification(false);
+                  setPendingSignupData(null);
+                  setVerificationCode('');
+                }}
                 className="text-muted-foreground"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Tillbaka
+                Ändra e-post
               </Button>
             </div>
           </CardContent>
@@ -230,13 +379,14 @@ const Auth = () => {
             {resetEmailSent ? (
               <div className="text-center space-y-4">
                 <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+                  <Mail className="w-8 h-8 text-primary" />
                 </div>
                 <p className="text-muted-foreground text-sm">
                   Vi har skickat ett mail till <strong>{email}</strong>. Klicka på länken i mailet för att återställa ditt lösenord.
                 </p>
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400">
+                  <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+                </div>
                 <Button 
                   variant="outline" 
                   onClick={() => {
@@ -275,7 +425,6 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md overflow-hidden">
-        {/* Plan header - show if coming from landing page with plan */}
         {planInfo && (
           <div className="gradient-premium p-4 text-white">
             <div className="flex items-center gap-3">
@@ -367,7 +516,7 @@ const Auth = () => {
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {selectedPlan ? `Skapa konto & fortsätt till betalning` : 'Skapa konto'}
+                  {selectedPlan ? `Skapa konto & fortsätt` : 'Skapa konto'}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
                   Genom att skapa konto godkänner du våra{' '}
@@ -449,9 +598,6 @@ const ResetPasswordForm = () => {
                 onChange={e => setNewPassword(e.target.value)}
                 disabled={loading}
               />
-              <p className="text-xs text-muted-foreground">
-                Minst 6 tecken
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Bekräfta lösenord</Label>
