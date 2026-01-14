@@ -44,3 +44,9 @@ verify_jwt = false
 
 [functions.notify-new-lead]
 verify_jwt = false
+
+[functions.send-verification-code]
+verify_jwt = false
+
+[functions.verify-code]
+verify_jwt = false
