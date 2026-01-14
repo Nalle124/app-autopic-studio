@@ -1115,8 +1115,12 @@ function IndexContent() {
                   }
                   const controller = new AbortController();
                   const timeoutId = setTimeout(() => controller.abort(), 90000);
+                  const { data: { session } } = await supabase.auth.getSession();
                   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
                     method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${session?.access_token}`
+                    },
                     body: formData,
                     signal: controller.signal
                   });
