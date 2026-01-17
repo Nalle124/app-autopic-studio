@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Image as ImageIcon, Scissors, Sliders, Sparkles, Info } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Scissors, Sliders, Sparkles, Info, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -9,6 +9,7 @@ import { UploadedImage } from '@/types/scene';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { isHeicFile, convertHeicToJpeg } from '@/utils/heicConverter';
 import {
   Popover,
   PopoverContent,
@@ -43,6 +44,7 @@ export const ImageUploader = ({
   availableCredits
 }: ImageUploaderProps) => {
   const [localImages, setLocalImages] = useState<UploadedImage[]>([]);
+  const [isConverting, setIsConverting] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const uploadedImages = propUploadedImages || localImages;
@@ -66,10 +68,38 @@ export const ImageUploader = ({
         duration: 5000
       });
     }
+
+    // Check for HEIC files and convert them
+    const heicFiles = acceptedFiles.filter(isHeicFile);
+    let filesToProcess = acceptedFiles;
+    
+    if (heicFiles.length > 0) {
+      setIsConverting(true);
+      toast.info(`Konverterar ${heicFiles.length} HEIC-bild(er)...`, { duration: 3000 });
+      
+      try {
+        // Convert HEIC files to JPEG
+        const convertedFiles = await Promise.all(
+          acceptedFiles.map(async (file) => {
+            if (isHeicFile(file)) {
+              return await convertHeicToJpeg(file);
+            }
+            return file;
+          })
+        );
+        filesToProcess = convertedFiles;
+      } catch (error: any) {
+        console.error('HEIC conversion error:', error);
+        toast.error(error.message || 'Kunde inte konvertera HEIC-bilder');
+        setIsConverting(false);
+        return;
+      }
+      setIsConverting(false);
+    }
     
     // Extract original dimensions from each image
     const newImages: UploadedImage[] = await Promise.all(
-      acceptedFiles.map(async (file) => {
+      filesToProcess.map(async (file) => {
         const preview = URL.createObjectURL(file);
         
         // Get original image dimensions
@@ -106,7 +136,7 @@ export const ImageUploader = ({
     
     setLocalImages(prev => [...prev, ...newImages]);
     onImagesUploaded(newImages);
-    toast.success(`${acceptedFiles.length} bilder uppladdade`);
+    toast.success(`${filesToProcess.length} bilder uppladdade`);
 
     // Auto-scroll to uploaded images section (closer to top)
     setTimeout(() => {
@@ -123,9 +153,10 @@ export const ImageUploader = ({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.webp']
+      'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.heic', '.heif']
     },
-    maxFiles: 50
+    maxFiles: 50,
+    disabled: isConverting
   });
   
   const removeImage = (id: string) => {
@@ -147,19 +178,23 @@ export const ImageUploader = ({
   
   return (
     <div className="space-y-6">
-      <div {...getRootProps()} className="cursor-pointer hover:border-primary/80 transition-colors border-2 border-dashed border-primary rounded-xl p-6 text-center bg-card">
+      <div {...getRootProps()} className={`cursor-pointer hover:border-primary/80 transition-colors border-2 border-dashed border-primary rounded-xl p-6 text-center bg-card ${isConverting ? 'pointer-events-none opacity-70' : ''}`}>
         <input {...getInputProps()} />
         <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-          <Upload className="w-6 h-6 text-primary" />
+          {isConverting ? (
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          ) : (
+            <Upload className="w-6 h-6 text-primary" />
+          )}
         </div>
         <h3 className="text-base font-semibold text-foreground mb-1">
-          {isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
+          {isConverting ? 'Konverterar HEIC-bilder...' : isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
         </h3>
         <p className="text-sm text-muted-foreground mb-2">
-          Eller ta bilder direkt
+          {isConverting ? 'Vänta medan bilderna konverteras' : 'Eller ta bilder direkt'}
         </p>
         <p className="text-xs text-muted-foreground">
-          Max 50 bilder • PNG, JPG, JPEG, WEBP
+          Max 50 bilder • PNG, JPG, JPEG, WEBP, HEIC
         </p>
       </div>
 

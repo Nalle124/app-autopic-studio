@@ -64,7 +64,7 @@ const ProjectImagePreviewContent = ({
   }
   
   return (
-    <>
+    <div className="relative w-full h-full">
       {isLoading && (
         <ImageSkeleton className="absolute inset-0 z-10" aspectRatio="gallery" />
       )}
@@ -74,11 +74,12 @@ const ProjectImagePreviewContent = ({
         className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${
           isLoading ? 'opacity-0' : 'opacity-100'
         }`}
-        style={{ willChange: 'opacity', contain: 'layout' }}
+        style={{ willChange: 'opacity', contain: 'layout', contentVisibility: 'auto' }}
         loading="lazy"
+        decoding="async"
         onLoad={() => setIsLoading(false)}
       />
-    </>
+    </div>
   );
 };
 
@@ -104,6 +105,7 @@ const DialogJobCard = ({
   return (
     <div 
       className={`aspect-[4/3] bg-muted rounded-lg overflow-hidden group relative cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      style={{ minHeight: '120px', contentVisibility: 'auto' }}
       onClick={onOpenPreview}
     >
       {isImgLoading && (
@@ -113,8 +115,9 @@ const DialogJobCard = ({
         src={displayUrl!}
         alt={projectName}
         className={`w-full h-full object-cover group-hover:scale-105 transition-opacity duration-300 ${isImgLoading ? 'opacity-0' : 'opacity-100'}`}
-        style={{ willChange: 'opacity', contain: 'layout' }}
+        style={{ willChange: 'opacity', contain: 'layout', contentVisibility: 'auto' }}
         loading="lazy"
+        decoding="async"
         onLoad={() => setIsImgLoading(false)}
       />
       
@@ -560,7 +563,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3" style={{ contentVisibility: 'auto' }}>
         {filteredProjects.map((project) => {
           const projectJobs = project.jobs.filter(j => j.final_url);
           const firstImage = projectJobs[0];
@@ -570,10 +573,11 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
             <Card 
               key={project.id} 
               className="overflow-hidden group hover:shadow-lg transition-all cursor-pointer border-border"
+              style={{ containIntrinsicSize: '0 280px', contentVisibility: 'auto' }}
               onClick={() => setSelectedProject(project)}
             >
-              {/* Preview Image */}
-              <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+              {/* Preview Image - Fixed aspect ratio to prevent layout shifts */}
+              <div className="aspect-[4/3] bg-muted relative overflow-hidden" style={{ minHeight: '180px' }}>
                 <ProjectImagePreviewContent 
                   thumbnailUrl={firstImage?.thumbnail_url}
                   fullUrl={firstImage?.final_url}
