@@ -858,6 +858,8 @@ function IndexContent() {
                     const pendingImages = uploadedImages.filter(img => img.status === 'pending' && selectedScene);
                     const processingImages = uploadedImages.filter(img => img.status === 'processing');
                     const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                    const totalToProcess = processingImages.length + pendingImages.length;
+                    const showProgressIndicator = totalToProcess >= 12;
                     
                     return (
                       <>
@@ -912,18 +914,43 @@ function IndexContent() {
                           </Card>
                         ))}
                         
-                        {/* Processing images - premium loading effect only */}
-                        {processingImages.map((image) => (
+                        {/* Sequential progress indicator for 12+ images */}
+                        {showProgressIndicator && processingImages.length > 0 && (
+                          <Card className="relative overflow-hidden col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
+                            <div className="p-4 flex items-center justify-center gap-4 bg-muted/50">
+                              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                              <div className="text-center">
+                                <p className="text-sm font-medium text-foreground">
+                                  Genererar {completedImages.length + 1} av {completedImages.length + totalToProcess}...
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {pendingImages.length} {pendingImages.length === 1 ? 'bild' : 'bilder'} i kö
+                                </p>
+                              </div>
+                            </div>
+                          </Card>
+                        )}
+                        
+                        {/* Processing images - show first one actively processing, rest as waiting */}
+                        {!showProgressIndicator && processingImages.map((image, idx) => (
                           <Card key={image.id} className="relative overflow-hidden">
                             <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                               <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-md opacity-50 scale-105" />
-                              <div className="absolute inset-0 animate-premium-shimmer" />
+                              {idx === 0 ? (
+                                <div className="absolute inset-0 animate-premium-shimmer" />
+                              ) : (
+                                <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
+                                  <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">
+                                    Väntar...
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </Card>
                         ))}
                         
-                        {/* Pending images - queued for processing */}
-                        {pendingImages.map((image) => (
+                        {/* Pending images - queued for processing - hide when showing progress indicator */}
+                        {!showProgressIndicator && pendingImages.map((image) => (
                           <Card key={`pending-${image.id}`} className="relative overflow-hidden opacity-60">
                             <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                               <img src={image.preview} alt={image.file.name} className="w-full h-full object-cover blur-sm opacity-50" />
@@ -1501,7 +1528,106 @@ function IndexContent() {
     })()}
 
       <BrandKitDesigner open={logoDesignOpen} onClose={() => setLogoDesignOpen(false)} design={logoDesign} onDesignChange={setLogoDesign} previewImage={uploadedImages.find(img => img.status === 'completed')?.finalUrl} onSave={async (withLogo, withoutLogo) => {
-      // Apply logo design to all completed images
+      // ONLY apply logo to the currently displayed image (first completed)
+      const currentImage = uploadedImages.find(img => img.status === 'completed' && img.finalUrl);
+      if (!currentImage) return;
+
+      // Store original URL before applying logo (for undo functionality)
+      if (currentImage.finalUrl && !originalImagesBeforeLogo.has(currentImage.id)) {
+        setOriginalImagesBeforeLogo(prev => new Map([...prev, [currentImage.id, currentImage.finalUrl!]]));
+      }
+
+      try {
+        // Create canvas to composite logo
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const baseImg = new Image();
+        baseImg.crossOrigin = 'anonymous';
+        baseImg.src = currentImage.finalUrl!;
+        await new Promise(resolve => {
+          baseImg.onload = resolve;
+        });
+        canvas.width = baseImg.width;
+        canvas.height = baseImg.height;
+        ctx.drawImage(baseImg, 0, 0);
+
+        // Draw banner if enabled - use 140% width to match preview
+        if (logoDesign.bannerEnabled) {
+          ctx.save();
+          ctx.globalAlpha = logoDesign.bannerOpacity / 100;
+          ctx.fillStyle = logoDesign.bannerColor;
+          const bx = logoDesign.bannerX / 100 * canvas.width;
+          const by = logoDesign.bannerY / 100 * canvas.height;
+          // Use 140% for width when horizontal (rotation 0) to match preview
+          const bw = logoDesign.bannerRotation === 0 ? canvas.width * 1.4 : logoDesign.bannerHeight / 100 * canvas.width;
+          const bh = logoDesign.bannerRotation === 0 ? logoDesign.bannerHeight / 100 * canvas.height : canvas.height * 1.4;
+          ctx.translate(bx, by);
+          ctx.rotate(logoDesign.bannerRotation * Math.PI / 180);
+          ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+          ctx.restore();
+        }
+
+        // Draw logos if present - support multiple logos
+        const logos = logoDesign.logos || (logoDesign.logoUrl ? [{
+          id: 'legacy',
+          url: logoDesign.logoUrl,
+          x: logoDesign.logoX,
+          y: logoDesign.logoY,
+          size: logoDesign.logoSize,
+          opacity: 100
+        }] : []);
+        for (const logo of logos) {
+          const logoImg = new Image();
+          logoImg.crossOrigin = 'anonymous';
+          logoImg.src = logo.url;
+          await new Promise(resolve => {
+            logoImg.onload = resolve;
+          });
+          ctx.save();
+          ctx.globalAlpha = logo.opacity / 100;
+          const logoW = canvas.width * logo.size;
+          const logoH = logoImg.height / logoImg.width * logoW;
+          const logoX = logo.x / 100 * canvas.width - logoW / 2;
+          const logoY = logo.y / 100 * canvas.height - logoH / 2;
+          ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+          ctx.restore();
+        }
+        const withLogoUrl = canvas.toDataURL('image/jpeg', 0.9);
+        if (withoutLogo) {
+          // Keep original AND add new image with logo
+          const newImageId = `${currentImage.id}_logo`;
+          setUploadedImages(prev => {
+            const exists = prev.some(p => p.id === newImageId);
+            if (exists) {
+              return prev.map(prevImg => prevImg.id === newImageId ? {
+                ...prevImg,
+                finalUrl: withLogoUrl
+              } : prevImg);
+            }
+            const originalIndex = prev.findIndex(p => p.id === currentImage.id);
+            const newImage: UploadedImage = {
+              ...currentImage,
+              id: newImageId,
+              finalUrl: withLogoUrl,
+              isOriginal: false
+            };
+            const newArray = [...prev];
+            newArray.splice(originalIndex + 1, 0, newImage);
+            return newArray;
+          });
+        } else {
+          // Update ONLY this image with logo version
+          setUploadedImages(prev => prev.map(prevImg => prevImg.id === currentImage.id ? {
+            ...prevImg,
+            finalUrl: withLogoUrl
+          } : prevImg));
+        }
+      } catch (error) {
+        console.error('Error applying logo:', error);
+      }
+    }} onApplyToAll={async () => {
+      // Apply logo design to ALL completed images
       const completedImages = uploadedImages.filter(img => img.status === 'completed' && img.finalUrl);
 
       // Store original URLs before applying logo (for undo functionality)
@@ -1514,9 +1640,9 @@ function IndexContent() {
       if (originals.size > 0) {
         setOriginalImagesBeforeLogo(prev => new Map([...prev, ...originals]));
       }
+      
       for (const img of completedImages) {
         try {
-          // Create canvas to composite logo
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           if (!ctx) continue;
@@ -1530,14 +1656,12 @@ function IndexContent() {
           canvas.height = baseImg.height;
           ctx.drawImage(baseImg, 0, 0);
 
-          // Draw banner if enabled - use 140% width to match preview
           if (logoDesign.bannerEnabled) {
             ctx.save();
             ctx.globalAlpha = logoDesign.bannerOpacity / 100;
             ctx.fillStyle = logoDesign.bannerColor;
             const bx = logoDesign.bannerX / 100 * canvas.width;
             const by = logoDesign.bannerY / 100 * canvas.height;
-            // Use 140% for width when horizontal (rotation 0) to match preview
             const bw = logoDesign.bannerRotation === 0 ? canvas.width * 1.4 : logoDesign.bannerHeight / 100 * canvas.width;
             const bh = logoDesign.bannerRotation === 0 ? logoDesign.bannerHeight / 100 * canvas.height : canvas.height * 1.4;
             ctx.translate(bx, by);
@@ -1546,7 +1670,6 @@ function IndexContent() {
             ctx.restore();
           }
 
-          // Draw logos if present - support multiple logos
           const logos = logoDesign.logos || (logoDesign.logoUrl ? [{
             id: 'legacy',
             url: logoDesign.logoUrl,
@@ -1572,44 +1695,14 @@ function IndexContent() {
             ctx.restore();
           }
           const withLogoUrl = canvas.toDataURL('image/jpeg', 0.9);
-          if (withoutLogo) {
-            // Keep original AND add new image with logo
-            // Create a new image entry for the logo version
-            const newImageId = `${img.id}_logo`;
-            setUploadedImages(prev => {
-              // Check if logo version already exists
-              const exists = prev.some(p => p.id === newImageId);
-              if (exists) {
-                // Update existing logo version
-                return prev.map(prevImg => prevImg.id === newImageId ? {
-                  ...prevImg,
-                  finalUrl: withLogoUrl
-                } : prevImg);
-              }
-              // Add new image entry for logo version after the original
-              const originalIndex = prev.findIndex(p => p.id === img.id);
-              const newImage: UploadedImage = {
-                ...img,
-                id: newImageId,
-                finalUrl: withLogoUrl,
-                isOriginal: false
-              };
-              const newArray = [...prev];
-              newArray.splice(originalIndex + 1, 0, newImage);
-              return newArray;
-            });
-          } else {
-            // Update image with logo version (replace original)
-            setUploadedImages(prev => prev.map(prevImg => prevImg.id === img.id ? {
-              ...prevImg,
-              finalUrl: withLogoUrl
-            } : prevImg));
-          }
+          setUploadedImages(prev => prev.map(prevImg => prevImg.id === img.id ? {
+            ...prevImg,
+            finalUrl: withLogoUrl
+          } : prevImg));
         } catch (error) {
           console.error('Error applying logo:', error);
         }
       }
-    }} onApplyToAll={() => {
     }} />
 
     {/* Scroll to top button - only show from results gallery onwards, hide at steps 3-5 on mobile */}

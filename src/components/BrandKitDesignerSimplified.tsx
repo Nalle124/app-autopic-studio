@@ -526,10 +526,17 @@ export const BrandKitDesignerSimplified = ({
             </div>
             <div 
               ref={previewRef}
-              className={`relative w-full ${imageOrientation === 'portrait' ? 'aspect-[3/4]' : 'aspect-video'} bg-muted rounded-lg overflow-hidden border-2 border-border select-none`}
+              className="relative w-full bg-muted rounded-lg overflow-hidden border-2 border-border select-none"
+              style={{ 
+                aspectRatio: imageOrientation === 'portrait' ? '3/4' : '16/9',
+              }}
             >
               {previewImage ? (
-                <img src={previewImage} alt="Preview" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
+                <img 
+                  src={previewImage} 
+                  alt="Preview" 
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none" 
+                />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center">
                   <span className="text-sm text-muted-foreground">Ingen bild vald</span>
