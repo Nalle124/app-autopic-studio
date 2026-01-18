@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2 } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -104,6 +104,8 @@ function IndexContent() {
   const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());
   const [animatingImages, setAnimatingImages] = useState<Set<string>>(new Set());
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set()); // For "apply to all" loading state
+  // Undo history for image edits (crop, blur, adjust, logo)
+  const [editHistory, setEditHistory] = useState<Map<string, string[]>>(new Map());
   const [logoDesign, setLogoDesign] = useState<LogoDesign>({
     enabled: false,
     logoUrl: null,
@@ -127,6 +129,22 @@ function IndexContent() {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  // Helper function to add to edit history before making changes
+  const addToEditHistory = (imageId: string, currentUrl: string) => {
+    setEditHistory(prev => {
+      const newMap = new Map(prev);
+      const history = [...(newMap.get(imageId) || [])];
+      // Only add if different from current last entry (prevent duplicates)
+      if (history.length === 0 || history[history.length - 1] !== currentUrl) {
+        history.push(currentUrl);
+        // Keep max 10 history entries per image
+        if (history.length > 10) history.shift();
+      }
+      newMap.set(imageId, history);
+      return newMap;
+    });
+  };
 
   // Persist uploaded images to localStorage - store all images with URLs
   useEffect(() => {
@@ -792,26 +810,73 @@ function IndexContent() {
             {(uploadedImages.some(img => img.status === 'completed') || uploadedImages.some(img => img.status === 'processing')) && <section id="results-section" className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <h2 className="font-sans font-medium text-lg text-foreground">Redigera och ladda ner</h2>
+                    <div className="flex items-center gap-2">
+                      {/* Undo button - discrete back arrow */}
+                      {Array.from(editHistory.values()).some(h => h.length > 0) && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="w-8 h-8 text-muted-foreground hover:text-foreground"
+                          title="Ångra senaste ändring"
+                          onClick={() => {
+                            // Find an image with edit history and undo the last edit
+                            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                            for (const img of completedImages) {
+                              const history = editHistory.get(img.id);
+                              if (history && history.length > 0) {
+                                const previousUrl = history[history.length - 1];
+                                // Remove from history
+                                setEditHistory(prev => {
+                                  const newMap = new Map(prev);
+                                  const imgHistory = [...(newMap.get(img.id) || [])];
+                                  imgHistory.pop();
+                                  newMap.set(img.id, imgHistory);
+                                  return newMap;
+                                });
+                                // Restore previous URL
+                                setUploadedImages(prev => prev.map(prevImg => 
+                                  prevImg.id === img.id ? { ...prevImg, finalUrl: previousUrl } : prevImg
+                                ));
+                                toast.success('Ändring ångrad');
+                                break;
+                              }
+                            }
+                          }}
+                        >
+                          <Undo2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <h2 className="font-sans font-medium text-lg text-foreground">Redigera och ladda ner</h2>
+                    </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                      <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Redigera" onClick={() => {
+                      <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Redigera ${selectedImages.size} valda` : 'Redigera'} onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                  if (completedImages.length === 0) return;
+                  // If images are selected, open editor on first selected
+                  const imagesToEdit = selectedImages.size > 0 
+                    ? completedImages.filter(img => selectedImages.has(img.id))
+                    : completedImages;
+                  if (imagesToEdit.length === 0) return;
 
                   // Open gallery on first image
-                  setGalleryIndex(0);
-                  setPreviewImage(completedImages[0].croppedUrl || completedImages[0].finalUrl!);
+                  const firstImage = imagesToEdit[0];
+                  const idx = completedImages.findIndex(img => img.id === firstImage.id);
+                  setGalleryIndex(idx);
+                  setPreviewImage(firstImage.croppedUrl || firstImage.finalUrl!);
                 }}>
                         <Sliders className="w-4 h-4" />
                       </Button>
                       
-                      <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Beskär" onClick={() => {
+                      <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Beskär ${selectedImages.size} valda` : 'Beskär'} onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                  if (completedImages.length === 0) return;
+                  // If images are selected, open editor on first selected
+                  const imagesToEdit = selectedImages.size > 0 
+                    ? completedImages.filter(img => selectedImages.has(img.id))
+                    : completedImages;
+                  if (imagesToEdit.length === 0) return;
 
-                  // Open crop editor on first image
-                  const firstImage = completedImages[0];
+                  // Open crop editor on first selected image
+                  const firstImage = imagesToEdit[0];
                   setEditingImage({
                     id: firstImage.id,
                     finalUrl: firstImage.finalUrl!,
@@ -833,6 +898,19 @@ function IndexContent() {
                 }}>
                         <Download className="w-4 h-4" />
                       </Button>
+                      
+                      {/* Clear selection button - only show when images are selected */}
+                      {selectedImages.size > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-muted-foreground"
+                          onClick={() => setSelectedImages(new Set())}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Avmarkera
+                        </Button>
+                      )}
                     </div>
                   </div>
                   
@@ -849,6 +927,13 @@ function IndexContent() {
                     <label htmlFor="select-all" className="text-sm text-foreground/70 dark:text-muted-foreground cursor-pointer whitespace-nowrap">
                       Markera alla ({uploadedImages.filter(img => img.status === 'completed').length})
                     </label>
+                    
+                    {/* Selection counter */}
+                    {selectedImages.size > 0 && (
+                      <span className="text-sm text-primary font-medium ml-auto">
+                        {selectedImages.size} vald{selectedImages.size !== 1 ? 'a' : ''}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -859,7 +944,10 @@ function IndexContent() {
                     const processingImages = uploadedImages.filter(img => img.status === 'processing');
                     const completedImages = uploadedImages.filter(img => img.status === 'completed');
                     const totalToProcess = processingImages.length + pendingImages.length;
-                    const showProgressIndicator = totalToProcess >= 12;
+                    // Check if we started with 12+ images (total images including completed)
+                    const totalImages = completedImages.length + totalToProcess;
+                    // Show progress indicator if there are still processing images AND we started with 12+
+                    const showProgressIndicator = processingImages.length > 0 && totalImages >= 12;
                     
                     return (
                       <>
@@ -871,6 +959,7 @@ function IndexContent() {
                             style={{ opacity: 0 }} // Initial state for animation
                             onClick={() => {
                               if (loadingImages.has(image.id)) return;
+                              // Toggle selection mode: long press or if already selecting
                               if (selectedImages.size > 0) {
                                 toggleImageSelection(image.id);
                               } else {
@@ -878,6 +967,11 @@ function IndexContent() {
                                 setGalleryIndex(allCompleted.findIndex(img => img.id === image.id));
                                 setPreviewImage(image.finalUrl!);
                               }
+                            }}
+                            onContextMenu={(e) => {
+                              // Right-click or long-press to start selection mode
+                              e.preventDefault();
+                              toggleImageSelection(image.id);
                             }}
                           >
                             <div className="aspect-[4/3] bg-muted relative overflow-hidden">
@@ -904,12 +998,30 @@ function IndexContent() {
                                   });
                                 }}
                               />
+                              {/* Dark overlay for selected images */}
+                              {selectedImages.has(image.id) && (
+                                <div className="absolute inset-0 bg-black/40 transition-opacity" />
+                              )}
                               {/* Selection indicator */}
                               {selectedImages.has(image.id) && (
-                                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-lg">
                                   <Check className="w-4 h-4 text-primary-foreground" />
                                 </div>
                               )}
+                              {/* Checkbox to toggle selection without opening preview */}
+                              <button
+                                className="absolute top-2 left-2 w-6 h-6 rounded-full bg-background/80 border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleImageSelection(image.id);
+                                }}
+                              >
+                                {selectedImages.has(image.id) ? (
+                                  <Check className="w-3.5 h-3.5 text-primary" />
+                                ) : (
+                                  <div className="w-3 h-3 rounded-sm border border-muted-foreground" />
+                                )}
+                              </button>
                             </div>
                           </Card>
                         ))}
@@ -922,9 +1034,6 @@ function IndexContent() {
                               <div className="text-center">
                                 <p className="text-sm font-medium text-foreground">
                                   Genererar {completedImages.length + 1} av {completedImages.length + totalToProcess}...
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {pendingImages.length} {pendingImages.length === 1 ? 'bild' : 'bilder'} i kö
                                 </p>
                               </div>
                             </div>
@@ -1287,6 +1396,11 @@ function IndexContent() {
           });
         }
       }} onSave={(imageId, croppedUrl, newAspectRatio) => {
+        // Add current URL to edit history before changing
+        const currentImage = uploadedImages.find(img => img.id === imageId);
+        if (currentImage?.finalUrl) {
+          addToEditHistory(imageId, currentImage.finalUrl);
+        }
         // Update finalUrl with cropped version
         setUploadedImages(prev => prev.map(img => img.id === imageId ? {
           ...img,
@@ -1418,6 +1532,10 @@ function IndexContent() {
           });
         }
       }} onSave={(adjustedUrl, adjustments) => {
+        // Add current URL to edit history before changing
+        if (editingImage?.finalUrl) {
+          addToEditHistory(editingImage.id, editingImage.finalUrl);
+        }
         // Update the finalUrl with the adjusted image
         setUploadedImages(prev => prev.map(img => img.id === editingImage.id ? {
           ...img,
@@ -1502,6 +1620,10 @@ function IndexContent() {
           });
         }
       }} onSave={blurredUrl => {
+        // Add current URL to edit history before changing
+        if (editingImage?.finalUrl) {
+          addToEditHistory(editingImage.id, editingImage.finalUrl);
+        }
         setUploadedImages(prev => prev.map(img => img.id === editingImage.id ? {
           ...img,
           finalUrl: blurredUrl

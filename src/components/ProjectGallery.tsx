@@ -598,11 +598,12 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                   </div>
                 )}
                 
-                {/* Hover overlay with actions */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                {/* Hover overlay with actions - mobile optimized */}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 sm:gap-2">
                   <Button
                     size="icon"
                     variant="secondary"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (projectJobs.length > 0) {
@@ -610,22 +611,24 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       }
                     }}
                   >
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </Button>
                   <Button
                     size="icon"
                     variant="secondary"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDownloadAll(project);
                     }}
                     disabled={projectJobs.length === 0}
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </Button>
                   <Button
                     size="icon"
                     variant="destructive"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (isOrphan) {
@@ -635,7 +638,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       }
                     }}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </Button>
                 </div>
               </div>
