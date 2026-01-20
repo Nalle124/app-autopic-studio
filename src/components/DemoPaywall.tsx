@@ -558,7 +558,6 @@ export const DemoPaywall = () => {
                 <blockquote className="text-sm italic text-muted-foreground">
                   "Skapad med passion, kaffe och bakgrundsjazz."
                 </blockquote>
-                <p className="text-xs text-muted-foreground/60 mt-2">— Grundaren</p>
               </div>
             </div>
 
