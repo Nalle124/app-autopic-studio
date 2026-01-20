@@ -300,11 +300,11 @@ export const SceneSelector = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 relative bg-card">
-          <h3 className="font-bold text-base text-foreground mb-1.5">
+        <div className="p-3 sm:p-5 relative bg-card">
+          <h3 className="font-bold text-sm sm:text-base text-foreground mb-1 sm:mb-1.5 line-clamp-2 leading-tight">
             {scene.name}
           </h3>
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 leading-relaxed">
             {scene.description}
           </p>
         </div>

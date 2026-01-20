@@ -228,11 +228,11 @@ export const DemoSceneSelector = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 relative bg-gradient-to-t from-background via-background to-transparent">
-          <h3 className="font-bold text-sm text-foreground mb-1">
+        <div className="p-3 sm:p-4 relative bg-gradient-to-t from-background via-background to-transparent">
+          <h3 className="font-bold text-xs sm:text-sm text-foreground mb-1 line-clamp-2 leading-tight">
             {scene.name}
           </h3>
-          <p className="text-xs text-muted-foreground line-clamp-1">
+          <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1">
             {scene.description}
           </p>
         </div>
