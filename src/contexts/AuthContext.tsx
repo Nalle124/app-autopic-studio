@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import LogRocket from 'logrocket';
 
 interface AuthContextType {
   user: User | null;
@@ -52,6 +53,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Identify user in LogRocket for session tracking
+        if (session?.user) {
+          LogRocket.identify(session.user.id, {
+            email: session.user.email || '',
+            name: session.user.user_metadata?.full_name || ''
+          });
+        }
         
         // Defer admin check with setTimeout to avoid deadlock
         if (session?.user) {
