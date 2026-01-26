@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
-import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images, Coins, Plus, Minus, Trash2 } from 'lucide-react';
+import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images, Coins, Plus, Minus, Trash2, Download, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Table,
@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface UserData {
   id: string;
@@ -68,6 +69,11 @@ const Admin = () => {
   // Delete user dialog
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [deleting, setDeleting] = useState(false);
+  
+  // User images dialog
+  const [viewingImagesUser, setViewingImagesUser] = useState<UserData | null>(null);
+  const [userImages, setUserImages] = useState<Array<{ id: string; final_url: string; scene_id: string; created_at: string }>>([]);
+  const [loadingImages, setLoadingImages] = useState(false);
 
   useEffect(() => {
     // Wait for both auth and admin check to complete
@@ -193,6 +199,65 @@ const Admin = () => {
     }
   };
 
+  const loadUserImages = async (user: UserData) => {
+    setViewingImagesUser(user);
+    setLoadingImages(true);
+    try {
+      const { data, error } = await supabase
+        .from('processing_jobs')
+        .select('id, final_url, scene_id, created_at')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .not('final_url', 'is', null)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setUserImages(data || []);
+    } catch (error) {
+      console.error('Error loading user images:', error);
+      toast.error('Kunde inte ladda bilder');
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+
+  const exportLeadsCSV = () => {
+    if (users.length === 0) {
+      toast.error('Inga användare att exportera');
+      return;
+    }
+    
+    // Create CSV content
+    const headers = ['Email', 'Namn', 'Företag', 'Typ', 'Telefon', 'Credits', 'Registrerad'];
+    const rows = users.map(user => [
+      user.email,
+      user.full_name || '',
+      user.company_name || '',
+      user.customer_type === 'private' ? 'Privat' : 'Företag',
+      '', // Phone not in current data, can be added if needed
+      user.credits.toString(),
+      new Date(user.created_at).toLocaleDateString('sv-SE')
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `leads-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`${users.length} leads exporterade till CSV`);
+  };
+
   if (authLoading || adminLoading || !isAdmin) {
     return null;
   }
@@ -211,6 +276,10 @@ const Admin = () => {
               </p>
             </div>
             <div className="flex gap-3">
+              <Button variant="outline" onClick={exportLeadsCSV}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportera CSV
+              </Button>
               <Button onClick={() => navigate('/admin/scener')}>
                 <Images className="mr-2 h-4 w-4" />
                 Hantera Scener
@@ -339,6 +408,14 @@ const Admin = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => loadUserImages(user)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Bilder
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
@@ -499,6 +576,65 @@ const Admin = () => {
               disabled={adjusting}
             >
               {adjusting ? 'Justerar...' : `Bekräfta ${pendingAdjustment?.isPositive ? 'tillägg' : 'avdrag'}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View User Images Dialog */}
+      <Dialog open={!!viewingImagesUser} onOpenChange={() => setViewingImagesUser(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Image className="h-5 w-5" />
+              Bilder för {viewingImagesUser?.full_name || viewingImagesUser?.email}
+            </DialogTitle>
+            <DialogDescription>
+              {loadingImages ? 'Laddar...' : `${userImages.length} genererade bilder`}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="h-[60vh]">
+            {loadingImages ? (
+              <div className="flex items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              </div>
+            ) : userImages.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                Inga genererade bilder
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-1">
+                {userImages.map((image) => (
+                  <div key={image.id} className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted">
+                    <img
+                      src={image.final_url}
+                      alt={`Generated ${image.scene_id}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                      <span className="text-xs text-white/80">{image.scene_id}</span>
+                      <span className="text-xs text-white/60">
+                        {new Date(image.created_at).toLocaleDateString('sv-SE')}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => window.open(image.final_url, '_blank')}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Visa
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewingImagesUser(null)}>
+              Stäng
             </Button>
           </DialogFooter>
         </DialogContent>
