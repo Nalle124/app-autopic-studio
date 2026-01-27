@@ -27,16 +27,11 @@ interface DemoSceneSelectorProps {
 
 // Specific demo scene IDs (popular/free scenes)
 const DEMO_SCENE_IDS = [
-  'wood-slat-studio',
-  'nordic-showroom',
-  'platvagg-studio',
-  'svart-platvagg',
-  'verkstad-ljus',
-  'gra-enkel-studio',
-  'stiftsgarden',
   'hostgata',
-  'hansahamn-kullsten',
-  'bla-sammet-draperi',
+  'kullerstengata',
+  'plathall-studio',
+  'vit-kakel',
+  'nordic-showroom',
 ];
 
 // Category config matching main app
