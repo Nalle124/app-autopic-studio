@@ -80,12 +80,11 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
 
 // Popular scene IDs
 const POPULAR_SCENE_IDS = [
-  'wood-slat-studio',
-  'plathall-studio',
-  'clean-wood-studio',
-  'trapanel-takljus',
   'hostgata',
-  'kullerstengata'
+  'kullerstengata',
+  'plathall-studio',
+  'vit-kakel',
+  'nordic-showroom'
 ];
 
 const getCategoryDisplayName = (category: string) => {
