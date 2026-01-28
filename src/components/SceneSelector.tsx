@@ -84,9 +84,10 @@ const POPULAR_SCENE_IDS = [
   'kullerstengata',
   'plathall-studio',
   'vit-kakel',
-  'nordic-showroom',
   'gra-minimalist-studio',
-  'outdoor-park'
+  'outdoor-park',
+  'bla-sammet-draperi',
+  'anthracite-studio'
 ];
 
 const getCategoryDisplayName = (category: string) => {

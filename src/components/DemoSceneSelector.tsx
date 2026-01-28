@@ -31,9 +31,10 @@ const DEMO_SCENE_IDS = [
   'kullerstengata',
   'plathall-studio',
   'vit-kakel',
-  'nordic-showroom',
   'gra-minimalist-studio',
   'outdoor-park',
+  'bla-sammet-draperi',
+  'anthracite-studio',
 ];
 
 // Category config matching main app
