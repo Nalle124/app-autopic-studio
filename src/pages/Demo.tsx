@@ -22,6 +22,8 @@ import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import auraGradient from '@/assets/aura-gradient-step3.jpg';
+import exampleVolvo from '@/assets/examples/v60-before.jpg';
+import exampleCaddy from '@/assets/examples/caddy-before.png';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -657,6 +659,59 @@ const DemoContent = () => {
               </p>
             </div>
           </Card>
+          
+          {/* Example images section */}
+          {uploadedImages.length === 0 && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground mb-3">Eller använd en exempelbild</p>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      setShowSignupModal(true);
+                      return;
+                    }
+                    const response = await fetch(exampleVolvo);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'volvo-v60.jpg', { type: 'image/jpeg' });
+                    const newImage: UploadedImage = {
+                      id: `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                      file,
+                      preview: exampleVolvo,
+                      status: 'pending',
+                      carAdjustments: { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }
+                    };
+                    setUploadedImages(prev => [...prev, newImage]);
+                  }}
+                  className="group relative w-24 h-16 sm:w-28 sm:h-20 rounded-lg overflow-hidden border-2 border-border/50 hover:border-primary/60 transition-all hover:scale-105"
+                >
+                  <img src={exampleVolvo} alt="Volvo V60" className="w-full h-full object-cover" />
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      setShowSignupModal(true);
+                      return;
+                    }
+                    const response = await fetch(exampleCaddy);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'vw-caddy.png', { type: 'image/png' });
+                    const newImage: UploadedImage = {
+                      id: `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                      file,
+                      preview: exampleCaddy,
+                      status: 'pending',
+                      carAdjustments: { brightness: 0, contrast: 0, warmth: 0, shadows: 0, saturation: 0 }
+                    };
+                    setUploadedImages(prev => [...prev, newImage]);
+                  }}
+                  className="group relative w-24 h-16 sm:w-28 sm:h-20 rounded-lg overflow-hidden border-2 border-border/50 hover:border-primary/60 transition-all hover:scale-105"
+                >
+                  <img src={exampleCaddy} alt="VW Caddy" className="w-full h-full object-cover" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Uploaded images preview with edit buttons - matching main app */}
           {uploadedImages.length > 0 && (
@@ -698,7 +753,7 @@ const DemoContent = () => {
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
                       <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
                       <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
-                        Retouch
+                        Ljusförbättring
                       </Label>
                       <Switch
                         id="relight-toggle"
