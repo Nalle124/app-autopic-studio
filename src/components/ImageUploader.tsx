@@ -259,7 +259,7 @@ export const ImageUploader = ({
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
                     <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
                     <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
-                      Retouch
+                      Ljusförbättring
                     </Label>
                     <Switch
                       id="relight-toggle"
