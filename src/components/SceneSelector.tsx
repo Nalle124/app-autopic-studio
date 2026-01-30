@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, Star, LayoutGrid, GalleryHorizontal, Info } from 'lucide-react';
+import { Check, Star, LayoutGrid, GalleryHorizontal, Info, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImageSkeleton } from '@/components/ImageSkeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { useDemo } from '@/contexts/DemoContext';
 
 interface SceneSelectorProps {
   selectedSceneId: string | null;
@@ -84,7 +85,6 @@ const POPULAR_SCENE_IDS = [
   'kullerstengata',
   'plathall-studio',
   'vit-kakel',
-  'gra-minimalist-studio',
   'outdoor-park',
   'bla-sammet-draperi',
   'anthracite-studio'
@@ -119,6 +119,10 @@ export const SceneSelector = ({
   const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('grid');
   const [activeCategory, setActiveCategory] = useState<string>('');
   const isMobile = useIsMobile();
+  const { isSubscribed, triggerPaywall } = useDemo();
+  
+  // Free users only have access to popular category
+  const hasFullAccess = isSubscribed;
 
   useEffect(() => {
     loadScenes();
@@ -242,38 +246,60 @@ export const SceneSelector = ({
     );
   }
 
-  const SceneCard = ({ scene, isGrid = false }: { scene: SceneMetadata; isGrid?: boolean }) => {
+  const SceneCard = ({ scene, isGrid = false, isLocked = false }: { scene: SceneMetadata; isGrid?: boolean; isLocked?: boolean }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
+
+    const handleClick = () => {
+      if (isLocked) {
+        triggerPaywall('premium-scene');
+      } else {
+        onSceneSelect(scene);
+      }
+    };
 
     return (
       <Card
-        onClick={() => onSceneSelect(scene)}
+        onClick={handleClick}
         className={`group relative overflow-hidden cursor-pointer transition-all duration-300 border-border ${
           isGrid ? 'w-full' : 'flex-shrink-0 w-72 snap-center'
         } ${
-          selectedSceneId === scene.id
+          isLocked ? 'opacity-80' : ''
+        } ${
+          selectedSceneId === scene.id && !isLocked
             ? 'ring-2 ring-primary shadow-xl shadow-primary/30 scale-[1.02]'
             : 'hover:shadow-xl hover:scale-[1.02]'
         }`}
       >
+        {/* Locked overlay */}
+        {isLocked && (
+          <div className="absolute inset-0 z-20 bg-background/42 backdrop-blur-[2px] flex flex-col items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-2">
+              <Lock className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">Premium</span>
+          </div>
+        )}
+
         {/* Gradient overlay */}
         <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category]?.gradient || 'from-accent-orange/20 via-accent-pink/10 to-background/5'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
         
-        {/* Favorite button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-md"
-          onClick={(e) => toggleFavorite(scene.id, e)}
-        >
-          <Star
-            className={`w-4 h-4 transition-all ${
-              favorites.has(scene.id)
-                ? 'fill-primary text-primary scale-110'
-                : 'text-muted-foreground'
-            }`}
-          />
-        </Button>
+        {/* Favorite button - hide for locked scenes */}
+        {!isLocked && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-background shadow-md"
+            onClick={(e) => toggleFavorite(scene.id, e)}
+          >
+            <Star
+              className={`w-4 h-4 transition-all ${
+                favorites.has(scene.id)
+                  ? 'fill-primary text-primary scale-110'
+                  : 'text-muted-foreground'
+              }`}
+            />
+          </Button>
+        )}
 
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
@@ -283,7 +309,7 @@ export const SceneSelector = ({
           <img
             src={scene.thumbnailUrl}
             alt={scene.name}
-            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${
+            className={`w-full h-full object-cover transition-all duration-500 ${isLocked ? '' : 'group-hover:scale-110'} ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             loading="lazy"
@@ -292,7 +318,7 @@ export const SceneSelector = ({
           />
           
           {/* Selected indicator */}
-          {selectedSceneId === scene.id && (
+          {selectedSceneId === scene.id && !isLocked && (
             <div className="absolute inset-0 bg-primary/20 backdrop-blur-[2px] flex items-center justify-center">
               <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-xl animate-scale-in">
                 <Check className="w-7 h-7 text-primary-foreground" strokeWidth={3} />
@@ -313,6 +339,9 @@ export const SceneSelector = ({
       </Card>
     );
   };
+
+  // Check if current category is locked (not popular/favorites and user doesn't have full access)
+  const isLockedCategory = activeCategory !== 'popular' && activeCategory !== 'favorites' && !hasFullAccess;
 
   const visibleCategories = getVisibleCategories();
   const categoryScenes = getScenesByCategory(activeCategory);
@@ -367,8 +396,16 @@ export const SceneSelector = ({
                         <Star className="w-4 h-4 fill-current" />
                         Favoriter
                       </span>
+                    ) : category === 'popular' ? (
+                      <span className="flex items-center gap-2">
+                        <Star className="w-4 h-4 fill-current text-primary" />
+                        {getCategoryDisplayName(category)}
+                      </span>
                     ) : (
-                      getCategoryDisplayName(category)
+                      <span className="flex items-center gap-2">
+                        {!hasFullAccess && <Lock className="w-3 h-3 text-muted-foreground" />}
+                        {getCategoryDisplayName(category)}
+                      </span>
                     )}
                   </SelectItem>
                 ))}
@@ -392,8 +429,16 @@ export const SceneSelector = ({
                       <Star className="w-4 h-4 fill-current" />
                       Favoriter
                     </span>
+                  ) : category === 'popular' ? (
+                    <span className="flex items-center gap-2">
+                      <Star className="w-4 h-4 fill-current" />
+                      Populära
+                    </span>
                   ) : (
-                    getCategoryDisplayName(category)
+                    <span className="flex items-center gap-2">
+                      {!hasFullAccess && <Lock className="w-3 h-3" />}
+                      {getCategoryDisplayName(category)}
+                    </span>
                   )}
                 </button>
               ))}
@@ -445,7 +490,38 @@ export const SceneSelector = ({
         )}
         
         {/* Scene cards with touch swipe support */}
-        {viewMode === 'slideshow' ? (
+        {isLockedCategory ? (
+          // Locked category: show blurred grid with fade
+          <div className="relative">
+            <div className={`${viewMode === 'grid' 
+              ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4' 
+              : 'flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide'
+            }`}>
+              {categoryScenes.slice(0, 10).map((scene, index) => (
+                <div 
+                  key={scene.id} 
+                  className={`${index >= 5 ? 'opacity-30' : ''}`}
+                  style={{ filter: 'blur(2px)' }}
+                >
+                  <SceneCard scene={scene} isLocked isGrid={viewMode === 'grid'} />
+                </div>
+              ))}
+            </div>
+            
+            {/* Fade overlay with premium badge */}
+            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/80 to-transparent flex flex-col items-center justify-end pb-6 pointer-events-none">
+              <div className="pointer-events-auto">
+                <Button 
+                  onClick={() => triggerPaywall('premium-scene')}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Lås upp med Pro
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : viewMode === 'slideshow' ? (
           <div className="relative">
             <div 
               className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide touch-pan-x"

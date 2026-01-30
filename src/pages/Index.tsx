@@ -762,7 +762,7 @@ function IndexContent() {
             setUploadedImages(prev => [...prev, ...newImages]);
           }} onRemoveImage={imageId => {
             setUploadedImages(prev => prev.filter(img => img.id !== imageId));
-          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} />
+          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={true} />
             </section>
 
             {/* Explore Scenes - Always visible */}

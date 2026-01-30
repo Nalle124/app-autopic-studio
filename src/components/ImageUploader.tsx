@@ -15,6 +15,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import exampleVolvo from '@/assets/examples/v60-before.jpg';
+import exampleCaddy from '@/assets/examples/caddy-before.png';
 
 interface ImageUploaderProps {
   onImagesUploaded: (images: UploadedImage[]) => void;
@@ -28,6 +30,7 @@ interface ImageUploaderProps {
   relightEnabled?: boolean;
   onRelightChange?: (enabled: boolean) => void;
   availableCredits?: number;
+  showExampleImages?: boolean;
 }
 
 export const ImageUploader = ({
@@ -41,7 +44,8 @@ export const ImageUploader = ({
   animatingImages,
   relightEnabled,
   onRelightChange,
-  availableCredits
+  availableCredits,
+  showExampleImages = false
 }: ImageUploaderProps) => {
   const [localImages, setLocalImages] = useState<UploadedImage[]>([]);
   const [isConverting, setIsConverting] = useState(false);
@@ -175,6 +179,42 @@ export const ImageUploader = ({
     setLocalImages([]);
     onClearAll?.();
   };
+
+  // Handle example image selection
+  const handleExampleImageClick = async (exampleUrl: string, fileName: string) => {
+    try {
+      const response = await fetch(exampleUrl);
+      const blob = await response.blob();
+      const file = new File([blob], fileName, { type: 'image/jpeg' });
+      
+      const preview = URL.createObjectURL(blob);
+      
+      // Get dimensions
+      const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = () => resolve({ width: 0, height: 0 });
+        img.src = preview;
+      });
+      
+      const newImage: UploadedImage = {
+        id: `example-${Date.now()}-${Math.random()}`,
+        file,
+        preview,
+        status: 'pending' as const,
+        isOriginal: true,
+        originalWidth: dimensions.width,
+        originalHeight: dimensions.height
+      };
+      
+      setLocalImages(prev => [...prev, newImage]);
+      onImagesUploaded([newImage]);
+      toast.success('Exempelbild vald');
+    } catch (error) {
+      console.error('Error loading example image:', error);
+      toast.error('Kunde inte ladda exempelbilden');
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -197,6 +237,33 @@ export const ImageUploader = ({
           Max 50 bilder • PNG, JPG, JPEG, WEBP, HEIC
         </p>
       </div>
+
+      {/* Example images - show when no images uploaded and showExampleImages is true */}
+      {showExampleImages && uploadedImages.length === 0 && (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground text-center">Eller använd en exempelbild</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => handleExampleImageClick(exampleVolvo, 'volvo-v60.jpg')}
+              className="group relative w-24 h-24 rounded-lg overflow-hidden border-2 border-border hover:border-primary transition-colors"
+            >
+              <img src={exampleVolvo} alt="Volvo V60" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">Volvo V60</span>
+              </div>
+            </button>
+            <button
+              onClick={() => handleExampleImageClick(exampleCaddy, 'vw-caddy.jpg')}
+              className="group relative w-24 h-24 rounded-lg overflow-hidden border-2 border-border hover:border-primary transition-colors"
+            >
+              <img src={exampleCaddy} alt="VW Caddy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">VW Caddy</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Clear all - centered text with lines */}
       {uploadedImages.length > 0 && (

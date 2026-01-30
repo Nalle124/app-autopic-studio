@@ -31,7 +31,6 @@ const DEMO_SCENE_IDS = [
   'kullerstengata',
   'plathall-studio',
   'vit-kakel',
-  'gra-minimalist-studio',
   'outdoor-park',
   'bla-sammet-draperi',
   'anthracite-studio',
