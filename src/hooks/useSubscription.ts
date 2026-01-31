@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+// Admin users are always treated as having full access (subscribed)
+// This is a simple override that doesn't affect regular users
+
 interface SubscriptionStatus {
   subscribed: boolean;
   productId: string | null;
@@ -13,7 +16,7 @@ interface SubscriptionStatus {
 }
 
 export const useSubscription = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [status, setStatus] = useState<SubscriptionStatus>({
     subscribed: false,
     productId: null,
@@ -33,6 +36,20 @@ export const useSubscription = () => {
         planName: null,
         subscriptionEnd: null,
         creditsPerMonth: 0,
+        loading: false,
+        error: null,
+      });
+      return;
+    }
+
+    // Admin users always have full access - no need to check Stripe
+    if (isAdmin) {
+      setStatus({
+        subscribed: true,
+        productId: 'admin_access',
+        planName: 'Admin',
+        subscriptionEnd: null,
+        creditsPerMonth: 999,
         loading: false,
         error: null,
       });
@@ -71,7 +88,7 @@ export const useSubscription = () => {
         error: null,
       }));
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     checkSubscription();

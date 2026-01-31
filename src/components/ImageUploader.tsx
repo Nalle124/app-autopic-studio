@@ -9,7 +9,7 @@ import { UploadedImage } from '@/types/scene';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { isHeicFile, convertHeicToJpeg } from '@/utils/heicConverter';
+import { isHeicFile, convertHeicToJpeg, isSupportedImageFormat } from '@/utils/heicConverter';
 import {
   Popover,
   PopoverContent,
@@ -64,9 +64,32 @@ export const ImageUploader = ({
       return;
     }
     
+    // Filter out unsupported files and warn user
+    const supportedFiles: File[] = [];
+    const unsupportedFiles: string[] = [];
+    
+    for (const file of acceptedFiles) {
+      if (isSupportedImageFormat(file)) {
+        supportedFiles.push(file);
+      } else {
+        unsupportedFiles.push(file.name);
+        console.warn(`Unsupported file format: ${file.name} (type: ${file.type})`);
+      }
+    }
+    
+    if (unsupportedFiles.length > 0) {
+      toast.error(`${unsupportedFiles.length} fil(er) har format som inte stöds: ${unsupportedFiles.slice(0, 3).join(', ')}${unsupportedFiles.length > 3 ? '...' : ''}. Stödda format: JPG, PNG, WEBP, HEIC.`, {
+        duration: 6000
+      });
+    }
+    
+    if (supportedFiles.length === 0) {
+      return;
+    }
+    
     // Warn if user is uploading more images than their available credits
     const currentPendingCount = uploadedImages.filter(img => img.status === 'pending').length;
-    const totalAfterUpload = currentPendingCount + acceptedFiles.length;
+    const totalAfterUpload = currentPendingCount + supportedFiles.length;
     if (availableCredits !== undefined && totalAfterUpload > availableCredits) {
       toast.warning(`Du har ${availableCredits} credits. Endast de första ${availableCredits} bilderna kommer att kunna genereras.`, {
         duration: 5000
@@ -74,8 +97,8 @@ export const ImageUploader = ({
     }
 
     // Check for HEIC files and convert them
-    const heicFiles = acceptedFiles.filter(isHeicFile);
-    let filesToProcess = acceptedFiles;
+    const heicFiles = supportedFiles.filter(isHeicFile);
+    let filesToProcess = supportedFiles;
     
     if (heicFiles.length > 0) {
       setIsConverting(true);
@@ -84,7 +107,7 @@ export const ImageUploader = ({
       try {
         // Convert HEIC files to JPEG
         const convertedFiles = await Promise.all(
-          acceptedFiles.map(async (file) => {
+          supportedFiles.map(async (file) => {
             if (isHeicFile(file)) {
               return await convertHeicToJpeg(file);
             }
@@ -157,7 +180,7 @@ export const ImageUploader = ({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.heic', '.heif']
+      'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.heic', '.heif', '.gif', '.bmp', '.tiff', '.tif']
     },
     maxFiles: 50,
     disabled: isConverting
