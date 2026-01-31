@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import LogRocket from 'logrocket';
+import * as Sentry from '@sentry/react';
 
 interface AuthContextType {
   user: User | null;
@@ -54,12 +54,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Identify user in LogRocket for session tracking
+        // Identify user in Sentry for error tracking
         if (session?.user) {
-          LogRocket.identify(session.user.id, {
+          Sentry.setUser({
+            id: session.user.id,
             email: session.user.email || '',
-            name: session.user.user_metadata?.full_name || ''
+            username: session.user.user_metadata?.full_name || ''
           });
+        } else {
+          Sentry.setUser(null);
         }
         
         // Defer admin check with setTimeout to avoid deadlock
