@@ -1,6 +1,32 @@
 import heic2any from 'heic2any';
 
 /**
+ * Supported image MIME types for upload
+ */
+const SUPPORTED_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg', 
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
+  'image/gif',
+  'image/bmp',
+  'image/tiff',
+  'image/svg+xml'
+];
+
+/**
+ * Supported file extensions (fallback when MIME type is not set)
+ */
+const SUPPORTED_EXTENSIONS = [
+  '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', 
+  '.gif', '.bmp', '.tiff', '.tif', '.svg'
+];
+
+/**
  * Check if a file is HEIC/HEIF format
  */
 export const isHeicFile = (file: File): boolean => {
@@ -15,6 +41,20 @@ export const isHeicFile = (file: File): boolean => {
   // Check file extension (fallback for when MIME type is not set correctly)
   const fileName = file.name.toLowerCase();
   return heicExtensions.some(ext => fileName.endsWith(ext));
+};
+
+/**
+ * Check if a file is a supported image format
+ */
+export const isSupportedImageFormat = (file: File): boolean => {
+  // Check MIME type first
+  if (file.type && SUPPORTED_MIME_TYPES.includes(file.type.toLowerCase())) {
+    return true;
+  }
+  
+  // Fallback to extension check (some browsers don't set MIME type correctly)
+  const fileName = file.name.toLowerCase();
+  return SUPPORTED_EXTENSIONS.some(ext => fileName.endsWith(ext));
 };
 
 /**
