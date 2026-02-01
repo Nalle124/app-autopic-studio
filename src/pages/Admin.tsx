@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
-import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images, Coins, Plus, Minus, Trash2, Download, Eye, X } from 'lucide-react';
+import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images, Coins, Plus, Minus, Trash2, Download, Eye, X, MessageSquare, ExternalLink, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Table,
@@ -45,6 +45,19 @@ interface Stats {
   failed_jobs: number;
 }
 
+interface BugReport {
+  id: string;
+  user_id: string;
+  message: string;
+  page_url: string | null;
+  user_agent: string | null;
+  status: string;
+  created_at: string;
+  full_name: string | null;
+  email: string | null;
+  company_name: string | null;
+}
+
 const Admin = () => {
   const { isAdmin, loading: authLoading, adminLoading } = useAuth();
   const navigate = useNavigate();
@@ -52,6 +65,10 @@ const Admin = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [totalCredits, setTotalCredits] = useState(0);
+  
+  // Feedback/Bug reports
+  const [bugReports, setBugReports] = useState<BugReport[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
   
   // Credit adjustment dialog
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -86,6 +103,7 @@ const Admin = () => {
   useEffect(() => {
     if (isAdmin) {
       loadData();
+      loadBugReports();
     }
   }, [isAdmin]);
 
@@ -112,6 +130,65 @@ const Admin = () => {
       toast.error('Kunde inte ladda data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBugReports = async () => {
+    setLoadingReports(true);
+    try {
+      // Get bug reports with user info
+      const { data, error } = await supabase
+        .from('bug_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Fetch user info for each report
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(r => r.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, company_name')
+          .in('id', userIds);
+        
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        
+        const reportsWithUserInfo: BugReport[] = data.map(report => ({
+          ...report,
+          full_name: profileMap.get(report.user_id)?.full_name || null,
+          email: profileMap.get(report.user_id)?.email || null,
+          company_name: profileMap.get(report.user_id)?.company_name || null
+        }));
+        
+        setBugReports(reportsWithUserInfo);
+      } else {
+        setBugReports([]);
+      }
+    } catch (error) {
+      console.error('Error loading bug reports:', error);
+      toast.error('Kunde inte ladda feedback');
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  const markReportResolved = async (reportId: string) => {
+    try {
+      const { error } = await supabase
+        .from('bug_reports')
+        .update({ status: 'resolved' })
+        .eq('id', reportId);
+      
+      if (error) throw error;
+      
+      setBugReports(prev => prev.map(r => 
+        r.id === reportId ? { ...r, status: 'resolved' } : r
+      ));
+      toast.success('Markerad som löst');
+    } catch (error) {
+      console.error('Error updating report:', error);
+      toast.error('Kunde inte uppdatera');
     }
   };
 
@@ -378,7 +455,7 @@ const Admin = () => {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.full_name || '-'}</TableCell>
+                        <TableCell className="font-medium">{user.full_name || user.company_name || '-'}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <Badge variant="outline">
@@ -439,6 +516,90 @@ const Admin = () => {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Feedback / Bug Reports Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Kundfeedback
+              </CardTitle>
+              <CardDescription>
+                Feedback och buggrapporter från användare. Klicka för att markera som löst.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingReports ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Laddar feedback...
+                </div>
+              ) : bugReports.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Ingen feedback ännu
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {bugReports.map((report) => (
+                    <div 
+                      key={report.id} 
+                      className={`p-4 rounded-lg border ${
+                        report.status === 'resolved' 
+                          ? 'bg-muted/50 border-muted' 
+                          : 'bg-card border-border'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium">
+                              {report.full_name || report.email || 'Okänd användare'}
+                            </span>
+                            {report.company_name && (
+                              <Badge variant="outline">{report.company_name}</Badge>
+                            )}
+                            <Badge variant={report.status === 'resolved' ? 'secondary' : 'default'}>
+                              {report.status === 'resolved' ? 'Löst' : 'Ny'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(report.created_at).toLocaleString('sv-SE')}
+                            </span>
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap">{report.message}</p>
+                          {report.page_url && (
+                            <a 
+                              href={report.page_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              {report.page_url}
+                            </a>
+                          )}
+                          {report.user_agent && (
+                            <p className="text-xs text-muted-foreground truncate max-w-xl">
+                              {report.user_agent}
+                            </p>
+                          )}
+                        </div>
+                        {report.status !== 'resolved' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => markReportResolved(report.id)}
+                            className="shrink-0"
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Markera löst
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
