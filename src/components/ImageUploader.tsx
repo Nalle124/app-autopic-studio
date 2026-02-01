@@ -9,7 +9,7 @@ import { UploadedImage } from '@/types/scene';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { isHeicFile, convertHeicToJpeg, isSupportedImageFormat } from '@/utils/heicConverter';
+import { isHeicFile, convertHeicToJpeg, isSupportedImageFormat, ensureApiCompatibleFormat, needsFormatConversion } from '@/utils/heicConverter';
 import {
   Popover,
   PopoverContent,
@@ -96,28 +96,27 @@ export const ImageUploader = ({
       });
     }
 
-    // Check for HEIC files and convert them
-    const heicFiles = supportedFiles.filter(isHeicFile);
+    // Check for files that need conversion (HEIC, GIF, BMP, TIFF, SVG)
+    const filesNeedingConversion = supportedFiles.filter(file => 
+      isHeicFile(file) || needsFormatConversion(file)
+    );
     let filesToProcess = supportedFiles;
     
-    if (heicFiles.length > 0) {
+    if (filesNeedingConversion.length > 0) {
       setIsConverting(true);
-      toast.info(`Konverterar ${heicFiles.length} HEIC-bild(er)...`, { duration: 3000 });
+      toast.info(`Konverterar ${filesNeedingConversion.length} bild(er) till kompatibelt format...`, { duration: 3000 });
       
       try {
-        // Convert HEIC files to JPEG
+        // Convert all non-compatible files to JPEG
         const convertedFiles = await Promise.all(
           supportedFiles.map(async (file) => {
-            if (isHeicFile(file)) {
-              return await convertHeicToJpeg(file);
-            }
-            return file;
+            return await ensureApiCompatibleFormat(file);
           })
         );
         filesToProcess = convertedFiles;
       } catch (error: any) {
-        console.error('HEIC conversion error:', error);
-        toast.error(error.message || 'Kunde inte konvertera HEIC-bilder');
+        console.error('Image conversion error:', error);
+        toast.error(error.message || 'Kunde inte konvertera bilder');
         setIsConverting(false);
         return;
       }
