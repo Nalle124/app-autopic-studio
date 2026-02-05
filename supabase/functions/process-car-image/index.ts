@@ -279,8 +279,10 @@ serve(async (req) => {
 
     if (useCompositeMode) {
       // Composite mode - use exact background image (no AI generation)
-      photoroomFormData.append('background.imageUrl', backgroundImageUrl);
-      console.log('Using EXACT background (composite mode)');
+      // Hybrid approach: Step 1 - Use transparent background to get AI-positioned car with shadows
+      // We'll composite onto exact background in step 2
+      photoroomFormData.append('background.color', 'transparent');
+      console.log('Using TRANSPARENT background for hybrid composite (step 1)');
     } else {
       // AI-generated background mode - use guidance
       photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
@@ -369,13 +371,14 @@ serve(async (req) => {
     console.log('- Padding:', paddingValue);
     console.log('- Orientation:', orientation);
     console.log('- Relight:', relightEnabled);
+    console.log('- Composite mode:', useCompositeMode);
     console.log('- Output format: PNG');
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
       headers: {
         'x-api-key': PHOTOROOM_API_KEY,
-        'pr-ai-background-model-version': 'background-studio-beta-2025-03-17',
+        ...(useCompositeMode ? {} : { 'pr-ai-background-model-version': 'background-studio-beta-2025-03-17' }),
       },
       body: photoroomFormData,
     });
@@ -398,9 +401,67 @@ serve(async (req) => {
       throw new Error(`Bildbearbetning misslyckades. Ingen credit drogs. (${editResponse.status})`);
     }
 
-    const finalImageBuffer = await editResponse.arrayBuffer();
+    let finalImageBuffer = await editResponse.arrayBuffer();
     console.log('✅ Photoroom processed successfully!');
     console.log(`Result size: ${(finalImageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
+
+    // Step 2: If composite mode, composite the transparent car onto exact background
+    if (useCompositeMode) {
+      console.log('Starting step 2: Compositing onto exact background...');
+      
+      // Upload step 1 result (transparent car) to get a URL
+      const step1Filename = `temp/${crypto.randomUUID()}-step1.png`;
+      const { error: step1UploadError } = await supabase.storage
+        .from('processed-cars')
+        .upload(step1Filename, finalImageBuffer, {
+          contentType: 'image/png',
+          upsert: false,
+        });
+
+      if (step1UploadError) {
+        console.error('Step 1 upload error:', step1UploadError);
+        throw new Error(`Failed to upload step 1 result: ${step1UploadError.message}`);
+      }
+
+      const { data: step1UrlData } = supabase.storage
+        .from('processed-cars')
+        .getPublicUrl(step1Filename);
+
+      const transparentCarUrl = step1UrlData.publicUrl;
+      console.log('Transparent car uploaded:', transparentCarUrl);
+
+      // Step 2: Composite transparent car onto exact background
+      const step2FormData = new FormData();
+      step2FormData.append('imageUrl', transparentCarUrl);
+      step2FormData.append('background.imageUrl', backgroundImageUrl);
+      step2FormData.append('padding', '0'); // No additional padding - car is already positioned
+      step2FormData.append('scaling', 'fill'); // Fill to preserve positioning from step 1
+      step2FormData.append('outputSize', outputSize);
+      step2FormData.append('export.format', 'png');
+
+      console.log('Step 2 request: Compositing transparent car onto exact background');
+
+      const step2Response = await fetch('https://image-api.photoroom.com/v2/edit', {
+        method: 'POST',
+        headers: {
+          'x-api-key': PHOTOROOM_API_KEY,
+        },
+        body: step2FormData,
+      });
+
+      // Clean up step 1 temp file
+      await supabase.storage.from('processed-cars').remove([step1Filename]);
+
+      if (!step2Response.ok) {
+        const errorText = await step2Response.text();
+        console.error('Photoroom step 2 error:', step2Response.status, errorText);
+        throw new Error(`Composite step 2 failed. (${step2Response.status})`);
+      }
+
+      finalImageBuffer = await step2Response.arrayBuffer();
+      console.log('✅ Photoroom step 2 (composite) completed!');
+      console.log(`Final result size: ${(finalImageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
+    }
 
     // *** CRITICAL: Deduct credit NOW - PhotoRoom has successfully processed and charged us ***
     const newBalance = originalCredits - 1;
