@@ -253,7 +253,7 @@ serve(async (req) => {
     const photoroomFormData = new FormData();
     
     // Send image directly as file (avoids race condition with storage URL)
-    photoroomFormData.append('image_file', imageBlob, imageFile.name);
+    photoroomFormData.append('imageFile', imageBlob, imageFile.name);
     console.log('Sending image directly as file to PhotoRoom');
     
     // Check if this scene uses composite mode (exact background, no AI generation)
