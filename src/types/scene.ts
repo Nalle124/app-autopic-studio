@@ -25,6 +25,7 @@ export interface SceneMetadata {
   category?: string; // Category for organizing scenes
   photoroomShadowMode?: 'none' | 'ai.soft' | 'ai.hard' | 'ai.floating'; // PhotoRoom AI shadow type
   referenceScale?: number; // How closely to match reference image (0.0-1.0, default 1.0)
+  compositeMode?: boolean; // When true, uses reference image directly as background (no AI generation)
 }
 
 export interface CarAnalysis {

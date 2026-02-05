@@ -77,6 +77,11 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
     description: 'Exklusiva miljöer för lyxbilar',
     gradient: 'from-accent-pink/20 via-primary/10 to-background/5'
   },
+  'exakt': { 
+    order: 9, 
+    description: 'Exakta bakgrunder - 100% konsekvent resultat',
+    gradient: 'from-accent-green/20 via-primary/10 to-background/5'
+  },
 };
 
 // Popular scene IDs
@@ -102,6 +107,7 @@ const getCategoryDisplayName = (category: string) => {
     'winter': 'Vinter',
     'outdoor': 'Utomhus',
     'premium': 'Premium',
+    'exakt': 'Exakta Bakgrunder',
   };
   return names[category] || category;
 };
@@ -196,6 +202,7 @@ export const SceneSelector = ({
         aiPrompt: scene.ai_prompt || undefined,
         photoroomShadowMode: (scene as any).photoroom_shadow_mode || 'none',
         referenceScale: (scene as any).reference_scale ? Number((scene as any).reference_scale) : 1.0,
+        compositeMode: (scene as any).composite_mode || false,
       }));
 
       setScenes(scenesData);

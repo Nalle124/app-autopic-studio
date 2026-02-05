@@ -243,6 +243,7 @@ export type Database = {
           ai_prompt: string | null
           baseline_y: number
           category: string
+          composite_mode: boolean
           created_at: string
           default_scale: number
           description: string
@@ -268,6 +269,7 @@ export type Database = {
           ai_prompt?: string | null
           baseline_y?: number
           category?: string
+          composite_mode?: boolean
           created_at?: string
           default_scale?: number
           description: string
@@ -293,6 +295,7 @@ export type Database = {
           ai_prompt?: string | null
           baseline_y?: number
           category?: string
+          composite_mode?: boolean
           created_at?: string
           default_scale?: number
           description?: string

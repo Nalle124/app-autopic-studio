@@ -27,6 +27,7 @@ interface SceneMetadata {
   aiPrompt?: string;
   photoroomShadowMode?: string;
   referenceScale?: number;
+  compositeMode?: boolean;
 }
 
 // Fixed seed for consistent results across generations (PhotoRoom recommended)
@@ -272,25 +273,36 @@ serve(async (req) => {
     photoroomFormData.append('imageUrl', originalImageUrl);
     console.log('Using imageUrl:', originalImageUrl);
     
-    photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    const referenceScale = scene.referenceScale ?? 0.7;
-    photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-    console.log('Reference scale:', referenceScale);
-    
-    photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
-    
-    const basePrompt = scene.aiPrompt ||
-      `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
-      `Realistic scale, perspective and lighting for professional automotive photography.`;
+    // Check if this scene uses composite mode (exact background, no AI generation)
+    const useCompositeMode = scene.compositeMode === true;
+    console.log('Composite mode:', useCompositeMode);
 
-    const orientationHint = orientation === 'portrait'
-      ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
-      : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
+    if (useCompositeMode) {
+      // Composite mode - use exact background image (no AI generation)
+      photoroomFormData.append('background.imageUrl', backgroundImageUrl);
+      console.log('Using EXACT background (composite mode)');
+    } else {
+      // AI-generated background mode - use guidance
+      photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
+      const referenceScale = scene.referenceScale ?? 0.7;
+      photoroomFormData.append('background.guidance.scale', referenceScale.toString());
+      console.log('Reference scale:', referenceScale);
+      
+      photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
+      
+      const basePrompt = scene.aiPrompt ||
+        `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
+        `Realistic scale, perspective and lighting for professional automotive photography.`;
 
-    const prompt = `${basePrompt} ${orientationHint}`;
+      const orientationHint = orientation === 'portrait'
+        ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
+        : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-    photoroomFormData.append('background.prompt', prompt);
-    console.log('Using prompt:', prompt);
+      const prompt = `${basePrompt} ${orientationHint}`;
+
+      photoroomFormData.append('background.prompt', prompt);
+      console.log('Using prompt:', prompt);
+    }
     
     const shadowMode = scene.photoroomShadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
