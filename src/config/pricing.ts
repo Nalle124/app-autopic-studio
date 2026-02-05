@@ -62,6 +62,23 @@ export const PRICING_TIERS: Record<string, PricingTierConfig> = {
       "API-åtkomst (kommer snart)"
     ]
   },
+  scale: {
+    name: "Scale",
+    price: 1499,
+    credits: 800,
+    priceId: "price_1SxY9GR5EFc7nWvhCAxK4pEr",
+    productId: "prod_TvOxn4SrvfgY12",
+    description: "800 credits per månad för bildigenerering",
+    oneTime: false,
+    features: [
+      "800 bildgenereringar/månad",
+      "Alla bakgrunder",
+      "Brand Kit",
+      "Hög upplösning",
+      "Prioriterad support",
+      "API-åtkomst (kommer snart)"
+    ]
+  },
   creditPack: {
     name: "Credit Pack",
     price: 69,

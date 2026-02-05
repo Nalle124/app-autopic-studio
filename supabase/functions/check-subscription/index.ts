@@ -17,6 +17,7 @@ const PRODUCT_CREDITS: Record<string, number> = {
   "prod_TYcMOi23KMqOh6": 100, // Start (399 kr)
   "prod_TYcNnx01K8TR0F": 300, // Pro (699 kr)
   "prod_TYcO3bE3Ec2Amv": 600, // Business (1299 kr)
+  "prod_TvOxn4SrvfgY12": 800, // Scale (1499 kr)
 };
 
 serve(async (req) => {
