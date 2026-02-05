@@ -4,8 +4,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const APP_RETURN_URL = "https://app-autopic-studio.lovable.app";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -14,7 +16,7 @@ const logStep = (step: string, details?: any) => {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   const supabaseClient = createClient(
@@ -81,7 +83,13 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (stripeKey.startsWith("pk_") || stripeKey.startsWith("rk_")) {
+      throw new Error("Invalid STRIPE_SECRET_KEY: must be a secret key (sk_*)");
+    }
+
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2025-08-27.basil",
     });
 
@@ -92,7 +100,7 @@ serve(async (req) => {
     }
     logStep("Customer lookup", { customerId: customerId || "new customer" });
 
-    const origin = req.headers.get("origin") || "https://cfsyxrokdemwkklqflnb.lovableproject.com";
+    const origin = APP_RETURN_URL;
 
     // Check if user already has an active subscription (only for subscription mode)
     if ((mode === "subscription" || !mode) && customerId) {
