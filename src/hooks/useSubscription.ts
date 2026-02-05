@@ -2,9 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-// Admin users are always treated as having full access (subscribed)
-// This is a simple override that doesn't affect regular users
-
 interface SubscriptionStatus {
   subscribed: boolean;
   productId: string | null;
@@ -16,7 +13,7 @@ interface SubscriptionStatus {
 }
 
 export const useSubscription = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, adminLoading } = useAuth();
   const [status, setStatus] = useState<SubscriptionStatus>({
     subscribed: false,
     productId: null,
@@ -28,6 +25,11 @@ export const useSubscription = () => {
   });
 
   const checkSubscription = useCallback(async () => {
+    // Wait for admin status to be determined before checking subscription
+    if (adminLoading) {
+      return;
+    }
+
     if (!user) {
       // No user - set defaults without error
       setStatus({
@@ -66,7 +68,7 @@ export const useSubscription = () => {
         setStatus(prev => ({
           ...prev,
           loading: false,
-          error: null, // Don't show error to user for this
+          error: null,
         }));
         return;
       }
@@ -88,7 +90,7 @@ export const useSubscription = () => {
         error: null,
       }));
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, adminLoading]);
 
   useEffect(() => {
     checkSubscription();
