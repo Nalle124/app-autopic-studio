@@ -40,7 +40,8 @@ function IndexContent() {
   const { theme } = useTheme();
   const {
     user,
-    loading
+    loading,
+    isAdmin
   } = useAuth();
   const { credits, canGenerate, triggerPaywall, refetchCredits, isSubscribed, subscriptionLoading } = useDemo();
   const { needsOnboarding, checking } = useOnboardingCheck();
@@ -762,7 +763,7 @@ function IndexContent() {
             setUploadedImages(prev => [...prev, ...newImages]);
           }} onRemoveImage={imageId => {
             setUploadedImages(prev => prev.filter(img => img.id !== imageId));
-          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={true} />
+          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={!isSubscribed && !isAdmin} />
             </section>
 
             {/* Explore Scenes - Always visible */}
