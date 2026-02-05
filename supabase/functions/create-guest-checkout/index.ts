@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const APP_RETURN_URL = "https://app-autopic-studio.lovable.app";
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CREATE-GUEST-CHECKOUT] ${step}${detailsStr}`);
@@ -57,11 +59,17 @@ serve(async (req) => {
     
     logStep("Request params", { priceId, mode, plan: VALID_PRICE_IDS[priceId] });
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (stripeKey.startsWith("pk_") || stripeKey.startsWith("rk_")) {
+      throw new Error("Invalid STRIPE_SECRET_KEY: must be a secret key (sk_*)");
+    }
+
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2025-08-27.basil",
     });
 
-    const origin = req.headers.get("origin") || "https://app-autopic-studio.lovable.app";
+    const origin = APP_RETURN_URL;
 
     // Create checkout session for guest (no customer_email - Stripe will collect it)
     const session = await stripe.checkout.sessions.create({
