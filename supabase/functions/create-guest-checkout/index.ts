@@ -17,6 +17,7 @@ const VALID_PRICE_IDS: Record<string, string> = {
   "price_1SbV94R5EFc7nWvhHlWgPKsp": "pro",
   "price_1SbV9KR5EFc7nWvhAvP0jDbX": "business",
   "price_1SbV9dR5EFc7nWvhOwgnPGX0": "creditPack",
+  "price_1SxY9GR5EFc7nWvhCAxK4pEr": "scale",
 };
 
 serve(async (req) => {
