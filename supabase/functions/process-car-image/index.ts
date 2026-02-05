@@ -242,36 +242,19 @@ serve(async (req) => {
       );
     }
 
-    // Step 1: Upload original image to storage to get a URL
+    // Step 1: Read image into buffer for direct upload to PhotoRoom
     const imageBuffer = await imageFile.arrayBuffer();
-    const uploadFilename = `temp/${crypto.randomUUID()}-original.${imageFile.name.split('.').pop()}`;
-    
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('processed-cars')
-      .upload(uploadFilename, imageBuffer, {
-        contentType: imageFile.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}`);
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from('processed-cars')
-      .getPublicUrl(uploadFilename);
-
-    const originalImageUrl = publicUrlData.publicUrl;
-    console.log('Original image uploaded:', originalImageUrl);
+    const imageBlob = new Blob([imageBuffer], { type: imageFile.type });
+    console.log(`Image size: ${(imageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
 
     // Step 2: Process with Photoroom's AI Background API
     console.log('Processing with Photoroom Studio model...');
     
     const photoroomFormData = new FormData();
     
-    photoroomFormData.append('imageUrl', originalImageUrl);
-    console.log('Using imageUrl:', originalImageUrl);
+    // Send image directly as file (avoids race condition with storage URL)
+    photoroomFormData.append('image_file', imageBlob, imageFile.name);
+    console.log('Sending image directly as file to PhotoRoom');
     
     // Check if this scene uses composite mode (exact background, no AI generation)
     const useCompositeMode = scene.compositeMode === true;
@@ -387,8 +370,7 @@ serve(async (req) => {
       const errorText = await editResponse.text();
       console.error('Photoroom error:', editResponse.status, errorText);
       
-      // Clean up temp file before returning error
-      await supabase.storage.from('processed-cars').remove([uploadFilename]);
+      // No temp file to clean up (image sent directly)
       
       if (editResponse.status === 402) {
         throw new Error(`Photoroom: Out of API credits. Visit https://app.photoroom.com/api-dashboard to upgrade.`);
@@ -542,8 +524,6 @@ serve(async (req) => {
     if (!uploadSuccess) {
       console.error('All upload attempts failed:', finalUploadError);
       // Credit was already deducted (PhotoRoom charged us), so we can't refund
-      // But we should still clean up and return an error
-      await supabase.storage.from('processed-cars').remove([uploadFilename]);
       throw new Error(`Bilden bearbetades men kunde inte sparas. Din credit användes. Kontakta support om problemet kvarstår.`);
     }
 
@@ -566,10 +546,7 @@ serve(async (req) => {
       thumbnailUrl = finalPublicUrlData.publicUrl;
     }
 
-    // Clean up temp file
-    await supabase.storage
-      .from('processed-cars')
-      .remove([uploadFilename]);
+    // No temp file to clean up (image sent directly to PhotoRoom)
 
     // Save to processing_jobs
     let jobId: string | null = null;
