@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, Copy, Sparkles, Save, Check, Star, Trash2, X, Plus } from 'lucide-react';
+import { Upload, Copy, Sparkles, Save, Check, Star, Trash2, X, Plus, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -378,6 +378,83 @@ export const BrandKitDesignerSimplified = ({
                       <X className="w-3 h-3 mr-1" />
                       Ta bort logo
                     </Button>
+                  </div>
+                </div>
+              )}
+
+
+              {/* Quick Placement Presets - shown when logo is active */}
+              {design.logoUrl && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                    <LayoutGrid className="w-3 h-3" />
+                    Snabbplacering
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Preset 1: Small top-left */}
+                    <button
+                      className={`relative rounded-lg border-2 transition-all p-1.5 aspect-[16/10] ${
+                        !design.bannerEnabled && Math.abs(design.logoX - 12) < 3 && Math.abs(design.logoY - 10) < 3 && design.logoSize < 0.14
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50 bg-muted/50'
+                      }`}
+                      onClick={() => onDesignChange({
+                        ...design,
+                        logoX: 12,
+                        logoY: 10,
+                        logoSize: 0.10,
+                        bannerEnabled: false,
+                      })}
+                      title="Liten logo uppe vänster"
+                    >
+                      <div className="absolute top-1.5 left-1.5 w-3 h-2 rounded-sm bg-foreground/60" />
+                      <span className="absolute bottom-0.5 inset-x-0 text-[8px] text-center text-muted-foreground leading-none">Vänster</span>
+                    </button>
+
+                    {/* Preset 2: Medium top-center */}
+                    <button
+                      className={`relative rounded-lg border-2 transition-all p-1.5 aspect-[16/10] ${
+                        !design.bannerEnabled && Math.abs(design.logoX - 50) < 3 && Math.abs(design.logoY - 10) < 3 && design.logoSize >= 0.14
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50 bg-muted/50'
+                      }`}
+                      onClick={() => onDesignChange({
+                        ...design,
+                        logoX: 50,
+                        logoY: 10,
+                        logoSize: 0.18,
+                        bannerEnabled: false,
+                      })}
+                      title="Mellanstor logo centrerad topp"
+                    >
+                      <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-5 h-2.5 rounded-sm bg-foreground/60" />
+                      <span className="absolute bottom-0.5 inset-x-0 text-[8px] text-center text-muted-foreground leading-none">Center</span>
+                    </button>
+
+                    {/* Preset 3: Small bottom-left with banner */}
+                    <button
+                      className={`relative rounded-lg border-2 transition-all p-1.5 aspect-[16/10] ${
+                        design.bannerEnabled && Math.abs(design.logoX - 12) < 3 && Math.abs(design.logoY - 92) < 3
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50 bg-muted/50'
+                      }`}
+                      onClick={() => onDesignChange({
+                        ...design,
+                        logoX: 12,
+                        logoY: 92,
+                        logoSize: 0.10,
+                        bannerEnabled: true,
+                        bannerY: 93,
+                        bannerHeight: 10,
+                        bannerColor: design.bannerColor || '#000000',
+                        bannerOpacity: design.bannerOpacity || 80,
+                      })}
+                      title="Liten logo nere vänster med banner"
+                    >
+                      <div className="absolute bottom-2.5 left-0 right-0 h-2 bg-foreground/20" />
+                      <div className="absolute bottom-3 left-1.5 w-3 h-2 rounded-sm bg-foreground/60" />
+                      <span className="absolute bottom-0.5 inset-x-0 text-[8px] text-center text-muted-foreground leading-none">Banner</span>
+                    </button>
                   </div>
                 </div>
               )}
