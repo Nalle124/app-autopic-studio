@@ -19,7 +19,7 @@ const benefits = [
 ];
 
 
-// Pricing plans - Updated names: Start, Pro, Business - with REAL Stripe price IDs
+// Pricing plans - Updated names: Start, Pro, Business, Scale - with REAL Stripe price IDs
 const PRICING_PLANS = {
   start: {
     name: 'Start',
@@ -49,6 +49,15 @@ const PRICING_PLANS = {
     yearlyPriceId: 'price_1SbV9KR5EFc7nWvhAvP0jDbX',
     tagline: '600 bilder/mån',
   },
+  scale: {
+    name: 'Scale',
+    price: 1499,
+    yearlyPrice: 1199,
+    credits: 800,
+    priceId: 'price_1SxY9GR5EFc7nWvhCAxK4pEr',
+    yearlyPriceId: 'price_1SxY9GR5EFc7nWvhCAxK4pEr',
+    tagline: '800 bilder/mån',
+  },
   creditPack: {
     name: '30 bilder',
     price: 69,
@@ -65,10 +74,11 @@ const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
   'prod_TYcMOi23KMqOh6': 'start',    // 100 credits
   'prod_TYcNnx01K8TR0F': 'pro',      // 300 credits
   'prod_TYcO3bE3Ec2Amv': 'business', // 600 credits
+  'prod_TvOxn4SrvfgY12': 'scale',    // 800 credits
 };
 
 // Tier order for determining available upgrades
-const TIER_ORDER: PlanKey[] = ['start', 'pro', 'business'];
+const TIER_ORDER: PlanKey[] = ['start', 'pro', 'business', 'scale'];
 
 // Get available tiers for upgrade (tiers higher than current)
 const getAvailableUpgradeTiers = (currentProductId: string | null): PlanKey[] => {
@@ -83,7 +93,7 @@ const getAvailableUpgradeTiers = (currentProductId: string | null): PlanKey[] =>
 // Check if user is on the highest tier
 const isOnHighestTier = (currentProductId: string | null): boolean => {
   if (!currentProductId) return false;
-  return PRODUCT_TO_PLAN[currentProductId] === 'business';
+  return PRODUCT_TO_PLAN[currentProductId] === 'scale';
 };
 
 // Get next tier for upgrade (single next tier)
@@ -92,6 +102,7 @@ const getNextTier = (currentProductId: string | null): PlanKey | null => {
   const currentPlan = PRODUCT_TO_PLAN[currentProductId];
   if (currentPlan === 'start') return 'pro';
   if (currentPlan === 'pro') return 'business';
+  if (currentPlan === 'business') return 'scale';
   return null; // Already on highest tier
 };
 
@@ -157,7 +168,7 @@ export const DemoPaywall = () => {
   };
 
 
-  const planKeys = ['start', 'pro', 'business'] as const;
+  const planKeys = ['start', 'pro', 'business', 'scale'] as const;
 
   // Subscriber paywall - simplified view for refill/upgrade (and profile buy)
   if (isSubscriberLimit || isProfileBuy) {
@@ -325,11 +336,12 @@ export const DemoPaywall = () => {
 
               {/* Desktop: Wide cards side by side */}
               {!isMobile ? (
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-4 gap-3 mb-4">
                   {planKeys.map((key) => {
                     const plan = PRICING_PLANS[key];
                     const isPopular = 'popular' in plan && plan.popular;
                     const isBusiness = key === 'business';
+                    const isScale = key === 'scale';
                     const isLoading = loadingTier === key;
                     const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
 
@@ -339,11 +351,13 @@ export const DemoPaywall = () => {
                           onClick={() => !isLoading && handleSelectPlan(key)}
                           disabled={isLoading}
                           className={`relative rounded-2xl overflow-hidden transition-all text-left min-h-[320px] ${
-                            isBusiness 
-                              ? 'gradient-premium ring-2 ring-primary/30' 
-                              : isPopular 
-                                ? 'bg-[#1a1a1a] border border-primary/30 ring-1 ring-primary/20' 
-                                : 'bg-[#1a1a1a] border border-border hover:border-primary/20'
+                            isScale
+                              ? 'gradient-premium ring-2 ring-primary/30'
+                              : isBusiness 
+                                ? 'bg-[#1a1a1a] border border-border hover:border-primary/20' 
+                                : isPopular 
+                                  ? 'bg-[#1a1a1a] border border-primary/30 ring-1 ring-primary/20' 
+                                  : 'bg-[#1a1a1a] border border-border hover:border-primary/20'
                           }`}
                         >
                           {/* Start card background gradient - blue to black */}
@@ -368,6 +382,20 @@ export const DemoPaywall = () => {
                           )}
                           {/* Dark overlay for Pro cards */}
                           {isPopular && (
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                          )}
+                          {/* Scale card - premium gradient background */}
+                          {isScale && (
+                            <div 
+                              className="absolute inset-0 opacity-70"
+                              style={{
+                                backgroundImage: `url(${proCardBg})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                              }}
+                            />
+                          )}
+                          {isScale && (
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                           )}
                         
@@ -430,19 +458,23 @@ export const DemoPaywall = () => {
                     const plan = PRICING_PLANS[key];
                     const isPopular = 'popular' in plan && plan.popular;
                     const isBusiness = key === 'business';
+                    const isScale = key === 'scale';
                     const isLoading = loadingTier === key;
                     const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
                     const isExpanded = expandedPlan === key;
+                    const isPremiumStyle = isScale || key === 'start';
 
                       return (
                         <div
                           key={key}
                           className={`relative rounded-xl overflow-hidden transition-all ${
-                            isBusiness 
-                              ? 'gradient-premium' 
-                              : isPopular 
-                                ? 'ring-2 ring-primary/50 bg-muted/50' 
-                                : 'bg-[#1a1a1a] border border-border'
+                            isScale
+                              ? 'gradient-premium ring-2 ring-primary/30'
+                              : isBusiness 
+                                ? 'bg-[#1a1a1a] border border-border' 
+                                : isPopular 
+                                  ? 'ring-2 ring-primary/50 bg-muted/50' 
+                                  : 'bg-[#1a1a1a] border border-border'
                           }`}
                         >
                           {/* Start card background gradient - blue to black */}
@@ -454,6 +486,20 @@ export const DemoPaywall = () => {
                               }}
                             />
                           )}
+                          {/* Scale card background */}
+                          {isScale && (
+                            <>
+                              <div 
+                                className="absolute inset-0 opacity-70"
+                                style={{
+                                  backgroundImage: `url(${proCardBg})`,
+                                  backgroundSize: 'cover',
+                                  backgroundPosition: 'center',
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                            </>
+                          )}
                           {/* Header - always visible */}
                           <button
                             onClick={() => setExpandedPlan(isExpanded ? null : key)}
@@ -463,47 +509,52 @@ export const DemoPaywall = () => {
                               <div className="flex items-center gap-3">
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <h3 className={`text-base font-semibold text-left ${isBusiness || key === 'start' ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
+                                    <h3 className={`text-base font-semibold text-left ${isPremiumStyle ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
                                     {isPopular && (
                                       <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
                                         Populär
                                       </span>
                                     )}
+                                    {isScale && (
+                                      <span className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded-full">
+                                        Mest värde
+                                      </span>
+                                    )}
                                   </div>
-                                  <p className={`text-xs text-left ${isBusiness || key === 'start' ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.tagline}</p>
+                                  <p className={`text-xs text-left ${isPremiumStyle ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.tagline}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
                                 <div className="text-right whitespace-nowrap">
-                                  <span className={`text-lg font-bold ${isBusiness || key === 'start' ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr</span>
-                                  <span className={`text-xs ${isBusiness || key === 'start' ? 'text-white/70' : 'text-muted-foreground'}`}>/mån</span>
+                                  <span className={`text-lg font-bold ${isPremiumStyle ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr</span>
+                                  <span className={`text-xs ${isPremiumStyle ? 'text-white/70' : 'text-muted-foreground'}`}>/mån</span>
                                 </div>
-                                <ChevronDown className={`w-5 h-5 transition-transform ${isBusiness || key === 'start' ? 'text-white/70' : 'text-muted-foreground'} ${isExpanded ? 'rotate-180' : ''}`} />
+                                <ChevronDown className={`w-5 h-5 transition-transform ${isPremiumStyle ? 'text-white/70' : 'text-muted-foreground'} ${isExpanded ? 'rotate-180' : ''}`} />
                               </div>
                             </div>
                           </button>
                         
                           {/* Expanded content */}
                           {isExpanded && (
-                            <div className={`relative z-10 p-4 space-y-3 ${isBusiness || key === 'start' ? 'bg-black/20' : 'bg-muted/50'}`}>
+                            <div className={`relative z-10 p-4 space-y-3 ${isPremiumStyle ? 'bg-black/20' : 'bg-muted/50'}`}>
                               <div className="space-y-1.5">
-                                <div className={`flex items-center gap-2 text-sm ${isBusiness || key === 'start' ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                  <Check className={`w-3.5 h-3.5 ${isBusiness || key === 'start' ? 'text-white/70' : 'text-primary/70'}`} />
+                                <div className={`flex items-center gap-2 text-sm ${isPremiumStyle ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                  <Check className={`w-3.5 h-3.5 ${isPremiumStyle ? 'text-white/70' : 'text-primary/70'}`} />
                                   <span>{plan.credits} bilder/mån</span>
                                 </div>
-                                <div className={`flex items-center gap-2 text-sm ${isBusiness || key === 'start' ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                  <Check className={`w-3.5 h-3.5 ${isBusiness || key === 'start' ? 'text-white/70' : 'text-primary/70'}`} />
+                                <div className={`flex items-center gap-2 text-sm ${isPremiumStyle ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                  <Check className={`w-3.5 h-3.5 ${isPremiumStyle ? 'text-white/70' : 'text-primary/70'}`} />
                                   <span>Brand kit</span>
                                 </div>
-                                <div className={`flex items-center gap-2 text-sm ${isBusiness || key === 'start' ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                  <Check className={`w-3.5 h-3.5 ${isBusiness || key === 'start' ? 'text-white/70' : 'text-primary/70'}`} />
+                                <div className={`flex items-center gap-2 text-sm ${isPremiumStyle ? 'text-white/80' : 'text-muted-foreground'}`}>
+                                  <Check className={`w-3.5 h-3.5 ${isPremiumStyle ? 'text-white/70' : 'text-primary/70'}`} />
                                   <span>Support</span>
                                 </div>
                               </div>
                               <Button
                                 onClick={() => handleSelectPlan(key)}
                                 disabled={isLoading}
-                                className={`w-full ${isBusiness || key === 'start' ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
+                                className={`w-full ${isPremiumStyle ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
                               >
                                 {isLoading ? (
                                   <Loader2 className="w-4 h-4 animate-spin" />
