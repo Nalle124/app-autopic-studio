@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,16 +39,16 @@ import volvoCropExample from "@/assets/examples/volvo-crop-example.png";
 
 const Guide = () => {
   const navigate = useNavigate();
-  const revealRef = useScrollReveal();
+  
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main ref={revealRef} className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-3xl space-y-10 sm:space-y-14">
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-3xl space-y-10 sm:space-y-14">
         
         {/* Hero */}
-        <section data-reveal className="text-center space-y-5 pt-4 sm:pt-8">
+        <section className="text-center space-y-5 pt-4 sm:pt-8">
           <Badge variant="secondary" className="gap-1.5 px-3 py-1">
             <Sparkles className="w-3 h-3" />
             Integrerar de senaste AI-modellerna
@@ -62,7 +62,7 @@ const Guide = () => {
         </section>
 
         {/* Section 1: Fotograferingstips */}
-        <section data-reveal className="space-y-6">
+        <section className="space-y-6">
           <SectionHeading icon={<Camera className="w-5 h-5" />} title="Fotograferingstips" />
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -124,7 +124,7 @@ const Guide = () => {
         </section>
 
         {/* Section 2: Hur AI-bakgrunder fungerar */}
-        <section data-reveal className="space-y-6">
+        <section className="space-y-6">
           <SectionHeading icon={<Sparkles className="w-5 h-5" />} title="Hur AI-bakgrunder fungerar" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -149,7 +149,7 @@ const Guide = () => {
         </section>
 
         {/* Section 3: Ljusförbättring */}
-        <section data-reveal className="space-y-6">
+        <section className="space-y-6">
           <SectionHeading icon={<Sun className="w-5 h-5" />} title="Ljusförbättring" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -180,7 +180,7 @@ const Guide = () => {
         </section>
 
         {/* Section 4: Bakgrundsblur */}
-        <section data-reveal className="space-y-6">
+        <section className="space-y-6">
           <SectionHeading icon={<CircleDot className="w-5 h-5" />} title="Bakgrundsblur" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -216,7 +216,7 @@ const Guide = () => {
         </section>
 
         {/* Section 5: Beskärning */}
-        <section data-reveal className="space-y-6">
+        <section className="space-y-6">
           <SectionHeading icon={<Crop className="w-5 h-5" />} title="Beskärning och format" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -245,7 +245,7 @@ const Guide = () => {
         </section>
 
         {/* Section 6: Logotyp & Branding */}
-        <section data-reveal className="space-y-6">
+        <section className="space-y-6">
           <SectionHeading icon={<Palette className="w-5 h-5" />} title="Logotyp och branding" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -259,7 +259,7 @@ const Guide = () => {
         </section>
 
         {/* Section 7: Förväntat resultat */}
-        <section data-reveal className="space-y-6">
+        <section className="space-y-6">
           <SectionHeading icon={<Image className="w-5 h-5" />} title="Förväntat resultat" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -284,7 +284,7 @@ const Guide = () => {
         </section>
 
         {/* Section 8: FAQ */}
-        <section data-reveal className="space-y-6">
+        <section className="space-y-6">
           <SectionHeading icon={<MessageSquare className="w-5 h-5" />} title="Vanliga frågor" />
 
           <Accordion type="single" collapsible className="space-y-2">
@@ -332,7 +332,7 @@ const Guide = () => {
         </section>
 
         {/* Trust section */}
-        <section data-reveal className="space-y-6 pb-12">
+        <section className="space-y-6 pb-12">
           <div className="flex flex-wrap gap-3 justify-center">
             <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
               <Sparkles className="w-3 h-3" />
