@@ -92,7 +92,6 @@ serve(async (req) => {
   // Track if we've deducted credits so we know if we need to refund
   let creditDeducted = false;
   let userId: string | null = null;
-  let originalCredits = 0;
   let supabase: any = null;
 
   try {
@@ -227,7 +226,7 @@ serve(async (req) => {
     console.log(`Orientation: ${orientation}`);
     console.log(`Relight enabled: ${relightEnabled}`);
 
-    // Check credits BEFORE doing any work (but don't deduct yet)
+    // Quick credit check BEFORE doing any work (actual deduction is atomic later)
     console.log(`Checking credits for user: ${userId}`);
     
     const { data: creditsData, error: creditsError } = await supabase
@@ -241,10 +240,10 @@ serve(async (req) => {
       throw new Error('Kunde inte hämta credits. Försök igen.');
     }
 
-    originalCredits = creditsData?.credits || 0;
-    console.log(`Current credits: ${originalCredits}`);
+    const currentCredits = creditsData?.credits || 0;
+    console.log(`Current credits: ${currentCredits}`);
 
-    if (originalCredits < 1) {
+    if (currentCredits < 1) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -461,30 +460,49 @@ serve(async (req) => {
       console.log(`Final result size: ${(finalImageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
     }
 
-    // *** CRITICAL: Deduct credit NOW - PhotoRoom has successfully processed and charged us ***
-    const newBalance = originalCredits - 1;
-    const { error: updateError } = await supabase
-      .from('user_credits')
-      .update({ credits: newBalance, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
+    // *** CRITICAL: Deduct credit NOW using atomic SQL function ***
+    // This prevents race conditions where check-subscription could reset balance mid-operation
+    let newBalance: number;
+    try {
+      const { data: decrementResult, error: decrementError } = await supabase
+        .rpc('decrement_credits', { p_user_id: userId });
 
-    if (updateError) {
-      console.error('Error deducting credit:', updateError);
-      // This is a serious issue - PhotoRoom charged us but we couldn't deduct
-      // Log it but continue - we'll need to handle this manually
-      console.error('CRITICAL: PhotoRoom processed image but credit deduction failed!');
-    } else {
-      creditDeducted = true;
-      console.log(`Credit deducted. New balance: ${newBalance}`);
+      if (decrementError) {
+        if (decrementError.message?.includes('insufficient_credits')) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'insufficient_credits',
+              message: 'Du har inga credits kvar. Köp fler credits för att fortsätta.',
+            }),
+            {
+              status: 402,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+        console.error('Error deducting credit:', decrementError);
+        console.error('CRITICAL: PhotoRoom processed image but credit deduction failed!');
+        newBalance = -1; // Unknown balance
+      } else {
+        newBalance = decrementResult;
+        creditDeducted = true;
+        console.log(`Credit deducted atomically. New balance: ${newBalance}`);
+      }
       
       // Log the transaction
-      await supabase.from('credit_transactions').insert({
-        user_id: userId,
-        amount: -1,
-        balance_after: newBalance,
-        transaction_type: 'generation',
-        description: `Bildgenerering: ${scene.name}`,
-      });
+      if (creditDeducted) {
+        await supabase.from('credit_transactions').insert({
+          user_id: userId,
+          amount: -1,
+          balance_after: newBalance!,
+          transaction_type: 'generation',
+          description: `Bildgenerering: ${scene.name}`,
+        });
+      }
+    } catch (rpcError) {
+      console.error('RPC decrement_credits failed:', rpcError);
+      console.error('CRITICAL: PhotoRoom processed image but credit deduction failed!');
     }
 
     // Step 3: Compress if needed and save final image

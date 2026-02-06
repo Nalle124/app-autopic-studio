@@ -176,24 +176,25 @@ serve(async (req) => {
       planName = product.name;
 
       // Monthly credit RESET mechanism (credits are REPLACED, not accumulated)
-      // Uses current_period_end as the period identifier
-      const periodEndTimestamp = periodEnd;
-      const periodKey = `${subscription.id}:${periodEndTimestamp}`;
+      // Uses time-based idempotency: only one renewal per subscription per 28 days
+      const periodKey = `${subscription.id}:${periodEnd || 'current'}`;
 
       if (creditsPerMonth > 0) {
-        // Check if we already applied credits for this billing period
+        // Time-based idempotency: check if ANY renewal exists for this subscription
+        // within the last 28 days (subscriptions are monthly, so this is safe)
+        const twentyEightDaysAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString();
+        
         const { data: existingResetRows } = await supabaseClient
           .from('credit_transactions')
           .select('id')
           .eq('user_id', user.id)
           .eq('transaction_type', 'subscription_renewal')
-          .eq('description', periodKey)
+          .gte('created_at', twentyEightDaysAgo)
           .limit(1);
 
         const existingReset = existingResetRows && existingResetRows.length > 0 ? existingResetRows[0] : null;
 
         // Also check if this is a NEW subscription (handled by verify-payment)
-        // A new subscription will have a 'subscription' transaction from verify-payment
         const { data: recentSubscriptionRows } = await supabaseClient
           .from('credit_transactions')
           .select('id, created_at')
@@ -205,20 +206,11 @@ serve(async (req) => {
         const recentSubscription = recentSubscriptionRows && recentSubscriptionRows.length > 0 ? recentSubscriptionRows[0] : null;
 
         // If subscription was just created (within 5 minutes), don't reset credits
-        // verify-payment already set the credits correctly
         const isNewSubscription = recentSubscription && 
           (Date.now() - new Date(recentSubscription.created_at).getTime() < 5 * 60 * 1000);
 
         if (!existingReset && !isNewSubscription) {
-          // Get current balance to check for recent purchases
-          const { data: currentCredits } = await supabaseClient
-            .from('user_credits')
-            .select('credits')
-            .eq('user_id', user.id)
-            .single();
-
           // Check if user bought additional credits recently (within last hour)
-          // We don't want to lose those on renewal
           const { data: recentPurchaseRows } = await supabaseClient
             .from('credit_transactions')
             .select('amount')
@@ -229,8 +221,6 @@ serve(async (req) => {
 
           const recentPurchase = recentPurchaseRows && recentPurchaseRows.length > 0 ? recentPurchaseRows[0] : null;
 
-          // Calculate new balance
-          // If recent purchase exists, add those credits on top of plan credits
           let newBalance = creditsPerMonth;
           if (recentPurchase) {
             newBalance = creditsPerMonth + recentPurchase.amount;
@@ -252,10 +242,12 @@ serve(async (req) => {
               amount: creditsPerMonth,
               balance_after: newBalance,
               transaction_type: 'subscription_renewal',
-              description: periodKey,  // Use periodKey for idempotency
+              description: periodKey,  // Still logged for debugging, but NOT used for idempotency
             });
 
           logStep('Monthly credits reset', { creditsPerMonth, newBalance, periodKey });
+        } else if (existingReset) {
+          logStep('Skipping reset - renewal already exists within last 28 days');
         } else if (isNewSubscription) {
           logStep('Skipping reset - new subscription just created by verify-payment');
         }
