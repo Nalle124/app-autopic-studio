@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, Star, LayoutGrid, GalleryHorizontal, Info, Lock } from 'lucide-react';
+import { Check, Star, LayoutGrid, GalleryHorizontal, Lock, Sparkles, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImageSkeleton } from '@/components/ImageSkeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -22,6 +22,9 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { useDemo } from '@/contexts/DemoContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { CreateSceneModal } from '@/components/CreateSceneModal';
+import { toast } from 'sonner';
 
 interface SceneSelectorProps {
   selectedSceneId: string | null;
@@ -32,6 +35,11 @@ interface SceneSelectorProps {
 
 // Category order and descriptions
 const categoryConfig: Record<string, { order: number; description: string; gradient: string }> = {
+  'my-scenes': {
+    order: -1,
+    description: 'Dina egna AI-genererade bakgrunder',
+    gradient: 'from-primary/20 via-accent-blue/10 to-background/5'
+  },
   'popular': {
     order: 0,
     description: 'Våra mest populära bakgrunder',
@@ -98,6 +106,7 @@ const POPULAR_SCENE_IDS = [
 const getCategoryDisplayName = (category: string) => {
   const names: Record<string, string> = {
     'favorites': 'Favoriter',
+    'my-scenes': 'Mina scener',
     'popular': 'Populära',
     'studio-basic': 'Enkla Studios',
     'studio-light': 'Ljusa Studios',
@@ -112,6 +121,35 @@ const getCategoryDisplayName = (category: string) => {
   return names[category] || category;
 };
 
+// Map a user_scenes row to SceneMetadata
+const mapUserSceneToMetadata = (row: any): SceneMetadata => ({
+  id: `user-${row.id}`,
+  name: row.name,
+  description: row.description || '',
+  category: 'my-scenes',
+  thumbnailUrl: row.thumbnail_url || '',
+  fullResUrl: row.full_res_url || '',
+  horizonY: Number(row.horizon_y),
+  baselineY: Number(row.baseline_y),
+  defaultScale: Number(row.default_scale),
+  shadowPreset: {
+    enabled: row.shadow_enabled,
+    strength: Number(row.shadow_strength),
+    blur: Number(row.shadow_blur),
+    offsetX: Number(row.shadow_offset_x),
+    offsetY: Number(row.shadow_offset_y),
+  },
+  reflectionPreset: {
+    enabled: row.reflection_enabled,
+    opacity: Number(row.reflection_opacity),
+    fade: Number(row.reflection_fade),
+  },
+  aiPrompt: row.ai_prompt || undefined,
+  photoroomShadowMode: row.photoroom_shadow_mode || 'ai.soft',
+  referenceScale: Number(row.reference_scale),
+  compositeMode: false,
+});
+
 export const SceneSelector = ({ 
   selectedSceneId, 
   onSceneSelect,
@@ -119,13 +157,16 @@ export const SceneSelector = ({
   onOrientationChange
 }: SceneSelectorProps) => {
   const [scenes, setScenes] = useState<SceneMetadata[]>([]);
+  const [userScenes, setUserScenes] = useState<SceneMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('grid');
   const [activeCategory, setActiveCategory] = useState<string>('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const isMobile = useIsMobile();
   const { isSubscribed, triggerPaywall } = useDemo();
+  const { user } = useAuth();
   
   // Free users only have access to popular category
   const hasFullAccess = isSubscribed;
@@ -135,6 +176,57 @@ export const SceneSelector = ({
     loadFavorites();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      loadUserScenes();
+    } else {
+      setUserScenes([]);
+    }
+  }, [user]);
+
+  const loadUserScenes = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('user_scenes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading user scenes:', error);
+        return;
+      }
+
+      setUserScenes((data || []).map(mapUserSceneToMetadata));
+    } catch (error) {
+      console.error('Error loading user scenes:', error);
+    }
+  };
+
+  const deleteUserScene = async (sceneId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const realId = sceneId.replace('user-', '');
+    
+    try {
+      const { error } = await supabase
+        .from('user_scenes')
+        .delete()
+        .eq('id', realId);
+
+      if (error) {
+        console.error('Delete error:', error);
+        toast.error('Kunde inte ta bort scenen.');
+        return;
+      }
+
+      setUserScenes(prev => prev.filter(s => s.id !== sceneId));
+      toast.success('Scenen har tagits bort.');
+    } catch (err) {
+      console.error('Delete error:', err);
+      toast.error('Kunde inte ta bort scenen.');
+    }
+  };
 
   const loadFavorites = () => {
     try {
@@ -214,7 +306,7 @@ export const SceneSelector = ({
         const orderB = categoryConfig[b]?.order ?? 99;
         return orderA - orderB;
       });
-      setCategories(['favorites', 'popular', ...sortedCategories]);
+      setCategories(['favorites', 'my-scenes', 'popular', ...sortedCategories]);
       
       // Set default active category to popular
       if (!activeCategory) {
@@ -229,10 +321,13 @@ export const SceneSelector = ({
 
   const getScenesByCategory = (category: string) => {
     if (category === 'favorites') {
-      return scenes.filter(scene => favorites.has(scene.id));
+      return [...scenes, ...userScenes].filter(scene => favorites.has(scene.id));
     }
     if (category === 'popular') {
       return scenes.filter(scene => POPULAR_SCENE_IDS.includes(scene.id));
+    }
+    if (category === 'my-scenes') {
+      return userScenes;
     }
     return scenes.filter((scene) => scene.category === category);
   };
@@ -240,9 +335,16 @@ export const SceneSelector = ({
   const getVisibleCategories = () => {
     return categories.filter(category => {
       if (category === 'favorites') return favorites.size > 0;
+      if (category === 'my-scenes') return !!user; // Show for logged-in users always
       if (category === 'popular') return getScenesByCategory('popular').length > 0;
       return getScenesByCategory(category).length > 0;
     });
+  };
+
+  const handleSceneCreated = (scene: SceneMetadata) => {
+    setUserScenes(prev => [scene, ...prev]);
+    setActiveCategory('my-scenes');
+    onSceneSelect(scene);
   };
 
   if (isLoading) {
@@ -253,7 +355,7 @@ export const SceneSelector = ({
     );
   }
 
-  const SceneCard = ({ scene, isGrid = false, isLocked = false }: { scene: SceneMetadata; isGrid?: boolean; isLocked?: boolean }) => {
+  const SceneCard = ({ scene, isGrid = false, isLocked = false, isUserScene = false }: { scene: SceneMetadata; isGrid?: boolean; isLocked?: boolean; isUserScene?: boolean }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
 
     const handleClick = () => {
@@ -288,10 +390,10 @@ export const SceneSelector = ({
         )}
 
         {/* Gradient overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category]?.gradient || 'from-accent-orange/20 via-accent-pink/10 to-background/5'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+        <div className={`absolute inset-0 bg-gradient-to-br ${categoryConfig[scene.category || 'popular']?.gradient || 'from-accent-orange/20 via-accent-pink/10 to-background/5'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
         
         {/* Favorite button - hide for locked scenes */}
-        {!isLocked && (
+        {!isLocked && !isUserScene && (
           <Button
             variant="ghost"
             size="icon"
@@ -305,6 +407,18 @@ export const SceneSelector = ({
                   : 'text-muted-foreground'
               }`}
             />
+          </Button>
+        )}
+
+        {/* Delete button for user scenes */}
+        {isUserScene && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground shadow-md"
+            onClick={(e) => deleteUserScene(scene.id, e)}
+          >
+            <Trash2 className="w-4 h-4" />
           </Button>
         )}
 
@@ -347,8 +461,36 @@ export const SceneSelector = ({
     );
   };
 
-  // Check if current category is locked (not popular/favorites and user doesn't have full access)
-  const isLockedCategory = activeCategory !== 'popular' && activeCategory !== 'favorites' && !hasFullAccess;
+  // "Create new" card for my-scenes
+  const CreateNewCard = ({ isGrid = false }: { isGrid?: boolean }) => (
+    <Card
+      onClick={() => setShowCreateModal(true)}
+      className={`group relative overflow-hidden cursor-pointer transition-all duration-300 border-border border-dashed hover:border-primary/50 hover:shadow-xl hover:scale-[1.02] ${
+        isGrid ? 'w-full' : 'flex-shrink-0 w-72 snap-center'
+      }`}
+    >
+      <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary/5 via-muted/30 to-primary/10 flex flex-col items-center justify-center gap-2">
+        <div className="w-12 h-12 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+          <Plus className="w-6 h-6 text-primary" />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <span className="text-sm font-medium text-foreground">Skapa med AI</span>
+        </div>
+      </div>
+      <div className="p-3 sm:p-5 bg-card">
+        <h3 className="font-bold text-sm sm:text-base text-foreground mb-1 sm:mb-1.5">
+          Skapa egen bakgrund
+        </h3>
+        <p className="text-[11px] sm:text-xs text-muted-foreground">
+          Beskriv din drömscen och AI skapar den
+        </p>
+      </div>
+    </Card>
+  );
+
+  // Check if current category is locked (not popular/favorites/my-scenes and user doesn't have full access)
+  const isLockedCategory = activeCategory !== 'popular' && activeCategory !== 'favorites' && activeCategory !== 'my-scenes' && !hasFullAccess;
 
   const visibleCategories = getVisibleCategories();
   const categoryScenes = getScenesByCategory(activeCategory);
@@ -390,6 +532,11 @@ export const SceneSelector = ({
                       <Star className="w-4 h-4 fill-current" />
                       Favoriter
                     </span>
+                  ) : activeCategory === 'my-scenes' ? (
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Mina scener
+                    </span>
                   ) : (
                     getCategoryDisplayName(activeCategory)
                   )}
@@ -402,6 +549,11 @@ export const SceneSelector = ({
                       <span className="flex items-center gap-2">
                         <Star className="w-4 h-4 fill-current" />
                         Favoriter
+                      </span>
+                    ) : category === 'my-scenes' ? (
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        Mina scener
                       </span>
                     ) : category === 'popular' ? (
                       <span className="flex items-center gap-2">
@@ -435,6 +587,11 @@ export const SceneSelector = ({
                     <span className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-current" />
                       Favoriter
+                    </span>
+                  ) : category === 'my-scenes' ? (
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Mina scener
                     </span>
                   ) : category === 'popular' ? (
                     <span className="flex items-center gap-2">
@@ -496,7 +653,7 @@ export const SceneSelector = ({
           </div>
         )}
         
-        {/* Scene cards with touch swipe support */}
+        {/* Scene cards */}
         {isLockedCategory ? (
           // Locked category: show blurred grid with fade
           <div className="relative">
@@ -528,6 +685,23 @@ export const SceneSelector = ({
               </div>
             </div>
           </div>
+        ) : activeCategory === 'my-scenes' ? (
+          // My scenes: show create card + user scenes
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <CreateNewCard isGrid />
+              {categoryScenes.map((scene) => (
+                <SceneCard key={scene.id} scene={scene} isGrid isUserScene />
+              ))}
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <CreateNewCard />
+              {categoryScenes.map((scene) => (
+                <SceneCard key={scene.id} scene={scene} isUserScene />
+              ))}
+            </div>
+          )
         ) : viewMode === 'slideshow' ? (
           <div className="relative">
             <div 
@@ -546,6 +720,13 @@ export const SceneSelector = ({
             ))}
           </div>
         )}
+
+        {/* Create Scene Modal */}
+        <CreateSceneModal
+          open={showCreateModal}
+          onOpenChange={setShowCreateModal}
+          onSceneCreated={handleSceneCreated}
+        />
 
         <style>{`
           .scrollbar-hide::-webkit-scrollbar {

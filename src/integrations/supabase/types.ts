@@ -415,6 +415,81 @@ export type Database = {
         }
         Relationships: []
       }
+      user_scenes: {
+        Row: {
+          ai_prompt: string | null
+          baseline_y: number
+          created_at: string
+          default_scale: number
+          description: string | null
+          full_res_url: string | null
+          horizon_y: number
+          id: string
+          name: string
+          photoroom_shadow_mode: string
+          prompt: string
+          reference_scale: number
+          reflection_enabled: boolean
+          reflection_fade: number
+          reflection_opacity: number
+          shadow_blur: number
+          shadow_enabled: boolean
+          shadow_offset_x: number
+          shadow_offset_y: number
+          shadow_strength: number
+          thumbnail_url: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_prompt?: string | null
+          baseline_y?: number
+          created_at?: string
+          default_scale?: number
+          description?: string | null
+          full_res_url?: string | null
+          horizon_y?: number
+          id?: string
+          name?: string
+          photoroom_shadow_mode?: string
+          prompt: string
+          reference_scale?: number
+          reflection_enabled?: boolean
+          reflection_fade?: number
+          reflection_opacity?: number
+          shadow_blur?: number
+          shadow_enabled?: boolean
+          shadow_offset_x?: number
+          shadow_offset_y?: number
+          shadow_strength?: number
+          thumbnail_url?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_prompt?: string | null
+          baseline_y?: number
+          created_at?: string
+          default_scale?: number
+          description?: string | null
+          full_res_url?: string | null
+          horizon_y?: number
+          id?: string
+          name?: string
+          photoroom_shadow_mode?: string
+          prompt?: string
+          reference_scale?: number
+          reflection_enabled?: boolean
+          reflection_fade?: number
+          reflection_opacity?: number
+          shadow_blur?: number
+          shadow_enabled?: boolean
+          shadow_offset_x?: number
+          shadow_offset_y?: number
+          shadow_strength?: number
+          thumbnail_url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       verification_codes: {
         Row: {
           attempts: number
