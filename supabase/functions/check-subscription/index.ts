@@ -182,24 +182,27 @@ serve(async (req) => {
 
       if (creditsPerMonth > 0) {
         // Check if we already applied credits for this billing period
-        const { data: existingReset } = await supabaseClient
+        const { data: existingResetRows } = await supabaseClient
           .from('credit_transactions')
           .select('id')
           .eq('user_id', user.id)
           .eq('transaction_type', 'subscription_renewal')
           .eq('description', periodKey)
-          .maybeSingle();
+          .limit(1);
+
+        const existingReset = existingResetRows && existingResetRows.length > 0 ? existingResetRows[0] : null;
 
         // Also check if this is a NEW subscription (handled by verify-payment)
         // A new subscription will have a 'subscription' transaction from verify-payment
-        const { data: recentSubscription } = await supabaseClient
+        const { data: recentSubscriptionRows } = await supabaseClient
           .from('credit_transactions')
           .select('id, created_at')
           .eq('user_id', user.id)
           .eq('transaction_type', 'subscription')
           .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(1);
+
+        const recentSubscription = recentSubscriptionRows && recentSubscriptionRows.length > 0 ? recentSubscriptionRows[0] : null;
 
         // If subscription was just created (within 5 minutes), don't reset credits
         // verify-payment already set the credits correctly
@@ -216,13 +219,15 @@ serve(async (req) => {
 
           // Check if user bought additional credits recently (within last hour)
           // We don't want to lose those on renewal
-          const { data: recentPurchase } = await supabaseClient
+          const { data: recentPurchaseRows } = await supabaseClient
             .from('credit_transactions')
             .select('amount')
             .eq('user_id', user.id)
             .eq('transaction_type', 'purchase')
             .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
-            .maybeSingle();
+            .limit(1);
+
+          const recentPurchase = recentPurchaseRows && recentPurchaseRows.length > 0 ? recentPurchaseRows[0] : null;
 
           // Calculate new balance
           // If recent purchase exists, add those credits on top of plan credits
