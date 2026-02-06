@@ -19,7 +19,7 @@ import {
   ArrowDown,
   MoveHorizontal,
   Shield,
-  Clock,
+  
   MessageSquare,
   Palette,
   ChevronRight,
@@ -50,8 +50,8 @@ const Guide = () => {
         {/* Hero */}
         <section data-reveal className="text-center space-y-5 pt-4 sm:pt-8">
           <Badge variant="secondary" className="gap-1.5 px-3 py-1">
-            <Clock className="w-3 h-3" />
-            Uppdateras var 4:e timme baserat på kundfeedback
+            <Sparkles className="w-3 h-3" />
+            Integrerar de senaste AI-modellerna
           </Badge>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-foreground">
             Få bästa resultat med <span className="text-accent-italic">AutoPic</span>
@@ -132,7 +132,7 @@ const Guide = () => {
               När du väljer en bakgrund i AutoPic använder AI:n den som en <strong className="text-foreground">referensbild</strong>. Den analyserar ljussättning, skuggor, perspektiv och omgivning i referensen, och skapar sedan en helt ny scen som matchar din bil.
             </p>
             <p>
-              Resultatet är inte en enkel "klistra in" – AI:n tolkar scenen och anpassar ljus och skuggor så att bilen ser naturlig ut i den nya miljön. Därför kan bakgrunden se lite annorlunda ut jämfört med referensbilden, men helhetsintrycket är mer realistiskt.
+              Resultatet är inte en enkel "klistra in" – AI:n tolkar scenen och anpassar ljus och skuggor så att bilen ser naturlig ut i den nya miljön. Vi integrerar kontinuerligt de senaste AI-modellerna som utvecklas och förbättras för varje månad, vilket ger allt bättre resultat.
             </p>
           </div>
 
@@ -264,7 +264,7 @@ const Guide = () => {
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
             <p>
-              AI-genererade bilder ger ett <strong className="text-foreground">professionellt resultat</strong>, men det är viktigt att ha realistiska förväntningar. Varje generering är unik – samma bild med samma bakgrund kan ge lite olika resultat.
+              AutoPic använder de senaste AI-modellerna som kontinuerligt förbättras. Resultaten blir mer <strong className="text-foreground">professionella och träffsäkra</strong> för varje uppdatering. Här är några tips för att maximera kvaliteten:
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
               <MiniTip
@@ -273,7 +273,7 @@ const Guide = () => {
               />
               <MiniTip
                 icon={<Sparkles className="w-4 h-4" />}
-                text="Du kan generera om med samma bakgrund – AI:n tolkar scenen lite annorlunda varje gång."
+                text="Du kan generera om med samma bakgrund för att få en ny variant om du vill."
               />
               <MiniTip
                 icon={<Camera className="w-4 h-4" />}
@@ -291,7 +291,7 @@ const Guide = () => {
             <FaqItem
               value="faq-1"
               question="Varför ser bakgrunden lite annorlunda ut jämfört med referensbilden?"
-              answer="AI:n använder bakgrunden som referens – inte som en exakt kopia. Den tolkar ljussättning, färgton och perspektiv för att skapa en ny scen som matchar din bil. Därför kan detaljer i bakgrunden variera, men helhetsintrycket och stilen bevaras."
+              answer="AI:n använder bakgrunden som referens och tolkar ljussättning, färgton och perspektiv för att skapa en ny scen som matchar din bil. Vi uppdaterar kontinuerligt till de senaste AI-modellerna för att ge dig bästa möjliga resultat."
             />
             <FaqItem
               value="faq-2"
@@ -335,8 +335,8 @@ const Guide = () => {
         <section data-reveal className="space-y-6 pb-12">
           <div className="flex flex-wrap gap-3 justify-center">
             <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
-              <Clock className="w-3 h-3" />
-              Uppdaterad var 4:e timme
+              <Sparkles className="w-3 h-3" />
+              Senaste AI-modellerna
             </Badge>
             <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
               <MessageSquare className="w-3 h-3" />
