@@ -42,10 +42,14 @@ const InviteSignup = () => {
 
     setLoading(true);
 
+    // IMPORTANT: Set invite flag BEFORE signUp, since signUp navigates away internally
+    localStorage.setItem('isInviteSignup', 'true');
+
     try {
       const { error: signUpError, needsEmailConfirmation } = await signUp(email, password, fullName);
 
       if (signUpError) {
+        localStorage.removeItem('isInviteSignup');
         if (signUpError.message.includes('already registered')) {
           toast.error('E-postadressen är redan registrerad');
         } else {
@@ -56,13 +60,11 @@ const InviteSignup = () => {
       }
 
       if (needsEmailConfirmation) {
+        localStorage.removeItem('isInviteSignup');
         toast.success('Konto skapat! Kolla din e-post för att aktivera kontot, logga sedan in.');
         setLoading(false);
         return;
       }
-
-      // Store invite flag so onboarding sets manual_access = true and credits = 0
-      localStorage.setItem('isInviteSignup', 'true');
 
       toast.success('Konto skapat!');
       // signUp in AuthContext already navigates to /onboarding
