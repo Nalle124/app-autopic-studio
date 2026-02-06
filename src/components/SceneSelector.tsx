@@ -461,11 +461,11 @@ export const SceneSelector = ({
     );
   };
 
-  const AutopicIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
-    <img src="/favicon.png" alt="" className={`${className} object-contain`} />
+  const AutopicIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+    <img src="/favicon.png" alt="" className={`${className} object-contain dark:invert`} />
   );
 
-  // "Create new" card for my-scenes
+  // "Create new" card for my-scenes (just a plus icon, no text)
   const CreateNewCard = ({ isGrid = false }: { isGrid?: boolean }) => (
     <Card
       onClick={() => setShowCreateModal(true)}
@@ -473,13 +473,9 @@ export const SceneSelector = ({
         isGrid ? 'w-full' : 'flex-shrink-0 w-72 snap-center'
       }`}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary/5 via-muted/30 to-primary/10 flex flex-col items-center justify-center gap-2">
-        <div className="w-12 h-12 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-          <Plus className="w-6 h-6 text-primary" />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <AutopicIcon className="w-3.5 h-3.5" />
-          <span className="text-sm font-medium text-foreground">Skapa med AI</span>
+      <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary/5 via-muted/30 to-primary/10 flex flex-col items-center justify-center">
+        <div className="w-14 h-14 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+          <Plus className="w-7 h-7 text-primary" />
         </div>
       </div>
       <div className="p-3 sm:p-5 bg-card">
@@ -502,6 +498,42 @@ export const SceneSelector = ({
   return (
     <TooltipProvider delayDuration={0}>
       <div className="space-y-4">
+        {/* AI Scene Generator Card - above the gallery */}
+        {user && (
+          <div className="space-y-3">
+            <Card
+              onClick={() => setShowCreateModal(true)}
+              className="group relative overflow-hidden cursor-pointer transition-all duration-300 border-border hover:shadow-xl hover:scale-[1.01] bg-card"
+              style={{ borderRadius: 'var(--radius-card)' }}
+            >
+              <div className="flex items-center gap-4 p-4 sm:p-5">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                  style={{ background: 'var(--gradient-premium)' }}
+                >
+                  <AutopicIcon className="w-6 h-6 sm:w-7 sm:h-7 brightness-0 invert" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-sm sm:text-base text-foreground leading-tight">
+                    Skapa din egen bakgrund med AI
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    Beskriv din drömscen så skapar vi den åt dig
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                    <Plus className="w-5 h-5 text-primary" />
+                  </div>
+                </div>
+              </div>
+              {/* Bottom gradient bar */}
+              <div className="h-1 w-full" style={{ background: 'var(--gradient-premium)' }} />
+            </Card>
+            <p className="text-center text-xs text-muted-foreground">
+              Eller välj en från galleriet
+            </p>
+          </div>
+        )}
         {/* Orientation toggle - compact on mobile with more spacing */}
         {isMobile && onOrientationChange && (
           <div className="flex items-center justify-between text-sm mb-4">
