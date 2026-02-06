@@ -19,6 +19,7 @@ const Auth = () => {
   const planParam = searchParams.get('plan') as PricingTier | null;
   const selectedPlan = planParam && PRICING_TIERS[planParam] ? planParam : null;
   const isInvite = searchParams.get('invite') === 'true';
+  const isResetMode = searchParams.get('reset') === 'true';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,6 +50,9 @@ const Auth = () => {
   // IMMEDIATE redirect: if a plan param exists and user is NOT logged in, go straight to Stripe
   // This runs before any UI renders - no auth page flash
   useEffect(() => {
+    // Skip ALL redirects when in password reset mode
+    if (isResetMode) return;
+    
     if (selectedPlan && !user) {
       window.location.href = `/guest-checkout?plan=${selectedPlan}`;
       return;
@@ -64,7 +68,7 @@ const Auth = () => {
         navigate('/');
       }
     }
-  }, [user, navigate, selectedPlan, isInvite]);
+  }, [user, navigate, selectedPlan, isInvite, isResetMode]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -316,9 +320,6 @@ const Auth = () => {
       setResetEmailSent(true);
     }
   };
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const isResetMode = urlParams.get('reset') === 'true';
 
   if (isResetMode) {
     return <ResetPasswordForm />;
@@ -612,8 +613,10 @@ const ResetPasswordForm = () => {
     if (error) {
       toast.error(error.message || 'Kunde inte uppdatera lösenord');
     } else {
-      toast.success('Lösenord uppdaterat! Du kan nu logga in.');
-      navigate('/auth');
+      toast.success('Lösenord uppdaterat! Logga in med ditt nya lösenord.');
+      // Sign out to clear the recovery session, then redirect to clean login
+      await supabase.auth.signOut();
+      window.location.href = '/auth';
     }
   };
 

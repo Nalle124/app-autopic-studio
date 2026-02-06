@@ -49,6 +49,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener FIRST - must be synchronous callback
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Handle PASSWORD_RECOVERY: redirect to reset form before setting user state
+        // This prevents the normal redirect logic from kicking in
+        if (event === 'PASSWORD_RECOVERY') {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          // Navigate to reset form - use setTimeout to avoid calling navigate during render
+          setTimeout(() => {
+            navigate('/auth?reset=true', { replace: true });
+          }, 0);
+          return;
+        }
+
         // Only synchronous state updates here
         setSession(session);
         setUser(session?.user ?? null);
