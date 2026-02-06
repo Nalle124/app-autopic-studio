@@ -245,8 +245,7 @@ export const CreateSceneModal = ({
       toast.success(`"${sceneName}" sparad!`);
       onSceneCreated(scene);
       
-      // Close after short delay so user sees confirmation
-      setTimeout(() => handleClose(), 800);
+      // Don't auto-close - let user continue creating more scenes
     } catch (err) {
       console.error('Save error:', err);
       toast.error('Kunde inte spara scenen.');
@@ -388,7 +387,7 @@ export const CreateSceneModal = ({
                       <img
                         src={msg.imageUrl}
                         alt={msg.suggestedName}
-                        className="w-full aspect-video object-cover"
+                        className="w-full aspect-[3/2] object-cover"
                       />
                     </div>
 
@@ -473,6 +472,9 @@ export const CreateSceneModal = ({
             </div>
           </div>
         )}
+
+        {/* Brand gradient bar */}
+        <div className="h-1 w-full flex-shrink-0" style={{ background: 'var(--gradient-premium)' }} />
 
         {/* Input area */}
         <div className="px-4 py-3 border-t border-border/50 bg-card">

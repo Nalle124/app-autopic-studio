@@ -71,7 +71,7 @@ serve(async (req) => {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
+          body: JSON.stringify({
           model: "google/gemini-2.5-flash-image",
           messages: [
             {
@@ -82,10 +82,11 @@ CRITICAL RULES:
 - The image MUST be completely EMPTY — absolutely no vehicles, no cars, no people, no text, no watermarks, no objects in focus
 - Create a realistic environment suitable as a backdrop for digitally placing a car
 - Style: clean, professional, well-lit photography backdrop
-- Landscape orientation, 16:9 aspect ratio
+- MUST be wide landscape orientation with EXACT 3:2 aspect ratio (like 1536x1024 or 3072x2048)
 - The scene should look like a real photograph, NOT a 3D render or illustration
 - Focus on creating natural lighting, realistic textures and depth
-- Include a clear ground surface where a vehicle could be placed`,
+- Include a clear ground surface where a vehicle could be placed
+- The image must be WIDE, not tall — think cinematic widescreen photography`,
             },
           ],
           modalities: ["image", "text"],
