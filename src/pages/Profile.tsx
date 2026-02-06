@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -425,6 +425,18 @@ const ProfileContent = () => {
                 </div>
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Guide link */}
+            <button
+              onClick={() => navigate('/guide')}
+              className="w-full flex items-center justify-between py-2"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm font-medium">Användningsguide</span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground -rotate-90" />
+            </button>
           </div>
         </Card>
 
