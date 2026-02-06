@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Landing from '@/pages/Landing';
 import { useTheme } from 'next-themes';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
@@ -125,12 +126,7 @@ function IndexContent() {
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
 
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
+  // No redirect needed — Landing page handles unauthenticated users in Index wrapper
 
   // Load draft images from cloud on mount (cross-device persistence)
   useEffect(() => {
@@ -222,10 +218,8 @@ function IndexContent() {
       </div>;
   }
 
-  // Don't render if not authenticated (will redirect)
-  if (!user) {
-    return null;
-  }
+  // This should never render without user since Index wrapper handles it
+  if (!user) return null;
   const handleSceneSelect = (scene: SceneMetadata) => {
     setSelectedScene(scene);
     // Slower scroll (10% slower) to allow background to load
@@ -1899,6 +1893,22 @@ function IndexContent() {
 }
 
 export default function Index() {
+  const { user, loading } = useAuth();
+
+  // Show loading spinner while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Show landing page for unauthenticated users
+  if (!user) {
+    return <Landing />;
+  }
+
   return (
     <DemoProvider>
       <IndexContent />
