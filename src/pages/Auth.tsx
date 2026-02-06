@@ -45,7 +45,8 @@ const Auth = () => {
   } = useAuth();
   const navigate = useNavigate();
 
-  // If user arrives with a plan param and is NOT logged in, redirect to guest checkout (Stripe direct)
+  // IMMEDIATE redirect: if a plan param exists and user is NOT logged in, go straight to Stripe
+  // This runs before any UI renders - no auth page flash
   useEffect(() => {
     if (selectedPlan && !user) {
       window.location.href = `/guest-checkout?plan=${selectedPlan}`;
@@ -68,6 +69,19 @@ const Auth = () => {
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
+
+  // If redirecting to guest checkout, show loading spinner instead of auth form
+  if (selectedPlan && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Startar betalning...</p>
+        </div>
+      </div>
+    );
+  }
+
 
   const handleAuthSuccess = () => {
     if (selectedPlan) {
