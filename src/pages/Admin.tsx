@@ -258,14 +258,14 @@ const Admin = () => {
     
     setDeleting(true);
     try {
-      // Use edge function that also cancels Stripe subscriptions
-      const { error } = await supabase.functions.invoke('admin-delete-user', {
-        body: { targetUserId: userToDelete.id }
+      // Use database RPC function (works with standard auth, no edge function needed)
+      const { data, error } = await supabase.rpc('admin_delete_user', {
+        target_user_id: userToDelete.id
       });
 
       if (error) throw error;
 
-      toast.success(`Användare ${userToDelete.email} raderad och Stripe-abonnemang avslutat`);
+      toast.success(`Användare ${userToDelete.email} raderad`);
       setUserToDelete(null);
       loadData();
     } catch (error: any) {
