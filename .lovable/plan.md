@@ -1,85 +1,90 @@
 
 
-# Analys och fixar: Credits + Losenordsaterstallning
+# Guide-sida for AutoPic
 
-## 1. Credit-avdrag vid bildgenerering -- FUNGERAR KORREKT
+## Oversikt
 
-Den atomiska `decrement_credits`-funktionen fungerar som den ska. Verifierat med Jacobs (jacob.kuba69) transaktionshistorik: varje generation drar exakt 1 credit, saldot minskar med 1 varje gang utan nagra avvikelser (25 -> 24 -> 23 -> ... -> 6). Inga anderingar behövs har.
+Skapar en ny offentlig sida (`/guide`) som fungerar som en komplett anvandarguide. Sidan ar tillganglig utan inloggning sa att den kan lankas fran bade appen och landningssidan (autopic.studio). Dessutom uppdateras info-ikonen vid "Valj bakgrund" i huvudappen sa att popovern pekar anvandaren mot guiden.
 
-## 2. Finspangs Bilmarknad -- SALDOT AR KORREKT
+## Ny sida: `/guide`
 
-Finspangs har genererat 17 bilder totalt, men inte alla anvande samma krediter:
-- 2 bilder anvande gratis-credits (startade med 2)
-- 10 bilder anvande ett admin-testtillagg pa 10 credits
-- 5 bilder anvande det senaste admin-tillägget pa 1800 credits
+En langscrollande sida med tydliga sektioner, samma stil som resten av appen (Host Grotesk, DM Sans, gradient-bakgrunder, kort med noise-textur, 10px border-radius). Sidan anvander `Header`-komponenten for konsekvent navigation.
 
-Nuvarande saldo: 1800 - 5 = **1795** -- stammer perfekt. Inga anderingar behövs.
+### Sektioner pa sidan
 
-## 3. Svenska Bilnet -- SALDO BEHOVER KORRIGERAS
+**1. Hero / Introduktion**
+- Rubrik: "Fa basta resultat med AutoPic"
+- Kort text om att guiden hjalper dig att forsta hur du far mest ut av plattformen
+- Trust badge: "Uppdateras var 4:e timme baserat pa kundfeedback"
 
-Problemet: Vi rensade ALLA gamla renewal-transaktioner som en del av den forra fixen. Nar `check-subscription` sedan korde fann den inga renewals inom 28 dagar, sa den skapade en ny -- och aterstallde saldot till 800.
+**2. Fotograferingstips**
+- Liggande bilder ger oftast bast resultat (med visuell ikon/illustration)
+- Fotografera fran lagre vinkel (knanaiva, inte standhoijd) -- illustreras med en animerad diagram/ikon som visar kameravinkel
+- Centrera bilen i bilden
+- Undvik att klippa delar av bilen
 
-Kodfixen fungerar nu korrekt (den nya renewal-transaktionen fran 18:39 hindrar framtida dubbletter). Men saldot ar fel:
-- Prenumeration gav 800 credits
-- 39 genereringar har anvant credits sedan prenumerationen
-- Korrekt saldo: 800 - 39 = **761**
+**3. Hur AI-bakgrunder fungerar**
+- Forklaring att AI:n anvander bakgrundsbilden som referens och tolkar element (ljus, skuggor, perspektiv) for att matcha scenen
+- Visuell "before/after"-slider med befintliga exempelbilder (ford-before/ford-after, vw-before/vw-after)
+- Forklaring att resultaten varierar beroende pa bilvinkel och bakgrundsval
 
-**Atgard**: Korrigera saldot till 761 via databasuppdatering.
+**4. Beskaring och format**
+- Forklara att man ibland behover beskara for basta resultat
+- Visa att liggande format ar standard
+- Tips om att anvanda crop-verktyget for att justera positionering
 
-## 4. Losenordsaterstallning -- BUGG IDENTIFIERAD
+**5. Logotyp och branding**
+- Forklara att man kan valja vilken bild man applicerar logo pa
+- Kort om hur brand kit fungerar
 
-### Problemet (steg for steg)
+**6. Forvantat resultat**
+- Realistiska forvantiningar: AI ger professionella men ibland varierade resultat
+- Tips: testa ett par bakgrunder for att hitta den som passar bast
+- Att man kan generera om med samma eller annan bakgrund
 
-```text
-1. Anvandaren klickar "Glomt losenord?" pa auth-sidan
-2. Supabase skickar ett mail med en aterstallningslank
-3. Anvandaren klickar lanken --> landar pa /auth?reset=true
-4. MEN: Supabase vaxlar recovery-token till en session automatiskt
-5. onAuthStateChange i AuthContext far event PASSWORD_RECOVERY
-   --> Satter user och session (anvandaren ar "inloggad")
-6. Auth.tsx useEffect ser att user ar satt
-   --> Navigerar direkt till / (startsidan)
-7. Anvandaren far aldrig se formularet for att valja nytt losenord
-```
+**7. FAQ-sektion**
+- Accordion-baserad FAQ med vanliga fragor
+- T.ex. "Varfor ser bakgrunden lite annorlunda ut fran referensbilden?", "Kan jag anvanda mina egna bakgrunder?", "Vad ar skillnaden mellan Studio och Utomhus?", "Hur manga bilder kan jag generera?"
 
-### Losning
+**8. Trust-sektion**
+- Badge: "Uppdaterad var 4:e timme"
+- Badge: "Baserad pa feedback fran vara kunder"
+- Badge: "Svensk support"
+- CTA-knapp tillbaka till appen
 
-Tva anderingar kravs:
+### Visuella/rorliga element
 
-**A. AuthContext.tsx** -- Fanga PASSWORD_RECOVERY-event
+- **Before/After-slider**: En interaktiv komponent dar man drar en slider over bilden for att se fore/efter. Anvander befintliga bilder i `src/assets/examples/`.
+- **Animerade ikoner**: CSS-animerade pilar/ikoner som visar kameravinkel (ned-pil for lag vinkel) och centrering
+- **Staggerd reveal**: Sektioner fades in med `animate-fade-in` nar man scrollar ner (Intersection Observer)
 
-Nar `onAuthStateChange` far event `PASSWORD_RECOVERY`, navigera till `/auth?reset=true` istallet for att lata den vanliga redirect-logiken ta over. Detta sakerställer att anvandaren hamnar pa ratt sida.
+## Andringar i befintlig kod
 
-**B. Auth.tsx** -- Hoppa over auto-redirect vid reset-lage
+### Info-ikon i "Valj bakgrund" (Index.tsx rad 852-854)
 
-Nar URL:en innehaller `?reset=true`, ska `useEffect` INTE omdirigera anvandaren aven om `user` ar satt. Istallet visas `ResetPasswordForm` som vantat.
+Nuvarande popover sager: "Kom ihag att olika bakgrunder passar for olika bilar och vinklar."
 
-Flödet efter fix:
+Andras till att aven innehalla en lank till guide-sidan:
+- Texten behalls men lanken andras fran `https://autoshot.se/guide` till `/guide` (intern lank) med `target="_blank"`.
 
-```text
-1. Anvandaren klickar aterstallningslanken
-2. Supabase skapar session (PASSWORD_RECOVERY event)
-3. AuthContext fangar eventet --> navigerar till /auth?reset=true
-4. Auth.tsx ser isResetMode=true --> hoppar over auto-redirect
-5. ResetPasswordForm visas --> anvandaren valjer nytt losenord
-6. updateUser() sparar det nya losenordet
-7. Redirect till /auth (vanlig inloggning)
-```
+### Routing (App.tsx)
 
-## Filer som andras
+Lagg till en ny publik route: `<Route path="/guide" element={<Guide />} />`
+
+## Filer som skapas/andras
 
 | Fil | Andring |
 |-----|---------|
-| `src/contexts/AuthContext.tsx` | Lagg till PASSWORD_RECOVERY-hantering i onAuthStateChange |
-| `src/pages/Auth.tsx` | Lagg till undantag i useEffect: hoppa over redirect nar isResetMode ar true |
+| `src/pages/Guide.tsx` | **NY** -- Hela guide-sidan |
+| `src/App.tsx` | Lagg till `/guide`-route |
+| `src/pages/Index.tsx` | Uppdatera info-popover-lanken till `/guide` |
 
-## Databasandring
+## Tekniska detaljer
 
-- Korrigera Svenska Bilnets saldo fran 800 till **761**
-
-## Ingen paverkan pa ovrig funktionalitet
-
-- Vanlig inloggning och registrering fungerar som tidigare
-- Credit-systemet behover inga kodfixar (fungerar korrekt)
-- Inga andringar i edge functions
+- Sidan anvander bara befintliga UI-komponenter: `Card`, `Accordion`, `Button`, `Header`
+- Before/After-slidern byggs som en latt komponent med `useState` + `onMouseMove`/`onTouchMove` for drag
+- Scroll-reveal gors med `IntersectionObserver` i en enkel `useEffect`
+- Inga nya beroenden behoves
+- Sidan ar fullt responsiv (mobile-first)
+- Befintliga exempelbilder ateranvands fran `src/assets/examples/`
 
