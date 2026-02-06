@@ -1,185 +1,161 @@
 
-# AI-bakgrundsgenerator -- "Skapa din egen scen"
+
+# Landningssida for AutoPic
 
 ## Sammanfattning
 
-En ny sektion visas ovanfor galleriet i SceneSelector dar inloggade anvandare kan skriva en kort beskrivning och generera en egen bakgrundsbild med AI (Gemini Flash Image). Bilden sparas i deras personliga galleri och fungerar exakt som en vanlig scen i hela det befintliga floedet. Nuvarande scener och funktionalitet paverkas inte.
-
-## Trygg implementation
-
-- **Noll paverkan pa befintliga scener** -- `user_scenes` aer en helt separat tabell. Den globala `scenes`-tabellen roers inte.
-- **SceneSelector** far en ny kategori "Mina scener" som bara visas om anvandaren har egna scener (eller alltid med en "Skapa ny"-knapp). All befintlig kategori-logik fungerar som foerut.
-- **SceneMetadata-interfacet** andras inte -- user scenes mappas till samma interface med default-vaerden. Det betyder att `process-car-image` edge function fungerar direkt utan aendringar.
-- **Inga credit-avdrag foer bakgrundsgenerering** -- kostnaden gaer mot Lovable AI-kvoten (LOVABLE_API_KEY). Credits dras fortfarande normalt naer anvandaren genererar den slutliga bilden med PhotoRoom.
+En komplett, modern landningssida byggs direkt i React-appen. Den ersatter Framer-sidan som primar landningssida och visas for icke-inloggade besokare pa `/`. Inloggade anvandare dirigeras direkt till arbetsytan som vanligt. Sidan matchar appens befintliga designsystem (Host Grotesk, DM Sans, morkt tema, gradient-premium, noise textures) och innehaller alla sektioner fran Framer-sidan plus en ny sektion som lyfter AI-bakgrundsgeneratorn.
 
 ---
 
-## Steg-foer-steg-floedet foer anvandaren
+## Routing-andring
 
-1. I SceneSelector ser anvandaren en ny kategori **"Mina scener"** (visas med en Sparkles-ikon)
-2. Foersta kortet i kategorin aer ett **"+ Skapa egen bakgrund"**-kort med gradient och ikon
-3. Klick oeppnar en **modal** med:
-   - Textfaelt: "Beskriv din bakgrund..." (placeholder: t.ex. "Vit studio med mjukt ljus fran hoeger")
-   - Valfritt namnfaelt (auto-genereras annars av AI)
-   - "Generera"-knapp
-4. Laddningsanimation (~5-10 sek) medan AI genererar bilden
-5. Foerhandsvisning visas i modalen
-6. Anvandaren kan:
-   - **"Anvand denna"** -- sparar till databasen och vaeljer den som aktiv scen
-   - **"Generera ny"** -- genererar en ny bild med samma prompt
-   - **"Avbryt"** -- staenger utan att spara
-7. Sparad scen syns i "Mina scener"-kategorin och fungerar som alla andra scener
+Idag omdirigerar `/` (Index.tsx) icke-inloggade till `/auth`. Istallet:
+- **Icke-inloggade pa `/`** -- ser den nya landningssidan
+- **Inloggade pa `/`** -- ser arbetsytan (dagens Index-innehall)
+
+Tekniskt losning: skapa en wrapper-komponent i Index.tsx som villkorligt renderar antingen Landing eller arbetsytan beroende pa inloggningsstatus. Alternativt kan vi ha en separat Landing-komponent som importeras i Index och visas i "else"-grenen av auth-checken.
 
 ---
 
-## Vad som skapas och aendras
+## Sektioner pa landningssidan
 
-### 1. Databastabell: `user_scenes`
+### 1. Navigation / Header
+- AutoPic-logotypen (vanster)
+- Nav-lankar: Funktioner, Priser, Kontakt (scrollar ner pa sidan)
+- CTA-knappar: "Logga in" (ghost) + "Testa gratis" (primar, lankar till /try)
+- Sticky, glasmorfism-bakgrund, matcher befintlig header-stil
 
-Ny tabell foer personliga bakgrunder. Helt separerad fraan den globala `scenes`-tabellen.
+### 2. Hero
+- Vansterspaltig rubrik: **"Bra annonser oavsett vader"** (Host Grotesk, stor)
+- Italic accent-text pa nyckelord (Playfair Display italic pa "oavsett")
+- Underrubrik: "Andra bakgrund pa dina bilbilder med AI. Valj bland 80+ miljoeeer."
+- CTA: "Testa gratis" (primar knapp) + "Se hur det funkar" (sekundar, scrollar till How It Works)
+- Hoeger sida: stor bild av en bil i en snygg studio-bakgrund (anvander befintliga assets)
+- Responsivt: Pa mobil staplas text ovanfor bild
 
-Kolumner:
-- `id` (uuid, PK, auto)
-- `user_id` (uuid, referens till auth.users)
-- `name` (text) -- AI-genererat eller anvandarvalt
-- `description` (text) -- kort beskrivning
-- `prompt` (text) -- prompten anvandaren skrev
-- `thumbnail_url` (text) -- sparad bild-URL
-- `full_res_url` (text) -- samma som thumbnail (en bild genereras)
-- `horizon_y` (numeric, default 50)
-- `baseline_y` (numeric, default 65)
-- `default_scale` (numeric, default 0.65)
-- `shadow_enabled` (boolean, default true)
-- `shadow_strength` (numeric, default 0.6)
-- `shadow_blur` (numeric, default 15)
-- `photoroom_shadow_mode` (text, default 'ai.soft')
-- `reflection_enabled` (boolean, default false)
-- `reference_scale` (numeric, default 0.85)
-- `ai_prompt` (text) -- auto-genererat PhotoRoom-prompt baserat pa bilden
-- `created_at` (timestamptz, default now())
+### 3. Before/After Slider
+- Anvander befintlig `BeforeAfterSlider`-komponent
+- Visar ett konkret fore/efter-par (t.ex. ford-before/ford-after eller vw-before/vw-after)
+- Subtil rubrik: "Se skillnaden"
+- Platshallare for nar anvandaren bifogar battre bilder/video senare
 
-RLS-policies (anvandare ser bara sina egna):
-- SELECT: `auth.uid() = user_id`
-- INSERT: `auth.uid() = user_id`
-- DELETE: `auth.uid() = user_id`
-- UPDATE: `auth.uid() = user_id`
+### 4. Bakgrundsgalleri -- preview
+- Rubrik: "80+ miljoeeer som funkar i riktiga bilannonser"
+- Horisontellt scrollande rad med thumbnails fran befintliga scener (studio, host, utomhus, premium)
+- Varje thumbnail har en liten etikett
+- Avslutas med en "Se alla" CTA som lankar till /try
 
-### 2. Edge function: `generate-scene-image`
+### 5. AI-funktionen (NY sektion -- lyfts som USP)
+- Rubrik: "Skapa din egen bakgrund med AI"
+- Kort beskrivning: "Beskriv din droemmiljoe saa genererar vi den. Unikt for just dina annonser."
+- Visuellt: mockup/illustration av chattgranssnittet med ett exempel-prompt och en genererad bild
+- CTA: "Testa gratis"
+- Gradient-premium bar som accent
 
-Ny backend-funktion som:
-1. Tar emot `{ prompt: string }` + JWT-autentisering
-2. Bygger ett systemprompt som saekerstaeller att bilden blir en tom bakgrundsmiljoe (inga bilar, inga maenniskor)
-3. Anropar Lovable AI Gateway med `google/gemini-2.5-flash-image` (modalities: ["image", "text"])
-4. Tar emot base64-bilden
-5. Laddar upp till Storage-bucket `processed-cars` under `user-scenes/{userId}/{uuid}.png`
-6. Genererar ett matchande PhotoRoom-prompt baserat pa bildbeskrivningen (t.ex. "Place the vehicle on the ground in a bright minimalist white studio with soft directional lighting from the right")
-7. Genererar ett namn om anvandaren inte angivit ett (t.ex. "Ljus Studio" baserat pa prompten)
-8. Returnerar: `{ imageUrl, suggestedName, photoroomPrompt }`
+### 6. Funktioner -- "Ett showroom i fickan"
+- Rubriken: "Allt du behoeever for proffsiga bilbilder"
+- Kort-baserad layout med 4-6 kort:
+  - **Batch-redigering** -- Redigera alla bilder paa en gang
+  - **Ljusfoeerbaettring** -- Relight med AI
+  - **Logo Studio** -- Lagg till logotyp och banner
+  - **Beskaarning & Export** -- Olika format foer olika plattformar
+  - **AI-bakgrunder** -- Skapa egna bakgrunder
+  - **Lokalt anpassat** -- Miljoeeer anpassade foer den svenska marknaden
+- Varje kort: ikon + rubrik + kort beskrivning
 
-Viktigt: Funktionen anvaender LOVABLE_API_KEY som redan aer konfigurerad.
+### 7. Hur det funkar (3 steg)
+- Numrerade steg med ikoner:
+  1. Ladda upp bilder
+  2. Vaelj bakgrund (eller skapa med AI)
+  3. Ladda ner
+- CTA: "Testa gratis"
 
-### 3. Ny komponent: `CreateSceneModal.tsx`
+### 8. Varfoer valja AutoPic (jaemfoerelsetabell)
+- Enkel tabell: AutoPic vs "Andra appar"
+- Rader: Startavgift (0 kr vs Ofta dyrt), Demo-moete (Koeer direkt vs Kraevs ofta), Teknologi (Snabb utveckling vs Anpassad foer kedjor)
 
-En modal med modernt utseende som foeljer appens morkblaa/glasmorfism-stil:
-- Glasmorfism-bakgrund och gradient-accenter
-- Textfaelt foer prompt med placeholder-exempel
-- Valfritt namnfaelt (dollt bakom "Ge den ett namn"-toggle)
-- Generera-knapp med Sparkles-ikon
-- Laddningstillstand med shimmer/pulse-animation
-- Foerhandsvisning av genererad bild
-- Knappar: "Anvand denna" (primar), "Generera ny" (sekundar), "Avbryt"
+### 9. Priser
+- Anvander data fran `src/config/pricing.ts` direkt
+- Visar alla planer: Start, Pro (Populaer-badge), Business, Scale + Credit Pack
+- Varje plan: pris, credits, features, CTA-knapp
+- CTA-knapparna lankar till `/guest-checkout?plan=X` (befintligt floede)
+- Pro-plan faar gradient-premium bakgrund och "Populaer"-badge
 
-### 4. AEndring: `SceneSelector.tsx`
+### 10. FAQ
+- Anvander Accordion-komponenten
+- Fragor fran Framer-sidan:
+  - AEndras bilens skick?
+  - Maaste jag vara teknisk?
+  - AEr det naagon startavgift?
+  - Funkar det med andra fordon?
+  - AEr det gratis att testa?
+  - Kontaktinformation
 
-Minimala aendringar:
-- Ny kategori "Mina scener" (order: -1, visas efter favoriter/populaera)
-- Haemtar scener fraan `user_scenes`-tabellen foer denna kategori
-- Mappar `user_scenes`-rader till `SceneMetadata`-interfacet (samma shape)
-- Foersta kortet i "Mina scener" aer ett speciellt "Skapa egen"-kort
-- Radera-knapp (papperskorg) pa egna scener
-- Kategorin visas bara foer inloggade anvandare
-
-### 5. AEndring: `supabase/config.toml`
-
-Laegga till:
-```toml
-[functions.generate-scene-image]
-verify_jwt = false
-```
+### 11. Footer / Final CTA
+- Rubrik: "Ta er annonsering till naesta nivaa"
+- CTA: "Testa gratis" (lankar till /try)
+- Footer-lankar: Om oss, Kontakt, Priser, Logga in
+- Copyright-text
 
 ---
 
 ## Tekniska detaljer
 
-### AI-bildgenerering (Edge Function)
-
-Systemprompt (haardkodat pa backend):
-```
-Generate a high-quality professional automotive photography background scene.
-The image MUST be completely EMPTY -- absolutely no vehicles, no people, no text, no objects.
-Create a realistic environment suitable as a backdrop for digitally placing a car.
-Style: clean, professional, well-lit. High resolution. Landscape orientation 16:9 ratio.
-The scene should look like a real photograph, not a 3D render.
-```
-
-Anvaendarens prompt laggs till som user-message.
-
-AI:t genererar ocksaa ett matchande PhotoRoom-prompt, t.ex.:
-"Place the vehicle centered on the ground in [scene description]. Realistic scale, lighting matching the environment. Professional automotive photography."
-
-### Mappning till SceneMetadata
-
-User scenes mappas till exakt samma interface som vanliga scener:
-```typescript
-{
-  id: `user-${userScene.id}`,
-  name: userScene.name,
-  description: userScene.description,
-  category: 'my-scenes',
-  thumbnailUrl: userScene.thumbnail_url,
-  fullResUrl: userScene.full_res_url,
-  horizonY: userScene.horizon_y,
-  baselineY: userScene.baseline_y,
-  defaultScale: userScene.default_scale,
-  shadowPreset: { enabled: true, strength: 0.6, blur: 15, offsetX: 0, offsetY: 5 },
-  reflectionPreset: { enabled: false, opacity: 0, fade: 0 },
-  aiPrompt: userScene.ai_prompt,
-  photoroomShadowMode: userScene.photoroom_shadow_mode,
-  referenceScale: userScene.reference_scale,
-  compositeMode: false
-}
-```
-
-Detta goer att hela det befintliga `process-car-image`-floedet fungerar direkt utan aendringar.
-
-### Filer som behoever skapas
+### Filer som skapas
 
 | Fil | Beskrivning |
 |-----|-------------|
-| `supabase/functions/generate-scene-image/index.ts` | Edge function foer AI-bildgenerering |
-| `src/components/CreateSceneModal.tsx` | Modal-komponent foer att skapa egna bakgrunder |
+| `src/pages/Landing.tsx` | Ny landningssida med alla sektioner |
 
-### Filer som behoever aendras
+### Filer som aendras
 
 | Fil | AEndring |
 |-----|----------|
-| `src/components/SceneSelector.tsx` | Laegga till "Mina scener"-kategori, haemta user_scenes, "Skapa egen"-kort, radera-knapp |
-| `supabase/config.toml` | Laegga till generate-scene-image function |
+| `src/pages/Index.tsx` | Ta bort redirect till /auth foer icke-inloggade. Visa Landing istallet. |
 
 ### Filer som INTE aendras
 
-| Fil | Anledning |
-|-----|-----------|
-| `src/types/scene.ts` | SceneMetadata-interfacet aendras inte |
-| `supabase/functions/process-car-image/index.ts` | Fungerar direkt med user scenes |
-| `src/pages/Index.tsx` | SceneSelector hanterar allt internt |
-| `src/integrations/supabase/types.ts` | Auto-genereras |
-| `src/integrations/supabase/client.ts` | Auto-genereras |
+Allt annat: SceneSelector, CreateSceneModal, Auth, edge functions, databas, etc.
+
+### Design-anpassning
+
+Sidan anvander exakt samma designsystem som resten av appen:
+- **Typografi**: Host Grotesk foer rubriker, DM Sans foer broedtext
+- **Faerger**: CSS-variabler (--background, --foreground, --primary, etc.)
+- **Gradients**: `var(--gradient-premium)`, `var(--gradient-card)`
+- **Shadows**: `var(--shadow-card)`, `var(--shadow-elegant)`
+- **Border radius**: 15px (card), 48px (buttons)
+- **Noise texture**: Redan global via body::before
+- **Moerkt tema som default**: Matchar appens default
+
+### Befintliga assets som anvands
+
+- `src/assets/autopic-logo-dark.png` / `autopic-logo-white.png` (header)
+- `src/assets/examples/ford-before.png` + `ford-after.png` (before/after)
+- `src/assets/examples/partner-before.jpg` + `partner-after.png` (alternativt par)
+- `src/assets/examples/vw-before.png` + `vw-after.png` (alternativt par)
+- Scen-thumbnails fran `public/scenes/` (galleri-preview)
+- `src/assets/aura-gradient-*.jpg` (dekorativa element)
+- Befintlig `BeforeAfterSlider`-komponent
+
+### Responsivitet
+
+- Desktop: tvaakolumns-layout i hero, horisontellt galleri, grid foer funktionskort
+- Mobil: enkolumns-layout, staplade sektioner, kompakta priskort
+- Samma breakpoints som resten av appen (sm, md, lg)
+
+### SEO och metadata
+
+- Uppdatera `<title>` och meta description i `index.html` foer landing
+- Sidan renderas direkt utan auth-check foer snabb laddning
 
 ---
 
-## Risker och begransningar
+## Vad anvandaren kan laegga till senare
 
-- **Bildkvalitet**: Nano Banana (Gemini Flash Image) aer snabb men inte toppkvalitet. Bilderna kan ibland se lite AI-genererade ut. Foer baettre kvalitet kan vi senare uppgradera till `google/gemini-3-pro-image-preview`.
-- **Rate limits**: Lovable AI har rate limits per workspace. Om manga anvandare genererar samtidigt kan 429-fel uppstaa. Hanteras med felmeddelande i UI:t.
-- **Lagringskostnad**: Varje genererad bild sparas i Storage. Kan loepa paa sikt men minimal kostnad.
+- Riktiga foere/efter-videor (ersaetter platshaallar-bilder)
+- Kundcitat / testimonials
+- Animerade exempel fran AI-bakgrundsgeneratorn
+- Interaktiva element som matchar Framer-sidans precision
+
