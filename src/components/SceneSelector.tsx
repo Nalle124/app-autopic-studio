@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, Star, LayoutGrid, GalleryHorizontal, Lock, Sparkles, Trash2, Plus } from 'lucide-react';
+import { Check, Star, LayoutGrid, GalleryHorizontal, Lock, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImageSkeleton } from '@/components/ImageSkeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -461,6 +461,10 @@ export const SceneSelector = ({
     );
   };
 
+  const AutopicIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+    <img src="/favicon.png" alt="" className={`${className} object-contain`} />
+  );
+
   // "Create new" card for my-scenes
   const CreateNewCard = ({ isGrid = false }: { isGrid?: boolean }) => (
     <Card
@@ -474,7 +478,7 @@ export const SceneSelector = ({
           <Plus className="w-6 h-6 text-primary" />
         </div>
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <AutopicIcon className="w-3.5 h-3.5" />
           <span className="text-sm font-medium text-foreground">Skapa med AI</span>
         </div>
       </div>
@@ -534,7 +538,7 @@ export const SceneSelector = ({
                     </span>
                   ) : activeCategory === 'my-scenes' ? (
                     <span className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
+                      <AutopicIcon />
                       Mina scener
                     </span>
                   ) : (
@@ -552,7 +556,7 @@ export const SceneSelector = ({
                       </span>
                     ) : category === 'my-scenes' ? (
                       <span className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
+                        <AutopicIcon />
                         Mina scener
                       </span>
                     ) : category === 'popular' ? (
@@ -590,7 +594,7 @@ export const SceneSelector = ({
                     </span>
                   ) : category === 'my-scenes' ? (
                     <span className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
+                      <AutopicIcon />
                       Mina scener
                     </span>
                   ) : category === 'popular' ? (
