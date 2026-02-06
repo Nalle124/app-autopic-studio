@@ -114,6 +114,39 @@ export const CreateSceneModal = ({
     setReferenceFile(null);
   };
 
+  // Build conversation history for the AI from our chat messages
+  const buildConversationHistory = (msgs: ChatMessage[]): Array<{ role: string; content: any }> => {
+    const history: Array<{ role: string; content: any }> = [];
+    
+    for (const msg of msgs) {
+      if (msg.role === 'user') {
+        if (msg.image) {
+          // Multimodal user message with reference image
+          history.push({
+            role: 'user',
+            content: [
+              { type: 'text', text: msg.text },
+              { type: 'image_url', image_url: { url: msg.image } },
+            ],
+          });
+        } else {
+          history.push({ role: 'user', content: msg.text });
+        }
+      } else if (msg.role === 'assistant-image') {
+        // Include the generated image as assistant context so AI remembers what it made
+        history.push({
+          role: 'assistant',
+          content: `I generated a background image called "${msg.suggestedName}": ${msg.description}. The image is available at ${msg.imageUrl}`,
+        });
+      } else if (msg.role === 'assistant') {
+        history.push({ role: 'assistant', content: msg.text });
+      }
+      // Skip 'system' and 'assistant-loading' roles
+    }
+    
+    return history;
+  };
+
   const handleGenerate = async () => {
     if (!prompt.trim() || !user) return;
 
@@ -121,24 +154,21 @@ export const CreateSceneModal = ({
       ? { role: 'user', text: prompt.trim(), image: referenceImage }
       : { role: 'user', text: prompt.trim() };
 
-    setMessages((prev) => [...prev, userMessage, { role: 'assistant-loading' }]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages([...updatedMessages, { role: 'assistant-loading' }]);
     setPrompt('');
     setReferenceImage(null);
     setReferenceFile(null);
     setIsGenerating(true);
 
     try {
-      // Build request body with optional reference image
-      const requestBody: any = { prompt: (userMessage as any).text };
-      
-      if ((userMessage as any).image) {
-        requestBody.referenceImage = (userMessage as any).image;
-      }
+      // Build full conversation history including the new message
+      const conversationHistory = buildConversationHistory(updatedMessages);
 
       const { data, error } = await supabase.functions.invoke(
         'generate-scene-image',
         {
-          body: requestBody,
+          body: { conversationHistory },
         }
       );
 

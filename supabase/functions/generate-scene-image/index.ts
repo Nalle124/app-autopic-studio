@@ -7,6 +7,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const SYSTEM_PROMPT = `You are an AI that generates professional automotive photography background scenes.
+
+CRITICAL RULES FOR EVERY IMAGE YOU GENERATE:
+- The image MUST be completely EMPTY — absolutely no vehicles, no cars, no people, no text, no watermarks, no objects in focus
+- Create a realistic environment suitable as a backdrop for digitally placing a car
+- Style: clean, professional, well-lit photography backdrop
+- MUST be wide landscape orientation with EXACT 3:2 aspect ratio (like 1536x1024 or 3072x2048)
+- The scene should look like a real photograph, NOT a 3D render or illustration
+- Focus on creating natural lighting, realistic textures and depth
+- Include a clear ground surface where a vehicle could be placed
+- The image must be WIDE, not tall — think cinematic widescreen photography
+
+When the user asks you to modify a previous image (e.g. "make it brighter", "add more warmth", "change the floor"), generate a NEW image that incorporates those changes while keeping the overall concept from the conversation.
+
+When a reference image is provided, use it as inspiration for the style, mood, colors, and lighting — but still follow all the rules above.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,11 +64,11 @@ serve(async (req) => {
       });
     }
 
-    const { prompt, referenceImage } = await req.json();
+    const { conversationHistory } = await req.json();
 
-    if (!prompt || typeof prompt !== "string" || prompt.trim().length < 3) {
+    if (!conversationHistory || !Array.isArray(conversationHistory) || conversationHistory.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Prompt must be at least 3 characters" }),
+        JSON.stringify({ error: "Conversation history is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -60,41 +76,19 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating scene image for user ${user.id}: "${prompt}"${referenceImage ? " (with reference image)" : ""}`);
+    // Extract the latest user message text for metadata generation
+    const lastUserMsg = [...conversationHistory].reverse().find((m: any) => m.role === "user");
+    const latestPromptText = typeof lastUserMsg?.content === "string" 
+      ? lastUserMsg.content 
+      : lastUserMsg?.content?.find?.((c: any) => c.type === "text")?.text || "bakgrund";
 
-    // Build the user message content - text or multimodal with reference image
-    const textInstruction = `Generate a high-quality professional automotive photography background scene based on this description: "${prompt}"
+    console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (${conversationHistory.length} messages in history)`);
 
-CRITICAL RULES:
-- The image MUST be completely EMPTY — absolutely no vehicles, no cars, no people, no text, no watermarks, no objects in focus
-- Create a realistic environment suitable as a backdrop for digitally placing a car
-- Style: clean, professional, well-lit photography backdrop
-- MUST be wide landscape orientation with EXACT 3:2 aspect ratio (like 1536x1024 or 3072x2048)
-- The scene should look like a real photograph, NOT a 3D render or illustration
-- Focus on creating natural lighting, realistic textures and depth
-- Include a clear ground surface where a vehicle could be placed
-- The image must be WIDE, not tall — think cinematic widescreen photography`;
-
-    let userContent: any;
-    if (referenceImage && typeof referenceImage === "string" && referenceImage.startsWith("data:image/")) {
-      // Multimodal: send reference image + text instruction
-      const mimeMatch = referenceImage.match(/^data:(image\/\w+);base64,/);
-      const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
-      const base64Only = referenceImage.replace(/^data:image\/\w+;base64,/, "");
-      
-      userContent = [
-        {
-          type: "text",
-          text: `Use this reference image as inspiration for the style, mood, and lighting. ${textInstruction}`,
-        },
-        {
-          type: "image_url",
-          image_url: { url: referenceImage },
-        },
-      ];
-    } else {
-      userContent = textInstruction;
-    }
+    // Build message array: system prompt + full conversation history
+    const aiMessages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...conversationHistory,
+    ];
 
     // Step 1: Generate the background image with Nano Banana
     const imageResponse = await fetch(
@@ -107,12 +101,7 @@ CRITICAL RULES:
         },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash-image",
-          messages: [
-            {
-              role: "user",
-              content: userContent,
-            },
-          ],
+          messages: aiMessages,
           modalities: ["image", "text"],
         }),
       }
@@ -183,6 +172,7 @@ CRITICAL RULES:
     } = supabase.storage.from("processed-cars").getPublicUrl(storagePath);
 
     // Step 3: Generate a matching PhotoRoom prompt and scene name using text AI
+    // Include conversation context so the name/description reflects modifications
     const metaResponse = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -196,7 +186,9 @@ CRITICAL RULES:
           messages: [
             {
               role: "system",
-              content: `You are a metadata generator for automotive photography backgrounds. Given a user's scene description, generate:
+              content: `You are a metadata generator for automotive photography backgrounds. Given a conversation about a scene, generate metadata for the LATEST version of the scene.
+
+Generate:
 1. A short Swedish name for the scene (2-4 words, like "Ljus Studio" or "Höstpark")
 2. A short Swedish description (1 sentence)
 3. A PhotoRoom-compatible AI prompt in English that describes how to place a car in this scene with matching lighting
@@ -206,7 +198,10 @@ Respond ONLY with valid JSON in this exact format:
             },
             {
               role: "user",
-              content: prompt,
+              content: `Here is the conversation about the scene:\n${conversationHistory
+                .filter((m: any) => typeof m.content === "string")
+                .map((m: any) => `${m.role}: ${m.content}`)
+                .join("\n")}\n\nGenerate metadata for the latest version of this scene.`,
             },
           ],
         }),
@@ -214,8 +209,8 @@ Respond ONLY with valid JSON in this exact format:
     );
 
     let suggestedName = "Min bakgrund";
-    let description = prompt;
-    let photoroomPrompt = `Place the vehicle centered on the ground in a scene matching this description: ${prompt}. Professional automotive photography with realistic lighting.`;
+    let description = latestPromptText;
+    let photoroomPrompt = `Place the vehicle centered on the ground in a scene matching this description: ${latestPromptText}. Professional automotive photography with realistic lighting.`;
 
     if (metaResponse.ok) {
       try {
