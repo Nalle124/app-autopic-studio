@@ -25,13 +25,17 @@ import {
   ChevronRight,
   Target,
   RectangleHorizontal,
+  Sun,
+  CircleDot,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import fordBefore from "@/assets/examples/ford-before.png";
-import fordAfter from "@/assets/examples/ford-after.png";
-import vwBefore from "@/assets/examples/vw-before.png";
-import vwAfter from "@/assets/examples/vw-after.png";
+import partnerBefore from "@/assets/examples/partner-before.jpg";
+import partnerAfter from "@/assets/examples/partner-after.png";
+import caddyRelightBefore from "@/assets/examples/caddy-relight-before.png";
+import caddyRelightAfter from "@/assets/examples/caddy-relight-after.png";
+import blurExample from "@/assets/examples/blur-example.png";
+import volvoCropExample from "@/assets/examples/volvo-crop-example.png";
 
 const Guide = () => {
   const navigate = useNavigate();
@@ -132,25 +136,86 @@ const Guide = () => {
             </p>
           </div>
 
-          {/* Before/After sliders */}
+          {/* Before/After slider - Partner */}
           <div className="space-y-4">
             <p className="text-xs text-muted-foreground font-sans uppercase tracking-wider">Dra i handtaget för att jämföra</p>
             <BeforeAfterSlider
-              beforeSrc={fordBefore}
-              afterSrc={fordAfter}
-              beforeLabel="Original"
-              afterLabel="AI-bakgrund"
-            />
-            <BeforeAfterSlider
-              beforeSrc={vwBefore}
-              afterSrc={vwAfter}
+              beforeSrc={partnerBefore}
+              afterSrc={partnerAfter}
               beforeLabel="Original"
               afterLabel="AI-bakgrund"
             />
           </div>
         </section>
 
-        {/* Section 3: Beskärning */}
+        {/* Section 3: Ljusförbättring */}
+        <section data-reveal className="space-y-6">
+          <SectionHeading icon={<Sun className="w-5 h-5" />} title="Ljusförbättring" />
+
+          <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
+            <p>
+              Med <strong className="text-foreground">Ljusförbättring</strong> aktiverar du AutoPics AI-ljussättning som automatiskt analyserar och förbättrar ljuset i din bild. Funktionen jämnar ut hårda skuggor, lyfter mörka partier och skapar en mer professionell och enhetlig ljussättning.
+            </p>
+            <p>
+              Perfekt för bilar fotograferade utomhus med ojämnt ljus, i garage eller i svåra ljusförhållanden. Du aktiverar funktionen med en toggle innan du genererar.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground font-sans uppercase tracking-wider">Före och efter ljusförbättring</p>
+            <BeforeAfterSlider
+              beforeSrc={caddyRelightBefore}
+              afterSrc={caddyRelightAfter}
+              beforeLabel="Utan ljusförbättring"
+              afterLabel="Med ljusförbättring"
+            />
+          </div>
+
+          <div className="rounded-[10px] border border-border/50 bg-card/50 p-5 flex items-start gap-3">
+            <Sun className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <p className="text-sm text-muted-foreground font-sans">
+              <strong className="text-foreground">Tips:</strong> Ljusförbättring gör störst skillnad på bilder tagna utomhus med hårt solljus eller i mörka miljöer. På studiofoton med redan bra ljus märks skillnaden mindre.
+            </p>
+          </div>
+        </section>
+
+        {/* Section 4: Bakgrundsblur */}
+        <section data-reveal className="space-y-6">
+          <SectionHeading icon={<CircleDot className="w-5 h-5" />} title="Bakgrundsblur" />
+
+          <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
+            <p>
+              Med <strong className="text-foreground">Bakgrundsblur</strong> kan du skapa en professionell bokeh-effekt som blurrar bakgrunden medan bilen förblir skarp. Funktionen ger en känsla av skärpedjup som du normalt bara får med dyra kameraobjektiv.
+            </p>
+            <p>
+              Du styr blurrens form och styrka med ett ovalt fokusområde som du kan dra, zooma och rotera. Välj bland förinställningar som "Mjuk", "Medium" eller "Stark" – eller anpassa helt manuellt.
+            </p>
+          </div>
+
+          {/* Blur example image */}
+          <div className="space-y-3">
+            <div className="relative rounded-[10px] overflow-hidden border border-border/50">
+              <img
+                src={blurExample}
+                alt="Exempel på bakgrundsblur med ovalt fokusområde"
+                className="w-full h-auto"
+                loading="lazy"
+              />
+              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs font-sans px-2.5 py-1 rounded-full">
+                Bakgrundsblur med ovalt fokusområde
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[10px] border border-border/50 bg-card/50 p-5 flex items-start gap-3">
+            <CircleDot className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <p className="text-sm text-muted-foreground font-sans">
+              <strong className="text-foreground">Tips:</strong> Bakgrundsblur fungerar bäst på studiobilder eller bilder med en tydlig bakgrund. Det ovalformade fokusområdet kan anpassas efter bilens position och vinkel.
+            </p>
+          </div>
+        </section>
+
+        {/* Section 5: Beskärning */}
         <section data-reveal className="space-y-6">
           <SectionHeading icon={<Crop className="w-5 h-5" />} title="Beskärning och format" />
 
@@ -158,24 +223,28 @@ const Guide = () => {
             <p>
               Ibland behöver du <strong className="text-foreground">beskära bilden</strong> för att få det bästa resultatet. AutoPic har ett inbyggt beskärningsverktyg som låter dig justera komposition och positionering innan du genererar.
             </p>
-            <div className="rounded-[10px] border border-border/50 bg-card/50 p-5 space-y-3">
-              <div className="flex items-start gap-3">
-                <RectangleHorizontal className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <p><strong className="text-foreground">Liggande format</strong> är standard och ger oftast bäst resultat. De flesta bakgrunder är designade för detta format.</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <Crop className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <p>Använd <strong className="text-foreground">crop-verktyget</strong> för att centrera bilen och ta bort onödiga delar av bakgrunden innan generering.</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <Smartphone className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <p>Stående format fungerar också – perfekt för sociala medier och mobilvisning.</p>
-              </div>
+          </div>
+
+          {/* Visual crop illustration */}
+          <CropIllustration imageSrc={volvoCropExample} />
+
+          <div className="rounded-[10px] border border-border/50 bg-card/50 p-5 space-y-3">
+            <div className="flex items-start gap-3">
+              <RectangleHorizontal className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <p className="text-sm text-muted-foreground font-sans"><strong className="text-foreground">Liggande format</strong> är standard och ger oftast bäst resultat. De flesta bakgrunder är designade för detta format.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <Crop className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <p className="text-sm text-muted-foreground font-sans">Använd <strong className="text-foreground">crop-verktyget</strong> för att centrera bilen och ta bort onödiga delar av bakgrunden innan generering.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <Smartphone className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <p className="text-sm text-muted-foreground font-sans">Stående format fungerar också – perfekt för sociala medier och mobilvisning.</p>
             </div>
           </div>
         </section>
 
-        {/* Section 4: Logotyp & Branding */}
+        {/* Section 6: Logotyp & Branding */}
         <section data-reveal className="space-y-6">
           <SectionHeading icon={<Palette className="w-5 h-5" />} title="Logotyp och branding" />
 
@@ -189,7 +258,7 @@ const Guide = () => {
           </div>
         </section>
 
-        {/* Section 5: Förväntat resultat */}
+        {/* Section 7: Förväntat resultat */}
         <section data-reveal className="space-y-6">
           <SectionHeading icon={<Image className="w-5 h-5" />} title="Förväntat resultat" />
 
@@ -214,7 +283,7 @@ const Guide = () => {
           </div>
         </section>
 
-        {/* Section 6: FAQ */}
+        {/* Section 8: FAQ */}
         <section data-reveal className="space-y-6">
           <SectionHeading icon={<MessageSquare className="w-5 h-5" />} title="Vanliga frågor" />
 
@@ -248,6 +317,16 @@ const Guide = () => {
               value="faq-6"
               question="Kan jag redigera bilden efter generering?"
               answer="Du kan lägga till logotyp via Brand Kit-funktionen. Just nu kan du inte redigera själva bilden i appen, men du kan ladda ner den i hög upplösning och redigera den i valfritt bildverktyg."
+            />
+            <FaqItem
+              value="faq-7"
+              question="Vad gör Ljusförbättring?"
+              answer="Ljusförbättring är en AI-funktion som automatiskt förbättrar ljussättningen i din bild. Den jämnar ut hårda skuggor och lyfter mörka partier för ett mer professionellt resultat. Aktivera den med en toggle innan du genererar."
+            />
+            <FaqItem
+              value="faq-8"
+              question="Hur fungerar Bakgrundsblur?"
+              answer="Bakgrundsblur skapar en bokeh-effekt som blurrar bakgrunden medan bilen förblir skarp. Du kontrollerar fokusområdet med en oval som kan dras, zoomas och roteras. Välj bland förinställningar eller anpassa manuellt."
             />
           </Accordion>
         </section>
@@ -342,6 +421,55 @@ const FaqItem = ({
       {answer}
     </AccordionContent>
   </AccordionItem>
+);
+
+const CropIllustration = ({ imageSrc }: { imageSrc: string }) => (
+  <div className="space-y-3">
+    <p className="text-xs text-muted-foreground font-sans uppercase tracking-wider">Visuellt exempel: beskär för bättre resultat</p>
+    <div className="grid grid-cols-2 gap-4">
+      {/* Before crop - too much space */}
+      <div className="space-y-2">
+        <div className="relative rounded-[10px] overflow-hidden border-2 border-destructive/30 bg-muted/20">
+          <div className="p-4 sm:p-6">
+            <img
+              src={imageSrc}
+              alt="Före beskärning – för mycket utrymme"
+              className="w-full h-auto rounded-md opacity-80"
+              loading="lazy"
+            />
+          </div>
+          {/* Animated crop markers on sides */}
+          <div className="absolute top-0 left-0 w-[15%] h-full bg-destructive/10 border-r border-dashed border-destructive/40 flex items-center justify-center">
+            <Crop className="w-3 h-3 text-destructive/50 animate-pulse" />
+          </div>
+          <div className="absolute top-0 right-0 w-[15%] h-full bg-destructive/10 border-l border-dashed border-destructive/40 flex items-center justify-center">
+            <Crop className="w-3 h-3 text-destructive/50 animate-pulse" />
+          </div>
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-destructive/80 text-white text-[10px] font-sans px-2 py-0.5 rounded-full">
+            ✕ För mycket utrymme
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground font-sans text-center">Före beskärning</p>
+      </div>
+
+      {/* After crop - tighter */}
+      <div className="space-y-2">
+        <div className="relative rounded-[10px] overflow-hidden border-2 border-primary/30">
+          <img
+            src={imageSrc}
+            alt="Efter beskärning – tightare komposition"
+            className="w-full h-auto rounded-md scale-110"
+            loading="lazy"
+            style={{ objectFit: "cover", objectPosition: "center" }}
+          />
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-primary/80 text-white text-[10px] font-sans px-2 py-0.5 rounded-full">
+            ✓ Bättre komposition
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground font-sans text-center">Efter beskärning</p>
+      </div>
+    </div>
+  </div>
 );
 
 export default Guide;
