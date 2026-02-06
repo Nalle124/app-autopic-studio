@@ -57,11 +57,14 @@ const Auth = () => {
       if (selectedPlan) {
         localStorage.setItem('pendingPlan', selectedPlan);
         navigate('/payment-pending');
+      } else if (isInvite) {
+        // Invite users should go to onboarding, not home
+        navigate('/onboarding');
       } else {
         navigate('/');
       }
     }
-  }, [user, navigate, selectedPlan]);
+  }, [user, navigate, selectedPlan, isInvite]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -126,10 +129,14 @@ const Auth = () => {
     
     // If invite link, skip email verification and create account directly
     if (isInvite) {
+      // Set flag BEFORE signUp since signUp navigates away internally
+      localStorage.setItem('isInviteSignup', 'true');
+      
       try {
         const { error: signUpError, needsEmailConfirmation } = await signUp(email, password, fullName);
         
         if (signUpError) {
+          localStorage.removeItem('isInviteSignup');
           if (signUpError.message.includes('already registered')) {
             toast.error('E-postadressen är redan registrerad');
           } else {
@@ -140,17 +147,16 @@ const Auth = () => {
         }
         
         if (needsEmailConfirmation) {
+          localStorage.removeItem('isInviteSignup');
           toast.success('Konto skapat! Kolla din e-post för att aktivera.');
           setLoading(false);
           return;
         }
         
-        // Store invite flag for onboarding to set manual_access
-        localStorage.setItem('isInviteSignup', 'true');
-        
         toast.success('Konto skapat!');
         handleAuthSuccess();
       } catch (error: any) {
+        localStorage.removeItem('isInviteSignup');
         toast.error('Något gick fel, försök igen');
       } finally {
         setLoading(false);
