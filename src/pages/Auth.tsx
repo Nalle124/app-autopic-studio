@@ -425,27 +425,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md overflow-hidden">
-        {planInfo && (
-          <div className="gradient-premium p-4 text-white">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm opacity-90">Aktivera</p>
-                <p className="font-semibold text-lg">{planInfo.name} – {planInfo.price} kr{planInfo.isSubscription ? '/mån' : ''}</p>
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {planInfo.features.map((feature, i) => (
-                <span key={i} className="inline-flex items-center gap-1 text-xs bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
-                  <Check className="w-3 h-3" />
-                  {feature}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        
         
         <CardHeader>
           <CardTitle className="text-2xl text-center">
