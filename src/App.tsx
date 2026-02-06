@@ -18,6 +18,7 @@ import SignupAfterPayment from "./pages/SignupAfterPayment";
 import NotFound from "./pages/NotFound";
 import UploadSceneImages from "./pages/UploadSceneImages";
 import InviteSignup from "./pages/InviteSignup";
+import Guide from "./pages/Guide";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +49,7 @@ function App() {
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/upload-scenes" element={<ProtectedRoute><UploadSceneImages /></ProtectedRoute>} />
               <Route path="/invite" element={<InviteSignup />} />
+              <Route path="/guide" element={<Guide />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>

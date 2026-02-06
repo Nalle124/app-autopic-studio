@@ -850,7 +850,7 @@ function IndexContent() {
                       </button>
                     </PopoverTrigger>
                     <PopoverContent side="bottom" align="start" className="max-w-[280px] text-sm">
-                      <p>Kom ihåg att olika bakgrunder passar för olika bilar och vinklar. <a href="https://autoshot.se/guide" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">Läs vår guide här</a>.</p>
+                      <p>Kom ihåg att olika bakgrunder passar för olika bilar och vinklar. <a href="/guide" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">Läs vår guide för bästa resultat →</a></p>
                     </PopoverContent>
                   </Popover>
                 </div>
