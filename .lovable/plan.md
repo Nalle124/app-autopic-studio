@@ -1,147 +1,57 @@
 
+# Fixa duplicerade subscription_renewal-transaktioner
 
-# Cross-device bildpersistens: Ta bilder med telefonen, fortsatt arbeta pa datorn
+## Problemet
+Funktionen `check-subscription` anvander `.maybeSingle()` for att kontrollera om en renewal-transaktion redan finns for aktuell period. Men `.maybeSingle()` kastar ett fel nar det finns **mer an en** matchande rad -- och det felet fangas tyst, sa `existingReset` blir `null`. Resultatet: varje anrop skapar en ny renewal-transaktion och aterstaller saldot till 800.
 
-## Sammanfattning
-Idag sparas uppladdade (ej genererade) bilder bara temporart i webblasarens minne (`blob:`-URL:er). De forsvinner vid stangning och finns inte pa andra enheter. For att losa kundens onskemal behover vi lagra originalbilderna i molnet direkt vid uppladdning, kopplat till anvandaren, sa att de kan hamtas fran vilken enhet som helst.
-
-## Nuvarande flode
-
-```text
-Telefon: Ta bild --> blob: URL (temporar) --> localStorage (sparar EJ blob-URLs)
-                                                    |
-                                               Stanger appen
-                                                    |
-                                               Bilderna forsvinner
-```
-
-## Nytt flode
+Svenska Bilnet har **249 duplicerade** renewal-transaktioner och deras saldo aterstalls till 800 vid varje anrop, trots att de genererat 41 bilder. Korrekt saldo: 800 - 41 = 759.
 
 ```text
-Telefon: Ta bild --> Uppladdning till molnlagring --> URL sparas i databasen
-                                                           |
-Dator:   Logga in --> Hamta "pagaende projekt" fran databasen --> Visa bilder
+Nuvarande bugg-loop:
+
+check-subscription anropas
+  --> maybeSingle() hittar 2+ rader --> KASTAR FEL (tyst)
+  --> existingReset = null
+  --> "Ingen renewal finns" --> skapar NY renewal
+  --> Saldo aterställs till 800
+  --> Nästa generering: -1 credit --> 799
+  --> check-subscription anropas igen --> loop upprepar sig
 ```
 
-## Vad som behovs
+## Losning
 
-### 1. Ny databastabell: `draft_images`
-En tabell som lagrar metadata om uppladdade originalbilder som annu inte genererats:
+### 1. Fixa idempotency-checken i `check-subscription`
+Byt `.maybeSingle()` till `.limit(1)` sa att fragan aldrig felar, oavsett antal matchande rader:
 
-| Kolumn | Typ | Beskrivning |
-|--------|-----|-------------|
-| id | uuid | Primarnykel |
-| user_id | uuid | Agaren |
-| storage_path | text | Sokväg i molnlagring |
-| public_url | text | Publik URL till bilden |
-| original_filename | text | Ursprungligt filnamn |
-| original_width | integer | Bildbredd |
-| original_height | integer | Bildhojd |
-| registration_number | text | Kopplat regnummer (valfritt) |
-| car_adjustments | jsonb | Sparade bildjusteringar |
-| crop_data | jsonb | Sparad beskärningsdata |
-| sort_order | integer | Ordning i listan |
-| created_at | timestamptz | Skapandetid |
-
-RLS-policies: Anvandare kan bara se, skapa, uppdatera och ta bort sina egna draft-bilder.
-
-### 2. Lagringskatalog i befintlig bucket
-Anvander den befintliga `processed-cars`-bucketen med en ny mapp: `drafts/{user_id}/{filnamn}`.
-
-Ingen ny bucket behövs -- detta haller det enkelt och anvander befintlig infrastruktur.
-
-### 3. Andringar i `ImageUploader.tsx`
-Efter att en bild droppas/valjs:
-1. Ladda upp bildfilen till `processed-cars/drafts/{user_id}/{timestamp}-{filnamn}`
-2. Spara metadata i `draft_images`-tabellen
-3. Anvand den publika URL:en som `preview` istallet for `blob:`
-
-Detta ersatter `blob:`-URL:er med permanenta URL:er som fungerar pa alla enheter.
-
-### 4. Andringar i `Index.tsx`
-- Vid sidladdning: hamta alla `draft_images` for anvandaren fran databasen istallet for localStorage
-- Nar bilder tas bort: ta bort fran bade databasen och lagringen
-- Nar bilder genereras (processar): ta bort motsvarande draft-bild
-- Behall localStorage som snabb-cache men med molnet som "source of truth"
-
-### 5. Paverkan pa befintlig funktionalitet
-- **Noll andringar** i genereringslogiken (`process-car-image`)
-- **Noll andringar** i exportlogiken
-- **Noll andringar** i galleriet / projekthanteringen
-- Befintliga localStorage-flödet kan finnas kvar som fallback
-
----
-
-## Tekniska detaljer
-
-### Databasmigrering (SQL)
-```sql
-CREATE TABLE public.draft_images (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  storage_path text NOT NULL,
-  public_url text NOT NULL,
-  original_filename text NOT NULL,
-  original_width integer,
-  original_height integer,
-  registration_number text,
-  car_adjustments jsonb,
-  crop_data jsonb,
-  cropped_url text,
-  sort_order integer DEFAULT 0,
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE public.draft_images ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own drafts"
-  ON public.draft_images FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own drafts"
-  ON public.draft_images FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own drafts"
-  ON public.draft_images FOR UPDATE
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own drafts"
-  ON public.draft_images FOR DELETE
-  USING (auth.uid() = user_id);
-```
-
-### Uppladdningslogik (i `ImageUploader.tsx` eller `Index.tsx`)
 ```text
-onDrop:
-  1. Skapa blob: preview for omedelbar visning (som idag)
-  2. I bakgrunden: ladda upp till processed-cars/drafts/{user_id}/
-  3. Spara rad i draft_images med public_url
-  4. Uppdatera bildens preview-URL fran blob: till public_url
+Före (buggigt):
+  .eq('description', periodKey)
+  .maybeSingle()   <-- felar vid >1 rad
+
+Efter (korrekt):
+  .eq('description', periodKey)
+  .limit(1)        <-- returnerar max 1 rad, felar aldrig
 ```
 
-### Hamtning vid sidladdning (i `Index.tsx`)
-```text
-useEffect (vid mount):
-  1. Hamta draft_images fran databasen for inloggad anvandare
-  2. Aterskapa UploadedImage-objekt med public_url som preview
-  3. Visa direkt -- bilderna ar redan i molnet
-```
+Samma fix gors aven for `recentPurchase`-fragan (rad 219-225) som ocksa anvander `.maybeSingle()` och kan drabbas av samma problem.
 
-### Upprensning
-- Nar en bild genereras framgangsrikt: ta bort motsvarande `draft_images`-rad och lagringsfil
-- Nar anvandaren klickar "Rensa allt": ta bort alla drafts for anvandaren
-- Nar en enskild bild tas bort: ta bort fran bade tabell och lagring
+### 2. Rensa upp duplicerade transaktioner i databasen
+Ta bort 248 av 249 duplicerade renewal-transaktioner for Svenska Bilnet (behall den forsta).
 
-### Viktigt: Ingen paverkan pa befintlig kod
-- `process-car-image` edge function: anropas med samma FormData som idag -- den far bildfilen fran frontend oavsett
-- Galleri/projekt: skapas forst vid generering, inte vid uppladdning
-- Crop/adjust-redigerare: fungerar med URL:er redan idag, ingen skillnad
-- ExportPanel: inga andringar
+### 3. Korrigera Svenska Bilnets saldo
+Satt saldot till det korrekta vardet: 800 - 41 = **759 credits**.
 
-### Filer som andras
-1. **Ny migrering** -- skapar `draft_images`-tabellen
-2. **`src/pages/Index.tsx`** -- byt fran localStorage till databas-hamtning for initialt state, spara drafts vid uppladdning
-3. **`src/components/ImageUploader.tsx`** -- ladda upp till molnlagring i bakgrunden vid drop, minor andringar
+## Filer som andras
 
-Inga andra filer paverkas. Genereringsflödet, galleriet och allt annat forblir identiskt.
+| Fil | Andring |
+|-----|---------|
+| `supabase/functions/check-subscription/index.ts` | Byt 2x `.maybeSingle()` till `.limit(1)` i renewal-logiken |
+
+## Databasandringar
+- Ta bort 248 duplicerade `subscription_renewal`-transaktioner
+- Korrigera `user_credits` for Svenska Bilnet till 759
+
+## Ingen paverkan pa ovrig funktionalitet
+- Samma returnerade data till frontend
+- Samma renewal-logik, bara saker idempotency-check
+- Inga andringar i verify-payment, process-car-image eller nagot annat
