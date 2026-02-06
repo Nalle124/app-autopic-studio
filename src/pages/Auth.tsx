@@ -18,6 +18,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const planParam = searchParams.get('plan') as PricingTier | null;
   const selectedPlan = planParam && PRICING_TIERS[planParam] ? planParam : null;
+  const isInvite = searchParams.get('invite') === 'true';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -122,6 +123,37 @@ const Auth = () => {
     }
     
     setLoading(true);
+    
+    // If invite link, skip email verification and create account directly
+    if (isInvite) {
+      try {
+        const { error: signUpError, needsEmailConfirmation } = await signUp(email, password, fullName);
+        
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            toast.error('E-postadressen är redan registrerad');
+          } else {
+            toast.error(signUpError.message || 'Kunde inte skapa konto');
+          }
+          setLoading(false);
+          return;
+        }
+        
+        if (needsEmailConfirmation) {
+          toast.success('Konto skapat! Kolla din e-post för att aktivera.');
+          setLoading(false);
+          return;
+        }
+        
+        toast.success('Konto skapat!');
+        handleAuthSuccess();
+      } catch (error: any) {
+        toast.error('Något gick fel, försök igen');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     
     try {
       // Send verification code first
