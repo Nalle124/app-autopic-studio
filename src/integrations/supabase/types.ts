@@ -169,6 +169,7 @@ export type Database = {
           id: string
           logo_dark: string | null
           logo_light: string | null
+          manual_access: boolean
           onboarding_completed: boolean
           organization_number: string | null
           phone: string | null
@@ -186,6 +187,7 @@ export type Database = {
           id: string
           logo_dark?: string | null
           logo_light?: string | null
+          manual_access?: boolean
           onboarding_completed?: boolean
           organization_number?: string | null
           phone?: string | null
@@ -203,6 +205,7 @@ export type Database = {
           id?: string
           logo_dark?: string | null
           logo_light?: string | null
+          manual_access?: boolean
           onboarding_completed?: boolean
           organization_number?: string | null
           phone?: string | null
