@@ -136,8 +136,9 @@ export const DemoPaywall = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
+        // Not logged in - go directly to Stripe via guest checkout
         handleClose();
-        navigate('/auth');
+        window.location.href = `/guest-checkout?plan=${tier}`;
         return;
       }
 
