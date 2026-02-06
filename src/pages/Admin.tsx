@@ -6,16 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
-import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images, Coins, Plus, Minus, Trash2, Download, Eye, X, MessageSquare, ExternalLink, Check } from 'lucide-react';
+import { Users, Image, CheckCircle, XCircle, ArrowLeft, Images, Coins, Plus, Minus, Download, MessageSquare, ExternalLink, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -25,7 +17,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { AdminUserTable } from '@/components/admin/AdminUserTable';
+import { AdminUserImages } from '@/components/admin/AdminUserImages';
 
 interface UserData {
   id: string;
@@ -89,11 +82,8 @@ const Admin = () => {
   
   // User images dialog
   const [viewingImagesUser, setViewingImagesUser] = useState<UserData | null>(null);
-  const [userImages, setUserImages] = useState<Array<{ id: string; final_url: string; scene_id: string; created_at: string }>>([]);
-  const [loadingImages, setLoadingImages] = useState(false);
 
   useEffect(() => {
-    // Wait for both auth and admin check to complete
     if (!authLoading && !adminLoading && !isAdmin) {
       toast.error('Du har inte behörighet att se den här sidan');
       navigate('/');
@@ -110,16 +100,13 @@ const Admin = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load users with credits
       const { data: usersData, error: usersError } = await supabase.rpc('admin_get_users_with_credits');
       if (usersError) throw usersError;
       setUsers(usersData || []);
       
-      // Calculate total credits
       const total = (usersData || []).reduce((sum: number, user: UserData) => sum + (user.credits || 0), 0);
       setTotalCredits(total);
 
-      // Load stats
       const { data: statsData, error: statsError } = await supabase.rpc('admin_get_user_stats');
       if (statsError) throw statsError;
       if (statsData && statsData.length > 0) {
@@ -136,7 +123,6 @@ const Admin = () => {
   const loadBugReports = async () => {
     setLoadingReports(true);
     try {
-      // Get bug reports with user info
       const { data, error } = await supabase
         .from('bug_reports')
         .select('*')
@@ -144,7 +130,6 @@ const Admin = () => {
       
       if (error) throw error;
       
-      // Fetch user info for each report
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(r => r.user_id))];
         const { data: profiles } = await supabase
@@ -201,25 +186,21 @@ const Admin = () => {
       return;
     }
     
-    // Validate maximum limit
     if (amount > MAX_CREDIT_ADJUSTMENT) {
       toast.error(`Maximal justering är ${MAX_CREDIT_ADJUSTMENT.toLocaleString('sv-SE')} credits per operation`);
       return;
     }
     
-    // Require description for adjustments
     if (!creditDescription.trim()) {
       toast.error('Ange en beskrivning för justeringen');
       return;
     }
     
-    // Show confirmation for large adjustments
     if (amount > LARGE_ADJUSTMENT_THRESHOLD) {
       setPendingAdjustment({ isPositive });
       return;
     }
     
-    // Proceed directly for small adjustments
     executeAdjustment(isPositive);
   };
   
@@ -258,7 +239,6 @@ const Admin = () => {
     
     setDeleting(true);
     try {
-      // Use database RPC function (works with standard auth, no edge function needed)
       const { data, error } = await supabase.rpc('admin_delete_user', {
         target_user_id: userToDelete.id
       });
@@ -276,42 +256,19 @@ const Admin = () => {
     }
   };
 
-  const loadUserImages = async (user: UserData) => {
-    setViewingImagesUser(user);
-    setLoadingImages(true);
-    try {
-      const { data, error } = await supabase
-        .from('processing_jobs')
-        .select('id, final_url, scene_id, created_at')
-        .eq('user_id', user.id)
-        .eq('status', 'completed')
-        .not('final_url', 'is', null)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setUserImages(data || []);
-    } catch (error) {
-      console.error('Error loading user images:', error);
-      toast.error('Kunde inte ladda bilder');
-    } finally {
-      setLoadingImages(false);
-    }
-  };
-
   const exportLeadsCSV = () => {
     if (users.length === 0) {
       toast.error('Inga användare att exportera');
       return;
     }
     
-    // Create CSV content
     const headers = ['Email', 'Namn', 'Företag', 'Typ', 'Telefon', 'Credits', 'Registrerad'];
     const rows = users.map(user => [
       user.email,
       user.full_name || '',
       user.company_name || '',
       user.customer_type === 'private' ? 'Privat' : 'Företag',
-      '', // Phone not in current data, can be added if needed
+      '',
       user.credits.toString(),
       new Date(user.created_at).toLocaleDateString('sv-SE')
     ]);
@@ -321,7 +278,6 @@ const Admin = () => {
       ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
     ].join('\n');
     
-    // Download file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -426,97 +382,17 @@ const Admin = () => {
             <CardHeader>
               <CardTitle>Användare & Credits</CardTitle>
               <CardDescription>
-                Alla registrerade användare, deras credits och roller. Klicka på en användare för att justera credits.
+                Alla registrerade användare, deras credits och roller. Sortera och filtrera för att hitta rätt kunder.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Laddar...
-                </div>
-              ) : users.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Inga användare hittades
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Namn</TableHead>
-                      <TableHead>E-post</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead>Företag</TableHead>
-                      <TableHead className="text-center">Credits</TableHead>
-                      <TableHead>Roller</TableHead>
-                      <TableHead>Registrerad</TableHead>
-                      <TableHead className="text-right">Åtgärder</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.full_name || user.company_name || '-'}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {user.customer_type === 'private' ? 'Privat' : 'Företag'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{user.company_name || '-'}</TableCell>
-                        <TableCell className="text-center">
-                          <span className={`font-bold ${user.credits > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
-                            {user.credits}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {user.roles?.map((role) => (
-                              <Badge 
-                                key={role}
-                                variant={role === 'admin' ? 'default' : 'secondary'}
-                              >
-                                {role === 'admin' ? 'Admin' : 'Användare'}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(user.created_at).toLocaleDateString('sv-SE')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => loadUserImages(user)}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Bilder
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedUser(user)}
-                            >
-                              <Coins className="h-4 w-4 mr-1" />
-                              Justera
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setUserToDelete(user)}
-                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                              disabled={user.roles?.includes('admin')}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <AdminUserTable
+                users={users}
+                loading={loading}
+                onViewImages={(user) => setViewingImagesUser(user)}
+                onAdjustCredits={(user) => setSelectedUser(user)}
+                onDeleteUser={(user) => setUserToDelete(user)}
+              />
             </CardContent>
           </Card>
 
@@ -743,63 +619,10 @@ const Admin = () => {
       </Dialog>
 
       {/* View User Images Dialog */}
-      <Dialog open={!!viewingImagesUser} onOpenChange={() => setViewingImagesUser(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Image className="h-5 w-5" />
-              Bilder för {viewingImagesUser?.full_name || viewingImagesUser?.email}
-            </DialogTitle>
-            <DialogDescription>
-              {loadingImages ? 'Laddar...' : `${userImages.length} genererade bilder`}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <ScrollArea className="h-[60vh]">
-            {loadingImages ? (
-              <div className="flex items-center justify-center h-40">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              </div>
-            ) : userImages.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                Inga genererade bilder
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-1">
-                {userImages.map((image) => (
-                  <div key={image.id} className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted">
-                    <img
-                      src={image.final_url}
-                      alt={`Generated ${image.scene_id}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                      <span className="text-xs text-white/80">{image.scene_id}</span>
-                      <span className="text-xs text-white/60">
-                        {new Date(image.created_at).toLocaleDateString('sv-SE')}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => window.open(image.final_url, '_blank')}
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        Visa
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewingImagesUser(null)}>
-              Stäng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AdminUserImages
+        user={viewingImagesUser}
+        onClose={() => setViewingImagesUser(null)}
+      />
     </div>
   );
 };
