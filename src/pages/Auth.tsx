@@ -45,8 +45,12 @@ const Auth = () => {
   } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already logged in
+  // If user arrives with a plan param and is NOT logged in, redirect to guest checkout (Stripe direct)
   useEffect(() => {
+    if (selectedPlan && !user) {
+      window.location.href = `/guest-checkout?plan=${selectedPlan}`;
+      return;
+    }
     if (user) {
       if (selectedPlan) {
         localStorage.setItem('pendingPlan', selectedPlan);
