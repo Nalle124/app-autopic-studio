@@ -17,11 +17,13 @@ import {
 } from '@/components/ui/popover';
 import exampleVolvo from '@/assets/examples/v60-before.jpg';
 import exampleCaddy from '@/assets/examples/caddy-before.png';
+import { useDraftImages } from '@/hooks/useDraftImages';
 
 interface ImageUploaderProps {
   onImagesUploaded: (images: UploadedImage[]) => void;
   onClearAll?: () => void;
   onRemoveImage?: (imageId: string) => void;
+  onDraftUploaded?: (imageId: string, draftId: string, publicUrl: string, storagePath: string) => void;
   registrationNumber?: string;
   onRegistrationNumberChange?: (value: string) => void;
   uploadedImages: UploadedImage[];
@@ -37,6 +39,7 @@ export const ImageUploader = ({
   onImagesUploaded,
   onClearAll,
   onRemoveImage,
+  onDraftUploaded,
   registrationNumber,
   onRegistrationNumberChange,
   uploadedImages: propUploadedImages,
@@ -51,6 +54,7 @@ export const ImageUploader = ({
   const [isConverting, setIsConverting] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { uploadDraft } = useDraftImages();
   const uploadedImages = propUploadedImages || localImages;
   
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -164,6 +168,24 @@ export const ImageUploader = ({
     onImagesUploaded(newImages);
     toast.success(`${filesToProcess.length} bilder uppladdade`);
 
+    // Background: upload each image to cloud storage for cross-device persistence
+    if (user) {
+      newImages.forEach((image, index) => {
+        const fileToUpload = filesToProcess[index];
+        uploadDraft(fileToUpload, user.id, {
+          originalWidth: image.originalWidth,
+          originalHeight: image.originalHeight,
+          sortOrder: uploadedImages.length + index,
+        }).then(result => {
+          if (result && onDraftUploaded) {
+            onDraftUploaded(image.id, result.draftId, result.publicUrl, result.storagePath);
+          }
+        }).catch(err => {
+          console.warn('Background draft upload failed for', image.id, err);
+        });
+      });
+    }
+
     // Auto-scroll to uploaded images section (closer to top)
     setTimeout(() => {
       const uploadedSection = document.getElementById('uploaded-images');
@@ -174,7 +196,7 @@ export const ImageUploader = ({
         });
       }
     }, 300);
-  }, [onImagesUploaded, user, navigate, uploadedImages, availableCredits]);
+  }, [onImagesUploaded, user, navigate, uploadedImages, availableCredits, uploadDraft, onDraftUploaded]);
   
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
