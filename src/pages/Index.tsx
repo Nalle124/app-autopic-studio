@@ -6,6 +6,7 @@ import { ExportPanel } from '@/components/ExportPanel';
 import { BrandKitDesignerSimplified as BrandKitDesigner, LogoDesign } from '@/components/BrandKitDesignerSimplified';
 import { ProjectGallery } from '@/components/ProjectGallery';
 import { UploadedImage, SceneMetadata, ExportSettings, CarAdjustments } from '@/types/scene';
+import { useDraftImages } from '@/hooks/useDraftImages';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -45,7 +46,7 @@ function IndexContent() {
   } = useAuth();
   const { credits, canGenerate, triggerPaywall, refetchCredits, isSubscribed, subscriptionLoading } = useDemo();
   const { needsOnboarding, checking } = useOnboardingCheck();
-
+  const { fetchDrafts, deleteDraft, deleteAllDrafts, updateDraft } = useDraftImages();
   // Redirect subscribed users to onboarding if not completed
   useEffect(() => {
     if (loading || checking || subscriptionLoading) return;
@@ -130,6 +131,30 @@ function IndexContent() {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  // Load draft images from cloud on mount (cross-device persistence)
+  useEffect(() => {
+    if (!user) return;
+    
+    let cancelled = false;
+    fetchDrafts(user.id).then(draftImages => {
+      if (cancelled || draftImages.length === 0) return;
+      
+      setUploadedImages(prev => {
+        // Avoid duplicates: only add drafts whose draftId isn't already present
+        const existingDraftIds = new Set(
+          prev.filter(img => (img as any)._draftId).map(img => (img as any)._draftId)
+        );
+        const newDrafts = draftImages.filter(
+          d => !existingDraftIds.has((d as any)._draftId)
+        );
+        if (newDrafts.length === 0) return prev;
+        return [...prev, ...newDrafts];
+      });
+    });
+    
+    return () => { cancelled = true; };
+  }, [user, fetchDrafts]);
 
   // Helper function to add to edit history before making changes
   const addToEditHistory = (imageId: string, currentUrl: string) => {
@@ -318,11 +343,21 @@ function IndexContent() {
             const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg';
             formData.append('image', blob, fileName);
           } else {
+            // For draft images restored from cloud, the file object is empty (size 0)
+            // In that case, fetch the actual image from the cloud URL
+            let fileToSend = image.file;
+            if (image.file.size === 0 && image.preview?.startsWith('http')) {
+              console.log(`Fetching draft image from cloud: ${image.file.name}`);
+              const cloudResponse = await fetch(image.preview);
+              const cloudBlob = await cloudResponse.blob();
+              fileToSend = new File([cloudBlob], image.file.name, { type: cloudBlob.type || 'image/jpeg' });
+            }
+            
             // Compress original images too if they're over 5MB
-            console.log(`Processing original image: ${image.file.name} (${(image.file.size / 1024 / 1024).toFixed(2)}MB)`);
-            if (image.file.size > 5 * 1024 * 1024) {
+            console.log(`Processing original image: ${fileToSend.name} (${(fileToSend.size / 1024 / 1024).toFixed(2)}MB)`);
+            if (fileToSend.size > 5 * 1024 * 1024) {
               console.log('Original image is large, compressing...');
-              const imgUrl = URL.createObjectURL(image.file);
+              const imgUrl = URL.createObjectURL(fileToSend);
               const img = new Image();
               img.src = imgUrl;
               await new Promise(resolve => { img.onload = resolve; });
@@ -338,13 +373,13 @@ function IndexContent() {
                 // Send PNG (lossless) to PhotoRoom for best AI input quality
                 const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/png', 1.0));
                 console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
-                const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+                const fileName = fileToSend.name.replace(/\.[^/.]+$/, '') + '.jpg';
                 formData.append('image', blob, fileName);
               } else {
-                formData.append('image', image.file);
+                formData.append('image', fileToSend);
               }
             } else {
-              formData.append('image', image.file);
+              formData.append('image', fileToSend);
             }
           }
           formData.append('scene', JSON.stringify(selectedScene));
@@ -396,6 +431,10 @@ function IndexContent() {
               successCount++;
               // Add to loading state to show shimmer while image loads
               setLoadingImages(prev => new Set([...prev, image.id]));
+              // Clean up draft from cloud after successful generation
+              if ((image as any)._draftId) {
+                deleteDraft((image as any)._draftId).catch(console.error);
+              }
               // CRITICAL: Update the image with finalUrl but keep it visible in uploads
               // The image stays in uploads section with status badge showing "Klar"
               setUploadedImages(prev => prev.map(img => img.id === image.id ? {
@@ -403,6 +442,8 @@ function IndexContent() {
                 status: 'completed',
                 finalUrl: result.finalUrl,
                 sceneId: selectedScene.id,
+                _draftId: undefined, // Clear draft reference
+                _storagePath: undefined,
                 // Keep isOriginal true so it stays visible in uploads
                 carAdjustments: {
                   brightness: 0,
@@ -762,8 +803,27 @@ function IndexContent() {
               <ImageUploader onImagesUploaded={newImages => {
             setUploadedImages(prev => [...prev, ...newImages]);
           }} onRemoveImage={imageId => {
-            setUploadedImages(prev => prev.filter(img => img.id !== imageId));
-          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => setUploadedImages([])} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={!isSubscribed && !isAdmin} />
+            // Clean up draft from cloud if it exists
+            const img = uploadedImages.find(i => i.id === imageId);
+            if (img && (img as any)._draftId) {
+              deleteDraft((img as any)._draftId).catch(console.error);
+            }
+            setUploadedImages(prev => prev.filter(i => i.id !== imageId));
+          }} onDraftUploaded={(imageId, draftId, publicUrl, storagePath) => {
+            // Update the image with cloud URL and draft metadata
+            setUploadedImages(prev => prev.map(img => img.id === imageId ? {
+              ...img,
+              preview: publicUrl,
+              _draftId: draftId,
+              _storagePath: storagePath,
+            } as any : img));
+          }} registrationNumber={registrationNumber} onRegistrationNumberChange={setRegistrationNumber} uploadedImages={uploadedImages} onEditImage={handleEditOriginalImage} onClearAll={() => {
+            // Clean up all drafts from cloud
+            if (user) {
+              deleteAllDrafts(user.id).catch(console.error);
+            }
+            setUploadedImages([]);
+          }} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={!isSubscribed && !isAdmin} />
             </section>
 
             {/* Explore Scenes - Always visible */}

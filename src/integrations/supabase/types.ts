@@ -104,6 +104,54 @@ export type Database = {
         }
         Relationships: []
       }
+      draft_images: {
+        Row: {
+          car_adjustments: Json | null
+          created_at: string | null
+          crop_data: Json | null
+          cropped_url: string | null
+          id: string
+          original_filename: string
+          original_height: number | null
+          original_width: number | null
+          public_url: string
+          registration_number: string | null
+          sort_order: number | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          car_adjustments?: Json | null
+          created_at?: string | null
+          crop_data?: Json | null
+          cropped_url?: string | null
+          id?: string
+          original_filename: string
+          original_height?: number | null
+          original_width?: number | null
+          public_url: string
+          registration_number?: string | null
+          sort_order?: number | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          car_adjustments?: Json | null
+          created_at?: string | null
+          crop_data?: Json | null
+          cropped_url?: string | null
+          id?: string
+          original_filename?: string
+          original_height?: number | null
+          original_width?: number | null
+          public_url?: string
+          registration_number?: string | null
+          sort_order?: number | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       processing_jobs: {
         Row: {
           completed_at: string | null
