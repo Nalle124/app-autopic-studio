@@ -20,53 +20,65 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    // Authenticate caller using anon key (works with ES256 signing)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
+    if (!authHeader?.startsWith("Bearer ")) {
+      logStep("No auth header");
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
 
     const token = authHeader.replace("Bearer ", "");
-    
-    // Use anon key to validate the caller's JWT
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: { headers: { Authorization: authHeader } },
-        auth: { persistSession: false },
-      }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
-    if (userError || !userData.user) {
-      logStep("Auth failed", { error: userError?.message });
+    // Validate JWT by calling the auth endpoint directly
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: supabaseAnonKey,
+      },
+    });
+
+    if (!authResponse.ok) {
+      const errText = await authResponse.text();
+      logStep("Auth validation failed", { status: authResponse.status, error: errText });
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
 
+    const callerUser = await authResponse.json();
+    if (!callerUser?.id) {
+      logStep("No user ID in auth response");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    logStep("User authenticated", { userId: callerUser.id, email: callerUser.email });
+
     // Use service role for admin operations
     const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
+      supabaseUrl,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
 
     // Check if caller is admin
-    const { data: isAdmin } = await supabaseAdmin.rpc('is_admin', { _user_id: userData.user.id });
+    const { data: isAdmin } = await supabaseAdmin.rpc('is_admin', { _user_id: callerUser.id });
     if (!isAdmin) {
+      logStep("Not admin", { userId: callerUser.id });
       return new Response(JSON.stringify({ error: "Not authorized - admin only" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 403,
       });
     }
 
-    logStep("Admin verified", { adminId: userData.user.id });
+    logStep("Admin verified", { adminId: callerUser.id });
 
     // Get target user ID from request body
     const { targetUserId } = await req.json();
@@ -78,7 +90,7 @@ serve(async (req) => {
     }
 
     // Prevent admin from deleting themselves
-    if (targetUserId === userData.user.id) {
+    if (targetUserId === callerUser.id) {
       return new Response(JSON.stringify({ error: "Cannot delete your own account" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
