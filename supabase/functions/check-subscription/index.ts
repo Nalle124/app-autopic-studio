@@ -73,6 +73,27 @@ serve(async (req) => {
     const user = userData.user;
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check if user has manual access (for invoiced customers)
+    const { data: profileData } = await supabaseClient
+      .from('profiles')
+      .select('manual_access')
+      .eq('id', user.id)
+      .single();
+
+    if (profileData?.manual_access) {
+      logStep("User has manual access - granting full access");
+      return new Response(JSON.stringify({
+        subscribed: true,
+        product_id: 'manual_access',
+        subscription_end: null,
+        plan_name: 'Specialavtal',
+        credits_per_month: 0
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 

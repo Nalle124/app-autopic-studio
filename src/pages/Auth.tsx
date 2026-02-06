@@ -145,6 +145,9 @@ const Auth = () => {
           return;
         }
         
+        // Store invite flag for onboarding to set manual_access
+        localStorage.setItem('isInviteSignup', 'true');
+        
         toast.success('Konto skapat!');
         handleAuthSuccess();
       } catch (error: any) {

@@ -202,25 +202,48 @@ export const Onboarding = () => {
     if (!user) return;
     setLoading(true);
 
+    // Check if this is an invite signup (manual access customer)
+    const isInviteSignup = localStorage.getItem('isInviteSignup') === 'true';
+
     try {
+      const profileUpdate: Record<string, any> = {
+        customer_type: customerType,
+        full_name: customerInfo.full_name || null,
+        company_name: customerInfo.company_name || null,
+        organization_number: customerInfo.organization_number || null,
+        phone: customerInfo.phone || null,
+        address: customerInfo.address || null,
+        city: customerInfo.city || null,
+        postal_code: customerInfo.postal_code || null,
+        logo_light: logos[0] || null,
+        logo_dark: logos[1] || null,
+        onboarding_completed: true,
+      };
+
+      // Grant full access for invite/invoiced customers
+      if (isInviteSignup) {
+        profileUpdate.manual_access = true;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          customer_type: customerType,
-          full_name: customerInfo.full_name || null,
-          company_name: customerInfo.company_name || null,
-          organization_number: customerInfo.organization_number || null,
-          phone: customerInfo.phone || null,
-          address: customerInfo.address || null,
-          city: customerInfo.city || null,
-          postal_code: customerInfo.postal_code || null,
-          logo_light: logos[0] || null,
-          logo_dark: logos[1] || null,
-          onboarding_completed: true,
-        })
+        .update(profileUpdate)
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // For invite signups, reset credits to 0 (remove the 2 free trial credits)
+      if (isInviteSignup) {
+        await supabase
+          .from('user_credits')
+          .upsert({
+            user_id: user.id,
+            credits: 0,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
+        
+        localStorage.removeItem('isInviteSignup');
+      }
 
       // Notify about lead with full onboarding data (non-blocking)
       supabase.functions.invoke('notify-new-lead', {
@@ -235,7 +258,7 @@ export const Onboarding = () => {
           address: customerInfo.address,
           city: customerInfo.city,
           postal_code: customerInfo.postal_code,
-          stage: 'onboarding_complete'
+          stage: isInviteSignup ? 'invite_onboarding_complete' : 'onboarding_complete'
         }
       }).catch(err => console.error('Lead notification error:', err));
 
