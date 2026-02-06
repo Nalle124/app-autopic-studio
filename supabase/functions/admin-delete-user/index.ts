@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const logStep = (step: string, details?: any) => {
@@ -17,41 +17,82 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseAdmin = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
-
   try {
     logStep("Function started");
 
-    // Authenticate caller
+    // Authenticate caller using anon key (works with ES256 signing)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No authorization header" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("Unauthorized");
+    
+    // Use anon key to validate the caller's JWT
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false },
+      }
+    );
+
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+    if (userError || !userData.user) {
+      logStep("Auth failed", { error: userError?.message });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    // Use service role for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
 
     // Check if caller is admin
     const { data: isAdmin } = await supabaseAdmin.rpc('is_admin', { _user_id: userData.user.id });
-    if (!isAdmin) throw new Error("Not authorized - admin only");
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Not authorized - admin only" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
 
     logStep("Admin verified", { adminId: userData.user.id });
 
     // Get target user ID from request body
     const { targetUserId } = await req.json();
-    if (!targetUserId) throw new Error("Missing targetUserId");
+    if (!targetUserId) {
+      return new Response(JSON.stringify({ error: "Missing targetUserId" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
 
     // Prevent admin from deleting themselves
     if (targetUserId === userData.user.id) {
-      throw new Error("Cannot delete your own account");
+      return new Response(JSON.stringify({ error: "Cannot delete your own account" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     // Get target user's email for Stripe lookup
     const { data: targetUser, error: targetError } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
-    if (targetError || !targetUser.user) throw new Error("User not found");
+    if (targetError || !targetUser.user) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
+    }
 
     const targetEmail = targetUser.user.email;
     logStep("Target user found", { targetUserId, email: targetEmail });
@@ -62,47 +103,30 @@ serve(async (req) => {
       try {
         const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
         
-        // Find all Stripe customers with this email
         const customers = await stripe.customers.list({ email: targetEmail, limit: 100 });
         
         for (const customer of customers.data) {
           logStep("Processing Stripe customer", { customerId: customer.id });
           
-          // Cancel all active subscriptions
-          const subscriptions = await stripe.subscriptions.list({
-            customer: customer.id,
-            status: "active",
-          });
+          const subscriptions = await stripe.subscriptions.list({ customer: customer.id });
           
           for (const sub of subscriptions.data) {
-            await stripe.subscriptions.cancel(sub.id);
-            logStep("Cancelled subscription", { subscriptionId: sub.id });
-          }
-          
-          // Also cancel any trialing/past_due subscriptions
-          const otherSubs = await stripe.subscriptions.list({
-            customer: customer.id,
-          });
-          
-          for (const sub of otherSubs.data) {
             if (sub.status !== 'canceled') {
               try {
                 await stripe.subscriptions.cancel(sub.id);
-                logStep("Cancelled subscription", { subscriptionId: sub.id, status: sub.status });
+                logStep("Cancelled subscription", { subscriptionId: sub.id });
               } catch (e) {
                 // Ignore errors for already canceled subs
               }
             }
           }
           
-          // Delete the Stripe customer entirely
           await stripe.customers.del(customer.id);
           logStep("Deleted Stripe customer", { customerId: customer.id });
         }
         
         logStep("Stripe cleanup complete", { customersProcessed: customers.data.length });
       } catch (stripeError) {
-        // Log but don't fail the whole operation
         logStep("Stripe error (non-fatal)", { error: stripeError instanceof Error ? stripeError.message : stripeError });
       }
     }
@@ -123,7 +147,7 @@ serve(async (req) => {
     logStep("ERROR", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
+      status: 500,
     });
   }
 });
