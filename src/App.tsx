@@ -17,6 +17,7 @@ import GuestCheckout from "./pages/GuestCheckout";
 import SignupAfterPayment from "./pages/SignupAfterPayment";
 import NotFound from "./pages/NotFound";
 import UploadSceneImages from "./pages/UploadSceneImages";
+import InviteSignup from "./pages/InviteSignup";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ function App() {
               <Route path="/signup-after-payment" element={<SignupAfterPayment />} />
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/upload-scenes" element={<ProtectedRoute><UploadSceneImages /></ProtectedRoute>} />
+              <Route path="/invite" element={<InviteSignup />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>
