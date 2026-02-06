@@ -7,21 +7,25 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are an AI that generates professional automotive photography background scenes.
+const SYSTEM_PROMPT = `You are an AI that ALWAYS generates images. You MUST produce a new image with every response. Never respond with only text.
 
-CRITICAL RULES FOR EVERY IMAGE YOU GENERATE:
-- The image MUST be completely EMPTY — absolutely no vehicles, no cars, no people, no text, no watermarks, no objects in focus
+You generate professional automotive photography background scenes.
+
+RULES FOR EVERY IMAGE:
+- The image MUST be completely EMPTY — no vehicles, no cars, no people, no text, no watermarks
 - Create a realistic environment suitable as a backdrop for digitally placing a car
 - Style: clean, professional, well-lit photography backdrop
 - MUST be wide landscape orientation with EXACT 3:2 aspect ratio (like 1536x1024 or 3072x2048)
 - The scene should look like a real photograph, NOT a 3D render or illustration
-- Focus on creating natural lighting, realistic textures and depth
+- Natural lighting, realistic textures and depth
 - Include a clear ground surface where a vehicle could be placed
-- The image must be WIDE, not tall — think cinematic widescreen photography
+- The image must be WIDE, not tall — cinematic widescreen
 
-When the user asks you to modify a previous image (e.g. "make it brighter", "add more warmth", "change the floor"), generate a NEW image that incorporates those changes while keeping the overall concept from the conversation.
+When the user asks to modify a previous image (e.g. "make it brighter", "change the floor"), generate a NEW image with those changes while keeping the overall concept.
 
-When a reference image is provided, use it as inspiration for the style, mood, colors, and lighting — but still follow all the rules above.`;
+When a reference image is provided, use it as inspiration for style, mood, colors, and lighting.
+
+CRITICAL: Always output an image. Never skip image generation.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -84,65 +88,105 @@ serve(async (req) => {
 
     console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (${conversationHistory.length} messages in history)`);
 
+    // Ensure the last user message explicitly asks for an image to prevent text-only responses
+    const processedHistory = conversationHistory.map((msg: any, idx: number) => {
+      // Only modify the last user message
+      if (idx === conversationHistory.length - 1 && msg.role === "user") {
+        const textContent = typeof msg.content === "string" ? msg.content : msg.content?.find?.((c: any) => c.type === "text")?.text || "";
+        const imageReminder = `\n\nIMPORTANT: You MUST generate and return a NEW IMAGE based on this request. Do not respond with only text. Always produce a photo.`;
+        
+        if (typeof msg.content === "string") {
+          return { ...msg, content: msg.content + imageReminder };
+        } else if (Array.isArray(msg.content)) {
+          return {
+            ...msg,
+            content: msg.content.map((c: any) =>
+              c.type === "text" ? { ...c, text: c.text + imageReminder } : c
+            ),
+          };
+        }
+      }
+      return msg;
+    });
+
     // Build message array: system prompt + full conversation history
     const aiMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...conversationHistory,
+      ...processedHistory,
     ];
 
-    // Step 1: Generate the background image with Nano Banana
-    const imageResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
-          messages: aiMessages,
-          modalities: ["image", "text"],
-        }),
-      }
-    );
+    // Step 1: Generate the background image with Nano Banana (with retry)
+    let base64Image: string | null = null;
+    
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const messagesForAttempt = attempt === 0 
+        ? aiMessages 
+        : [
+            // On retry, simplify to a single direct message to force image generation
+            { 
+              role: "user", 
+              content: `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, empty scene with no cars/people, realistic photo style. Generate the image now.` 
+            },
+          ];
 
-    if (!imageResponse.ok) {
-      const status = imageResponse.status;
-      if (status === 429) {
-        return new Response(
-          JSON.stringify({
-            error: "AI-tjänsten är överbelastad just nu. Försök igen om en stund.",
+      const imageResponse = await fetch(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-image",
+            messages: messagesForAttempt,
+            modalities: ["image", "text"],
           }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        }
+      );
+
+      if (!imageResponse.ok) {
+        const status = imageResponse.status;
+        if (status === 429) {
+          return new Response(
+            JSON.stringify({
+              error: "AI-tjänsten är överbelastad just nu. Försök igen om en stund.",
+            }),
+            {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        if (status === 402) {
+          return new Response(
+            JSON.stringify({
+              error: "AI-krediter slut. Kontakta support.",
+            }),
+            {
+              status: 402,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        const errorText = await imageResponse.text();
+        console.error("AI gateway error:", status, errorText);
+        throw new Error(`AI gateway error: ${status}`);
       }
-      if (status === 402) {
-        return new Response(
-          JSON.stringify({
-            error: "AI-krediter slut. Kontakta support.",
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+
+      const imageData = await imageResponse.json();
+      base64Image = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
+
+      if (base64Image) {
+        console.log(`Image generated on attempt ${attempt + 1}`);
+        break;
       }
-      const errorText = await imageResponse.text();
-      console.error("AI gateway error:", status, errorText);
-      throw new Error(`AI gateway error: ${status}`);
+      
+      console.warn(`Attempt ${attempt + 1}: No image in response, AI returned text only: "${JSON.stringify(imageData).slice(0, 300)}"`);
     }
 
-    const imageData = await imageResponse.json();
-    const base64Image =
-      imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
     if (!base64Image) {
-      console.error("No image in response:", JSON.stringify(imageData).slice(0, 500));
-      throw new Error("No image generated from AI");
+      throw new Error("AI kunde inte generera en bild. Försök med en tydligare beskrivning.");
     }
 
     // Step 2: Upload to Supabase Storage
