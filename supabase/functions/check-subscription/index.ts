@@ -25,11 +25,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
+  // Use anon key for JWT validation (service role can cause session_id issues)
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+  // Service role client for database operations (bypasses RLS)
+  const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false }
+  });
 
   try {
     logStep("Function started");
@@ -53,11 +57,17 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
-    // Handle invalid/expired tokens gracefully
-    if (userError || !userData.user?.email) {
-      logStep("Invalid token or no user - returning unsubscribed", { error: userError?.message });
+    // Validate JWT via direct HTTP call (avoids service role session_id issues)
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: supabaseAnonKey,
+      },
+    });
+
+    if (!authResponse.ok) {
+      logStep("Invalid token - returning unsubscribed", { status: authResponse.status });
       return new Response(JSON.stringify({ 
         subscribed: false,
         product_id: null,
@@ -69,8 +79,21 @@ serve(async (req) => {
         status: 200,
       });
     }
-    
-    const user = userData.user;
+
+    const user = await authResponse.json();
+    if (!user?.email) {
+      logStep("No email found - returning unsubscribed");
+      return new Response(JSON.stringify({ 
+        subscribed: false,
+        product_id: null,
+        subscription_end: null,
+        plan_name: null,
+        credits_per_month: 0
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Check if user has manual access (for invoiced customers)
@@ -130,7 +153,9 @@ serve(async (req) => {
       const subscription = subscriptions.data[0];
 
       // Safely parse subscription end date
-      const periodEnd = subscription.current_period_end;
+      // In Stripe Basil API, current_period_end is on the item level, not subscription level
+      const subscriptionItem = subscription.items.data[0];
+      const periodEnd = (subscriptionItem as any).current_period_end ?? (subscription as any).current_period_end;
       if (periodEnd) {
         try {
           if (typeof periodEnd === 'number') {
@@ -143,7 +168,7 @@ serve(async (req) => {
         }
       }
 
-      productId = subscription.items.data[0].price.product as string;
+      productId = subscriptionItem.price.product as string;
       creditsPerMonth = PRODUCT_CREDITS[productId] || 0;
 
       // Get plan name from product
@@ -151,9 +176,8 @@ serve(async (req) => {
       planName = product.name;
 
       // Monthly credit RESET mechanism (credits are REPLACED, not accumulated)
-      // Uses current_period_end as the period identifier (always exists)
-      // This only triggers when the billing period changes (monthly renewal)
-      const periodEndTimestamp = subscription.current_period_end;
+      // Uses current_period_end as the period identifier
+      const periodEndTimestamp = periodEnd;
       const periodKey = `${subscription.id}:${periodEndTimestamp}`;
 
       if (creditsPerMonth > 0) {

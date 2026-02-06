@@ -105,17 +105,33 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client for auth verification
+    // Initialize Supabase clients
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Service role client for database operations (bypasses RLS)
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify the user's JWT token
+    // Verify the user's JWT token via direct HTTP call (avoids service role session_id issues)
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: supabaseAnonKey,
+      },
+    });
 
-    if (authError || !user) {
-      console.error('Auth error:', authError);
+    if (!authResponse.ok) {
+      console.error('Auth validation failed:', authResponse.status);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const authUser = await authResponse.json();
+    if (!authUser?.id) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid authentication' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -123,7 +139,7 @@ serve(async (req) => {
     }
 
     // Use authenticated user ID - never trust client-supplied userId
-    userId = user.id;
+    userId = authUser.id;
     console.log(`Authenticated user: ${userId}`);
 
     const formData = await req.formData();
