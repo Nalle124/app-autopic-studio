@@ -17,6 +17,7 @@ const PRODUCT_CREDITS: Record<string, number> = {
   "prod_TYcMOi23KMqOh6": 100, // Start subscription (399 kr)
   "prod_TYcNnx01K8TR0F": 300, // Pro subscription (699 kr)
   "prod_TYcO3bE3Ec2Amv": 600, // Business subscription (1299 kr)
+  "prod_TvOxn4SrvfgY12": 800, // Scale subscription (1499 kr)
   "prod_TYcOcv9ORqRLYH": 30,  // One-time credit pack (69 kr)
 };
 
