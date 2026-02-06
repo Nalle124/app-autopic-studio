@@ -485,6 +485,7 @@ export type Database = {
         }[]
       }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
+      decrement_credits: { Args: { p_user_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
