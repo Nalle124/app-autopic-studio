@@ -498,26 +498,26 @@ export const SceneSelector = ({
   return (
     <TooltipProvider delayDuration={0}>
       <div className="space-y-4">
-        {/* AI Scene Generator Card - above the gallery */}
+        {/* AI Scene Generator - own segment above gallery */}
         {user && (
-          <div className="space-y-3">
-            <Card
+          <div className="space-y-3 mb-2">
+            <div
               onClick={() => setShowCreateModal(true)}
-              className="group relative overflow-hidden cursor-pointer transition-all duration-300 border-border hover:shadow-xl hover:scale-[1.01] bg-card"
-              style={{ borderRadius: 'var(--radius-card)' }}
+              className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01]"
+              style={{ borderRadius: 'var(--radius-card)', background: 'var(--gradient-card)' }}
             >
               <div className="flex items-center gap-4 p-4 sm:p-5">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
                   style={{ background: 'var(--gradient-premium)' }}
                 >
-                  <AutopicIcon className="w-6 h-6 sm:w-7 sm:h-7 brightness-0 invert" />
+                  <AutopicIcon className="w-5 h-5 sm:w-6 sm:h-6 brightness-0 invert" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-sm sm:text-base text-foreground leading-tight">
-                    Skapa din egen bakgrund med AI
+                    Skapa med AI
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                    Beskriv din drömscen så skapar vi den åt dig
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                    Beskriv och generera en bakgrund
                   </p>
                 </div>
                 <div className="flex-shrink-0">
@@ -528,7 +528,7 @@ export const SceneSelector = ({
               </div>
               {/* Bottom gradient bar */}
               <div className="h-1 w-full" style={{ background: 'var(--gradient-premium)' }} />
-            </Card>
+            </div>
             <p className="text-center text-xs text-muted-foreground">
               Eller välj en från galleriet
             </p>

@@ -48,7 +48,7 @@ serve(async (req) => {
       });
     }
 
-    const { prompt } = await req.json();
+    const { prompt, referenceImage } = await req.json();
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length < 3) {
       return new Response(
@@ -60,7 +60,41 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating scene image for user ${user.id}: "${prompt}"`);
+    console.log(`Generating scene image for user ${user.id}: "${prompt}"${referenceImage ? " (with reference image)" : ""}`);
+
+    // Build the user message content - text or multimodal with reference image
+    const textInstruction = `Generate a high-quality professional automotive photography background scene based on this description: "${prompt}"
+
+CRITICAL RULES:
+- The image MUST be completely EMPTY — absolutely no vehicles, no cars, no people, no text, no watermarks, no objects in focus
+- Create a realistic environment suitable as a backdrop for digitally placing a car
+- Style: clean, professional, well-lit photography backdrop
+- MUST be wide landscape orientation with EXACT 3:2 aspect ratio (like 1536x1024 or 3072x2048)
+- The scene should look like a real photograph, NOT a 3D render or illustration
+- Focus on creating natural lighting, realistic textures and depth
+- Include a clear ground surface where a vehicle could be placed
+- The image must be WIDE, not tall — think cinematic widescreen photography`;
+
+    let userContent: any;
+    if (referenceImage && typeof referenceImage === "string" && referenceImage.startsWith("data:image/")) {
+      // Multimodal: send reference image + text instruction
+      const mimeMatch = referenceImage.match(/^data:(image\/\w+);base64,/);
+      const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+      const base64Only = referenceImage.replace(/^data:image\/\w+;base64,/, "");
+      
+      userContent = [
+        {
+          type: "text",
+          text: `Use this reference image as inspiration for the style, mood, and lighting. ${textInstruction}`,
+        },
+        {
+          type: "image_url",
+          image_url: { url: referenceImage },
+        },
+      ];
+    } else {
+      userContent = textInstruction;
+    }
 
     // Step 1: Generate the background image with Nano Banana
     const imageResponse = await fetch(
@@ -71,22 +105,12 @@ serve(async (req) => {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
-          body: JSON.stringify({
+        body: JSON.stringify({
           model: "google/gemini-2.5-flash-image",
           messages: [
             {
               role: "user",
-              content: `Generate a high-quality professional automotive photography background scene based on this description: "${prompt}"
-
-CRITICAL RULES:
-- The image MUST be completely EMPTY — absolutely no vehicles, no cars, no people, no text, no watermarks, no objects in focus
-- Create a realistic environment suitable as a backdrop for digitally placing a car
-- Style: clean, professional, well-lit photography backdrop
-- MUST be wide landscape orientation with EXACT 3:2 aspect ratio (like 1536x1024 or 3072x2048)
-- The scene should look like a real photograph, NOT a 3D render or illustration
-- Focus on creating natural lighting, realistic textures and depth
-- Include a clear ground surface where a vehicle could be placed
-- The image must be WIDE, not tall — think cinematic widescreen photography`,
+              content: userContent,
             },
           ],
           modalities: ["image", "text"],

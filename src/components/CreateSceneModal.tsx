@@ -128,10 +128,17 @@ export const CreateSceneModal = ({
     setIsGenerating(true);
 
     try {
+      // Build request body with optional reference image
+      const requestBody: any = { prompt: (userMessage as any).text };
+      
+      if ((userMessage as any).image) {
+        requestBody.referenceImage = (userMessage as any).image;
+      }
+
       const { data, error } = await supabase.functions.invoke(
         'generate-scene-image',
         {
-          body: { prompt: (userMessage as any).text },
+          body: requestBody,
         }
       );
 
