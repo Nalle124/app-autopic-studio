@@ -1,161 +1,209 @@
 
 
-# Landningssida for AutoPic
+# AI-chatt med dubbla laeGen + UI-fixar
 
 ## Sammanfattning
 
-En komplett, modern landningssida byggs direkt i React-appen. Den ersatter Framer-sidan som primar landningssida och visas for icke-inloggade besokare pa `/`. Inloggade anvandare dirigeras direkt till arbetsytan som vanligt. Sidan matchar appens befintliga designsystem (Host Grotesk, DM Sans, morkt tema, gradient-premium, noise textures) och innehaller alla sektioner fran Framer-sidan plus en ny sektion som lyfter AI-bakgrundsgeneratorn.
+Tva stora omraden: (1) AI-bakgrundsgeneratorn behoever ett "Bakgrundsstudio"-laege med guidat floede och ett "Fritt skapande"-laege, samt ett baettre systemprompt. (2) Flera UI- och designfixar i chatten, galleriet, scenvaeeljaren och stegnamn.
 
 ---
 
-## Routing-andring
+## Del 1: Dubbla laegen i AI-chatten
 
-Idag omdirigerar `/` (Index.tsx) icke-inloggade till `/auth`. Istallet:
-- **Icke-inloggade pa `/`** -- ser den nya landningssidan
-- **Inloggade pa `/`** -- ser arbetsytan (dagens Index-innehall)
+### Koncept
 
-Tekniskt losning: skapa en wrapper-komponent i Index.tsx som villkorligt renderar antingen Landing eller arbetsytan beroende pa inloggningsstatus. Alternativt kan vi ha en separat Landing-komponent som importeras i Index och visas i "else"-grenen av auth-checken.
+Naer chatten oeppnas faar anvaendaren vaelja mellan tva laegen via tva tydliga knappar:
+
+```text
++----------------------------------+
+|  AutoPic AI  [Beta]              |
+|                                  |
+|  Vad vill du goera?              |
+|                                  |
+|  [Skapa bakgrund]  [Fri bild]   |
+|  Skapa en bakgrund   Redigera    |
+|  foer bilannons      valfri bild |
++----------------------------------+
+```
+
+### Laege 1: Bakgrundsstudio (default / primaer)
+
+Guidat floede i chatten:
+
+1. Anvaendaren vaeljer laege -> AI svarar med: "Laet oss skapa en ny bakgrund! Vilken typ passar baest?"
+2. Visar klickbara alternativ (chips):
+   - Studio (ren studio, cykloramabaeckvagg)
+   - Studio med hoern (betongvaeggar, arkitektoniska detaljer)
+   - Utomhus (gata, parkering, natur)
+   - Showroom (premiummiljoe)
+   - Eget (fritext)
+3. Efter val -> AI fragar om detaljer:
+   - Studio: "Ljust eller moerkt? Vilket golv foeredrar du?"
+   - Utomhus: "Vilken arstid? Stad eller natur?"
+   - Etc.
+4. Anvaendaren kan aeven skriva fritt naer som helst -- systemet haanterar det.
+5. Bilden genereras med det strikta bakgrundsprompt (3:2, oegonhoejd, tom scen, etc.)
+
+Inspo-chips visas laengst ner under foersta meddelandet:
+- "Vit studio med mjukt ljus"
+- "Hoestgata med loev paa marken"
+- "Moerk betong med dramatiska skuggor"
+- "Snoeig skogvaeg i vinterlandskap"
+- "Lyxig uppfart med grus och groenska"
+- "Som min referens men utan bilen"
+
+### Laege 2: Fritt skapande
+
+Oeppen chatt utan det strikta bakgrundsprompt. Anvaendaren kan:
+- Ladda upp en bild och be AI aendra den
+- Beskriv fritt vad de vill ha
+- Iterera paa resultat
+
+Systempromptet foer detta laege aer mer oeppen -- fotorealistiskt, men utan de strikta bilbakgrundsreglerna (perspektiv, tom scen, etc.). Bilderna fran fritt laege sparas INTE som bakgrunder i galleriet -- de laddas ner direkt eller visas bara i chatten.
+
+### Implementation
+
+**CreateSceneModal.tsx** -- Ny state:
+
+```typescript
+type ChatMode = 'select' | 'background-studio' | 'free-create';
+const [chatMode, setChatMode] = useState<ChatMode>('select');
+```
+
+- Laegvael-skraerm renderas naer `chatMode === 'select'`
+- `chatMode` skickas till edge function saa att ratt systemprompt anvaends
+- I bakgrundsstudio-laege: assistant-meddelanden med klickbara kategori-chips (som interactive buttons)
+- I fritt laege: enkel chatt utan guidat floede
+
+**generate-scene-image edge function** -- Ny parameter `mode`:
+
+```typescript
+const { conversationHistory, mode } = await req.json();
+// mode: 'background-studio' | 'free-create'
+```
+
+- `background-studio`: anvaender nuvarande strikta SYSTEM_PROMPT
+- `free-create`: anvaender en oeppnare prompt utan bil-specifika regler
+
+### Namngivning av bakgrunder
+
+Uppdatera meta-prompten (steg 3 i edge function) foer att generera mer kreativa namn:
+- Istaellet foer "Min bakgrund" -> "Midvinter i skogen", "Guldljus Studio", "Koepenhamnsgata"
+- Lagg till instruktion: "Ge scenen ett kreativt, staeamningsfullt svenskt namn. Undvik generiska namn som 'Min bakgrund' eller 'Studio'. Anvaend poetiska eller beskrivande namn som 'Midvinterskog', 'Guldljus Studio', 'Stadens Tystnad'."
 
 ---
 
-## Sektioner pa landningssidan
+## Del 2: UI- och designfixar
 
-### 1. Navigation / Header
-- AutoPic-logotypen (vanster)
-- Nav-lankar: Funktioner, Priser, Kontakt (scrollar ner pa sidan)
-- CTA-knappar: "Logga in" (ghost) + "Testa gratis" (primar, lankar till /try)
-- Sticky, glasmorfism-bakgrund, matcher befintlig header-stil
+### A. Chatt-modal: Mobil keyboard-fix
 
-### 2. Hero
-- Vansterspaltig rubrik: **"Bra annonser oavsett vader"** (Host Grotesk, stor)
-- Italic accent-text pa nyckelord (Playfair Display italic pa "oavsett")
-- Underrubrik: "Andra bakgrund pa dina bilbilder med AI. Valj bland 80+ miljoeeer."
-- CTA: "Testa gratis" (primar knapp) + "Se hur det funkar" (sekundar, scrollar till How It Works)
-- Hoeger sida: stor bild av en bil i en snygg studio-bakgrund (anvander befintliga assets)
-- Responsivt: Pa mobil staplas text ovanfor bild
+Problem: Naer tangentbordet oeppnas paa mobil roeers chatten uppaat istallet foer att vara sticky.
 
-### 3. Before/After Slider
-- Anvander befintlig `BeforeAfterSlider`-komponent
-- Visar ett konkret fore/efter-par (t.ex. ford-before/ford-after eller vw-before/vw-after)
-- Subtil rubrik: "Se skillnaden"
-- Platshallare for nar anvandaren bifogar battre bilder/video senare
+Fix i `CreateSceneModal.tsx`:
+- Anvand `fixed inset-0` istallet foer centered dialog paa mobil
+- Input-omraadet faar `sticky bottom-0`
+- Chattytan faar `flex-1 overflow-y-auto` med padding-bottom foer input
+- Lagg till CSS: mobil-specifik hoejd med `dvh` (dynamic viewport height)
 
-### 4. Bakgrundsgalleri -- preview
-- Rubrik: "80+ miljoeeer som funkar i riktiga bilannonser"
-- Horisontellt scrollande rad med thumbnails fran befintliga scener (studio, host, utomhus, premium)
-- Varje thumbnail har en liten etikett
-- Avslutas med en "Se alla" CTA som lankar till /try
+### B. Chatt-modal: Border radius paa mobil
 
-### 5. AI-funktionen (NY sektion -- lyfts som USP)
-- Rubrik: "Skapa din egen bakgrund med AI"
-- Kort beskrivning: "Beskriv din droemmiljoe saa genererar vi den. Unikt for just dina annonser."
-- Visuellt: mockup/illustration av chattgranssnittet med ett exempel-prompt och en genererad bild
-- CTA: "Testa gratis"
-- Gradient-premium bar som accent
+DialogContent saknar radius paa mobil. Fix:
+- Lagg till `rounded-2xl` aeven paa mobil (inte bara `sm:rounded-lg`)
+- Lagg till liten marginal runt modalen paa mobil: `m-3`
 
-### 6. Funktioner -- "Ett showroom i fickan"
-- Rubriken: "Allt du behoeever for proffsiga bilbilder"
-- Kort-baserad layout med 4-6 kort:
-  - **Batch-redigering** -- Redigera alla bilder paa en gang
-  - **Ljusfoeerbaettring** -- Relight med AI
-  - **Logo Studio** -- Lagg till logotyp och banner
-  - **Beskaarning & Export** -- Olika format foer olika plattformar
-  - **AI-bakgrunder** -- Skapa egna bakgrunder
-  - **Lokalt anpassat** -- Miljoeeer anpassade foer den svenska marknaden
-- Varje kort: ikon + rubrik + kort beskrivning
+### C. Spara-knappen: Transparent istallet foer blaa
 
-### 7. Hur det funkar (3 steg)
-- Numrerade steg med ikoner:
-  1. Ladda upp bilder
-  2. Vaelj bakgrund (eller skapa med AI)
-  3. Ladda ner
-- CTA: "Testa gratis"
+AEndra "Spara & anvaend"-knappen fran `Button` (default primaerfarg) till `variant="outline"`:
 
-### 8. Varfoer valja AutoPic (jaemfoerelsetabell)
-- Enkel tabell: AutoPic vs "Andra appar"
-- Rader: Startavgift (0 kr vs Ofta dyrt), Demo-moete (Koeer direkt vs Kraevs ofta), Teknologi (Snabb utveckling vs Anpassad foer kedjor)
+```tsx
+<Button variant="outline" size="sm" className="rounded-full flex-1">
+  <Check className="w-3.5 h-3.5 mr-1.5" />
+  Spara & anvaend
+</Button>
+```
 
-### 9. Priser
-- Anvander data fran `src/config/pricing.ts` direkt
-- Visar alla planer: Start, Pro (Populaer-badge), Business, Scale + Credit Pack
-- Varje plan: pris, credits, features, CTA-knapp
-- CTA-knapparna lankar till `/guest-checkout?plan=X` (befintligt floede)
-- Pro-plan faar gradient-premium bakgrund och "Populaer"-badge
+### D. Galleriet (ProjectGallery): Centrerade action-knappar
 
-### 10. FAQ
-- Anvander Accordion-komponenten
-- Fragor fran Framer-sidan:
-  - AEndras bilens skick?
-  - Maaste jag vara teknisk?
-  - AEr det naagon startavgift?
-  - Funkar det med andra fordon?
-  - AEr det gratis att testa?
-  - Kontaktinformation
+Problem: Knapparna (eye, download, delete) hamnar utanfoer bildens ram.
 
-### 11. Footer / Final CTA
-- Rubrik: "Ta er annonsering till naesta nivaa"
-- CTA: "Testa gratis" (lankar till /try)
-- Footer-lankar: Om oss, Kontakt, Priser, Logga in
-- Copyright-text
+Fix: Flytta hover-overlay saa att det bara taecker bild-arean (`aspect-[4/3]`), inte hela kortet:
+- Overlay-div ska vara `absolute inset-0` INUTI bildomraadet (redan aer, men behoeever kontrolleras)
+- Lagg till `items-center justify-center` -- redan finns, troligen storleksproblem
+- Saett `gap-2` och justera knappstorlekar foer att vara inuti bildens ram
+
+### E. "Skapa med AI"-kortet: Meeer kontrast
+
+AEndra bakgrundsfaergen foer kortet:
+- Ljust tema: laett moerkare aen card (`bg-muted/30` overlay)
+- Moerkt tema: laett ljusare aen card (`bg-white/[0.03]` overlay)
+
+### F. Step 3-rubrik: "Generera" -> "Placera paa bakgrund"
+
+I `Index.tsx` rad 858, aendra:
+
+```tsx
+<h2>Placera paa bakgrund</h2>
+```
+
+Samma i `ExportPanel.tsx` knapptext:
+
+```tsx
+{isProcessing ? 'Placerar...' : 'Starta komposition'}
+```
+
+---
+
+## Filer som aendras
+
+| Fil | AEndring |
+|-----|----------|
+| `src/components/CreateSceneModal.tsx` | Dubbla laegen, UI-fixar (radius, sticky, spara-knapp) |
+| `supabase/functions/generate-scene-image/index.ts` | Mode-parameter, tva system prompts, baettre namngivning |
+| `src/components/SceneSelector.tsx` | Kontrast paa AI-kortet |
+| `src/components/ProjectGallery.tsx` | Centrering av action-knappar |
+| `src/pages/Index.tsx` | Step 3-rubrik: "Placera paa bakgrund" |
+| `src/components/ExportPanel.tsx` | Knapptext: "Starta komposition" |
+| `src/components/ui/dialog.tsx` | Mobil border radius + marginal |
+
+### Filer som INTE aendras
+
+Edge functions utoevar generate-scene-image, databas, routing, auth, Landing.tsx.
 
 ---
 
 ## Tekniska detaljer
 
-### Filer som skapas
+### ChatMode-tillstand
 
-| Fil | Beskrivning |
-|-----|-------------|
-| `src/pages/Landing.tsx` | Ny landningssida med alla sektioner |
+```typescript
+type ChatMode = 'select' | 'background-studio' | 'free-create';
+```
 
-### Filer som aendras
+- `select`: Visar tva stora knappar foer att vaelja laege
+- `background-studio`: Guidat floede med bakgrundsregler
+- `free-create`: Oeppen bildgenerering
 
-| Fil | AEndring |
-|-----|----------|
-| `src/pages/Index.tsx` | Ta bort redirect till /auth foer icke-inloggade. Visa Landing istallet. |
+### Ny ChatMessage-typ foer interaktiva val
 
-### Filer som INTE aendras
+```typescript
+type ChatMessage =
+  | ...befintliga...
+  | { role: 'assistant-options'; text: string; options: Array<{ label: string; value: string }> }
+```
 
-Allt annat: SceneSelector, CreateSceneModal, Auth, edge functions, databas, etc.
+Renderas som klickbara chips i chatten. Naer anvaendaren klickar skickas vaerdet som ett vanligt user-meddelande.
 
-### Design-anpassning
+### Edge function: Mode-hantering
 
-Sidan anvander exakt samma designsystem som resten av appen:
-- **Typografi**: Host Grotesk foer rubriker, DM Sans foer broedtext
-- **Faerger**: CSS-variabler (--background, --foreground, --primary, etc.)
-- **Gradients**: `var(--gradient-premium)`, `var(--gradient-card)`
-- **Shadows**: `var(--shadow-card)`, `var(--shadow-elegant)`
-- **Border radius**: 15px (card), 48px (buttons)
-- **Noise texture**: Redan global via body::before
-- **Moerkt tema som default**: Matchar appens default
+```typescript
+const BACKGROUND_SYSTEM_PROMPT = `...nuvarande strikta prompt...`;
+const FREE_CREATE_SYSTEM_PROMPT = `You are a creative AI image generator...`;
+// Vaelj prompt baserat paa mode
+const systemPrompt = mode === 'free-create' ? FREE_CREATE_SYSTEM_PROMPT : BACKGROUND_SYSTEM_PROMPT;
+```
 
-### Befintliga assets som anvands
+### Spara-logik per laege
 
-- `src/assets/autopic-logo-dark.png` / `autopic-logo-white.png` (header)
-- `src/assets/examples/ford-before.png` + `ford-after.png` (before/after)
-- `src/assets/examples/partner-before.jpg` + `partner-after.png` (alternativt par)
-- `src/assets/examples/vw-before.png` + `vw-after.png` (alternativt par)
-- Scen-thumbnails fran `public/scenes/` (galleri-preview)
-- `src/assets/aura-gradient-*.jpg` (dekorativa element)
-- Befintlig `BeforeAfterSlider`-komponent
-
-### Responsivitet
-
-- Desktop: tvaakolumns-layout i hero, horisontellt galleri, grid foer funktionskort
-- Mobil: enkolumns-layout, staplade sektioner, kompakta priskort
-- Samma breakpoints som resten av appen (sm, md, lg)
-
-### SEO och metadata
-
-- Uppdatera `<title>` och meta description i `index.html` foer landing
-- Sidan renderas direkt utan auth-check foer snabb laddning
-
----
-
-## Vad anvandaren kan laegga till senare
-
-- Riktiga foere/efter-videor (ersaetter platshaallar-bilder)
-- Kundcitat / testimonials
-- Animerade exempel fran AI-bakgrundsgeneratorn
-- Interaktiva element som matchar Framer-sidans precision
+- Bakgrundsstudio: "Spara & anvaend"-knapp -> sparar till user_scenes
+- Fritt skapande: Ingen spara-knapp foer galleriet, istallet en "Ladda ner"-knapp
 
