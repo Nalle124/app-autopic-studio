@@ -202,7 +202,7 @@ export const CreateSceneModal = ({
   onSceneCreated,
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
-  const [chatMode, setChatMode] = useState<ChatMode | null>(null); // null = show mode select
+  const [chatMode, setChatMode] = useState<ChatMode | null>(null);
   const [prompt, setPrompt] = useState('');
   const [customName, setCustomName] = useState('');
   const [showNameField, setShowNameField] = useState(false);
@@ -220,7 +220,12 @@ export const CreateSceneModal = ({
   const [guidedCategory, setGuidedCategory] = useState<string | null>(null);
   const [guidedStepIndex, setGuidedStepIndex] = useState(0);
   const [guidedSelections, setGuidedSelections] = useState<string[]>([]);
-  const [guidedCustomInputs, setGuidedCustomInputs] = useState<string[]>([]);
+  const [awaitingGuidedCustomInput, setAwaitingGuidedCustomInput] = useState(false);
+  const [guidedComplete, setGuidedComplete] = useState(false);
+
+  // Image preview overlay
+  const [previewImage, setPreviewImage] = useState<{ imageUrl: string; name: string } | null>(null);
+  const [previewPrompt, setPreviewPrompt] = useState('');
 
   // Reset state when modal opens
   useEffect(() => {
@@ -243,7 +248,10 @@ export const CreateSceneModal = ({
     setGuidedCategory(null);
     setGuidedStepIndex(0);
     setGuidedSelections([]);
-    setGuidedCustomInputs([]);
+    setAwaitingGuidedCustomInput(false);
+    setGuidedComplete(false);
+    setPreviewImage(null);
+    setPreviewPrompt('');
   };
 
   // Auto-scroll to bottom
@@ -318,7 +326,10 @@ export const CreateSceneModal = ({
     setGuidedCategory(null);
     setGuidedStepIndex(0);
     setGuidedSelections([]);
-    setGuidedCustomInputs([]);
+    setAwaitingGuidedCustomInput(false);
+    setGuidedComplete(false);
+    setPreviewImage(null);
+    setPreviewPrompt('');
   };
 
   const handleNewChat = () => {
@@ -344,7 +355,7 @@ export const CreateSceneModal = ({
     setGuidedCategory(value);
     setGuidedStepIndex(0);
     setGuidedSelections([]);
-    setGuidedCustomInputs([]);
+    setAwaitingGuidedCustomInput(false);
 
     const firstStep = flow[0];
     setMessages(prev => [
@@ -367,10 +378,10 @@ export const CreateSceneModal = ({
     if (!flow) return;
 
     if (value === '__custom__') {
-      // Show text input hint - user types in the input field
+      setAwaitingGuidedCustomInput(true);
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: 'Beskriv det fritt nedan! ✍️' },
+        { role: 'assistant', text: 'Skriv din beskrivning nedan ✍️' },
       ]);
       return;
     }
@@ -384,7 +395,6 @@ export const CreateSceneModal = ({
     const nextStepIndex = guidedStepIndex + 1;
 
     if (nextStepIndex < flow.length) {
-      // More questions to ask
       setGuidedStepIndex(nextStepIndex);
       const nextStep = flow[nextStepIndex];
       setMessages(prev => [
@@ -400,46 +410,37 @@ export const CreateSceneModal = ({
         },
       ]);
     } else {
-      // All questions answered - show summary and generate button
+      // All steps done → show summary, wait for user to confirm
       const categoryLabel = BACKGROUND_CATEGORIES.find(c => c.value === guidedCategory)?.label || guidedCategory;
-      const summary = `${categoryLabel}: ${newSelections.join(', ')}`;
+      setGuidedComplete(true);
       setMessages(prev => [
         ...prev,
         { role: 'user', text: optionLabel },
         {
           role: 'assistant',
-          text: `Bra val! Här är din plan:\n\n🎯 **${summary}**\n\nVill du lägga till något mer eller ska vi skapa bilden?`,
+          text: `Bra val! Här är din plan:\n\n🎯 **${categoryLabel}**: ${newSelections.join(' · ')}\n\nLägg till fler detaljer i textfältet, eller klicka **Skapa bild** direkt.`,
         },
       ]);
-      // Set accumulated prompt so user can either customize or hit generate
-      setPrompt('');
-      // Auto-generate with accumulated selections
-      setTimeout(() => {
-        generateFromGuidedSelections(newSelections, categoryLabel);
-      }, 300);
     }
   };
 
-  const generateFromGuidedSelections = async (selections: string[], categoryLabel: string) => {
-    if (!user) return;
+  const generateFromGuidedSelections = async (extraDetails?: string) => {
+    if (!user || !guidedCategory) return;
 
-    const combinedPrompt = `${categoryLabel} background: ${selections.join('. ')}.`;
+    const categoryLabel = BACKGROUND_CATEGORIES.find(c => c.value === guidedCategory)?.label || guidedCategory;
+    const combinedPrompt = `${categoryLabel} background: ${guidedSelections.join('. ')}${extraDetails ? `. ${extraDetails}` : ''}.`;
 
-    // Add user message and start generating
-    const userMsg: ChatMessage = { role: 'user', text: `Skapa: ${categoryLabel}` };
-    const updatedMessages: ChatMessage[] = [...messages, userMsg];
+    const userMsg: ChatMessage = { role: 'user', text: combinedPrompt };
+    const updatedMessages = [...messages, userMsg];
     setMessages([...updatedMessages, { role: 'assistant-loading' }]);
     setIsGenerating(true);
+    setGuidedComplete(false);
 
     try {
-      const conversationHistory = [
-        { role: 'user', content: combinedPrompt },
-      ];
-
+      const conversationHistory = buildConversationHistory(updatedMessages);
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
         body: { conversationHistory, mode: 'background-studio' },
       });
-
       handleGenerateResponse(data, error, updatedMessages);
     } catch (err) {
       handleGenerateError(err);
@@ -550,6 +551,58 @@ export const CreateSceneModal = ({
   const handleGenerate = async () => {
     if (!prompt.trim() || !user) return;
 
+    // If awaiting guided custom input, save it as the answer for current step
+    if (awaitingGuidedCustomInput && guidedCategory && guidedCategory !== 'custom') {
+      const flow = GUIDED_FLOWS[guidedCategory];
+      if (flow) {
+        const customText = prompt.trim();
+        const newSelections = [...guidedSelections, customText];
+        setGuidedSelections(newSelections);
+        setAwaitingGuidedCustomInput(false);
+
+        const nextStepIndex = guidedStepIndex + 1;
+
+        if (nextStepIndex < flow.length) {
+          setGuidedStepIndex(nextStepIndex);
+          const nextStep = flow[nextStepIndex];
+          setMessages(prev => [
+            ...prev,
+            { role: 'user', text: customText },
+            {
+              role: 'assistant-options',
+              text: nextStep.question,
+              options: [
+                ...nextStep.options,
+                ...(nextStep.allowCustom ? [{ label: '✏️ Skriv eget...', value: '__custom__' }] : []),
+              ],
+            },
+          ]);
+        } else {
+          const categoryLabel = BACKGROUND_CATEGORIES.find(c => c.value === guidedCategory)?.label || guidedCategory;
+          setGuidedComplete(true);
+          setMessages(prev => [
+            ...prev,
+            { role: 'user', text: customText },
+            {
+              role: 'assistant',
+              text: `Bra val! Här är din plan:\n\n🎯 **${categoryLabel}**: ${newSelections.join(' · ')}\n\nLägg till fler detaljer i textfältet, eller klicka **Skapa bild** direkt.`,
+            },
+          ]);
+        }
+        setPrompt('');
+        return;
+      }
+    }
+
+    // If guided flow is complete, generate with accumulated selections + any extra text
+    if (guidedComplete) {
+      const extra = prompt.trim();
+      setPrompt('');
+      await generateFromGuidedSelections(extra || undefined);
+      return;
+    }
+
+    // Normal generate flow
     const userMessage: ChatMessage = referenceImage
       ? { role: 'user', text: prompt.trim(), image: referenceImage }
       : { role: 'user', text: prompt.trim() };
@@ -663,6 +716,32 @@ export const CreateSceneModal = ({
     link.download = `${name}.png`;
     link.target = '_blank';
     link.click();
+  };
+
+  const handlePreviewSubmit = async () => {
+    if (!previewPrompt.trim() || !previewImage || !user) return;
+
+    const userMsg: ChatMessage = {
+      role: 'user',
+      text: previewPrompt.trim(),
+      image: previewImage.imageUrl,
+    };
+
+    const updatedMessages = [...messages, userMsg];
+    setMessages([...updatedMessages, { role: 'assistant-loading' }]);
+    setPreviewPrompt('');
+    setPreviewImage(null);
+    setIsGenerating(true);
+
+    try {
+      const conversationHistory = buildConversationHistory(updatedMessages);
+      const { data, error } = await supabase.functions.invoke('generate-scene-image', {
+        body: { conversationHistory, mode: chatMode || 'background-studio' },
+      });
+      handleGenerateResponse(data, error, updatedMessages);
+    } catch (err) {
+      handleGenerateError(err);
+    }
   };
 
   const postGenSuggestions = chatMode === 'free-create' ? POST_GENERATION_SUGGESTIONS_FREE : POST_GENERATION_SUGGESTIONS_BG;
@@ -878,12 +957,20 @@ export const CreateSceneModal = ({
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="space-y-2 max-w-[85%]">
-                      <div className="rounded-2xl rounded-tl-md overflow-hidden border border-border/30 animate-scale-in">
+                      <div
+                        className="rounded-2xl rounded-tl-md overflow-hidden border border-border/30 animate-scale-in cursor-pointer relative group/img"
+                        onClick={() => setPreviewImage({ imageUrl: msg.imageUrl, name: msg.suggestedName })}
+                      >
                         <img
                           src={msg.imageUrl}
                           alt={msg.suggestedName}
                           className="w-full aspect-[3/2] object-cover"
                         />
+                        <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors flex items-center justify-center pointer-events-none">
+                          <span className="text-white text-xs font-medium opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                            Klicka för att förstora & redigera
+                          </span>
+                        </div>
                       </div>
 
                       {/* Name & info */}
@@ -1026,7 +1113,11 @@ export const CreateSceneModal = ({
 
               <div className="flex-1 relative">
                 <Input
-                  placeholder={chatMode === 'background-studio' ? 'Beskriv din bakgrund eller förfina...' : 'Beskriv vad du vill skapa...'}
+                  placeholder={
+                    awaitingGuidedCustomInput ? 'Beskriv det fritt...' :
+                    guidedComplete ? 'Lägg till detaljer (valfritt)...' :
+                    chatMode === 'background-studio' ? 'Beskriv din bakgrund eller förfina...' : 'Beskriv vad du vill skapa...'
+                  }
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   disabled={isGenerating}
@@ -1035,20 +1126,94 @@ export const CreateSceneModal = ({
                       handleGenerate();
                     }
                   }}
-                  className="bg-muted/40 border-border/30 rounded-full pr-11 text-sm h-10"
+                  className={`bg-muted/40 border-border/30 rounded-full text-sm h-10 ${guidedComplete ? 'pr-3' : 'pr-11'}`}
                 />
+                {!guidedComplete && (
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={!prompt.trim() || isGenerating}
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full"
+                  >
+                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </Button>
+                )}
+              </div>
+
+              {guidedComplete && (
                 <Button
-                  onClick={handleGenerate}
-                  disabled={!prompt.trim() || isGenerating}
-                  size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full"
+                  onClick={() => {
+                    const extra = prompt.trim();
+                    setPrompt('');
+                    generateFromGuidedSelections(extra || undefined);
+                  }}
+                  disabled={isGenerating}
+                  className="rounded-full flex-shrink-0 h-10 px-4"
                 >
-                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
+                  Skapa bild
                 </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Image preview & edit overlay */}
+        {previewImage && (
+          <div className="absolute inset-0 z-50 bg-background flex flex-col rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
+              <p className="text-sm font-medium text-foreground truncate">{previewImage.name}</p>
+              <button
+                onClick={() => { setPreviewImage(null); setPreviewPrompt(''); }}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center min-h-0">
+              <img src={previewImage.imageUrl} alt={previewImage.name} className="max-w-full max-h-full rounded-xl object-contain shadow-lg" />
+            </div>
+            <div className="px-4 py-2 flex flex-wrap gap-1.5 flex-shrink-0 border-t border-border/30">
+              {postGenSuggestions.map((s, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setPreviewPrompt(s)}
+                  className="text-xs px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div className="px-4 py-3 border-t border-border/50 flex-shrink-0">
+              <div className="flex items-end gap-2">
+                <div className="flex-1 relative">
+                  <Input
+                    placeholder="Beskriv förändringar..."
+                    value={previewPrompt}
+                    onChange={(e) => setPreviewPrompt(e.target.value)}
+                    disabled={isGenerating}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isGenerating && previewPrompt.trim()) {
+                        handlePreviewSubmit();
+                      }
+                    }}
+                    className="bg-muted/40 border-border/30 rounded-full pr-11 text-sm h-10"
+                    autoFocus
+                  />
+                  <Button
+                    onClick={handlePreviewSubmit}
+                    disabled={!previewPrompt.trim() || isGenerating}
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full"
+                  >
+                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         )}
+
       </DialogContent>
     </Dialog>
   );

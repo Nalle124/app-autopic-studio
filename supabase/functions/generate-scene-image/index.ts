@@ -56,14 +56,14 @@ CRITICAL: Always output an image. Never skip image generation.`;
 // Invisible context injected into user prompts for background mode
 const BACKGROUND_PROMPT_SUFFIX = `
 
-IMPORTANT CONTEXT (invisible to user, for the AI only):
-- This MUST be an EMPTY scene — absolutely NO cars, vehicles, people, or animals
-- Camera angle MUST be straight-on at eye-level (~1.0-1.2m height), as if standing to photograph a car
-- NEVER use aerial, bird's-eye, or drone perspectives
-- The lower ~40% must be a flat, empty ground surface suitable for placing a car on
-- This is a BACKGROUND for automotive photography compositing
-- Aspect ratio must be 3:2 landscape (1536x1024)
-- Must look like a real photograph, not CGI or illustration`;
+[CRITICAL RULES - MUST FOLLOW FOR EVERY IMAGE]:
+1. ABSOLUTELY ZERO cars, vehicles, people, or animals — the scene MUST be COMPLETELY EMPTY
+2. Camera MUST be at EYE-LEVEL (~1.0-1.2m height) — NEVER aerial, bird's-eye, top-down, or drone perspective
+3. Flat, empty ground/floor surface MUST occupy the lower ~40% of the image — this is where a car will be digitally placed later
+4. Aspect ratio: 3:2 landscape (1536x1024)
+5. Photorealistic photograph — NOT CGI, illustration, painting, or 3D render
+This image is a BACKGROUND for automotive photo compositing. A car will be digitally placed on the ground surface.
+IMPORTANT: When modifying a previous image, keep ALL unchanged elements (location, mood, architecture) and ONLY change what the user specifically asked to change.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -131,38 +131,32 @@ serve(async (req) => {
     // For background mode, inject context into every user message to reinforce rules
     const processedHistory = conversationHistory.map((msg: any, idx: number) => {
       if (msg.role === "user") {
-        const textContent = typeof msg.content === "string" ? msg.content : msg.content?.find?.((c: any) => c.type === "text")?.text || "";
-        
+        let processedContent = msg.content;
+
+        // For background mode, append context to ALL user messages
         if (isBackgroundMode) {
-          // Append invisible background context to ALL user messages
-          const enhancedText = textContent + BACKGROUND_PROMPT_SUFFIX;
-          
-          if (typeof msg.content === "string") {
-            return { ...msg, content: enhancedText };
-          } else if (Array.isArray(msg.content)) {
-            return {
-              ...msg,
-              content: msg.content.map((c: any) =>
-                c.type === "text" ? { ...c, text: c.text + BACKGROUND_PROMPT_SUFFIX } : c
-              ),
-            };
+          if (typeof processedContent === "string") {
+            processedContent = processedContent + BACKGROUND_PROMPT_SUFFIX;
+          } else if (Array.isArray(processedContent)) {
+            processedContent = processedContent.map((c: any) =>
+              c.type === "text" ? { ...c, text: c.text + BACKGROUND_PROMPT_SUFFIX } : c
+            );
           }
         }
-        
-        // For the last message, add image generation reminder
+
+        // For the last message, add image generation reminder (works for BOTH modes)
         if (idx === conversationHistory.length - 1) {
           const imageReminder = `\n\nIMPORTANT: You MUST generate and return a NEW IMAGE based on this request. Do not respond with only text. Always produce a photo.`;
-          if (typeof msg.content === "string") {
-            return { ...msg, content: msg.content + imageReminder };
-          } else if (Array.isArray(msg.content)) {
-            return {
-              ...msg,
-              content: msg.content.map((c: any) =>
-                c.type === "text" ? { ...c, text: c.text + imageReminder } : c
-              ),
-            };
+          if (typeof processedContent === "string") {
+            processedContent = processedContent + imageReminder;
+          } else if (Array.isArray(processedContent)) {
+            processedContent = processedContent.map((c: any) =>
+              c.type === "text" ? { ...c, text: c.text + imageReminder } : c
+            );
           }
         }
+
+        return { ...msg, content: processedContent };
       }
       return msg;
     });
