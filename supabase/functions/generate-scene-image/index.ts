@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are an AI that generates professional automotive photography background scenes. You MUST produce a new image with every response. Never respond with only text.
+const BACKGROUND_SYSTEM_PROMPT = `You are an AI that generates professional automotive photography background scenes. You MUST produce a new image with every response. Never respond with only text.
 
 PURPOSE: These images are used as BACKGROUNDS for digitally placing car photos onto. The car will be cut out from its original photo and composited onto this background. Therefore the perspective, ground surface, and lighting must be suitable for this purpose.
 
@@ -29,6 +29,20 @@ SCENE TYPES (adapt based on user request):
 When the user asks to modify a previous image (e.g. "make it brighter", "change the floor"), generate a NEW image with those changes while keeping the overall concept.
 
 When a reference image is provided, use it as inspiration for style, mood, colors, and lighting — but always maintain the correct perspective and empty scene rules.
+
+CRITICAL: Always output an image. Never skip image generation.`;
+
+const FREE_CREATE_SYSTEM_PROMPT = `You are a creative AI image generator. You help users create and edit photorealistic images based on their descriptions. You MUST produce a new image with every response. Never respond with only text.
+
+RULES:
+1. Generate photorealistic, high-quality images based on user descriptions.
+2. If a reference image is provided, use it as a base for modifications and edits.
+3. Always maintain photographic realism — natural lighting, realistic textures, proper depth of field.
+4. ASPECT RATIO — MUST be wide landscape orientation with EXACT 3:2 aspect ratio (1536x1024).
+5. When asked to modify a previous image, generate a NEW image with those changes while keeping the overall concept.
+6. No text, watermarks, or logos in the generated images unless explicitly requested.
+
+When the user provides a reference image, analyze it and apply the requested modifications faithfully.
 
 CRITICAL: Always output an image. Never skip image generation.`;
 
@@ -73,7 +87,7 @@ serve(async (req) => {
       });
     }
 
-    const { conversationHistory } = await req.json();
+    const { conversationHistory, mode } = await req.json();
 
     if (!conversationHistory || !Array.isArray(conversationHistory) || conversationHistory.length === 0) {
       return new Response(
@@ -114,9 +128,10 @@ serve(async (req) => {
       return msg;
     });
 
-    // Build message array: system prompt + full conversation history
+    // Build message array: select system prompt based on mode + full conversation history
+    const systemPrompt = mode === 'free-create' ? FREE_CREATE_SYSTEM_PROMPT : BACKGROUND_SYSTEM_PROMPT;
     const aiMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       ...processedHistory,
     ];
 
@@ -238,7 +253,7 @@ serve(async (req) => {
               content: `You are a metadata generator for automotive photography backgrounds. Given a conversation about a scene, generate metadata for the LATEST version of the scene.
 
 Generate:
-1. A short Swedish name for the scene (2-4 words, like "Ljus Studio" or "Höstpark")
+1. A creative, evocative Swedish name for the scene (2-4 words). AVOID generic names like "Min bakgrund", "Studio", "Bakgrund". Instead use atmospheric, poetic names like "Midvinterskog", "Guldljus Studio", "Stadens Tystnad", "Betongkatedralen", "Höstens Allé", "Solnedgång vid bryggan".
 2. A short Swedish description (1 sentence)
 3. A PhotoRoom-compatible AI prompt in English that describes how to place a car in this scene with matching lighting
 

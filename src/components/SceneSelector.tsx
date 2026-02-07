@@ -506,6 +506,8 @@ export const SceneSelector = ({
               className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ai-create-card"
               style={{ borderRadius: 'var(--radius-card)', background: 'var(--gradient-card)' }}
             >
+              {/* Contrast overlay */}
+              <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-foreground/[0.04] dark:bg-white/[0.04]" />
               {/* Subtle shimmer sweep */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: 'inherit' }}>
                 <div className="ai-shimmer-sweep" />
