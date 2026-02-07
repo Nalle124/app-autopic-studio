@@ -12,13 +12,19 @@ const BACKGROUND_SYSTEM_PROMPT = `You are an AI that generates professional auto
 PURPOSE: These images are used as BACKGROUNDS for digitally placing car photos onto. The car will be cut out from its original photo and composited onto this background. Therefore the perspective, ground surface, and lighting must be suitable for this purpose.
 
 ABSOLUTE RULES FOR EVERY IMAGE:
-1. EMPTY SCENE — No vehicles, no cars, no people, no text, no watermarks, no logos. The scene must be completely empty.
-2. CAMERA ANGLE — Always a straight-on, eye-level perspective (approximately 1.0-1.2m height). Never aerial, bird's-eye, top-down, or extreme low angles. The camera should be facing slightly downward toward the ground plane, as if photographing a car from a natural standing position.
-3. GROUND SURFACE — There must be a clear, visible ground/floor surface occupying the lower ~40% of the image. This is where the car will be digitally placed. The ground must be flat and level.
+1. EMPTY SCENE — No vehicles, no cars, no motorcycles, no people, no animals, no text, no watermarks, no logos. The scene must be COMPLETELY EMPTY. This is critical — the user will place their own car image on top.
+2. CAMERA ANGLE — Always a straight-on, eye-level perspective (approximately 1.0-1.2m height). NEVER aerial, bird's-eye, top-down, drone-style, or extreme low angles. The camera should face slightly downward toward the ground plane, as if photographing a car from a natural standing position.
+3. GROUND SURFACE — There must be a clear, visible, FLAT ground/floor surface occupying the lower ~40% of the image. This is where the car will be digitally placed. The ground must be level and suitable for a car to stand on.
 4. ASPECT RATIO — MUST be wide landscape orientation with EXACT 3:2 aspect ratio (1536x1024).
-5. PHOTOGRAPHIC REALISM — The image must look like a real photograph. Natural lighting, realistic textures, proper depth of field. NOT a 3D render, illustration, or painting.
+5. PHOTOGRAPHIC REALISM — The image must look like a real photograph. Natural lighting, realistic textures, proper depth of field. NOT a 3D render, illustration, painting, or CGI.
 6. LIGHTING — Professional, well-balanced lighting suitable for showcasing a vehicle. Avoid harsh direct light that creates extreme shadows.
-7. COMPOSITION — Center the scene with a natural vanishing point. Leave space in the center-bottom area for the car placement.
+7. COMPOSITION — Center the scene with a natural vanishing point. Leave ample space in the center-bottom area for the car placement.
+
+WHEN USER DESCRIBES A LOCATION (e.g. "Göteborg hamn", "Stockholm gata"):
+- ALWAYS interpret this as: "A ground-level view FROM that location, showing what you'd see if standing there about to photograph a car"
+- NEVER show an aerial/overview of the location
+- Include the location's character (architecture, atmosphere) but always FROM GROUND LEVEL
+- The foreground must always be a flat, empty surface where a car could be placed
 
 SCENE TYPES (adapt based on user request):
 - Studio: Clean cyclorama walls, controlled lighting, simple floors (concrete, epoxy, tile)
@@ -36,15 +42,28 @@ const FREE_CREATE_SYSTEM_PROMPT = `You are a creative AI image generator. You he
 
 RULES:
 1. Generate photorealistic, high-quality images based on user descriptions.
-2. If a reference image is provided, use it as a base for modifications and edits.
+2. If a reference image is provided, use it as a base for modifications and edits. Preserve details faithfully unless asked to change them.
 3. Always maintain photographic realism — natural lighting, realistic textures, proper depth of field.
 4. ASPECT RATIO — MUST be wide landscape orientation with EXACT 3:2 aspect ratio (1536x1024).
-5. When asked to modify a previous image, generate a NEW image with those changes while keeping the overall concept.
+5. When asked to modify a previous image, generate a NEW image with those changes while keeping the overall concept and all unchanged details intact.
 6. No text, watermarks, or logos in the generated images unless explicitly requested.
+7. When asked to change one aspect (like color, angle, or lighting), preserve everything else as faithfully as possible.
 
-When the user provides a reference image, analyze it and apply the requested modifications faithfully.
+When the user provides a reference image, analyze it carefully and apply the requested modifications while maintaining all other aspects of the original.
 
 CRITICAL: Always output an image. Never skip image generation.`;
+
+// Invisible context injected into user prompts for background mode
+const BACKGROUND_PROMPT_SUFFIX = `
+
+IMPORTANT CONTEXT (invisible to user, for the AI only):
+- This MUST be an EMPTY scene — absolutely NO cars, vehicles, people, or animals
+- Camera angle MUST be straight-on at eye-level (~1.0-1.2m height), as if standing to photograph a car
+- NEVER use aerial, bird's-eye, or drone perspectives
+- The lower ~40% must be a flat, empty ground surface suitable for placing a car on
+- This is a BACKGROUND for automotive photography compositing
+- Aspect ratio must be 3:2 landscape (1536x1024)
+- Must look like a real photograph, not CGI or illustration`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -105,47 +124,68 @@ serve(async (req) => {
       ? lastUserMsg.content 
       : lastUserMsg?.content?.find?.((c: any) => c.type === "text")?.text || "bakgrund";
 
-    console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (${conversationHistory.length} messages in history)`);
+    console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (mode: ${mode}, ${conversationHistory.length} messages)`);
 
-    // Ensure the last user message explicitly asks for an image to prevent text-only responses
+    const isBackgroundMode = mode !== 'free-create';
+
+    // For background mode, inject context into every user message to reinforce rules
     const processedHistory = conversationHistory.map((msg: any, idx: number) => {
-      // Only modify the last user message
-      if (idx === conversationHistory.length - 1 && msg.role === "user") {
+      if (msg.role === "user") {
         const textContent = typeof msg.content === "string" ? msg.content : msg.content?.find?.((c: any) => c.type === "text")?.text || "";
-        const imageReminder = `\n\nIMPORTANT: You MUST generate and return a NEW IMAGE based on this request. Do not respond with only text. Always produce a photo.`;
         
-        if (typeof msg.content === "string") {
-          return { ...msg, content: msg.content + imageReminder };
-        } else if (Array.isArray(msg.content)) {
-          return {
-            ...msg,
-            content: msg.content.map((c: any) =>
-              c.type === "text" ? { ...c, text: c.text + imageReminder } : c
-            ),
-          };
+        if (isBackgroundMode) {
+          // Append invisible background context to ALL user messages
+          const enhancedText = textContent + BACKGROUND_PROMPT_SUFFIX;
+          
+          if (typeof msg.content === "string") {
+            return { ...msg, content: enhancedText };
+          } else if (Array.isArray(msg.content)) {
+            return {
+              ...msg,
+              content: msg.content.map((c: any) =>
+                c.type === "text" ? { ...c, text: c.text + BACKGROUND_PROMPT_SUFFIX } : c
+              ),
+            };
+          }
+        }
+        
+        // For the last message, add image generation reminder
+        if (idx === conversationHistory.length - 1) {
+          const imageReminder = `\n\nIMPORTANT: You MUST generate and return a NEW IMAGE based on this request. Do not respond with only text. Always produce a photo.`;
+          if (typeof msg.content === "string") {
+            return { ...msg, content: msg.content + imageReminder };
+          } else if (Array.isArray(msg.content)) {
+            return {
+              ...msg,
+              content: msg.content.map((c: any) =>
+                c.type === "text" ? { ...c, text: c.text + imageReminder } : c
+              ),
+            };
+          }
         }
       }
       return msg;
     });
 
-    // Build message array: select system prompt based on mode + full conversation history
-    const systemPrompt = mode === 'free-create' ? FREE_CREATE_SYSTEM_PROMPT : BACKGROUND_SYSTEM_PROMPT;
+    // Build message array with appropriate system prompt
+    const systemPrompt = isBackgroundMode ? BACKGROUND_SYSTEM_PROMPT : FREE_CREATE_SYSTEM_PROMPT;
     const aiMessages = [
       { role: "system", content: systemPrompt },
       ...processedHistory,
     ];
 
-    // Step 1: Generate the background image with Nano Banana (with retry)
+    // Step 1: Generate the image with retry
     let base64Image: string | null = null;
     
     for (let attempt = 0; attempt < 2; attempt++) {
       const messagesForAttempt = attempt === 0 
         ? aiMessages 
         : [
-            // On retry, simplify to a single direct message to force image generation
             { 
               role: "user", 
-              content: `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, empty scene with no cars/people, realistic photo style. Generate the image now.` 
+              content: isBackgroundMode
+                ? `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, COMPLETELY EMPTY scene with absolutely no cars, no people, no vehicles. Eye-level camera angle at ~1.2m height. Flat ground surface in lower 40%. Realistic photo style. Generate the image now.`
+                : `Generate a photorealistic image: ${latestPromptText}. MUST be landscape 3:2 ratio. Realistic photo style. Generate the image now.`
             },
           ];
 
@@ -169,24 +209,14 @@ serve(async (req) => {
         const status = imageResponse.status;
         if (status === 429) {
           return new Response(
-            JSON.stringify({
-              error: "AI-tjänsten är överbelastad just nu. Försök igen om en stund.",
-            }),
-            {
-              status: 429,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
+            JSON.stringify({ error: "AI-tjänsten är överbelastad just nu. Försök igen om en stund." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
         if (status === 402) {
           return new Response(
-            JSON.stringify({
-              error: "AI-krediter slut. Kontakta support.",
-            }),
-            {
-              status: 402,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
+            JSON.stringify({ error: "AI-krediter slut. Kontakta support." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
         const errorText = await imageResponse.text();
@@ -213,11 +243,8 @@ serve(async (req) => {
     const imageId = crypto.randomUUID();
     const storagePath = `user-scenes/${user.id}/${imageId}.png`;
 
-    // Convert base64 to binary
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
-    const binaryData = Uint8Array.from(atob(base64Data), (c) =>
-      c.charCodeAt(0)
-    );
+    const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
     const { error: uploadError } = await supabase.storage
       .from("processed-cars")
@@ -231,12 +258,9 @@ serve(async (req) => {
       throw new Error("Failed to save generated image");
     }
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("processed-cars").getPublicUrl(storagePath);
+    const { data: { publicUrl } } = supabase.storage.from("processed-cars").getPublicUrl(storagePath);
 
-    // Step 3: Generate a matching PhotoRoom prompt and scene name using text AI
-    // Include conversation context so the name/description reflects modifications
+    // Step 3: Generate metadata (name, description, PhotoRoom prompt)
     const metaResponse = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -250,10 +274,10 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are a metadata generator for automotive photography backgrounds. Given a conversation about a scene, generate metadata for the LATEST version of the scene.
+              content: `You are a metadata generator for automotive photography backgrounds. Given a description, generate metadata for the scene.
 
 Generate:
-1. A creative, evocative Swedish name for the scene (2-4 words). AVOID generic names like "Min bakgrund", "Studio", "Bakgrund". Instead use atmospheric, poetic names like "Midvinterskog", "Guldljus Studio", "Stadens Tystnad", "Betongkatedralen", "Höstens Allé", "Solnedgång vid bryggan".
+1. A creative, evocative Swedish name for the scene (2-4 words). AVOID generic names like "Min bakgrund", "Studio", "Bakgrund", "Ny scen". Instead use atmospheric, poetic names like "Midvinterskog", "Guldljus Studio", "Stadens Tystnad", "Betongkatedralen", "Höstens Allé", "Solnedgång vid bryggan", "Göteborgs Hamn", "Midnattens Garage".
 2. A short Swedish description (1 sentence)
 3. A PhotoRoom-compatible AI prompt in English that describes how to place a car in this scene with matching lighting
 
@@ -262,17 +286,14 @@ Respond ONLY with valid JSON in this exact format:
             },
             {
               role: "user",
-              content: `Here is the conversation about the scene:\n${conversationHistory
-                .filter((m: any) => typeof m.content === "string")
-                .map((m: any) => `${m.role}: ${m.content}`)
-                .join("\n")}\n\nGenerate metadata for the latest version of this scene.`,
+              content: `Scene description: ${latestPromptText}\n\nGenerate metadata for this scene.`,
             },
           ],
         }),
       }
     );
 
-    let suggestedName = "Min bakgrund";
+    let suggestedName = "Ny skapad scen";
     let description = latestPromptText;
     let photoroomPrompt = `Place the vehicle centered on the ground in a scene matching this description: ${latestPromptText}. Professional automotive photography with realistic lighting.`;
 
@@ -280,7 +301,6 @@ Respond ONLY with valid JSON in this exact format:
       try {
         const metaData = await metaResponse.json();
         const content = metaData.choices?.[0]?.message?.content || "";
-        // Extract JSON from response (handle markdown code blocks)
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
