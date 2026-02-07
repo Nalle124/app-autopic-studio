@@ -587,9 +587,11 @@ export const CreateSceneModal = ({
     const modeLabel = chatMode === 'ad-create' ? 'advertisement' : 'background';
     const combinedPrompt = `${categoryLabel} ${modeLabel}: ${guidedSelections.join('. ')}${extraDetails ? `. ${extraDetails}` : ''}.`;
 
-    const userMsg: ChatMessage = { role: 'user', text: combinedPrompt };
-    const updatedMessages = [...messages, userMsg];
-    setMessages([...updatedMessages, { role: 'assistant-loading' }]);
+    // Build the prompt silently - don't show it to the user
+    const silentUserMsg: ChatMessage = { role: 'user', text: combinedPrompt };
+    const updatedMessages = [...messages, silentUserMsg];
+    // Only show loading indicator, not the raw prompt
+    setMessages([...messages, { role: 'assistant-loading' }]);
     setIsGenerating(true);
     setGuidedComplete(false);
 
@@ -880,9 +882,8 @@ export const CreateSceneModal = ({
 
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: `"${sceneName}" sparad som bakgrund!` },
+        { role: 'assistant', text: `"${sceneName}" har sparats som bakgrund! Du hittar den under Mina scener.` },
       ]);
-      toast.success(`"${sceneName}" sparad som bakgrund!`);
       onSceneCreated(scene);
     } catch (err) {
       console.error('Save error:', err);
@@ -930,9 +931,8 @@ export const CreateSceneModal = ({
 
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: `"${galleryName}" sparad i ditt projektgalleri!` },
+        { role: 'assistant', text: `"${galleryName}" har sparats i ditt projektgalleri!` },
       ]);
-      toast.success(`"${galleryName}" sparad i galleriet!`);
     } catch (err) {
       console.error('Save to gallery error:', err);
       toast.error('Kunde inte spara till galleriet.');
@@ -1036,7 +1036,7 @@ export const CreateSceneModal = ({
         </div>
 
         {/* Chat area */}
-        <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-4 bg-background/50">
+        <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-4 sm:space-y-6 bg-background/50">
           {messages.map((msg, i) => {
             // ─── Mode select cards ────────────────────────
             if (msg.role === 'mode-select') {
@@ -1270,38 +1270,76 @@ export const CreateSceneModal = ({
                         )}
                       </div>
 
-                      {/* Action buttons */}
+                      {/* Action buttons - primary action depends on mode */}
                       <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleDownloadImage(msg.imageUrl, msg.suggestedName)}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full flex-1"
-                        >
-                          <Download className="w-3.5 h-3.5 mr-1.5" />
-                          Ladda ner
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="rounded-full px-2">
-                              <MoreVertical className="w-3.5 h-3.5" />
+                        {chatMode === 'background-studio' ? (
+                          <>
+                            <Button
+                              onClick={() => handleSaveAsBackground(msg)}
+                              variant="outline"
+                              size="sm"
+                              disabled={isSaving}
+                              className="rounded-full flex-1"
+                            >
+                              {isSaving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
+                              Spara som bakgrund
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="min-w-[200px]">
-                            <DropdownMenuItem onClick={() => {
-                              setSaveDialogImage(msg);
-                              setSaveName(msg.suggestedName);
-                            }}>
-                              <ImageIcon className="w-3.5 h-3.5 mr-2" />
-                              Spara till galleri
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleSaveAsBackground(msg)}>
-                              <Image className="w-3.5 h-3.5 mr-2" />
-                              Lägg till som bakgrund
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="rounded-full px-2">
+                                  <MoreVertical className="w-3.5 h-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="min-w-[200px]">
+                                <DropdownMenuItem onClick={() => handleDownloadImage(msg.imageUrl, msg.suggestedName)}>
+                                  <Download className="w-3.5 h-3.5 mr-2" />
+                                  Ladda ner
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => {
+                                  setSaveDialogImage(msg);
+                                  setSaveName(msg.suggestedName);
+                                }}>
+                                  <ImageIcon className="w-3.5 h-3.5 mr-2" />
+                                  Spara till galleri
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              onClick={() => handleDownloadImage(msg.imageUrl, msg.suggestedName)}
+                              variant="outline"
+                              size="sm"
+                              className="rounded-full flex-1"
+                            >
+                              <Download className="w-3.5 h-3.5 mr-1.5" />
+                              Ladda ner
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="rounded-full px-2">
+                                  <MoreVertical className="w-3.5 h-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="min-w-[200px]">
+                                <DropdownMenuItem onClick={() => {
+                                  setSaveDialogImage(msg);
+                                  setSaveName(msg.suggestedName);
+                                }}>
+                                  <ImageIcon className="w-3.5 h-3.5 mr-2" />
+                                  Spara till galleri
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleSaveAsBackground(msg)}>
+                                  <Image className="w-3.5 h-3.5 mr-2" />
+                                  Lägg till som bakgrund
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
