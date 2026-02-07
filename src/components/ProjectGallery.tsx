@@ -105,7 +105,7 @@ const DialogJobCard = ({
   return (
     <div 
       className={`aspect-[4/3] bg-muted rounded-lg overflow-hidden group relative cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary' : ''}`}
-      style={{ minHeight: '120px', contentVisibility: 'auto' }}
+      style={{ minHeight: '100px', contentVisibility: 'auto', contain: 'layout style' }}
       onClick={onOpenPreview}
     >
       {isImgLoading && (
@@ -598,12 +598,12 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                   </div>
                 )}
                 
-                {/* Hover overlay with actions - mobile optimized */}
+                {/* Hover overlay with actions - mobile: 2 buttons, desktop: 3 */}
                 <div className="absolute inset-0 z-10 bg-black/60 opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button
                     size="icon"
                     variant="secondary"
-                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    className="hidden sm:flex w-10 h-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (projectJobs.length > 0) {
@@ -611,24 +611,24 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       }
                     }}
                   >
-                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <Eye className="w-4 h-4" />
                   </Button>
                   <Button
                     size="icon"
                     variant="secondary"
-                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    className="w-9 h-9 sm:w-10 sm:h-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDownloadAll(project);
                     }}
                     disabled={projectJobs.length === 0}
                   >
-                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <Download className="w-4 h-4" />
                   </Button>
                   <Button
                     size="icon"
                     variant="destructive"
-                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    className="w-9 h-9 sm:w-10 sm:h-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (isOrphan) {
@@ -638,7 +638,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       }
                     }}
                   >
-                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>

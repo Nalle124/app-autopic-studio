@@ -947,7 +947,7 @@ function IndexContent() {
                         title="Redigera med AI"
                         onClick={() => setShowAiModal(true)}
                       >
-                        <img src="/favicon.png" alt="AI" className="w-4 h-4 object-contain dark:brightness-0 dark:invert" />
+                        <img src="/favicon.png" alt="AI" className="w-5 h-5 object-contain dark:brightness-0 dark:invert" />
                       </Button>
                       <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Redigera ${selectedImages.size} valda` : 'Redigera'} onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');

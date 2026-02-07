@@ -549,6 +549,26 @@ export const CreateSceneModal = ({
     } else {
       const categoryLabel = activeCategories.find(c => c.value === guidedCategory)?.label || guidedCategory;
       setGuidedComplete(true);
+      
+      // For ad mode, show format selection before the summary
+      if (chatMode === 'ad-create') {
+        setMessages(prev => [
+          ...prev,
+          { role: 'user', text: optionLabel },
+          {
+            role: 'assistant-options',
+            text: 'Välj format:',
+            options: [
+              { label: '📐 Liggande (3:2)', value: '__format_landscape__' },
+              { label: '📱 Stående (2:3)', value: '__format_portrait__' },
+            ],
+          },
+        ]);
+        // Store selections but wait for format choice
+        setGuidedSelections(newSelections);
+        return;
+      }
+      
       setMessages(prev => [
         ...prev,
         { role: 'user', text: optionLabel },
@@ -586,6 +606,23 @@ export const CreateSceneModal = ({
 
   // ─── Option click dispatcher ────────────────────────────────
   const handleOptionClick = (value: string) => {
+    // Handle format selection for ad mode
+    if (value === '__format_landscape__' || value === '__format_portrait__') {
+      const selectedFormat = value === '__format_portrait__' ? 'portrait' : 'landscape';
+      setAdFormat(selectedFormat);
+      const formatLabel = selectedFormat === 'portrait' ? '📱 Stående (2:3)' : '📐 Liggande (3:2)';
+      const categoryLabel = activeCategories.find(c => c.value === guidedCategory)?.label || guidedCategory;
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', text: formatLabel },
+        {
+          role: 'assistant',
+          text: `Bra val! Här är din plan:\n\n**${categoryLabel}**: ${guidedSelections.join(' · ')}\n**Format**: ${selectedFormat === 'portrait' ? 'Stående' : 'Liggande'}\n\nLägg till fler detaljer i textfältet, eller klicka **Skapa bild** direkt.`,
+        },
+      ]);
+      return;
+    }
+    
     if (!guidedCategory && (chatMode === 'background-studio' || chatMode === 'ad-create')) {
       handleCategorySelect(value);
       return;
@@ -786,8 +823,8 @@ export const CreateSceneModal = ({
     }
   };
 
-  // ─── Save ──────────────────────────────────────────────────
-  const handleSave = async (imageMsg: Extract<ChatMessage, { role: 'assistant-image' }>, overrideName?: string) => {
+  // ─── Save as background scene ────────────────────────────────
+  const handleSaveAsBackground = async (imageMsg: Extract<ChatMessage, { role: 'assistant-image' }>, overrideName?: string) => {
     if (!user) return;
     setIsSaving(true);
 
@@ -843,13 +880,62 @@ export const CreateSceneModal = ({
 
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: `"${sceneName}" sparad i ditt galleri!` },
+        { role: 'assistant', text: `"${sceneName}" sparad som bakgrund!` },
       ]);
-      toast.success(`"${sceneName}" sparad!`);
+      toast.success(`"${sceneName}" sparad som bakgrund!`);
       onSceneCreated(scene);
     } catch (err) {
       console.error('Save error:', err);
       toast.error('Kunde inte spara scenen.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ─── Save to project gallery ───────────────────────────────
+  const handleSaveToProjectGallery = async (imageMsg: Extract<ChatMessage, { role: 'assistant-image' }>, overrideName?: string) => {
+    if (!user) return;
+    setIsSaving(true);
+
+    try {
+      const galleryName = overrideName || imageMsg.suggestedName;
+      
+      // Create a project for this gallery item
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          registration_number: galleryName.toUpperCase(),
+        })
+        .select()
+        .single();
+
+      if (projectError) throw projectError;
+
+      // Create a processing job entry with the generated image
+      const { error: jobError } = await supabase
+        .from('processing_jobs')
+        .insert({
+          user_id: user.id,
+          project_id: project.id,
+          original_filename: `${galleryName}.png`,
+          scene_id: 'ai-generated',
+          status: 'completed',
+          final_url: imageMsg.imageUrl,
+          thumbnail_url: imageMsg.imageUrl,
+          completed_at: new Date().toISOString(),
+        });
+
+      if (jobError) throw jobError;
+
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', text: `"${galleryName}" sparad i ditt projektgalleri!` },
+      ]);
+      toast.success(`"${galleryName}" sparad i galleriet!`);
+    } catch (err) {
+      console.error('Save to gallery error:', err);
+      toast.error('Kunde inte spara till galleriet.');
     } finally {
       setIsSaving(false);
     }
@@ -918,7 +1004,7 @@ export const CreateSceneModal = ({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="sm:max-w-lg bg-card border-border overflow-hidden p-0 gap-0 flex flex-col h-[92dvh] sm:h-auto sm:max-h-[75vh] w-[calc(100%-1.5rem)] sm:w-full rounded-2xl"
+        className="sm:max-w-2xl bg-card border-border overflow-hidden p-0 gap-0 flex flex-col h-[92dvh] sm:h-auto sm:max-h-[85vh] w-[calc(100%-1.5rem)] sm:w-full rounded-2xl"
         hideCloseButton
       >
         {/* Header */}
@@ -955,14 +1041,14 @@ export const CreateSceneModal = ({
             // ─── Mode select cards ────────────────────────
             if (msg.role === 'mode-select') {
               return (
-                <div key={i} className="flex-1 flex flex-col items-center justify-center min-h-[200px]">
+                <div key={i} className="flex-1 flex flex-col min-h-[200px]">
                   <div className="flex gap-2.5 items-start mb-5">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
                       <p className="text-sm text-foreground leading-relaxed">Hej! Vad vill du göra?</p>
                     </div>
                   </div>
-                  <div className="space-y-2.5 w-full max-w-xs">
+                  <div className="space-y-2.5 w-full max-w-xs mx-auto">
                     <button
                       onClick={() => selectMode('background-studio')}
                       className="flex items-start gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group"
@@ -1210,7 +1296,7 @@ export const CreateSceneModal = ({
                               Spara till galleri
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleSave(msg)}>
+                            <DropdownMenuItem onClick={() => handleSaveAsBackground(msg)}>
                               <Image className="w-3.5 h-3.5 mr-2" />
                               Lägg till som bakgrund
                             </DropdownMenuItem>
@@ -1373,26 +1459,6 @@ export const CreateSceneModal = ({
 
               {guidedComplete && (
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {chatMode === 'ad-create' && (
-                    <div className="flex items-center bg-muted/50 rounded-full p-0.5">
-                      <button
-                        onClick={() => setAdFormat('landscape')}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
-                          adFormat === 'landscape' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
-                        }`}
-                      >
-                        Liggande
-                      </button>
-                      <button
-                        onClick={() => setAdFormat('portrait')}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
-                          adFormat === 'portrait' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
-                        }`}
-                      >
-                        Stående
-                      </button>
-                    </div>
-                  )}
                   <Button
                     onClick={() => {
                       const extra = prompt.trim();
@@ -1402,7 +1468,7 @@ export const CreateSceneModal = ({
                     disabled={isGenerating}
                     className="rounded-full flex-shrink-0 h-10 px-4"
                   >
-                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <img src="/favicon.png" alt="" className="w-4 h-4 mr-1.5 object-contain dark:brightness-0 dark:invert" />}
+                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
                     {chatMode === 'ad-create' ? 'Skapa annons' : 'Skapa bild'}
                   </Button>
                 </div>
@@ -1487,7 +1553,7 @@ export const CreateSceneModal = ({
                   Avbryt
                 </Button>
                 <Button size="sm" onClick={async () => {
-                  await handleSave(saveDialogImage, saveName.trim() || undefined);
+                  await handleSaveToProjectGallery(saveDialogImage, saveName.trim() || undefined);
                   setSaveDialogImage(null);
                 }} disabled={isSaving}>
                   {isSaving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
