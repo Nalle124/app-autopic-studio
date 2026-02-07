@@ -52,7 +52,7 @@ export const AdminUserTable = ({
   onDeleteUser,
 }: AdminUserTableProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<SortField>('credits');
+  const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [creditFilter, setCreditFilter] = useState<CreditFilter>('all');
 
