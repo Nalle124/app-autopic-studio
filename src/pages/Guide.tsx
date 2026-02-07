@@ -45,6 +45,7 @@ const GUIDE_SECTIONS = [
   { id: 'beskärning', label: 'Beskärning' },
   { id: 'branding', label: 'Logotyp' },
   { id: 'skapa-ai', label: 'Skapa bakgrund' },
+  { id: 'ai-chatt', label: 'AI-chatten' },
   { id: 'resultat', label: 'Resultat' },
   { id: 'faq', label: 'FAQ' },
 ];
@@ -362,6 +363,110 @@ const Guide = () => {
           </div>
         </section>
 
+        {/* Section: AI-chatten */}
+        <section id="ai-chatt" className="space-y-6">
+          <SectionHeading icon={<MessageSquare className="w-5 h-5" />} title="AI-chatten – ditt kreativa verktyg" />
+
+          <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
+            <p>
+              AI-chatten är ett <strong className="text-foreground">interaktivt chattverktyg</strong> där du kan skapa bakgrunder, annonsbilder och fritt redigera bilder genom att beskriva vad du vill ha. Du hittar den under <strong className="text-foreground">"Skapa med AI"</strong> i appen.
+            </p>
+            <p>
+              Chatten har tre lägen att välja mellan:
+            </p>
+          </div>
+
+          {/* Three modes */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-md bg-primary/10">
+                  <Image className="w-4 h-4 text-primary" />
+                </div>
+                <h4 className="font-semibold text-foreground text-sm">Bakgrundsstudio</h4>
+              </div>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Guidat flöde för att skapa bilbakgrunder. Välj kategori (studio, utomhus, showroom) och AI:n leder dig genom detaljer som ljus, material och väder.
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-md bg-primary/10">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </div>
+                <h4 className="font-semibold text-foreground text-sm">Fritt skapande</h4>
+              </div>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Öppen bildgenerering utan regler. Beskriv fritt vad du vill ha, ladda upp en referensbild och iterera tills du är nöjd.
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded-md bg-primary/10">
+                  <Palette className="w-4 h-4 text-primary" />
+                </div>
+                <h4 className="font-semibold text-foreground text-sm">Skapa annons</h4>
+              </div>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Skapa annonsbilder med text, logotyp och CTA. Välj liggande eller stående format och beskriv vad som ska synas i annonsen.
+              </p>
+            </div>
+          </div>
+
+          {/* Example prompts */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground">Exempel på prompts</h4>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <PromptExample
+                label="Bakgrund"
+                prompt="Vit studio med mjukt ljus och betongunderlag"
+              />
+              <PromptExample
+                label="Bakgrund"
+                prompt="Höstgata med löv på marken och varmt kvällsljus"
+              />
+              <PromptExample
+                label="Fri bild"
+                prompt="Gör bakgrunden mörkare och lägg till regndroppar"
+              />
+              <PromptExample
+                label="Annons"
+                prompt="Skapa en annons med texten 'Nyhet – nu i lager' i svart och guld"
+              />
+            </div>
+          </div>
+
+          {/* Best practices */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground">Best practice</h4>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MiniTip
+                icon={<Camera className="w-4 h-4" />}
+                text="Var specifik – beskriv material, ljus, väder och tid på dygnet. 'Mörk betong med varm spotlight från vänster' ger bättre resultat än 'studio'."
+              />
+              <MiniTip
+                icon={<Upload className="w-4 h-4" />}
+                text="Använd referensbilder! Ladda upp en bild du gillar och be AI:n skapa något liknande – det ger mycket mer träffsäkra resultat."
+              />
+              <MiniTip
+                icon={<RefreshCw className="w-4 h-4" />}
+                text="Iterera i chatten – du kan be AI:n justera, t.ex. 'gör det ljusare', 'byt till asfalt' eller 'lägg till snö' utan att börja om."
+              />
+              <MiniTip
+                icon={<Sparkles className="w-4 h-4" />}
+                text="Spara bakgrunder du gillar direkt till 'Mina scener' via knappen i chatten. De dyker upp i ditt bakgrundsbibliotek."
+              />
+            </div>
+          </div>
+
+          <div className="rounded-[10px] border border-border/50 bg-card/50 p-5 flex items-start gap-3">
+            <MessageSquare className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <p className="text-sm text-muted-foreground font-sans">
+              <strong className="text-foreground">Tips:</strong> Du kan klicka på en genererad bild i chatten för att öppna den i förhandsvisning. Därifrån kan du beskriva specifika ändringar – AI:n använder bilden som referens och behåller kompositionen.
+            </p>
+          </div>
+        </section>
+
         <section id="resultat" className="space-y-6">
           <SectionHeading icon={<Image className="w-5 h-5" />} title="Förväntat resultat" />
 
@@ -465,10 +570,19 @@ const Guide = () => {
         </section>
       </main>
     </div>
-  );
+);
+
 };
 
+
 /* --- Sub-components --- */
+
+const PromptExample = ({ label, prompt }: { label: string; prompt: string }) => (
+  <div className="rounded-[10px] border border-border/50 bg-card/50 px-4 py-3 flex items-start gap-3">
+    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0 mt-0.5">{label}</Badge>
+    <p className="text-xs text-muted-foreground font-sans italic">"{prompt}"</p>
+  </div>
+);
 
 const SectionHeading = ({ icon, title }: { icon: React.ReactNode; title: string }) => (
   <div className="flex items-center gap-2.5">
