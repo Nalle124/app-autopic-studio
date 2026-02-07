@@ -708,10 +708,6 @@ function IndexContent() {
               </Button>
             )}
 
-            {/* Back button - only show when on history tab or coming from somewhere */}
-            {activeTab === 'history' && <Button variant="ghost" size="icon" onClick={() => setActiveTab('new')} title="Tillbaka">
-                <ChevronLeft className="w-5 h-5" />
-              </Button>}
             
             <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'new' | 'history')} className="w-auto">
               <TabsList className="bg-background/80 backdrop-blur-sm">

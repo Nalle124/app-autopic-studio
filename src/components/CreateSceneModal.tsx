@@ -753,7 +753,7 @@ export const CreateSceneModal = ({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="sm:max-w-lg bg-card border-border overflow-hidden p-0 gap-0 flex flex-col h-[92dvh] sm:h-auto sm:max-h-[600px] w-[calc(100%-1.5rem)] sm:w-full rounded-2xl"
+        className="sm:max-w-lg bg-card border-border overflow-hidden p-0 gap-0 flex flex-col h-[92dvh] sm:h-auto sm:max-h-[75vh] w-[calc(100%-1.5rem)] sm:w-full rounded-2xl"
         hideCloseButton
       >
         {/* Header */}
@@ -808,14 +808,14 @@ export const CreateSceneModal = ({
             // ─── Mode select cards ────────────────────────
             if (msg.role === 'mode-select') {
               return (
-                <div key={i} className="space-y-4">
-                  <div className="flex gap-2.5 items-start">
+                <div key={i} className="flex-1 flex flex-col items-center justify-center min-h-[200px]">
+                  <div className="flex gap-2.5 items-start mb-6">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
                       <p className="text-sm text-foreground leading-relaxed">Hej! Vad vill du göra? 👋</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 pl-9">
+                  <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
                     <button
                       onClick={() => selectMode('background-studio')}
                       className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-center group"

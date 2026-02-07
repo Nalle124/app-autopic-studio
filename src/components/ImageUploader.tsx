@@ -344,7 +344,7 @@ export const ImageUploader = ({
               )}
             </div>
             {/* All controls on one row */}
-            <div className="flex items-center gap-2 flex-wrap mt-3 sm:mt-0">
+            <div className="flex items-center gap-2 flex-wrap">
               {uploadedImages.length > 0 && onEditImage && (
                 <>
                   <Button variant="outline" size="icon" className="h-9 w-9" title="Beskär" onClick={() => {
@@ -364,19 +364,19 @@ export const ImageUploader = ({
                 </>
               )}
               
-              {/* Relight toggle - on same row */}
+              {/* Relight toggle - on same row as edit buttons */}
               {uploadedImages.length > 0 && onRelightChange && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
-                    <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <Label htmlFor="relight-toggle" className="text-sm font-medium cursor-pointer whitespace-nowrap">
-                      Ljusförbättring
+                <>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 border border-border/50">
+                    <Sparkles className={`w-3.5 h-3.5 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <Label htmlFor="relight-toggle" className="text-xs font-medium cursor-pointer whitespace-nowrap sm:text-sm">
+                      Ljus
                     </Label>
                     <Switch
                       id="relight-toggle"
                       checked={relightEnabled}
                       onCheckedChange={onRelightChange}
-                      className="data-[state=checked]:bg-primary"
+                      className="data-[state=checked]:bg-primary scale-90"
                     />
                   </div>
                   <Popover>
@@ -389,7 +389,7 @@ export const ImageUploader = ({
                       <p>Återupplivar ljuset i bilen och är perfekt när det var för mörkt eller mycket reflektioner i originalbilden.</p>
                     </PopoverContent>
                   </Popover>
-                </div>
+                </>
               )}
             </div>
           </div>
