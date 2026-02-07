@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 
@@ -36,13 +37,86 @@ import caddyRelightAfter from "@/assets/examples/caddy-relight-after.png";
 import blurExample from "@/assets/examples/blur-example.png";
 import volvoCropExample from "@/assets/examples/volvo-crop-example.png";
 
+const GUIDE_SECTIONS = [
+  { id: 'foto', label: 'Fotografering', icon: '📸' },
+  { id: 'ai-bakgrunder', label: 'AI-bakgrunder', icon: '✨' },
+  { id: 'ljus', label: 'Ljusförbättring', icon: '☀️' },
+  { id: 'blur', label: 'Bakgrundsblur', icon: '🔵' },
+  { id: 'beskärning', label: 'Beskärning', icon: '✂️' },
+  { id: 'branding', label: 'Logotyp', icon: '🎨' },
+  { id: 'skapa-ai', label: 'Skapa bakgrund', icon: '🖼️' },
+  { id: 'resultat', label: 'Resultat', icon: '📊' },
+  { id: 'faq', label: 'FAQ', icon: '❓' },
+];
+
 const Guide = () => {
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState('foto');
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  // Observe which section is in view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+    );
+
+    // Wait for refs to be set
+    const timeout = setTimeout(() => {
+      GUIDE_SECTIONS.forEach(({ id }) => {
+        const el = document.getElementById(id);
+        if (el) observer.observe(el);
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timeout);
+      observer.disconnect();
+    };
+  }, []);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const headerOffset = 120;
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+    }
+  };
   
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
+
+      {/* Sticky section navigator */}
+      <nav className="sticky top-16 z-30 bg-background/90 backdrop-blur-md border-b border-border/40">
+        <div className="container mx-auto max-w-3xl px-4">
+          <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide -mx-4 px-4">
+            {GUIDE_SECTIONS.map(({ id, label, icon }) => (
+              <button
+                key={id}
+                onClick={() => scrollToSection(id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                  activeSection === id
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                }`}
+              >
+                <span className="text-[11px]">{icon}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
 
       <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-3xl space-y-10 sm:space-y-14">
         
@@ -61,7 +135,7 @@ const Guide = () => {
         </section>
 
         {/* Section 1: Fotograferingstips */}
-        <section className="space-y-6">
+        <section id="foto" className="space-y-6">
           <SectionHeading icon={<Camera className="w-5 h-5" />} title="Fotograferingstips" />
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -123,7 +197,7 @@ const Guide = () => {
         </section>
 
         {/* Section 2: Hur AI-bakgrunder fungerar */}
-        <section className="space-y-6">
+        <section id="ai-bakgrunder" className="space-y-6">
           <SectionHeading icon={<Sparkles className="w-5 h-5" />} title="Hur AI-bakgrunder fungerar" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -148,7 +222,7 @@ const Guide = () => {
         </section>
 
         {/* Section 3: Ljusförbättring */}
-        <section className="space-y-6">
+        <section id="ljus" className="space-y-6">
           <SectionHeading icon={<Sun className="w-5 h-5" />} title="Ljusförbättring" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -179,7 +253,7 @@ const Guide = () => {
         </section>
 
         {/* Section 4: Bakgrundsblur */}
-        <section className="space-y-6">
+        <section id="blur" className="space-y-6">
           <SectionHeading icon={<CircleDot className="w-5 h-5" />} title="Bakgrundsblur" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -215,7 +289,7 @@ const Guide = () => {
         </section>
 
         {/* Section 5: Beskärning */}
-        <section className="space-y-6">
+        <section id="beskärning" className="space-y-6">
           <SectionHeading icon={<Crop className="w-5 h-5" />} title="Beskärning och format" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -244,7 +318,7 @@ const Guide = () => {
         </section>
 
         {/* Section 6: Logotyp & Branding */}
-        <section className="space-y-6">
+        <section id="branding" className="space-y-6">
           <SectionHeading icon={<Palette className="w-5 h-5" />} title="Logotyp och branding" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -258,7 +332,7 @@ const Guide = () => {
         </section>
 
         {/* Section 6b: Skapa egna bakgrunder med AI */}
-        <section className="space-y-6">
+        <section id="skapa-ai" className="space-y-6">
           <SectionHeading icon={<Sparkles className="w-5 h-5" />} title="Skapa egna bakgrunder med AI" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -289,7 +363,7 @@ const Guide = () => {
           </div>
         </section>
 
-        <section className="space-y-6">
+        <section id="resultat" className="space-y-6">
           <SectionHeading icon={<Image className="w-5 h-5" />} title="Förväntat resultat" />
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
@@ -314,7 +388,7 @@ const Guide = () => {
         </section>
 
         {/* Section 8: FAQ */}
-        <section className="space-y-6">
+        <section id="faq" className="space-y-6">
           <SectionHeading icon={<MessageSquare className="w-5 h-5" />} title="Vanliga frågor" />
 
           <Accordion type="single" collapsible className="space-y-2">
