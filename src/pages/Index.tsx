@@ -828,9 +828,6 @@ function IndexContent() {
               </div>
               <div className="absolute inset-0 rounded-[inherit] pointer-events-none border border-primary/[0.08] group-hover:border-primary/20 transition-colors duration-500" />
               <div className="relative flex items-center gap-3.5 p-4 sm:p-5">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-muted/60">
-                  <img src="/favicon.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 object-contain dark:brightness-0 dark:invert" />
-                </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-sm sm:text-base text-foreground leading-tight">Skapa med AI</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Generera bakgrunder, redigera bilder, ändra färg – allt med AI</p>
