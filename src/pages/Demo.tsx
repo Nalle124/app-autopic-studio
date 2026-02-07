@@ -608,7 +608,7 @@ const DemoContent = () => {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
-            <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-5 sm:h-6 w-auto" />
+            <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-6 w-auto" />
           </a>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full font-medium hidden xs:inline">Demo</span>
