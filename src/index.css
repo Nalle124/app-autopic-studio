@@ -605,4 +605,19 @@
   .dark [class*="border-"] {
     --tw-border-opacity: 1;
   }
+  
+  /* Mobile chat modal - dynamic height for keyboard */
+  .mobile-chat-height {
+    height: calc(var(--visual-viewport-height, 100dvh) - 1rem);
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 1rem);
+    transition: height 0.15s ease-out;
+  }
+  
+  @media (min-width: 640px) {
+    .mobile-chat-height {
+      height: auto;
+      max-height: 85vh;
+      transition: none;
+    }
+  }
 }
