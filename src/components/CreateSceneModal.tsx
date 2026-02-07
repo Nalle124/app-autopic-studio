@@ -587,13 +587,17 @@ export const CreateSceneModal = ({
     const modeLabel = chatMode === 'ad-create' ? 'advertisement' : 'background';
     const combinedPrompt = `${categoryLabel} ${modeLabel}: ${guidedSelections.join('. ')}${extraDetails ? `. ${extraDetails}` : ''}.`;
 
-    // Build the prompt silently - don't show it to the user
-    const silentUserMsg: ChatMessage = { role: 'user', text: combinedPrompt };
+    // Build the prompt silently - include reference image if one is set
+    const silentUserMsg: ChatMessage = referenceImage
+      ? { role: 'user', text: combinedPrompt, image: referenceImage }
+      : { role: 'user', text: combinedPrompt };
     const updatedMessages = [...messages, silentUserMsg];
     // Only show loading indicator, not the raw prompt
     setMessages([...messages, { role: 'assistant-loading' }]);
     setIsGenerating(true);
     setGuidedComplete(false);
+    setReferenceImage(null);
+    setReferenceFile(null);
 
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
