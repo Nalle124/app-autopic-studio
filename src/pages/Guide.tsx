@@ -38,15 +38,15 @@ import blurExample from "@/assets/examples/blur-example.png";
 import volvoCropExample from "@/assets/examples/volvo-crop-example.png";
 
 const GUIDE_SECTIONS = [
-  { id: 'foto', label: 'Fotografering', icon: '📸' },
-  { id: 'ai-bakgrunder', label: 'AI-bakgrunder', icon: '✨' },
-  { id: 'ljus', label: 'Ljusförbättring', icon: '☀️' },
-  { id: 'blur', label: 'Bakgrundsblur', icon: '🔵' },
-  { id: 'beskärning', label: 'Beskärning', icon: '✂️' },
-  { id: 'branding', label: 'Logotyp', icon: '🎨' },
-  { id: 'skapa-ai', label: 'Skapa bakgrund', icon: '🖼️' },
-  { id: 'resultat', label: 'Resultat', icon: '📊' },
-  { id: 'faq', label: 'FAQ', icon: '❓' },
+  { id: 'foto', label: 'Fotografering' },
+  { id: 'ai-bakgrunder', label: 'AI-bakgrunder' },
+  { id: 'ljus', label: 'Ljusförbättring' },
+  { id: 'blur', label: 'Bakgrundsblur' },
+  { id: 'beskärning', label: 'Beskärning' },
+  { id: 'branding', label: 'Logotyp' },
+  { id: 'skapa-ai', label: 'Skapa bakgrund' },
+  { id: 'resultat', label: 'Resultat' },
+  { id: 'faq', label: 'FAQ' },
 ];
 
 const Guide = () => {
@@ -99,18 +99,17 @@ const Guide = () => {
       {/* Sticky section navigator */}
       <nav className="sticky top-16 z-30 bg-background/90 backdrop-blur-md border-b border-border/40">
         <div className="container mx-auto max-w-3xl px-4">
-          <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide -mx-4 px-4">
-            {GUIDE_SECTIONS.map(({ id, label, icon }) => (
+          <div className="flex gap-1.5 overflow-x-auto py-3 scrollbar-hide -mx-4 px-4">
+            {GUIDE_SECTIONS.map(({ id, label }) => (
               <button
                 key={id}
                 onClick={() => scrollToSection(id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                className={`px-3.5 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                   activeSection === id
                     ? 'bg-primary/10 text-primary border border-primary/20'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                 }`}
               >
-                <span className="text-[11px]">{icon}</span>
                 {label}
               </button>
             ))}
