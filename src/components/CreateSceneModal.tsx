@@ -91,6 +91,15 @@ export const CreateSceneModal = ({
     }
   }, [open]);
 
+  const INSPIRATION_PROMPTS = [
+    'Vit studio med mjukt ljus',
+    'Höstgata med löv på marken',
+    'Mörk betong med dramatiska skuggor',
+    'Snöig skogsväg i vinterlandskap',
+    'Lyxig uppfart med grus och grönska',
+    'Industrilokal med stort fönster',
+  ];
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -357,11 +366,29 @@ export const CreateSceneModal = ({
           {messages.map((msg, i) => {
             if (msg.role === 'system') {
               return (
-                <div key={i} className="flex gap-2.5 items-start">
-                  <AutopicAvatar />
-                  <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                    <p className="text-sm text-foreground leading-relaxed">{msg.text}</p>
+                <div key={i} className="space-y-3">
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
                   </div>
+                  {/* Inspiration chips - only show when no user messages yet */}
+                  {messages.filter(m => m.role === 'user').length === 0 && (
+                    <div className="flex flex-wrap gap-1.5 pl-9">
+                      {INSPIRATION_PROMPTS.map((suggestion, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setPrompt(suggestion);
+                          }}
+                          className="text-xs px-3 py-1.5 rounded-full border border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             }

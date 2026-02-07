@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { SceneMetadata } from '@/types/scene';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, Lock, Star, LayoutGrid, GalleryHorizontal, Info } from 'lucide-react';
+import { Check, Lock, Star, LayoutGrid, GalleryHorizontal, Info, Plus } from 'lucide-react';
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
+import { DemoSignupModal } from '@/components/DemoSignupModal';
 import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import {
   Select,
@@ -79,6 +80,7 @@ export const DemoSceneSelector = ({
   const { triggerPaywall, isSubscribed } = useDemo();
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const [showSignupModal, setShowSignupModal] = useState(false);
   
   // Users with subscription have access to all categories
   // Free users (logged in without subscription) only have access to demo category
@@ -243,7 +245,42 @@ export const DemoSceneSelector = ({
 
   return (
     <div className="space-y-4">
-      {/* Orientation toggle - compact on mobile */}
+      {/* AI Scene Generator - own segment above gallery */}
+      <div className="space-y-3 mb-2">
+        <div
+          onClick={() => setShowSignupModal(true)}
+          className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] rounded-xl bg-card border border-border"
+        >
+          <div className="flex items-center gap-4 p-4 sm:p-5">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-muted">
+              <img src="/favicon.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 object-contain dark:brightness-0 dark:invert" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-sm sm:text-base text-foreground leading-tight">
+                Skapa med AI
+              </h3>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                Beskriv och generera en egen bakgrund
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                <Plus className="w-5 h-5 text-primary" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <p className="text-center text-xs text-muted-foreground">
+          Eller välj en från galleriet
+        </p>
+      </div>
+
+      {/* Signup modal for AI feature */}
+      <DemoSignupModal
+        open={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSuccess={() => setShowSignupModal(false)}
+      />
       {isMobile && onOrientationChange && (
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Format:</span>
