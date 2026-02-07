@@ -598,48 +598,9 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                   </div>
                 )}
                 
-                {/* Hover overlay with actions - mobile: 2 buttons, desktop: 3 */}
-                <div className="absolute inset-0 z-10 bg-black/60 opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="hidden sm:flex w-10 h-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (projectJobs.length > 0) {
-                        openPreview(project, 0);
-                      }
-                    }}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="w-9 h-9 sm:w-10 sm:h-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownloadAll(project);
-                    }}
-                    disabled={projectJobs.length === 0}
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="w-9 h-9 sm:w-10 sm:h-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isOrphan) {
-                        handleDeleteAllOrphanJobs();
-                      } else {
-                        handleDeleteProject(project.id);
-                      }
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                {/* Hover overlay - simple eye icon */}
+                <div className="absolute inset-0 z-10 bg-black/40 opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity flex items-center justify-center">
+                  <Eye className="w-8 h-8 text-white" />
                 </div>
               </div>
 
