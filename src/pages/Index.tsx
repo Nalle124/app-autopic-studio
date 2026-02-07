@@ -126,6 +126,7 @@ function IndexContent() {
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [sceneSelectorKey, setSceneSelectorKey] = useState(0);
   // Unauthenticated users are redirected to /auth in the Index wrapper
 
   // Load draft images from cloud on mount (cross-device persistence)
@@ -851,6 +852,14 @@ function IndexContent() {
                 // Don't auto-select/scroll when saving from AI modal
                 // The scene is saved to "Mina scener" - user stays where they are
               }}
+              onNavigateToMyScenes={() => {
+                setShowAiModal(false);
+                // Force re-render SceneSelector with my-scenes as default
+                setSceneSelectorKey(prev => prev + 1);
+                setTimeout(() => {
+                  document.getElementById('explore-scenes-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+              }}
               uploadedImages={uploadedImages}
               completedImages={uploadedImages.filter(img => img.status === 'completed')}
             />
@@ -861,7 +870,7 @@ function IndexContent() {
                 <div className="flex items-center gap-3">
                   <h2 className="font-sans font-medium text-lg text-foreground">Utforska bakgrunder</h2>
                 </div>
-                <SceneSelector selectedSceneId={null} onSceneSelect={() => {}} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
+                <SceneSelector key={sceneSelectorKey} selectedSceneId={null} onSceneSelect={() => {}} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
                 
                 {/* Scroll to top button for scene gallery */}
                 <ScrollToTopButton threshold={300} />

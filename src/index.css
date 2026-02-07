@@ -609,14 +609,15 @@
   /* Mobile chat modal - fixed positioning for keyboard safety */
   .mobile-chat-height {
     position: fixed !important;
-    top: var(--visual-viewport-offset-top, 0px);
+    top: calc(var(--visual-viewport-offset-top, 0px) + 1.5rem);
     left: 0.375rem;
     right: 0.375rem;
-    height: var(--visual-viewport-height, 100dvh);
-    max-height: var(--visual-viewport-height, 100dvh);
+    height: calc(var(--visual-viewport-height, 100dvh) - 3rem);
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 3rem);
     margin: 0 !important;
-    transition: height 0.12s ease-out, top 0.12s ease-out;
     transform: none !important;
+    will-change: height, top;
+    border-radius: 1rem !important;
   }
   
   @media (min-width: 640px) {
@@ -628,7 +629,8 @@
       height: auto;
       max-height: 85vh;
       margin: 0 auto !important;
-      transition: none;
+      will-change: auto;
+      border-radius: 1rem !important;
     }
   }
 }
