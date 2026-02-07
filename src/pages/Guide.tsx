@@ -19,10 +19,9 @@ import {
   ArrowDown,
   MoveHorizontal,
   Shield,
-  
+  Upload,
   MessageSquare,
   Palette,
-  ChevronRight,
   Target,
   RectangleHorizontal,
   Sun,
@@ -258,7 +257,38 @@ const Guide = () => {
           </div>
         </section>
 
-        {/* Section 7: Förväntat resultat */}
+        {/* Section 6b: Skapa egna bakgrunder med AI */}
+        <section className="space-y-6">
+          <SectionHeading icon={<Sparkles className="w-5 h-5" />} title="Skapa egna bakgrunder med AI" />
+
+          <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
+            <p>
+              Med <strong className="text-foreground">Skapa med AI</strong> kan du generera helt egna bakgrunder genom att beskriva den miljö du vill ha. Skriv till exempel <em>"snöig skogsväg"</em> eller <em>"mörk betong med dramatiska skuggor"</em> – AI:n skapar en bakgrund anpassad för bilplacering.
+            </p>
+            <p>
+              Alla genererade bakgrunder sparas i din personliga kategori <strong className="text-foreground">"Mina scener"</strong> och kan användas precis som vanliga bakgrunder i galleriet.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <MiniTip
+              icon={<Camera className="w-4 h-4" />}
+              text="AI:n skapar alltid bilder med rätt perspektiv och en tydlig markyta – optimerat för att placera bilar."
+            />
+            <MiniTip
+              icon={<Sparkles className="w-4 h-4" />}
+              text="Du kan fortsätta chatten och be AI:n justera – t.ex. 'gör det mörkare' eller 'lägg till snö'."
+            />
+          </div>
+
+          <div className="rounded-[10px] border border-border/50 bg-card/50 p-5 flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <p className="text-sm text-muted-foreground font-sans">
+              <strong className="text-foreground">Tips:</strong> Ju mer specifik du är, desto bättre resultat. Nämn material, ljus, väder och tid på dygnet för att ge AI:n mest att jobba med.
+            </p>
+          </div>
+        </section>
+
         <section className="space-y-6">
           <SectionHeading icon={<Image className="w-5 h-5" />} title="Förväntat resultat" />
 
@@ -350,13 +380,13 @@ const Guide = () => {
 
           <div className="text-center pt-2">
             <Button
-              variant="premium"
+              variant="default"
               size="lg"
               onClick={() => navigate("/")}
               className="gap-2"
             >
-              Börja använda AutoPic
-              <ChevronRight className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
+              Ladda upp bilder
             </Button>
           </div>
         </section>
