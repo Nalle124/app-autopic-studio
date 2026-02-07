@@ -646,6 +646,27 @@ export const CreateSceneModal = ({
     }
   };
 
+  // ─── Timeout-wrapped edge function call ─────────────────────
+  const AI_TIMEOUT_MS = 60_000; // 60 seconds max wait
+
+  const invokeWithTimeout = async (body: Record<string, unknown>) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+    try {
+      const result = await supabase.functions.invoke('generate-scene-image', {
+        body,
+      });
+      clearTimeout(timer);
+      return result;
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (controller.signal.aborted || err?.name === 'AbortError') {
+        throw new Error('__timeout__');
+      }
+      throw err;
+    }
+  };
+
   const generateFromGuidedSelections = async (extraDetails?: string) => {
     if (!user || !guidedCategory) return;
 
@@ -668,9 +689,7 @@ export const CreateSceneModal = ({
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
       const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
-      const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: retryPayload,
-      });
+      const { data, error } = await invokeWithTimeout(retryPayload);
       handleGenerateResponse(data, error, updatedMessages, retryPayload);
     } catch (err) {
       const conversationHistory = buildConversationHistory(updatedMessages);
@@ -848,8 +867,12 @@ export const CreateSceneModal = ({
 
   const handleGenerateError = (err: unknown, retryPayload?: { conversationHistory: Array<{ role: string; content: any }>; mode: string; format?: string }) => {
     console.error('Generate error:', err);
+    const isTimeout = err instanceof Error && err.message === '__timeout__';
+    const errorMsg = isTimeout
+      ? 'Tidsgränsen nåddes — bildskapandet tog för lång tid. Försök igen.'
+      : 'Något gick fel.';
     setMessages(prev => prev.filter(m => m.role !== 'assistant-loading'));
-    setMessages(prev => [...prev, { role: 'assistant-error', text: 'Något gick fel.', retryData: retryPayload }]);
+    setMessages(prev => [...prev, { role: 'assistant-error', text: errorMsg, retryData: retryPayload }]);
     setIsGenerating(false);
   };
 
@@ -860,9 +883,7 @@ export const CreateSceneModal = ({
     setIsGenerating(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: { conversationHistory: retryData.conversationHistory, mode: retryData.mode, format: retryData.format },
-      });
+      const { data, error } = await invokeWithTimeout({ conversationHistory: retryData.conversationHistory, mode: retryData.mode, format: retryData.format });
       handleGenerateResponse(data, error, messages, retryData);
     } catch (err) {
       handleGenerateError(err, retryData);
@@ -938,9 +959,7 @@ export const CreateSceneModal = ({
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
       const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
-      const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: retryPayload,
-      });
+      const { data, error } = await invokeWithTimeout(retryPayload);
       handleGenerateResponse(data, error, updatedMessages, retryPayload);
     } catch (err) {
       const conversationHistory = buildConversationHistory(updatedMessages);

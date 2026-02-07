@@ -264,6 +264,7 @@ IMPORTANT: When modifying a previous image, keep ALL unchanged elements and ONLY
             messages: messagesForAttempt,
             modalities: ["image", "text"],
           }),
+          signal: AbortSignal.timeout(50_000), // 50s timeout per attempt
         }
       );
 
@@ -364,6 +365,7 @@ NEVER use emojis. Respond ONLY with valid JSON in this exact format:
             },
           ],
         }),
+        signal: AbortSignal.timeout(15_000), // 15s timeout for metadata
       }
     );
 
@@ -403,12 +405,14 @@ NEVER use emojis. Respond ONLY with valid JSON in this exact format:
     );
   } catch (error) {
     console.error("generate-scene-image error:", error);
+    const isTimeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    const message = isTimeout
+      ? "Bildskapandet tog för lång tid. Försök igen."
+      : error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
-      }),
+      JSON.stringify({ error: message }),
       {
-        status: 500,
+        status: isTimeout ? 504 : 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
