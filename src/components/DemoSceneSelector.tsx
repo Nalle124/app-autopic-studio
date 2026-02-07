@@ -245,37 +245,6 @@ export const DemoSceneSelector = ({
 
   return (
     <div className="space-y-4">
-      {/* AI Scene Generator - standalone section matching Index page */}
-      <section
-        onClick={() => setShowSignupModal(true)}
-        className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ai-create-card"
-        style={{ borderRadius: 'var(--radius-card)', background: 'var(--gradient-card)' }}
-      >
-        <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-foreground/[0.04] dark:bg-white/[0.04]" />
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: 'inherit' }}>
-          <div className="ai-shimmer-sweep" />
-        </div>
-        <div className="absolute inset-0 rounded-[inherit] pointer-events-none border border-primary/[0.08] group-hover:border-primary/20 transition-colors duration-500" />
-        <div className="relative flex items-center gap-3.5 p-4 sm:p-5">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-base sm:text-lg text-foreground leading-tight">Skapa med AI</h3>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium leading-none">Chatt-läge</span>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Generera bakgrunder, redigera bilder, skapa annonser – allt med AI</p>
-          </div>
-          <div className="flex-shrink-0">
-            <div className="w-9 h-9 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-              <Plus className="w-5 h-5 text-primary" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <p className="text-center text-xs text-muted-foreground mb-2">
-        Eller välj en från galleriet
-      </p>
-
       {/* Signup modal for AI feature */}
       <DemoSignupModal
         open={showSignupModal}
