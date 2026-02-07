@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Wand2, Image, MoreVertical, Plus, Type } from 'lucide-react';
+import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -331,6 +331,10 @@ export const CreateSceneModal = ({
   // Image preview overlay
   const [previewImage, setPreviewImage] = useState<{ imageUrl: string; name: string } | null>(null);
   const [previewPrompt, setPreviewPrompt] = useState('');
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
+  const [saveDialogImage, setSaveDialogImage] = useState<Extract<ChatMessage, { role: 'assistant-image' }> | null>(null);
+  const [saveName, setSaveName] = useState('');
+  const [adFormat, setAdFormat] = useState<'landscape' | 'portrait'>('landscape');
 
   // Derived values based on current mode
   const activeFlows = chatMode === 'ad-create' ? AD_GUIDED_FLOWS : GUIDED_FLOWS;
@@ -361,6 +365,10 @@ export const CreateSceneModal = ({
     setGuidedComplete(false);
     setPreviewImage(null);
     setPreviewPrompt('');
+    setShowAllSuggestions(false);
+    setSaveDialogImage(null);
+    setSaveName('');
+    setAdFormat('landscape');
   };
 
   // Auto-scroll to bottom
@@ -568,7 +576,7 @@ export const CreateSceneModal = ({
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: { conversationHistory, mode: chatMode || 'background-studio' },
+        body: { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined },
       });
       handleGenerateResponse(data, error, updatedMessages);
     } catch (err) {
@@ -662,10 +670,15 @@ export const CreateSceneModal = ({
   // ─── Generate ──────────────────────────────────────────────
   const handleGenerateResponse = (data: any, error: any, contextMessages: ChatMessage[]) => {
     setMessages(prev => prev.filter(m => m.role !== 'assistant-loading'));
+    setShowAllSuggestions(false);
 
     if (error) {
       console.error('Edge function error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Hmm, något gick fel. Försök igen!' }]);
+      const isNetworkError = error?.message?.includes('Load failed') || error?.context?.message?.includes('Load failed');
+      const errorMsg = isNetworkError
+        ? 'Nätverksfel — bildskapandet tog för lång tid. Försök igen!'
+        : 'Hmm, något gick fel. Försök igen!';
+      setMessages(prev => [...prev, { role: 'assistant', text: errorMsg }]);
       setIsGenerating(false);
       return;
     }
@@ -765,7 +778,7 @@ export const CreateSceneModal = ({
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: { conversationHistory, mode: chatMode || 'background-studio' },
+        body: { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined },
       });
       handleGenerateResponse(data, error, updatedMessages);
     } catch (err) {
@@ -774,12 +787,12 @@ export const CreateSceneModal = ({
   };
 
   // ─── Save ──────────────────────────────────────────────────
-  const handleSave = async (imageMsg: Extract<ChatMessage, { role: 'assistant-image' }>) => {
+  const handleSave = async (imageMsg: Extract<ChatMessage, { role: 'assistant-image' }>, overrideName?: string) => {
     if (!user) return;
     setIsSaving(true);
 
     try {
-      const sceneName = customName.trim() || imageMsg.suggestedName;
+      const sceneName = overrideName || customName.trim() || imageMsg.suggestedName;
       const { data: inserted, error } = await supabase
         .from('user_scenes')
         .insert({
@@ -884,7 +897,7 @@ export const CreateSceneModal = ({
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: { conversationHistory, mode: chatMode || 'background-studio' },
+        body: { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined },
       });
       handleGenerateResponse(data, error, updatedMessages);
     } catch (err) {
@@ -919,41 +932,13 @@ export const CreateSceneModal = ({
           </div>
           <div className="flex items-center gap-1">
             {chatMode && (
-              <div className="flex items-center bg-muted/50 rounded-full p-0.5 mr-1">
-                <button
-                  onClick={() => handleModeSwitch('background-studio')}
-                  className={`p-1.5 rounded-full transition-all ${
-                    chatMode === 'background-studio'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title="Bakgrundsstudio"
-                >
-                  <Image className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleModeSwitch('free-create')}
-                  className={`p-1.5 rounded-full transition-all ${
-                    chatMode === 'free-create'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title="Fritt skapande"
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleModeSwitch('ad-create')}
-                  className={`p-1.5 rounded-full transition-all ${
-                    chatMode === 'ad-create'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title="Skapa annons"
-                >
-                  <Type className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              <button
+                onClick={handleNewChat}
+                className="flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-1"
+              >
+                <Menu className="w-3 h-3" />
+                Meny
+              </button>
             )}
             <button
               onClick={handleClose}
@@ -1201,43 +1186,36 @@ export const CreateSceneModal = ({
 
                       {/* Action buttons */}
                       <div className="flex gap-2">
-                        {chatMode === 'background-studio' ? (
-                          <Button
-                            onClick={() => handleSave(msg)}
-                            disabled={isSaving}
-                            variant="outline"
-                            size="sm"
-                            className="rounded-full flex-1"
-                          >
-                            {isSaving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
-                            Spara & använd
-                          </Button>
-                        ) : (
-                          <>
-                            <Button
-                              onClick={() => handleDownloadImage(msg.imageUrl, msg.suggestedName)}
-                              variant="outline"
-                              size="sm"
-                              className="rounded-full flex-1"
-                            >
-                              <Download className="w-3.5 h-3.5 mr-1.5" />
-                              Ladda ner
+                        <Button
+                          onClick={() => handleDownloadImage(msg.imageUrl, msg.suggestedName)}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full flex-1"
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1.5" />
+                          Ladda ner
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="rounded-full px-2">
+                              <MoreVertical className="w-3.5 h-3.5" />
                             </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="rounded-full px-2">
-                                  <MoreVertical className="w-3.5 h-3.5" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="min-w-[180px]">
-                                <DropdownMenuItem onClick={() => handleSave(msg)}>
-                                  <ImageIcon className="w-3.5 h-3.5 mr-2" />
-                                  Lägg till som bakgrund
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </>
-                        )}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[200px]">
+                            <DropdownMenuItem onClick={() => {
+                              setSaveDialogImage(msg);
+                              setSaveName(msg.suggestedName);
+                            }}>
+                              <ImageIcon className="w-3.5 h-3.5 mr-2" />
+                              Spara till galleri
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleSave(msg)}>
+                              <Image className="w-3.5 h-3.5 mr-2" />
+                              Lägg till som bakgrund
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button
                           variant="outline"
                           size="sm"
@@ -1254,16 +1232,28 @@ export const CreateSceneModal = ({
 
                   {/* Post-generation refinement suggestions */}
                   {i === messages.length - 1 && (
-                    <div className="flex flex-wrap gap-1.5 pl-9">
-                      {postGenSuggestions.map((s, idx) => (
+                    <div className="space-y-1.5 pl-9">
+                      <div className="flex flex-wrap gap-1.5">
+                        {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setPrompt(s)}
+                            className="text-[13px] px-3.5 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors animate-fade-in"
+                            style={{ animationDelay: `${idx * 60}ms` }}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                      {postGenSuggestions.length > 3 && !showAllSuggestions && (
                         <button
-                          key={idx}
-                          onClick={() => setPrompt(s)}
-                          className="text-[13px] px-3.5 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+                          onClick={() => setShowAllSuggestions(true)}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors pl-1"
                         >
-                          {s}
+                          <ChevronDown className="w-3 h-3" />
+                          Visa fler val
                         </button>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>
@@ -1382,18 +1372,40 @@ export const CreateSceneModal = ({
               </div>
 
               {guidedComplete && (
-                <Button
-                  onClick={() => {
-                    const extra = prompt.trim();
-                    setPrompt('');
-                    generateFromGuidedSelections(extra || undefined);
-                  }}
-                  disabled={isGenerating}
-                  className="rounded-full flex-shrink-0 h-10 px-4"
-                >
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 mr-1.5" />}
-                  {chatMode === 'ad-create' ? 'Skapa annons' : 'Skapa bild'}
-                </Button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {chatMode === 'ad-create' && (
+                    <div className="flex items-center bg-muted/50 rounded-full p-0.5">
+                      <button
+                        onClick={() => setAdFormat('landscape')}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                          adFormat === 'landscape' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+                        }`}
+                      >
+                        Liggande
+                      </button>
+                      <button
+                        onClick={() => setAdFormat('portrait')}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
+                          adFormat === 'portrait' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+                        }`}
+                      >
+                        Stående
+                      </button>
+                    </div>
+                  )}
+                  <Button
+                    onClick={() => {
+                      const extra = prompt.trim();
+                      setPrompt('');
+                      generateFromGuidedSelections(extra || undefined);
+                    }}
+                    disabled={isGenerating}
+                    className="rounded-full flex-shrink-0 h-10 px-4"
+                  >
+                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <img src="/favicon.png" alt="" className="w-4 h-4 mr-1.5 object-contain dark:brightness-0 dark:invert" />}
+                    {chatMode === 'ad-create' ? 'Skapa annons' : 'Skapa bild'}
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -1450,6 +1462,37 @@ export const CreateSceneModal = ({
                     {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </Button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Save to gallery dialog */}
+        {saveDialogImage && (
+          <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center rounded-2xl p-6">
+            <div className="bg-card border border-border rounded-xl p-5 w-full max-w-sm space-y-4 shadow-lg">
+              <h4 className="text-sm font-semibold text-foreground">Spara till galleri</h4>
+              <div className="rounded-lg overflow-hidden border border-border/30">
+                <img src={saveDialogImage.imageUrl} alt="" className="w-full aspect-[3/2] object-cover" />
+              </div>
+              <Input
+                placeholder="Namnge bilden..."
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                className="text-sm"
+                autoFocus
+              />
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" size="sm" onClick={() => setSaveDialogImage(null)}>
+                  Avbryt
+                </Button>
+                <Button size="sm" onClick={async () => {
+                  await handleSave(saveDialogImage, saveName.trim() || undefined);
+                  setSaveDialogImage(null);
+                }} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  Spara
+                </Button>
               </div>
             </div>
           </div>
