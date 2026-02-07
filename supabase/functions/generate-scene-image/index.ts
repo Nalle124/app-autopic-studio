@@ -126,22 +126,24 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify user from JWT
-    const anonClient = createClient(
-      supabaseUrl,
-      Deno.env.get("SUPABASE_ANON_KEY")!
-    );
-    const {
-      data: { user },
-      error: userError,
-    } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    // Verify user from JWT using direct HTTP request (more reliable in edge functions)
+    const token = authHeader.replace("Bearer ", "");
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+      },
+    });
 
-    if (userError || !user) {
+    if (!userResponse.ok) {
+      console.error("Auth validation failed:", userResponse.status);
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const user = await userResponse.json();
 
     const { conversationHistory, mode, format } = await req.json();
 
