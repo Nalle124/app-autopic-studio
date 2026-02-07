@@ -1130,10 +1130,10 @@ export const CreateSceneModal = ({
                   <div className="flex gap-2.5 items-start mb-5">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                      <p className="text-sm text-foreground leading-relaxed">Hej! Vad vill du göra?</p>
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">Hej! Vad vill du göra?</p>
                     </div>
                   </div>
-                  <div className="space-y-2.5 w-full max-w-xs mx-auto">
+                  <div className="space-y-2.5 w-full max-w-xs sm:max-w-sm mx-auto">
                     <button
                       onClick={() => selectMode('background-studio')}
                       className="flex items-start gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group"
@@ -1142,12 +1142,12 @@ export const CreateSceneModal = ({
                         <Image className="w-4 h-4 text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground">Skapa bakgrund</p>
+                        <p className="text-sm sm:text-base font-semibold text-foreground">Skapa bakgrund</p>
                         <div className="flex flex-col gap-0.5 mt-1">
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
                             <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Designa egen miljö
                           </span>
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
                             <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ladda upp referensbild
                           </span>
                         </div>
@@ -1162,12 +1162,12 @@ export const CreateSceneModal = ({
                         <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:brightness-0 dark:invert" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground">Fri bild</p>
+                        <p className="text-sm sm:text-base font-semibold text-foreground">Fri bild</p>
                         <div className="flex flex-col gap-0.5 mt-1">
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
                             <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ta bort bakgrund helt
                           </span>
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
                             <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Säg till AI vad den ska göra
                           </span>
                         </div>
@@ -1182,12 +1182,12 @@ export const CreateSceneModal = ({
                         <Type className="w-4 h-4 text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground">Skapa annons</p>
+                        <p className="text-sm sm:text-base font-semibold text-foreground">Skapa annons</p>
                         <div className="flex flex-col gap-0.5 mt-1">
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
                             <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Lägg till text & rubriker
                           </span>
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
                             <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Kreativt marknadsföringsmaterial
                           </span>
                         </div>
@@ -1205,7 +1205,7 @@ export const CreateSceneModal = ({
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                      <p className="text-sm text-foreground leading-relaxed">{msg.text}</p>
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
                     </div>
                   </div>
                   {chatMode === 'free-create' && messages.filter(m => m.role === 'user').length === 0 && (
@@ -1243,7 +1243,7 @@ export const CreateSceneModal = ({
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                      <p className="text-sm text-foreground leading-relaxed">{msg.text}</p>
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 pl-9">
@@ -1273,7 +1273,7 @@ export const CreateSceneModal = ({
                       </div>
                     )}
                     <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-4 py-2.5 ml-auto w-fit">
-                      <p className="text-sm leading-relaxed">{msg.text}</p>
+                      <p className="text-sm sm:text-base leading-relaxed">{msg.text}</p>
                     </div>
                   </div>
                 </div>
@@ -1286,7 +1286,7 @@ export const CreateSceneModal = ({
                 <div key={i} className="flex gap-2.5 items-start">
                   <AutopicAvatar />
                   <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{msg.text}</p>
+                    <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">{msg.text}</p>
                   </div>
                 </div>
               );
@@ -1340,10 +1340,10 @@ export const CreateSceneModal = ({
                       <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5">
                         {!showNameField ? (
                           <div className="space-y-1.5">
-                            <p className="text-sm text-foreground leading-relaxed">
+                            <p className="text-sm sm:text-base text-foreground leading-relaxed">
                               Här är din bild! Jag kallar den <span className="font-semibold">"{msg.suggestedName}"</span>.
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               Förbättra eller ändra den – skriv nedan eller välj ett förslag.
                             </p>
                             {(chatMode === 'background-studio') && (
@@ -1354,7 +1354,7 @@ export const CreateSceneModal = ({
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            <p className="text-sm text-foreground leading-relaxed">Ge den ett namn:</p>
+                            <p className="text-sm sm:text-base text-foreground leading-relaxed">Ge den ett namn:</p>
                             <Input
                               placeholder={msg.suggestedName}
                               value={customName}
