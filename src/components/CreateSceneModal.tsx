@@ -5,16 +5,17 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Sparkles, Camera, MoreVertical } from 'lucide-react';
+import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Sparkles, Camera, MoreVertical, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { SceneMetadata } from '@/types/scene';
+import { SceneMetadata, UploadedImage } from '@/types/scene';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -22,6 +23,8 @@ interface CreateSceneModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSceneCreated: (scene: SceneMetadata) => void;
+  uploadedImages?: UploadedImage[];
+  completedImages?: UploadedImage[];
 }
 
 type ChatMode = 'background-studio' | 'free-create';
@@ -200,6 +203,8 @@ export const CreateSceneModal = ({
   open,
   onOpenChange,
   onSceneCreated,
+  uploadedImages: propUploadedImages = [],
+  completedImages: propCompletedImages = [],
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
   const [chatMode, setChatMode] = useState<ChatMode | null>(null);
@@ -1101,14 +1106,65 @@ export const CreateSceneModal = ({
         {chatMode && (
           <div className="px-4 py-3 border-t border-border/50 bg-card flex-shrink-0">
             <div className="flex items-end gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isGenerating}
-                className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 mb-0.5 disabled:opacity-40"
-                title="Ladda upp referensbild"
-              >
-                <ImageIcon className="w-4.5 h-4.5" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    disabled={isGenerating}
+                    className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 mb-0.5 disabled:opacity-40 border border-border/50"
+                    title="Lägg till bild"
+                  >
+                    <Plus className="w-4.5 h-4.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="top" className="min-w-[220px]">
+                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Ladda upp bild
+                  </DropdownMenuItem>
+                  {propUploadedImages.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Uppladdade bilder</div>
+                      <div className="flex flex-wrap gap-1.5 px-2 pb-2 max-h-32 overflow-y-auto">
+                        {propUploadedImages.slice(0, 12).map((img) => (
+                          <button
+                            key={img.id}
+                            onClick={() => {
+                              const url = img.croppedUrl || img.preview;
+                              setReferenceImage(url);
+                              setReferenceFile(null);
+                            }}
+                            className="w-12 h-12 rounded-md overflow-hidden border border-border/50 hover:border-primary transition-colors flex-shrink-0"
+                          >
+                            <img src={img.croppedUrl || img.preview} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {propCompletedImages.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Genererade bilder</div>
+                      <div className="flex flex-wrap gap-1.5 px-2 pb-2 max-h-32 overflow-y-auto">
+                        {propCompletedImages.slice(0, 12).map((img) => (
+                          <button
+                            key={img.id}
+                            onClick={() => {
+                              const url = img.finalUrl || img.croppedUrl || img.preview;
+                              setReferenceImage(url);
+                              setReferenceFile(null);
+                            }}
+                            className="w-12 h-12 rounded-md overflow-hidden border border-border/50 hover:border-primary transition-colors flex-shrink-0"
+                          >
+                            <img src={img.finalUrl || img.croppedUrl || img.preview} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
 
               <div className="flex-1 relative">

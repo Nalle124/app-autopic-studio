@@ -99,7 +99,7 @@ const Guide = () => {
       {/* Sticky section navigator */}
       <nav className="sticky top-16 z-30 bg-background/90 backdrop-blur-md border-b border-border/40">
         <div className="container mx-auto max-w-3xl px-4">
-          <div className="flex gap-1.5 overflow-x-auto py-3 scrollbar-hide -mx-4 px-4">
+          <div className="flex gap-1.5 overflow-x-auto pt-4 pb-3 scrollbar-hide -mx-4 px-4">
             {GUIDE_SECTIONS.map(({ id, label }) => (
               <button
                 key={id}
