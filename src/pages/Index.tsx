@@ -222,6 +222,20 @@ function IndexContent() {
   // This should never render without user since Index wrapper handles it
   if (!user) return null;
   const handleSceneSelect = (scene: SceneMetadata) => {
+    if (uploadedImages.length === 0) {
+      toast('Ladda upp minst en bild först för att använda bakgrunden', {
+        icon: <ImageIcon className="w-4 h-4" />,
+      });
+      // Scroll to upload section
+      const uploadSection = document.getElementById('upload-section');
+      if (uploadSection) {
+        const headerOffset = 100;
+        const elementPosition = uploadSection.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+      }
+      return;
+    }
     setSelectedScene(scene);
     // Slower scroll (10% slower) to allow background to load
     setTimeout(() => {
@@ -789,7 +803,7 @@ function IndexContent() {
         }} />
           </section> : <div className={`space-y-8 ${selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing') ? 'pb-[70vh]' : 'pb-16'}`}>
             {/* Step 1: Upload */}
-            <section className="bg-card border border-border rounded-[10px] p-6 space-y-4">
+            <section id="upload-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
               <h2 className="font-sans font-medium text-lg mb-4">Ladda upp bilder</h2>
               <ImageUploader onImagesUploaded={newImages => {
             setUploadedImages(prev => [...prev, ...newImages]);
