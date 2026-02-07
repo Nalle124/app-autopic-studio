@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const BACKGROUND_SYSTEM_PROMPT = `You are an AI that generates professional automotive photography background scenes. You MUST produce a new image with every response. Never respond with only text.
+const BACKGROUND_SYSTEM_PROMPT = `You are an AI that generates professional automotive photography background scenes. You MUST produce a new image with every response. Never respond with only text. NEVER use emojis in your text responses.
 
 PURPOSE: These images are used as BACKGROUNDS for digitally placing car photos onto. The car will be cut out from its original photo and composited onto this background. Therefore the perspective, ground surface, and lighting must be suitable for this purpose.
 
@@ -38,7 +38,7 @@ When a reference image is provided, use it as inspiration for style, mood, color
 
 CRITICAL: Always output an image. Never skip image generation.`;
 
-const FREE_CREATE_SYSTEM_PROMPT = `You are a creative AI image generator. You help users create and edit photorealistic images based on their descriptions. You MUST produce a new image with every response. Never respond with only text.
+const FREE_CREATE_SYSTEM_PROMPT = `You are a creative AI image generator. You help users create and edit photorealistic images based on their descriptions. You MUST produce a new image with every response. Never respond with only text. NEVER use emojis in your text responses.
 
 RULES:
 1. Generate photorealistic, high-quality images based on user descriptions.
@@ -53,6 +53,33 @@ When the user provides a reference image, analyze it carefully and apply the req
 
 CRITICAL: Always output an image. Never skip image generation.`;
 
+const AD_CREATE_SYSTEM_PROMPT = `You are an AI that creates professional automotive marketing and advertising images. You MUST produce a new image with every response. Never respond with only text. NEVER use emojis in your text responses.
+
+PURPOSE: Create marketing materials for car dealerships and automotive businesses. These images should include text overlays, headlines, and professional design elements.
+
+ABSOLUTE RULES FOR EVERY IMAGE:
+1. ALWAYS include text/headlines prominently and legibly in the image when specified by the user. This is the most important rule.
+2. Use professional, bold typography that is easy to read. Prefer clean sans-serif fonts.
+3. Images should look like professional marketing materials (ads, social media posts, promotional banners).
+4. ASPECT RATIO — MUST be wide landscape orientation with EXACT 3:2 aspect ratio (1536x1024).
+5. PHOTOGRAPHIC REALISM — Real photo quality background with professional lighting.
+6. Text must have strong contrast against the background for maximum readability. Use overlays, shadows, or contrasting backgrounds behind text when needed.
+7. Use modern, clean design aesthetics appropriate for automotive marketing.
+8. Include design elements like gradients, overlays, or branded layouts when appropriate.
+9. If a reference image is provided, use it as a base and add text/design elements on top.
+10. Create visual hierarchy: main headline large and bold, subtext smaller.
+
+WHEN CREATING MARKETING MATERIALS:
+- Prioritize text legibility above all else
+- Include call-to-action elements when appropriate
+- Match the style to the target audience (premium for luxury, energetic for sporty, etc.)
+- Consider the placement of text to avoid covering important visual elements
+- Use color psychology: bold reds/oranges for urgency, blues for trust, blacks for luxury
+
+When the user asks to modify a previous image, generate a NEW image with those changes while keeping the overall concept.
+
+CRITICAL: Always output an image. Never skip image generation.`;
+
 // Invisible context injected into user prompts for background mode
 const BACKGROUND_PROMPT_SUFFIX = `
 
@@ -64,6 +91,18 @@ const BACKGROUND_PROMPT_SUFFIX = `
 5. Photorealistic photograph — NOT CGI, illustration, painting, or 3D render
 This image is a BACKGROUND for automotive photo compositing. A car will be digitally placed on the ground surface.
 IMPORTANT: When modifying a previous image, keep ALL unchanged elements (location, mood, architecture) and ONLY change what the user specifically asked to change.`;
+
+const AD_PROMPT_SUFFIX = `
+
+[RULES FOR THIS IMAGE]:
+1. This is a MARKETING/ADVERTISING image for an automotive business
+2. Include all specified text/headlines prominently with professional, bold typography
+3. Text must be HIGHLY LEGIBLE with strong contrast — use overlays or backgrounds behind text
+4. Aspect ratio: 3:2 landscape (1536x1024)
+5. Photorealistic quality with professional design elements
+6. Modern, clean automotive marketing aesthetic
+7. Create clear visual hierarchy between headline and subtext
+IMPORTANT: When modifying a previous image, keep ALL unchanged elements and ONLY change what the user specifically asked to change.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -124,27 +163,31 @@ serve(async (req) => {
       ? lastUserMsg.content 
       : lastUserMsg?.content?.find?.((c: any) => c.type === "text")?.text || "bakgrund";
 
+    const isBackgroundMode = !mode || mode === 'background-studio';
+    const isAdMode = mode === 'ad-create';
+
     console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (mode: ${mode}, ${conversationHistory.length} messages)`);
 
-    const isBackgroundMode = mode !== 'free-create';
+    // Determine which prompt suffix to inject
+    const modeSuffix = isBackgroundMode ? BACKGROUND_PROMPT_SUFFIX : isAdMode ? AD_PROMPT_SUFFIX : null;
 
-    // For background mode, inject context into every user message to reinforce rules
+    // Process conversation history with mode-specific context
     const processedHistory = conversationHistory.map((msg: any, idx: number) => {
       if (msg.role === "user") {
         let processedContent = msg.content;
 
-        // For background mode, append context to ALL user messages
-        if (isBackgroundMode) {
+        // Append mode-specific suffix to user messages
+        if (modeSuffix) {
           if (typeof processedContent === "string") {
-            processedContent = processedContent + BACKGROUND_PROMPT_SUFFIX;
+            processedContent = processedContent + modeSuffix;
           } else if (Array.isArray(processedContent)) {
             processedContent = processedContent.map((c: any) =>
-              c.type === "text" ? { ...c, text: c.text + BACKGROUND_PROMPT_SUFFIX } : c
+              c.type === "text" ? { ...c, text: c.text + modeSuffix } : c
             );
           }
         }
 
-        // For the last message, add image generation reminder (works for BOTH modes)
+        // For the last message, add image generation reminder
         if (idx === conversationHistory.length - 1) {
           const imageReminder = `\n\nIMPORTANT: You MUST generate and return a NEW IMAGE based on this request. Do not respond with only text. Always produce a photo.`;
           if (typeof processedContent === "string") {
@@ -161,8 +204,16 @@ serve(async (req) => {
       return msg;
     });
 
-    // Build message array with appropriate system prompt
-    const systemPrompt = isBackgroundMode ? BACKGROUND_SYSTEM_PROMPT : FREE_CREATE_SYSTEM_PROMPT;
+    // Select system prompt based on mode
+    let systemPrompt: string;
+    if (isAdMode) {
+      systemPrompt = AD_CREATE_SYSTEM_PROMPT;
+    } else if (mode === 'free-create') {
+      systemPrompt = FREE_CREATE_SYSTEM_PROMPT;
+    } else {
+      systemPrompt = BACKGROUND_SYSTEM_PROMPT;
+    }
+
     const aiMessages = [
       { role: "system", content: systemPrompt },
       ...processedHistory,
@@ -179,7 +230,9 @@ serve(async (req) => {
               role: "user", 
               content: isBackgroundMode
                 ? `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, COMPLETELY EMPTY scene with absolutely no cars, no people, no vehicles. Eye-level camera angle at ~1.2m height. Flat ground surface in lower 40%. Realistic photo style. Generate the image now.`
-                : `Generate a photorealistic image: ${latestPromptText}. MUST be landscape 3:2 ratio. Realistic photo style. Generate the image now.`
+                : isAdMode
+                  ? `Generate a professional automotive marketing advertisement image: ${latestPromptText}. Include any specified text/headlines prominently with bold readable typography. MUST be landscape 3:2 ratio. Professional marketing design. Generate the image now.`
+                  : `Generate a photorealistic image: ${latestPromptText}. MUST be landscape 3:2 ratio. Realistic photo style. Generate the image now.`
             },
           ];
 
@@ -255,6 +308,26 @@ serve(async (req) => {
     const { data: { publicUrl } } = supabase.storage.from("processed-cars").getPublicUrl(storagePath);
 
     // Step 3: Generate metadata (name, description, PhotoRoom prompt)
+    const metaSystemContent = isAdMode
+      ? `You are a metadata generator for automotive marketing images. Given a description, generate metadata.
+
+Generate:
+1. A clear, descriptive Swedish name for the ad/campaign (2-4 words) that describes what it is, e.g. "Kampanjbild Ränta", "Bilannons Premium", "Social Media Banner"
+2. A short Swedish description (1 sentence)
+3. A prompt describing the image for future reference
+
+NEVER use emojis. Respond ONLY with valid JSON in this exact format:
+{"name": "...", "description": "...", "photoroomPrompt": "..."}`
+      : `You are a metadata generator for automotive photography backgrounds. Given a description, generate metadata.
+
+Generate:
+1. A creative, modern Swedish name for the scene (2-4 words). AVOID generic names like "Min bakgrund", "Studio", "Bakgrund", "Ny scen". Use sharp, brand-worthy names with attitude or symbolic meaning. Mix Swedish and English freely. Examples: "Carbon Studio", "Frost & Stål", "Asphalt Edge", "Slate Room", "Neon Minimal", "Cement Lounge", "Dimgrå Rak", "Chalk Surface". Think design studio, not poetry.
+2. A short Swedish description (1 sentence)
+3. A PhotoRoom-compatible AI prompt in English that describes how to place a car in this scene with matching lighting
+
+NEVER use emojis. Respond ONLY with valid JSON in this exact format:
+{"name": "...", "description": "...", "photoroomPrompt": "Place the vehicle centered on the ground in ... Professional automotive photography with realistic lighting matching the environment."}`;
+
     const metaResponse = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -268,15 +341,7 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are a metadata generator for automotive photography backgrounds. Given a description, generate metadata for the scene.
-
-Generate:
-1. A creative, evocative Swedish name for the scene (2-4 words). AVOID generic names like "Min bakgrund", "Studio", "Bakgrund", "Ny scen". Instead use atmospheric, poetic names like "Midvinterskog", "Guldljus Studio", "Stadens Tystnad", "Betongkatedralen", "Höstens Allé", "Solnedgång vid bryggan", "Göteborgs Hamn", "Midnattens Garage".
-2. A short Swedish description (1 sentence)
-3. A PhotoRoom-compatible AI prompt in English that describes how to place a car in this scene with matching lighting
-
-Respond ONLY with valid JSON in this exact format:
-{"name": "...", "description": "...", "photoroomPrompt": "Place the vehicle centered on the ground in ... Professional automotive photography with realistic lighting matching the environment."}`,
+              content: metaSystemContent,
             },
             {
               role: "user",
