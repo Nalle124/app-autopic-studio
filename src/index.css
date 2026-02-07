@@ -610,13 +610,14 @@
   .mobile-chat-height {
     position: fixed !important;
     top: calc(var(--visual-viewport-offset-top, 0px) + 1.5rem);
-    left: 0.375rem;
-    right: 0.375rem;
+    left: 50%;
+    transform: translateX(-50%) !important;
+    width: calc(100% - 1.5rem);
     height: calc(var(--visual-viewport-height, 100dvh) - 3rem);
     max-height: calc(var(--visual-viewport-height, 100dvh) - 3rem);
     margin: 0 !important;
-    transform: none !important;
     will-change: height, top;
+    transition: height 0.15s ease-out, top 0.15s ease-out;
     border-radius: 1rem !important;
   }
   
@@ -625,11 +626,13 @@
       position: relative !important;
       top: auto;
       left: auto;
-      right: auto;
+      transform: none !important;
+      width: auto;
       height: auto;
       max-height: 85vh;
       margin: 0 auto !important;
       will-change: auto;
+      transition: none;
       border-radius: 1rem !important;
     }
   }

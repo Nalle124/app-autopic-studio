@@ -1129,7 +1129,7 @@ export const CreateSceneModal = ({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="sm:max-w-2xl bg-card border-border overflow-hidden p-0 gap-0 flex flex-col w-[calc(100%-1.5rem)] sm:w-full rounded-2xl sm:h-auto sm:max-h-[85vh] mobile-chat-height"
+        className="sm:max-w-2xl bg-card border-border overflow-hidden p-0 gap-0 flex flex-col w-[calc(100%-1.5rem)] sm:w-full rounded-2xl sm:h-auto sm:max-h-[85vh] mobile-chat-height mx-auto"
         hideCloseButton
       >
         {/* Header */}
@@ -1186,11 +1186,11 @@ export const CreateSceneModal = ({
                         <div className="min-w-0">
                           <p className="text-sm sm:text-base font-semibold text-foreground">Skapa bakgrund</p>
                           <div className="flex flex-col gap-0.5 mt-1">
-                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Designa egen miljö
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Designa egen miljö
                             </span>
-                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ladda upp referensbild
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Ladda upp referensbild
                             </span>
                           </div>
                         </div>
@@ -1200,13 +1200,13 @@ export const CreateSceneModal = ({
                           src="/scenes/hostgata.png"
                           alt=""
                           loading="lazy"
-                          className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform"
+                          className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform will-change-transform"
                         />
                         <img
                           src="/scenes/white-studio.png"
                           alt=""
                           loading="lazy"
-                          className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform"
+                          className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform will-change-transform"
                         />
                       </div>
                     </button>
@@ -1221,13 +1221,13 @@ export const CreateSceneModal = ({
                           <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:brightness-0 dark:invert" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm sm:text-base font-semibold text-foreground">Fri bild</p>
+                          <p className="text-sm sm:text-base font-semibold text-foreground">Redigera fritt</p>
                           <div className="flex flex-col gap-0.5 mt-1">
-                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ta bort bakgrund helt
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Ta bort bakgrund helt
                             </span>
-                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Säg till AI vad den ska göra
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Säg till AI vad den ska göra
                             </span>
                           </div>
                         </div>
@@ -1237,7 +1237,7 @@ export const CreateSceneModal = ({
                           src="/mode-previews/porsche-transport.jpg"
                           alt=""
                           loading="lazy"
-                          className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-md border border-border/30 group-hover:scale-105 transition-transform"
+                          className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-md border border-border/30 group-hover:scale-105 transition-transform will-change-transform"
                         />
                       </div>
                     </button>
@@ -1254,11 +1254,11 @@ export const CreateSceneModal = ({
                         <div className="min-w-0">
                           <p className="text-sm sm:text-base font-semibold text-foreground">Skapa annons</p>
                           <div className="flex flex-col gap-0.5 mt-1">
-                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Lägg till text & rubriker
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Lägg till text & rubriker
                             </span>
-                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Kreativt marknadsföringsmaterial
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Kreativt marknadsföringsmaterial
                             </span>
                           </div>
                         </div>
@@ -1268,13 +1268,13 @@ export const CreateSceneModal = ({
                           src="/mode-previews/ad-sasongsrea.png"
                           alt=""
                           loading="lazy"
-                          className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform"
+                          className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform will-change-transform"
                         />
                         <img
                           src="/mode-previews/ad-import-guide.png"
                           alt=""
                           loading="lazy"
-                          className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform"
+                          className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform will-change-transform"
                         />
                       </div>
                     </button>
@@ -1741,12 +1741,22 @@ export const CreateSceneModal = ({
           <div className="absolute inset-0 z-50 bg-background flex flex-col rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
               <p className="text-sm font-medium text-foreground truncate">{previewImage.name}</p>
-              <button
-                onClick={() => { setPreviewImage(null); setPreviewPrompt(''); }}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <a
+                  href={previewImage.imageUrl}
+                  download={previewImage.name || 'ai-generated.png'}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  title="Ladda ner"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+                <button
+                  onClick={() => { setPreviewImage(null); setPreviewPrompt(''); }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-auto p-4 flex items-center justify-center min-h-0">
               <img src={previewImage.imageUrl} alt={previewImage.name} className="max-w-full max-h-full rounded-xl object-contain shadow-lg" />
