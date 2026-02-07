@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import Landing from '@/pages/Landing';
 import { useTheme } from 'next-themes';
 import { ImageUploader } from '@/components/ImageUploader';
 import { SceneSelector } from '@/components/SceneSelector';
@@ -126,7 +125,7 @@ function IndexContent() {
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
 
-  // No redirect needed — Landing page handles unauthenticated users in Index wrapper
+  // Unauthenticated users are redirected to /auth in the Index wrapper
 
   // Load draft images from cloud on mount (cross-device persistence)
   useEffect(() => {
@@ -1894,19 +1893,22 @@ function IndexContent() {
 
 export default function Index() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect unauthenticated users to /auth
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
 
   // Show loading spinner while checking auth
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
-  }
-
-  // Show landing page for unauthenticated users
-  if (!user) {
-    return <Landing />;
   }
 
   return (

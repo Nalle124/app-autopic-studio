@@ -462,7 +462,7 @@ export const SceneSelector = ({
   };
 
   const AutopicIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
-    <img src="/favicon.png" alt="" className={`${className} object-contain dark:invert`} />
+    <img src="/favicon.png" alt="" className={`${className} object-contain dark:brightness-0 dark:invert`} />
   );
 
   // "Create new" card for my-scenes (just a plus icon, no text)
@@ -507,10 +507,8 @@ export const SceneSelector = ({
               style={{ borderRadius: 'var(--radius-card)', background: 'var(--gradient-card)' }}
             >
               <div className="flex items-center gap-4 p-4 sm:p-5">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                  style={{ background: 'var(--gradient-premium)' }}
-                >
-                  <AutopicIcon className="w-5 h-5 sm:w-6 sm:h-6 brightness-0 invert" />
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-muted">
+                  <AutopicIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-sm sm:text-base text-foreground leading-tight">
@@ -526,8 +524,6 @@ export const SceneSelector = ({
                   </div>
                 </div>
               </div>
-              {/* Bottom gradient bar */}
-              <div className="h-1 w-full" style={{ background: 'var(--gradient-premium)' }} />
             </div>
             <p className="text-center text-xs text-muted-foreground">
               Eller välj en från galleriet
@@ -569,10 +565,7 @@ export const SceneSelector = ({
                       Favoriter
                     </span>
                   ) : activeCategory === 'my-scenes' ? (
-                    <span className="flex items-center gap-2">
-                      <AutopicIcon />
-                      Mina scener
-                    </span>
+                    'Mina scener'
                   ) : (
                     getCategoryDisplayName(activeCategory)
                   )}
@@ -587,10 +580,7 @@ export const SceneSelector = ({
                         Favoriter
                       </span>
                     ) : category === 'my-scenes' ? (
-                      <span className="flex items-center gap-2">
-                        <AutopicIcon />
-                        Mina scener
-                      </span>
+                      'Mina scener'
                     ) : category === 'popular' ? (
                       <span className="flex items-center gap-2">
                         <Star className="w-4 h-4 fill-current text-primary" />
@@ -625,10 +615,7 @@ export const SceneSelector = ({
                       Favoriter
                     </span>
                   ) : category === 'my-scenes' ? (
-                    <span className="flex items-center gap-2">
-                      <AutopicIcon />
-                      Mina scener
-                    </span>
+                    'Mina scener'
                   ) : category === 'popular' ? (
                     <span className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-current" />
