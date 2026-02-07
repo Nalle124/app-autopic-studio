@@ -23,6 +23,7 @@ interface CreateSceneModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSceneCreated: (scene: SceneMetadata) => void;
+  onNavigateToMyScenes?: () => void;
   uploadedImages?: UploadedImage[];
   completedImages?: UploadedImage[];
 }
@@ -36,6 +37,7 @@ type ChatMessage =
   | { role: 'assistant-options'; text: string; options: Array<{ label: string; value: string }> }
   | { role: 'assistant-image'; imageUrl: string; suggestedName: string; description: string; photoroomPrompt: string }
   | { role: 'assistant-loading' }
+  | { role: 'assistant-error'; text: string; retryData?: { conversationHistory: Array<{ role: string; content: any }>; mode: string; format?: string } }
   | { role: 'mode-select' };
 
 const LOADING_PHRASES = [
@@ -321,6 +323,7 @@ export const CreateSceneModal = ({
   open,
   onOpenChange,
   onSceneCreated,
+  onNavigateToMyScenes,
   uploadedImages: propUploadedImages = [],
   completedImages: propCompletedImages = [],
 }: CreateSceneModalProps) => {
@@ -365,16 +368,22 @@ export const CreateSceneModal = ({
     }
   }, [open]);
 
-  // Track visual viewport for mobile keyboard handling
+  // Track visual viewport for mobile keyboard handling (rAF for smooth updates)
   useEffect(() => {
     if (!open) return;
     
+    let rafId: number | null = null;
+    
     const updateViewportHeight = () => {
-      const vv = window.visualViewport;
-      const vh = vv?.height || window.innerHeight;
-      const offsetTop = vv?.offsetTop || 0;
-      document.documentElement.style.setProperty('--visual-viewport-height', `${vh}px`);
-      document.documentElement.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const vv = window.visualViewport;
+        const vh = vv?.height || window.innerHeight;
+        const offsetTop = vv?.offsetTop || 0;
+        document.documentElement.style.setProperty('--visual-viewport-height', `${vh}px`);
+        document.documentElement.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`);
+        rafId = null;
+      });
     };
 
     updateViewportHeight();
@@ -387,6 +396,7 @@ export const CreateSceneModal = ({
     window.addEventListener('resize', updateViewportHeight);
 
     return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
       if (vv) {
         vv.removeEventListener('resize', updateViewportHeight);
         vv.removeEventListener('scroll', updateViewportHeight);
@@ -657,12 +667,14 @@ export const CreateSceneModal = ({
 
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
+      const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined },
+        body: retryPayload,
       });
-      handleGenerateResponse(data, error, updatedMessages);
+      handleGenerateResponse(data, error, updatedMessages, retryPayload);
     } catch (err) {
-      handleGenerateError(err);
+      const conversationHistory = buildConversationHistory(updatedMessages);
+      handleGenerateError(err, { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined });
     }
   };
 
@@ -796,7 +808,7 @@ export const CreateSceneModal = ({
   };
 
   // ─── Generate ──────────────────────────────────────────────
-  const handleGenerateResponse = (data: any, error: any, contextMessages: ChatMessage[]) => {
+  const handleGenerateResponse = (data: any, error: any, contextMessages: ChatMessage[], retryPayload?: { conversationHistory: Array<{ role: string; content: any }>; mode: string; format?: string }) => {
     setMessages(prev => prev.filter(m => m.role !== 'assistant-loading'));
     setShowAllSuggestions(false);
 
@@ -804,9 +816,13 @@ export const CreateSceneModal = ({
       console.error('Edge function error:', error);
       const isNetworkError = error?.message?.includes('Load failed') || error?.context?.message?.includes('Load failed');
       const errorMsg = isNetworkError
-        ? 'Nätverksfel — bildskapandet tog för lång tid. Försök igen!'
-        : 'Hmm, något gick fel. Försök igen!';
-      setMessages(prev => [...prev, { role: 'assistant', text: errorMsg }]);
+        ? 'Nätverksfel — bildskapandet tog för lång tid.'
+        : 'Hmm, något gick fel.';
+      setMessages(prev => [...prev, { 
+        role: 'assistant-error', 
+        text: errorMsg, 
+        retryData: retryPayload 
+      }]);
       setIsGenerating(false);
       return;
     }
@@ -830,11 +846,27 @@ export const CreateSceneModal = ({
     setIsGenerating(false);
   };
 
-  const handleGenerateError = (err: unknown) => {
+  const handleGenerateError = (err: unknown, retryPayload?: { conversationHistory: Array<{ role: string; content: any }>; mode: string; format?: string }) => {
     console.error('Generate error:', err);
     setMessages(prev => prev.filter(m => m.role !== 'assistant-loading'));
-    setMessages(prev => [...prev, { role: 'assistant', text: 'Något gick fel. Försök igen!' }]);
+    setMessages(prev => [...prev, { role: 'assistant-error', text: 'Något gick fel.', retryData: retryPayload }]);
     setIsGenerating(false);
+  };
+
+  // ─── Retry from error ──────────────────────────────────────
+  const handleRetry = async (retryData: { conversationHistory: Array<{ role: string; content: any }>; mode: string; format?: string }) => {
+    // Remove the error message and add loading
+    setMessages(prev => [...prev.filter(m => m.role !== 'assistant-error'), { role: 'assistant-loading' }]);
+    setIsGenerating(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-scene-image', {
+        body: { conversationHistory: retryData.conversationHistory, mode: retryData.mode, format: retryData.format },
+      });
+      handleGenerateResponse(data, error, messages, retryData);
+    } catch (err) {
+      handleGenerateError(err, retryData);
+    }
   };
 
   const handleGenerate = async () => {
@@ -905,12 +937,14 @@ export const CreateSceneModal = ({
 
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
+      const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined },
+        body: retryPayload,
       });
-      handleGenerateResponse(data, error, updatedMessages);
+      handleGenerateResponse(data, error, updatedMessages, retryPayload);
     } catch (err) {
-      handleGenerateError(err);
+      const conversationHistory = buildConversationHistory(updatedMessages);
+      handleGenerateError(err, { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined });
     }
   };
 
@@ -971,7 +1005,7 @@ export const CreateSceneModal = ({
 
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: `"${sceneName}" har sparats som bakgrund! Du hittar den under Mina scener.` },
+        { role: 'assistant', text: `"${sceneName}" har sparats som bakgrund! Du hittar den under __MINA_SCENER_LINK__.` },
       ]);
       onSceneCreated(scene);
     } catch (err) {
@@ -1071,12 +1105,14 @@ export const CreateSceneModal = ({
 
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
+      const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined },
+        body: retryPayload,
       });
-      handleGenerateResponse(data, error, updatedMessages);
+      handleGenerateResponse(data, error, updatedMessages, retryPayload);
     } catch (err) {
-      handleGenerateError(err);
+      const conversationHistory = buildConversationHistory(updatedMessages);
+      handleGenerateError(err, { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined });
     }
   };
 
@@ -1337,11 +1373,51 @@ export const CreateSceneModal = ({
 
             // ─── Assistant text ───────────────────────────
             if (msg.role === 'assistant') {
+              // Render "Mina scener" as a clickable link
+              const hasLink = msg.text.includes('__MINA_SCENER_LINK__');
               return (
                 <div key={i} className="flex gap-2.5 items-start">
                   <AutopicAvatar />
                   <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                    <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">{msg.text}</p>
+                    {hasLink ? (
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">
+                        {msg.text.split('__MINA_SCENER_LINK__')[0]}
+                        <button
+                          onClick={() => {
+                            handleClose();
+                            onNavigateToMyScenes?.();
+                          }}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          Mina scener
+                        </button>
+                        {msg.text.split('__MINA_SCENER_LINK__')[1]}
+                      </p>
+                    ) : (
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">{msg.text}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            // ─── Error with retry ─────────────────────────
+            if (msg.role === 'assistant-error') {
+              return (
+                <div key={i} className="flex gap-2.5 items-start">
+                  <AutopicAvatar />
+                  <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%] space-y-2">
+                    <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    {msg.retryData && (
+                      <button
+                        onClick={() => handleRetry(msg.retryData!)}
+                        disabled={isGenerating}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Försök igen
+                      </button>
+                    )}
                   </div>
                 </div>
               );
