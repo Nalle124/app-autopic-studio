@@ -31,6 +31,7 @@ interface SceneSelectorProps {
   onSceneSelect: (scene: SceneMetadata) => void;
   orientation?: 'landscape' | 'portrait';
   onOrientationChange?: (orientation: 'landscape' | 'portrait') => void;
+  defaultCategory?: string;
 }
 
 // Category order and descriptions
@@ -154,7 +155,8 @@ export const SceneSelector = ({
   selectedSceneId, 
   onSceneSelect,
   orientation = 'landscape',
-  onOrientationChange
+  onOrientationChange,
+  defaultCategory = 'my-scenes'
 }: SceneSelectorProps) => {
   const [scenes, setScenes] = useState<SceneMetadata[]>([]);
   const [userScenes, setUserScenes] = useState<SceneMetadata[]>([]);
@@ -308,9 +310,9 @@ export const SceneSelector = ({
       });
       setCategories(['favorites', 'my-scenes', 'popular', ...sortedCategories]);
       
-      // Set default active category to popular
+      // Set default active category
       if (!activeCategory) {
-        setActiveCategory('popular');
+        setActiveCategory(defaultCategory);
       }
     } catch (error) {
       console.error('Error loading scenes:', error);

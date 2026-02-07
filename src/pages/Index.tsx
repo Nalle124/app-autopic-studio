@@ -848,7 +848,8 @@ function IndexContent() {
               open={showAiModal}
               onOpenChange={setShowAiModal}
               onSceneCreated={(scene) => {
-                setSelectedScene(scene);
+                // Don't auto-select/scroll when saving from AI modal
+                // The scene is saved to "Mina scener" - user stays where they are
               }}
               uploadedImages={uploadedImages}
               completedImages={uploadedImages.filter(img => img.status === 'completed')}
