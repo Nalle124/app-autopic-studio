@@ -340,7 +340,7 @@ export const ImageUploader = ({
               {/* Relight toggle - on same row */}
               {uploadedImages.length > 0 && onRelightChange && <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
-                    <Sparkles className={`w-4 h-4 transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`text-xs font-medium transition-colors ${relightEnabled ? 'text-primary' : 'text-muted-foreground'}`}>Ljusförbättring</span>
                     
                     <Switch id="relight-toggle" checked={relightEnabled} onCheckedChange={onRelightChange} className="data-[state=checked]:bg-primary" />
                   </div>
