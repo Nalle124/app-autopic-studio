@@ -1197,13 +1197,13 @@ export const CreateSceneModal = ({
                       </div>
                       <div className="relative w-20 h-14 sm:w-28 sm:h-[4.5rem] flex-shrink-0">
                         <img
-                          src="/scenes/garageuppfart-grus.png"
+                          src="/scenes/hostgata.png"
                           alt=""
                           loading="lazy"
                           className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform"
                         />
                         <img
-                          src="/scenes/nordisk-dagsljus.jpg"
+                          src="/scenes/white-studio.png"
                           alt=""
                           loading="lazy"
                           className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform"
@@ -1234,16 +1234,10 @@ export const CreateSceneModal = ({
                       </div>
                       <div className="relative w-20 h-14 sm:w-28 sm:h-[4.5rem] flex-shrink-0">
                         <img
-                          src="/scenes/bla-sammet-draperi.png"
+                          src="/mode-previews/porsche-transport.jpg"
                           alt=""
                           loading="lazy"
-                          className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform"
-                        />
-                        <img
-                          src="/scenes/dark-studio.png"
-                          alt=""
-                          loading="lazy"
-                          className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform"
+                          className="absolute inset-0 w-full h-full object-cover rounded-lg shadow-md border border-border/30 group-hover:scale-105 transition-transform"
                         />
                       </div>
                     </button>
@@ -1271,13 +1265,13 @@ export const CreateSceneModal = ({
                       </div>
                       <div className="relative w-20 h-14 sm:w-28 sm:h-[4.5rem] flex-shrink-0">
                         <img
-                          src="/scenes/dusk-plaza.png"
+                          src="/mode-previews/ad-sasongsrea.png"
                           alt=""
                           loading="lazy"
                           className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform"
                         />
                         <img
-                          src="/scenes/warszawa-showroom.png"
+                          src="/mode-previews/ad-import-guide.png"
                           alt=""
                           loading="lazy"
                           className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform"
