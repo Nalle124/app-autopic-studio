@@ -830,11 +830,11 @@ function IndexContent() {
               <div className="absolute inset-0 rounded-[inherit] pointer-events-none border border-primary/[0.08] group-hover:border-primary/20 transition-colors duration-500" />
               <div className="relative flex items-center gap-3.5 p-4 sm:p-5">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base sm:text-lg text-foreground leading-tight">Skapa med AI</h3>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium leading-none">Chatt-läge</span>
+                  <div className="flex items-center gap-2.5">
+                    <h3 className="font-bold text-lg sm:text-xl text-foreground leading-tight">Skapa med AI</h3>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium leading-none">Chatt-läge</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Generera bakgrunder, redigera bilder, skapa annonser – allt med AI</p>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-1">Generera bakgrunder, redigera bilder, skapa annonser – allt med AI</p>
                 </div>
                 <div className="flex-shrink-0">
                   <div className="w-9 h-9 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
