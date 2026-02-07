@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Coins, Eye, Trash2, ArrowUpDown, Search, Filter } from 'lucide-react';
+import { Coins, Eye, Trash2, ArrowUpDown, Search, Filter, Sparkles } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -38,6 +38,7 @@ interface AdminUserTableProps {
   users: UserData[];
   loading: boolean;
   onViewImages: (user: UserData) => void;
+  onViewScenes: (user: UserData) => void;
   onAdjustCredits: (user: UserData) => void;
   onDeleteUser: (user: UserData) => void;
 }
@@ -46,6 +47,7 @@ export const AdminUserTable = ({
   users,
   loading,
   onViewImages,
+  onViewScenes,
   onAdjustCredits,
   onDeleteUser,
 }: AdminUserTableProps) => {
@@ -238,6 +240,14 @@ export const AdminUserTable = ({
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Bilder
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onViewScenes(user)}
+                    >
+                      <Sparkles className="h-4 w-4 mr-1" />
+                      AI
                     </Button>
                     <Button
                       variant="outline"

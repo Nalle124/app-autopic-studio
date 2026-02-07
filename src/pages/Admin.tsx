@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { AdminUserTable } from '@/components/admin/AdminUserTable';
 import { AdminUserImages } from '@/components/admin/AdminUserImages';
+import { AdminUserScenes } from '@/components/admin/AdminUserScenes';
 
 interface UserData {
   id: string;
@@ -82,6 +83,9 @@ const Admin = () => {
   
   // User images dialog
   const [viewingImagesUser, setViewingImagesUser] = useState<UserData | null>(null);
+  
+  // User AI scenes dialog
+  const [viewingScenesUser, setViewingScenesUser] = useState<UserData | null>(null);
 
   useEffect(() => {
     if (!authLoading && !adminLoading && !isAdmin) {
@@ -390,6 +394,7 @@ const Admin = () => {
                 users={users}
                 loading={loading}
                 onViewImages={(user) => setViewingImagesUser(user)}
+                onViewScenes={(user) => setViewingScenesUser(user)}
                 onAdjustCredits={(user) => setSelectedUser(user)}
                 onDeleteUser={(user) => setUserToDelete(user)}
               />
@@ -622,6 +627,12 @@ const Admin = () => {
       <AdminUserImages
         user={viewingImagesUser}
         onClose={() => setViewingImagesUser(null)}
+      />
+
+      {/* View User AI Scenes Dialog */}
+      <AdminUserScenes
+        user={viewingScenesUser}
+        onClose={() => setViewingScenesUser(null)}
       />
     </div>
   );
