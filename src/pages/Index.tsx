@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2 } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -33,6 +33,7 @@ import { useUserCredits } from '@/hooks/useUserCredits';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { useOnboardingCheck } from '@/hooks/useOnboardingCheck';
+import { CreateSceneModal } from '@/components/CreateSceneModal';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
@@ -124,7 +125,7 @@ function IndexContent() {
     bannerRotation: 0
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
-
+  const [showAiModal, setShowAiModal] = useState(false);
   // Unauthenticated users are redirected to /auth in the Index wrapper
 
   // Load draft images from cloud on mount (cross-device persistence)
@@ -815,6 +816,44 @@ function IndexContent() {
           }} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={!isSubscribed && !isAdmin} />
             </section>
 
+            {/* AI Section - Standalone */}
+            <section
+              onClick={() => setShowAiModal(true)}
+              className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ai-create-card"
+              style={{ borderRadius: 'var(--radius-card)', background: 'var(--gradient-card)' }}
+            >
+              <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-foreground/[0.04] dark:bg-white/[0.04]" />
+              <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: 'inherit' }}>
+                <div className="ai-shimmer-sweep" />
+              </div>
+              <div className="absolute inset-0 rounded-[inherit] pointer-events-none border border-primary/[0.08] group-hover:border-primary/20 transition-colors duration-500" />
+              <div className="relative flex items-center gap-3.5 p-4 sm:p-5">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-muted/60">
+                  <img src="/favicon.png" alt="" className="w-5 h-5 sm:w-6 sm:h-6 object-contain dark:brightness-0 dark:invert" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-sm sm:text-base text-foreground leading-tight">Skapa med AI</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Generera bakgrunder, redigera bilder, ändra färg – allt med AI</p>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* AI Modal */}
+            <CreateSceneModal
+              open={showAiModal}
+              onOpenChange={setShowAiModal}
+              onSceneCreated={(scene) => {
+                setSelectedScene(scene);
+              }}
+              uploadedImages={uploadedImages}
+              completedImages={uploadedImages.filter(img => img.status === 'completed')}
+            />
+
             {/* Explore Scenes - Always visible */}
             {uploadedImages.length === 0 && (
               <section id="explore-scenes-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
@@ -900,6 +939,16 @@ function IndexContent() {
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                      {/* AI Chat access */}
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
+                        title="Redigera med AI"
+                        onClick={() => setShowAiModal(true)}
+                      >
+                        <img src="/favicon.png" alt="AI" className="w-4 h-4 object-contain dark:brightness-0 dark:invert" />
+                      </Button>
                       <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Redigera ${selectedImages.size} valda` : 'Redigera'} onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
                   // If images are selected, open editor on first selected

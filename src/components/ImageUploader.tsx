@@ -262,24 +262,25 @@ export const ImageUploader = ({
   
   return (
     <div className="space-y-6">
-      <div {...getRootProps()} className={`cursor-pointer hover:border-primary/80 transition-colors border-2 border-dashed border-primary rounded-xl p-6 text-center bg-card ${isConverting ? 'pointer-events-none opacity-70' : ''}`}>
+      <div {...getRootProps()} className={`cursor-pointer hover:border-primary/80 transition-colors border-2 border-dashed border-primary rounded-xl px-4 py-4 text-center bg-card ${isConverting ? 'pointer-events-none opacity-70' : ''}`}>
         <input {...getInputProps()} />
-        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
-          {isConverting ? (
-            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          ) : (
-            <Upload className="w-6 h-6 text-primary" />
-          )}
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            {isConverting ? (
+              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+            ) : (
+              <Upload className="w-5 h-5 text-primary" />
+            )}
+          </div>
+          <div className="text-left">
+            <h3 className="text-sm font-semibold text-foreground">
+              {isConverting ? 'Konverterar...' : isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {isConverting ? 'Vänta medan bilderna konverteras' : 'Max 50 bilder • PNG, JPG, JPEG, WEBP, HEIC'}
+            </p>
+          </div>
         </div>
-        <h3 className="text-base font-semibold text-foreground mb-1">
-          {isConverting ? 'Konverterar HEIC-bilder...' : isDragActive ? 'Släpp bilderna här' : 'Dra och släpp bilder'}
-        </h3>
-        <p className="text-sm text-muted-foreground mb-2">
-          {isConverting ? 'Vänta medan bilderna konverteras' : 'Eller ta bilder direkt'}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Max 50 bilder • PNG, JPG, JPEG, WEBP, HEIC
-        </p>
       </div>
 
       {/* Example images - show when no images uploaded and showExampleImages is true */}
