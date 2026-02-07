@@ -446,11 +446,35 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     setPreviewOpen(true);
   };
 
-  const handleDownloadSingle = (url: string, filename: string) => {
+  const handleDownloadSingle = async (url: string, filename: string) => {
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     link.click();
+  };
+
+  const handleShareSingle = async (url: string, filename: string) => {
+    try {
+      // Fetch the image as blob for native share
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: blob.type });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: filename,
+        });
+      } else {
+        // Fallback to download
+        handleDownloadSingle(url, filename);
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Share failed:', error);
+        handleDownloadSingle(url, filename);
+      }
+    }
   };
 
   const handleUseAsNew = (imageUrl: string) => {
@@ -777,12 +801,26 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
           {selectedProject && currentJob?.final_url && (
             <div className="flex flex-col h-full max-h-[90vh]">
+              {/* Top bar with back + counter */}
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 flex-shrink-0 bg-background">
+                <Button size="sm" variant="ghost" onClick={() => setPreviewOpen(false)} className="h-8 px-2">
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Tillbaka
+                </Button>
+                {completedJobs.length > 1 && (
+                  <span className="text-sm text-muted-foreground">
+                    {previewIndex + 1} / {completedJobs.length}
+                  </span>
+                )}
+                <div className="w-20" />
+              </div>
+
               {/* Image Display */}
               <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
                 <img 
                   src={currentJob.final_url} 
                   alt="Preview" 
-                  className="max-w-full max-h-[calc(90vh-150px)] object-contain" 
+                  className="max-w-full max-h-[calc(90vh-180px)] object-contain" 
                 />
                 
                 {/* Navigation Arrows */}
@@ -806,16 +844,11 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                     </Button>
                   </>
                 )}
-                
-                {/* Counter */}
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                  {previewIndex + 1} / {completedJobs.length}
-                </div>
               </div>
               
               {/* Bottom action bar */}
               <div className="p-3 bg-background border-t flex flex-col gap-3">
-                {/* Regenerate button - prominent below image */}
+                {/* Regenerate button */}
                 {onUseAsNewImage && (
                   <Button 
                     size="sm" 
@@ -828,13 +861,9 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                   </Button>
                 )}
                 
-                {/* Edit and share buttons */}
+                {/* Edit and download/share buttons */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => setPreviewOpen(false)}>
-                      <ChevronLeft className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">Tillbaka</span>
-                    </Button>
                     <Button 
                       size="sm" 
                       variant="outline" 
@@ -864,13 +893,22 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                     </Button>
                   </div>
                   
-                  <Button size="sm" onClick={() => handleDownloadSingle(
-                    currentJob.final_url!, 
-                    `${selectedProject.registration_number}_${currentJob.id}.jpg`
-                  )}>
-                    <Share2 className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Dela</span>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => handleDownloadSingle(
+                      currentJob.final_url!, 
+                      `${selectedProject.registration_number}_${currentJob.id}.jpg`
+                    )}>
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Ladda ner</span>
+                    </Button>
+                    <Button size="sm" onClick={() => handleShareSingle(
+                      currentJob.final_url!, 
+                      `${selectedProject.registration_number}_${currentJob.id}.jpg`
+                    )}>
+                      <Share2 className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Dela</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
