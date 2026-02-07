@@ -299,7 +299,7 @@ export const DemoPaywall = () => {
 
   return (
     <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
-      <DialogContent className="p-0 gap-0 max-w-4xl border-0 bg-transparent shadow-none">
+      <DialogContent className="p-0 gap-0 max-w-4xl border-0 bg-transparent shadow-none max-h-[90dvh] overflow-y-auto">
         {/* Main card */}
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
           <div className="relative z-10">
