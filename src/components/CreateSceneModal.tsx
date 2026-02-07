@@ -1137,64 +1137,115 @@ export const CreateSceneModal = ({
                       <p className="text-sm sm:text-base text-foreground leading-relaxed">Hej! Vad vill du göra?</p>
                     </div>
                   </div>
-                  <div className="space-y-2.5 w-full max-w-xs sm:max-w-sm mx-auto">
+                  <div className="space-y-2.5 w-full max-w-md sm:max-w-lg mx-auto">
+                    {/* Skapa bakgrund */}
                     <button
                       onClick={() => selectMode('background-studio')}
-                      className="flex items-start gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group"
+                      className="flex items-center justify-between gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group overflow-hidden"
                     >
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
-                        <Image className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm sm:text-base font-semibold text-foreground">Skapa bakgrund</p>
-                        <div className="flex flex-col gap-0.5 mt-1">
-                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Designa egen miljö
-                          </span>
-                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ladda upp referensbild
-                          </span>
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
+                          <Image className="w-4 h-4 text-primary" />
                         </div>
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-semibold text-foreground">Skapa bakgrund</p>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Designa egen miljö
+                            </span>
+                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ladda upp referensbild
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="relative w-20 h-14 sm:w-28 sm:h-[4.5rem] flex-shrink-0">
+                        <img
+                          src="/scenes/garageuppfart-grus.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform"
+                        />
+                        <img
+                          src="/scenes/nordisk-dagsljus.jpg"
+                          alt=""
+                          loading="lazy"
+                          className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform"
+                        />
                       </div>
                     </button>
 
+                    {/* Fri bild */}
                     <button
                       onClick={() => selectMode('free-create')}
-                      className="flex items-start gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group"
+                      className="flex items-center justify-between gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group overflow-hidden"
                     >
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
-                        <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:brightness-0 dark:invert" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm sm:text-base font-semibold text-foreground">Fri bild</p>
-                        <div className="flex flex-col gap-0.5 mt-1">
-                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ta bort bakgrund helt
-                          </span>
-                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Säg till AI vad den ska göra
-                          </span>
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
+                          <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:brightness-0 dark:invert" />
                         </div>
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-semibold text-foreground">Fri bild</p>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ta bort bakgrund helt
+                            </span>
+                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Säg till AI vad den ska göra
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="relative w-20 h-14 sm:w-28 sm:h-[4.5rem] flex-shrink-0">
+                        <img
+                          src="/scenes/bla-sammet-draperi.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform"
+                        />
+                        <img
+                          src="/scenes/dark-studio.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform"
+                        />
                       </div>
                     </button>
 
+                    {/* Skapa annons */}
                     <button
                       onClick={() => selectMode('ad-create')}
-                      className="flex items-start gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group"
+                      className="flex items-center justify-between gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group overflow-hidden"
                     >
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
-                        <Type className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm sm:text-base font-semibold text-foreground">Skapa annons</p>
-                        <div className="flex flex-col gap-0.5 mt-1">
-                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Lägg till text & rubriker
-                          </span>
-                          <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Kreativt marknadsföringsmaterial
-                          </span>
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
+                          <Type className="w-4 h-4 text-primary" />
                         </div>
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-semibold text-foreground">Skapa annons</p>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Lägg till text & rubriker
+                            </span>
+                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Kreativt marknadsföringsmaterial
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="relative w-20 h-14 sm:w-28 sm:h-[4.5rem] flex-shrink-0">
+                        <img
+                          src="/scenes/dusk-plaza.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute top-0 left-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-sm border border-border/30 -rotate-3 group-hover:-rotate-2 transition-transform"
+                        />
+                        <img
+                          src="/scenes/warszawa-showroom.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute bottom-0 right-0 w-14 h-10 sm:w-20 sm:h-14 object-cover rounded-lg shadow-md border border-border/30 rotate-6 group-hover:rotate-4 transition-transform"
+                        />
                       </div>
                     </button>
                   </div>
