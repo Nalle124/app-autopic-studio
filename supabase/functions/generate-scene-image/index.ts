@@ -61,13 +61,21 @@ ABSOLUTE RULES FOR EVERY IMAGE:
 1. ALWAYS include text/headlines prominently and legibly in the image when specified by the user. This is the most important rule.
 2. Use professional, bold typography that is easy to read. Prefer clean sans-serif fonts.
 3. Images should look like professional marketing materials (ads, social media posts, promotional banners).
-4. ASPECT RATIO — MUST be wide landscape orientation with EXACT 3:2 aspect ratio (1536x1024).
-5. PHOTOGRAPHIC REALISM — Real photo quality background with professional lighting.
+4. ASPECT RATIO — Match the requested format. Default is wide landscape 3:2 (1536x1024). If portrait is requested, use 2:3 (1024x1536).
+5. PHOTOGRAPHIC REALISM — Real photo quality background with professional lighting. Must look like a real photograph, NOT a 3D render, illustration, or CGI.
 6. Text must have strong contrast against the background for maximum readability. Use overlays, shadows, or contrasting backgrounds behind text when needed.
 7. Use modern, clean design aesthetics appropriate for automotive marketing.
 8. Include design elements like gradients, overlays, or branded layouts when appropriate.
 9. If a reference image is provided, use it as a base and add text/design elements on top.
 10. Create visual hierarchy: main headline large and bold, subtext smaller.
+
+CRITICAL TEXT ACCURACY RULES:
+- Every single letter, number, and symbol in headlines MUST be spelled 100% correctly
+- Render text EXACTLY as specified by the user — no paraphrasing, no creative spelling, no translation
+- Numbers, percentages, currency symbols must be rendered precisely (e.g., "3.99%" not "3,99%")
+- Swedish characters (å, ä, ö, Å, Ä, Ö) must be rendered correctly
+- If unsure about spelling, default to the EXACT characters provided by the user
+- Double-check all text rendering before finalizing the image
 
 WHEN CREATING MARKETING MATERIALS:
 - Prioritize text legibility above all else
@@ -92,17 +100,7 @@ const BACKGROUND_PROMPT_SUFFIX = `
 This image is a BACKGROUND for automotive photo compositing. A car will be digitally placed on the ground surface.
 IMPORTANT: When modifying a previous image, keep ALL unchanged elements (location, mood, architecture) and ONLY change what the user specifically asked to change.`;
 
-const AD_PROMPT_SUFFIX = `
-
-[RULES FOR THIS IMAGE]:
-1. This is a MARKETING/ADVERTISING image for an automotive business
-2. Include all specified text/headlines prominently with professional, bold typography
-3. Text must be HIGHLY LEGIBLE with strong contrast — use overlays or backgrounds behind text
-4. Aspect ratio: 3:2 landscape (1536x1024)
-5. Photorealistic quality with professional design elements
-6. Modern, clean automotive marketing aesthetic
-7. Create clear visual hierarchy between headline and subtext
-IMPORTANT: When modifying a previous image, keep ALL unchanged elements and ONLY change what the user specifically asked to change.`;
+// AD_PROMPT_SUFFIX is now dynamically generated based on format (see serve handler)
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -145,7 +143,7 @@ serve(async (req) => {
       });
     }
 
-    const { conversationHistory, mode } = await req.json();
+    const { conversationHistory, mode, format } = await req.json();
 
     if (!conversationHistory || !Array.isArray(conversationHistory) || conversationHistory.length === 0) {
       return new Response(
@@ -165,11 +163,26 @@ serve(async (req) => {
 
     const isBackgroundMode = !mode || mode === 'background-studio';
     const isAdMode = mode === 'ad-create';
+    const isPortrait = format === 'portrait';
 
-    console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (mode: ${mode}, ${conversationHistory.length} messages)`);
+    console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (mode: ${mode}, format: ${format || 'landscape'}, ${conversationHistory.length} messages)`);
+
+    // Build dynamic AD prompt suffix based on format
+    const adPromptSuffix = `
+
+[RULES FOR THIS IMAGE]:
+1. This is a MARKETING/ADVERTISING image for an automotive business
+2. Include all specified text/headlines prominently with professional, bold typography
+3. Text must be HIGHLY LEGIBLE with strong contrast — use overlays or backgrounds behind text
+4. Aspect ratio: ${isPortrait ? '2:3 portrait (1024x1536)' : '3:2 landscape (1536x1024)'}
+5. Photorealistic quality with professional design elements
+6. Modern, clean automotive marketing aesthetic
+7. Create clear visual hierarchy between headline and subtext
+8. CRITICAL: All text MUST be spelled correctly — every letter, number, and symbol exactly as specified
+IMPORTANT: When modifying a previous image, keep ALL unchanged elements and ONLY change what the user specifically asked to change.`;
 
     // Determine which prompt suffix to inject
-    const modeSuffix = isBackgroundMode ? BACKGROUND_PROMPT_SUFFIX : isAdMode ? AD_PROMPT_SUFFIX : null;
+    const modeSuffix = isBackgroundMode ? BACKGROUND_PROMPT_SUFFIX : isAdMode ? adPromptSuffix : null;
 
     // Process conversation history with mode-specific context
     const processedHistory = conversationHistory.map((msg: any, idx: number) => {
@@ -231,7 +244,7 @@ serve(async (req) => {
               content: isBackgroundMode
                 ? `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, COMPLETELY EMPTY scene with absolutely no cars, no people, no vehicles. Eye-level camera angle at ~1.2m height. Flat ground surface in lower 40%. Realistic photo style. Generate the image now.`
                 : isAdMode
-                  ? `Generate a professional automotive marketing advertisement image: ${latestPromptText}. Include any specified text/headlines prominently with bold readable typography. MUST be landscape 3:2 ratio. Professional marketing design. Generate the image now.`
+                  ? `Generate a professional automotive marketing advertisement image: ${latestPromptText}. Include any specified text/headlines prominently with bold readable typography. All text must be spelled correctly. MUST be ${isPortrait ? 'portrait 2:3 ratio' : 'landscape 3:2 ratio'}. Photorealistic professional marketing design. Generate the image now.`
                   : `Generate a photorealistic image: ${latestPromptText}. MUST be landscape 3:2 ratio. Realistic photo style. Generate the image now.`
             },
           ];
