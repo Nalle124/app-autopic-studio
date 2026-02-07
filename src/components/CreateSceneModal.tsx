@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown } from 'lucide-react';
+import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -777,24 +777,26 @@ export const CreateSceneModal = ({
     setReferenceFile(null);
   };
 
-  // Handle selecting a project image (convert blob URLs to base64)
+  // Handle selecting a project image (convert ALL URLs to base64 for AI compatibility)
   const handleSelectProjectImage = async (url: string) => {
-    if (url.startsWith('blob:')) {
-      try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          setReferenceImage(ev.target?.result as string);
-          setReferenceFile(null);
-        };
-        reader.readAsDataURL(blob);
-      } catch {
-        toast.error('Kunde inte ladda bilden');
+    try {
+      if (url.startsWith('data:')) {
+        // Already base64
+        setReferenceImage(url);
+        setReferenceFile(null);
+        return;
       }
-    } else {
-      setReferenceImage(url);
-      setReferenceFile(null);
+      // Fetch the image and convert to base64 (works for blob:, http:, https:)
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setReferenceImage(ev.target?.result as string);
+        setReferenceFile(null);
+      };
+      reader.readAsDataURL(blob);
+    } catch {
+      toast.error('Kunde inte ladda bilden');
     }
   };
 
@@ -1099,12 +1101,34 @@ export const CreateSceneModal = ({
     }
   };
 
-  const handleDownloadImage = (imageUrl: string, name: string) => {
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = `${name}.png`;
-    link.target = '_blank';
-    link.click();
+  const handleDownloadImage = async (imageUrl: string, name: string) => {
+    // On mobile with share support, use native share sheet (iOS "Dela" / Android share)
+    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `${name}.png`, { type: 'image/png' });
+        await navigator.share({ files: [file] });
+        return;
+      } catch (err: any) {
+        // User cancelled share or share failed – fall through to download
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    // Fallback: standard download
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `${name}.png`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch {
+      // Last resort: open in new tab
+      window.open(imageUrl, '_blank');
+    }
   };
 
   const handlePreviewSubmit = async () => {
@@ -1125,9 +1149,7 @@ export const CreateSceneModal = ({
     try {
       const conversationHistory = buildConversationHistory(updatedMessages);
       const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
-      const { data, error } = await supabase.functions.invoke('generate-scene-image', {
-        body: retryPayload,
-      });
+      const { data, error } = await invokeWithTimeout(retryPayload);
       handleGenerateResponse(data, error, updatedMessages, retryPayload);
     } catch (err) {
       const conversationHistory = buildConversationHistory(updatedMessages);
@@ -1761,14 +1783,13 @@ export const CreateSceneModal = ({
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
               <p className="text-sm font-medium text-foreground truncate">{previewImage.name}</p>
               <div className="flex items-center gap-1">
-                <a
-                  href={previewImage.imageUrl}
-                  download={previewImage.name || 'ai-generated.png'}
+                <button
+                  onClick={() => handleDownloadImage(previewImage.imageUrl, previewImage.name || 'ai-generated')}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                  title="Ladda ner"
+                  title={/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Dela' : 'Ladda ner'}
                 >
-                  <Download className="w-4 h-4" />
-                </a>
+                  {/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? <Share2 className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                </button>
                 <button
                   onClick={() => { setPreviewImage(null); setPreviewPrompt(''); }}
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
