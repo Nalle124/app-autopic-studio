@@ -529,6 +529,61 @@
     animation: pulse-glow 2s ease-in-out infinite;
   }
   
+  /* AI Create card - subtle premium shimmer */
+  .ai-shimmer-sweep .ai-shimmer-sweep {
+    /* fallback */
+  }
+  
+  .ai-create-card .ai-shimmer-sweep {
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.04) 30%,
+      hsl(0 0% 100% / 0.07) 50%,
+      hsl(var(--primary) / 0.04) 70%,
+      transparent 100%
+    );
+    animation: ai-card-shimmer 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .dark .ai-create-card .ai-shimmer-sweep {
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.06) 30%,
+      hsl(0 0% 100% / 0.05) 50%,
+      hsl(var(--primary) / 0.06) 70%,
+      transparent 100%
+    );
+  }
+  
+  @keyframes ai-card-shimmer {
+    0% {
+      left: -120%;
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    40% {
+      left: 120%;
+      opacity: 1;
+    }
+    45% {
+      opacity: 0;
+    }
+    100% {
+      left: 120%;
+      opacity: 0;
+    }
+  }
+  
   /* Fix white borders in dark mode on cards */
   .dark .border-white,
   .dark .border-gray-100,
