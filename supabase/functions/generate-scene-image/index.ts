@@ -102,6 +102,48 @@ IMPORTANT: When modifying a previous image, keep ALL unchanged elements (locatio
 
 // AD_PROMPT_SUFFIX is now dynamically generated based on format (see serve handler)
 
+// Helper: convert external image URLs to base64 data URIs so the AI gateway
+// doesn't need to fetch them (Google AI Studio often can't reach Supabase URLs)
+async function urlToBase64(url: string): Promise<string> {
+  if (url.startsWith("data:")) return url; // already base64
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);
+  const buf = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const b64 = btoa(binary);
+  const contentType = res.headers.get("content-type") || "image/jpeg";
+  return `data:${contentType};base64,${b64}`;
+}
+
+// Inline all image_url references in conversation history
+async function inlineImages(history: any[]): Promise<any[]> {
+  const result = [];
+  for (const msg of history) {
+    if (Array.isArray(msg.content)) {
+      const parts = [];
+      for (const part of msg.content) {
+        if (part.type === "image_url" && part.image_url?.url && !part.image_url.url.startsWith("data:")) {
+          try {
+            const dataUri = await urlToBase64(part.image_url.url);
+            parts.push({ ...part, image_url: { url: dataUri } });
+          } catch (e) {
+            console.warn("Failed to inline image, skipping:", e);
+            // Skip this image part rather than crashing
+          }
+        } else {
+          parts.push(part);
+        }
+      }
+      result.push({ ...msg, content: parts });
+    } else {
+      result.push(msg);
+    }
+  }
+  return result;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -229,9 +271,12 @@ IMPORTANT: When modifying a previous image, keep ALL unchanged elements and ONLY
       systemPrompt = BACKGROUND_SYSTEM_PROMPT;
     }
 
+    // Inline any external image URLs to base64 before sending to AI gateway
+    const inlinedHistory = await inlineImages(processedHistory);
+
     const aiMessages = [
       { role: "system", content: systemPrompt },
-      ...processedHistory,
+      ...inlinedHistory,
     ];
 
     // Step 1: Generate the image with retry
