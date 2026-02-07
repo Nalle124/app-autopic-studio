@@ -32,11 +32,11 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { hideCloseButton?: boolean }
 >(({ className, children, hideCloseButton, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay className="overflow-y-auto py-4 md:py-8">
+    <DialogOverlay className="overflow-y-auto flex items-center justify-center py-4 md:py-8 min-h-full">
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "relative mx-auto my-auto w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 rounded-2xl m-3 sm:m-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "relative mx-auto w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 rounded-2xl m-3 sm:m-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className,
         )}
         {...props}
