@@ -370,8 +370,11 @@ export const CreateSceneModal = ({
     if (!open) return;
     
     const updateViewportHeight = () => {
-      const vh = window.visualViewport?.height || window.innerHeight;
+      const vv = window.visualViewport;
+      const vh = vv?.height || window.innerHeight;
+      const offsetTop = vv?.offsetTop || 0;
       document.documentElement.style.setProperty('--visual-viewport-height', `${vh}px`);
+      document.documentElement.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`);
     };
 
     updateViewportHeight();
@@ -390,6 +393,7 @@ export const CreateSceneModal = ({
       }
       window.removeEventListener('resize', updateViewportHeight);
       document.documentElement.style.removeProperty('--visual-viewport-height');
+      document.documentElement.style.removeProperty('--visual-viewport-offset-top');
     };
   }, [open]);
 
