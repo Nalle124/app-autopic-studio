@@ -644,7 +644,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
               </div>
 
               {/* Project Info */}
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 {editingProjectId === project.id ? (
                   <div className="flex items-center gap-2">
                     <Input 
@@ -684,15 +684,15 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-lg flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                    <h3 className="font-semibold text-sm sm:text-base truncate flex-1 min-w-0">
                       {isOrphan ? 'Utan Reg nr' : project.registration_number}
                     </h3>
                     {!isOrphan && (
                       <Button 
                         size="icon" 
                         variant="ghost" 
-                        className="h-6 w-6 opacity-50 hover:opacity-100"
+                        className="h-6 w-6 opacity-50 hover:opacity-100 flex-shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingProjectId(project.id);
@@ -704,7 +704,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                     )}
                   </div>
                 )}
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {projectJobs.length} bilder
                 </p>
               </div>

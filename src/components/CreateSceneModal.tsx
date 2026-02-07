@@ -212,11 +212,20 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
       allowCustom: true,
     },
     {
-      question: 'Vilken rubrik ska synas på bilden?',
+      question: 'Vilken rubrik ska synas?',
       options: [
         { label: '"Vi köper din bil"', value: 'headline text: Vi köper din bil' },
         { label: '"Nyinkommet"', value: 'headline text: Nyinkommet' },
         { label: '"Boka provkörning"', value: 'headline text: Boka provkörning' },
+      ],
+      allowCustom: true,
+    },
+    {
+      question: 'Ska det vara mer text, t.ex. undertext eller pris?',
+      options: [
+        { label: 'Nej, bara rubrik', value: 'no additional text, only headline' },
+        { label: 'Lägg till pris', value: 'include price text below headline' },
+        { label: 'Lägg till undertext', value: 'include subtitle text below headline' },
       ],
       allowCustom: true,
     },
@@ -242,11 +251,20 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
       allowCustom: true,
     },
     {
-      question: 'Rubrik & text på bilden?',
+      question: 'Vilken rubrik ska synas på bilden?',
       options: [
         { label: '"Räntekampanj 3.99%"', value: 'headline text: Räntekampanj 3.99%' },
         { label: '"Vi tar din bil i inbyte"', value: 'headline text: Vi tar din bil i inbyte' },
         { label: '"Besök oss idag"', value: 'headline text: Besök oss idag' },
+      ],
+      allowCustom: true,
+    },
+    {
+      question: 'Vill du ha undertext eller CTA-knapp?',
+      options: [
+        { label: 'Nej, bara rubrik', value: 'no additional text elements' },
+        { label: 'Lägg till CTA-knapp', value: 'add a call-to-action button' },
+        { label: 'Lägg till kontaktinfo', value: 'add contact information text' },
       ],
       allowCustom: true,
     },
@@ -271,7 +289,7 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
       allowCustom: true,
     },
     {
-      question: 'Text på bilden?',
+      question: 'Vilken text ska synas på bilden?',
       options: [
         { label: '"Alltid 50 bilar i lager"', value: 'headline text: Alltid 50 bilar i lager' },
         { label: '"Besök oss i [stad]"', value: 'headline text: Besök oss' },
@@ -437,11 +455,14 @@ export const CreateSceneModal = ({
       ]);
     } else if (mode === 'ad-create') {
       setMessages([
-        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial!' },
+        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial! 🎨' },
         {
           role: 'assistant-options',
-          text: 'Vad vill du skapa?',
-          options: AD_CATEGORIES.map(c => ({ label: `${c.icon} ${c.label}`, value: c.value })),
+          text: 'Vill du använda en egen bild som referens?',
+          options: [
+            { label: '📷 Ladda upp referensbild', value: '__ad_ref_upload__' },
+            { label: '⏭️ Hoppa över', value: '__ad_ref_skip__' },
+          ],
         },
       ]);
     } else {
@@ -468,11 +489,14 @@ export const CreateSceneModal = ({
       ]);
     } else if (mode === 'ad-create') {
       setMessages([
-        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial!' },
+        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial! 🎨' },
         {
           role: 'assistant-options',
-          text: 'Vad vill du skapa?',
-          options: AD_CATEGORIES.map(c => ({ label: `${c.icon} ${c.label}`, value: c.value })),
+          text: 'Vill du använda en egen bild som referens?',
+          options: [
+            { label: '📷 Ladda upp referensbild', value: '__ad_ref_upload__' },
+            { label: '⏭️ Hoppa över', value: '__ad_ref_skip__' },
+          ],
         },
       ]);
     } else {
@@ -640,6 +664,35 @@ export const CreateSceneModal = ({
 
   // ─── Option click dispatcher ────────────────────────────────
   const handleOptionClick = (value: string) => {
+    // Handle ad pre-flow: reference image question
+    if (value === '__ad_ref_upload__') {
+      fileInputRef.current?.click();
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', text: '📷 Ladda upp referensbild' },
+        { role: 'assistant', text: 'Ladda upp din bild via +-knappen nedan. När du har valt en bild, fortsätt med att välja annonstyp.' },
+        {
+          role: 'assistant-options',
+          text: 'Vad vill du skapa?',
+          options: AD_CATEGORIES.map(c => ({ label: `${c.icon} ${c.label}`, value: c.value })),
+        },
+      ]);
+      return;
+    }
+
+    if (value === '__ad_ref_skip__') {
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', text: 'Hoppa över' },
+        {
+          role: 'assistant-options',
+          text: 'Vad vill du skapa?',
+          options: AD_CATEGORIES.map(c => ({ label: `${c.icon} ${c.label}`, value: c.value })),
+        },
+      ]);
+      return;
+    }
+
     // Handle format selection for ad mode
     if (value === '__format_landscape__' || value === '__format_portrait__') {
       const selectedFormat = value === '__format_portrait__' ? 'portrait' : 'landscape';
@@ -651,7 +704,7 @@ export const CreateSceneModal = ({
         { role: 'user', text: formatLabel },
         {
           role: 'assistant',
-          text: `Bra val! Här är din plan:\n\n**${categoryLabel}**: ${guidedSelections.join(' · ')}\n**Format**: ${selectedFormat === 'portrait' ? 'Stående' : 'Liggande'}\n\nLägg till fler detaljer i textfältet, eller klicka **Skapa bild** direkt.`,
+          text: `Bra val! Här är din plan:\n\n**${categoryLabel}**: ${guidedSelections.join(' · ')}\n**Format**: ${selectedFormat === 'portrait' ? 'Stående' : 'Liggande'}\n\nLägg till fler detaljer i textfältet, eller klicka **Skapa annons** direkt.`,
         },
       ]);
       return;
