@@ -36,10 +36,10 @@ export const ExportPanel = ({
         {/* Header */}
         <div>
           <h3 className="text-lg font-bold text-foreground mb-0.5">
-            AI-Generering
+            Placera på bakgrund
           </h3>
           <p className="text-xs text-foreground/70">
-            Välj inställningar och starta genereringen
+            Välj inställningar och starta kompositionen
           </p>
         </div>
 
@@ -132,7 +132,7 @@ export const ExportPanel = ({
             )}
             
             <span className="relative z-10">
-              {isProcessing ? 'Genererar...' : 'Starta AI-generering'}
+              {isProcessing ? 'Placerar...' : 'Starta komposition'}
             </span>
           </Button>
           

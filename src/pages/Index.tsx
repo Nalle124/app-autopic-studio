@@ -855,7 +855,7 @@ function IndexContent() {
 
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
             {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="dark:bg-card border border-foreground/20 dark:border-border rounded-[10px] p-6 space-y-6">
-                <h2 className="font-sans font-medium text-lg text-foreground mb-4">Generera</h2>
+                <h2 className="font-sans font-medium text-lg text-foreground mb-4">Placera på bakgrund</h2>
                 
                 <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
               </section>}
