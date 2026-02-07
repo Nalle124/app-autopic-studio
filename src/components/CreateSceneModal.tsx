@@ -1186,10 +1186,10 @@ export const CreateSceneModal = ({
                         <div className="min-w-0">
                           <p className="text-sm sm:text-base font-semibold text-foreground">Skapa bakgrund</p>
                           <div className="flex flex-col gap-0.5 mt-1">
-                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
                               <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Designa egen miljö
                             </span>
-                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
                               <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ladda upp referensbild
                             </span>
                           </div>
@@ -1223,10 +1223,10 @@ export const CreateSceneModal = ({
                         <div className="min-w-0">
                           <p className="text-sm sm:text-base font-semibold text-foreground">Fri bild</p>
                           <div className="flex flex-col gap-0.5 mt-1">
-                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
                               <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Ta bort bakgrund helt
                             </span>
-                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
                               <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Säg till AI vad den ska göra
                             </span>
                           </div>
@@ -1254,10 +1254,10 @@ export const CreateSceneModal = ({
                         <div className="min-w-0">
                           <p className="text-sm sm:text-base font-semibold text-foreground">Skapa annons</p>
                           <div className="flex flex-col gap-0.5 mt-1">
-                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
                               <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Lägg till text & rubriker
                             </span>
-                            <span className="text-[11px] sm:text-xs text-muted-foreground flex items-center gap-1.5">
+                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
                               <Check className="w-3 h-3 text-primary/70 flex-shrink-0" /> Kreativt marknadsföringsmaterial
                             </span>
                           </div>
