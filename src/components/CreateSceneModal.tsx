@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { SceneMetadata } from '@/types/scene';
+import { Badge } from '@/components/ui/badge';
 
 interface CreateSceneModalProps {
   open: boolean;
@@ -39,7 +40,7 @@ const AutopicAvatar = () => (
   <img
     src="/favicon.png"
     alt="AutoPic AI"
-    className="w-7 h-7 rounded-full object-contain bg-muted p-0.5 flex-shrink-0"
+    className="w-7 h-7 rounded-full object-contain bg-muted p-0.5 flex-shrink-0 dark:invert"
   />
 );
 
@@ -97,7 +98,7 @@ export const CreateSceneModal = ({
     'Mörk betong med dramatiska skuggor',
     'Snöig skogsväg i vinterlandskap',
     'Lyxig uppfart med grus och grönska',
-    'Industrilokal med stort fönster',
+    'Som min referens men utan bilen',
   ];
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -350,8 +351,11 @@ export const CreateSceneModal = ({
         <div className="flex items-center gap-3 px-5 py-4 border-b border-border/50">
           <AutopicAvatar />
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-foreground leading-tight">AutoPic AI</h3>
-            <p className="text-[11px] text-muted-foreground">Skapar bakgrunder</p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-semibold text-foreground leading-tight">AutoPic AI</h3>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium uppercase tracking-wider">Beta</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">Skapar bakgrunder</p>
           </div>
           <button
             onClick={handleClose}
