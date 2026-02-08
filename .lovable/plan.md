@@ -1,53 +1,103 @@
 
 
-# Redesign av mode-select-korten i AI-chatten
+# AI Studio-flik + mobil dropdown + enkel ikon i steg 4
+
+## Oversikt
+
+Tre andringar baserat pa feedback:
+
+1. **Desktop**: Tredje flik "AI Studio" i befintlig TabsList (Projekt | AI Studio | Galleri)
+2. **Mobil**: Byt ut TabsList mot en kompakt dropdown (Select) sa flikarna inte brakar om plats
+3. **Steg 4**: Behalj AI-knappen som en enkel ikon-knapp (samma stil som ovriga verktyg) -- bara byt favicon mot Sparkles-ikonen for tydlighet
 
 ## Vad som andras
 
-De tre lagesknapparna i chattens startmeny ("Skapa bakgrund", "Fri bild", "Skapa annons") far en ny, mer grafisk layout som matchar din Figma-design. Varje kort far en forhandsvisningsbild pa hoger sida som visar vad man kan gora i det laget.
+### 1. Ny flik "AI Studio" (desktop)
 
-## Design
-
-Varje kort far:
-- **Bredare layout** med flexbox (text till vanster, bild(er) till hoger)
-- **Forhandsvisningsbilder** som ar latt roterade/overlappande for dynamisk kansla, precis som i din Figma
-- **Storre klickyta** med tydligare visuell hierarki
-- Max-bredd okas fran `max-w-xs sm:max-w-sm` till `max-w-md sm:max-w-lg` for att ge plats at bilderna
-
-## Bilder som anvands
-
-Istallet for att lagga till nya bilder anvands befintliga assets fran projektet:
-
-- **Skapa bakgrund**: Tva scene-thumbnails fran `/public/scenes/` (t.ex. `garageuppfart-grus.png` och `nordisk-dagsljus.jpg`) — visar studiomiljoer
-- **Fri bild**: Tva before/after-bilder fran `/src/assets/examples/` (t.ex. `caddy-relight-after.png` och `ford-after.png`) — visar bildredigering
-- **Skapa annons**: Tva annonsliknande bilder — anvander befintliga assets eller scener som representerar marknadsforingsmaterial
-
-## Tekniska detaljer
-
-### Fil som andras
-
-**`src/components/CreateSceneModal.tsx`** — Raderna 1131-1202 (mode-select-renderingen)
-
-Andringar:
-- Utoka containerbredden fran `max-w-xs sm:max-w-sm` till `max-w-md sm:max-w-lg`
-- Andra kortens layout fran `flex items-start gap-3` till en tvadelad layout med text vanster och bilder hoger
-- Lagg till en bildsektion pa hoger sida av varje kort med 2 overlappande bilder, roterade med CSS `transform: rotate()` for den dynamiska effekten fran Figma-designen
-- Bilderna refereras fran `/public/scenes/` med vanliga `<img>`-taggar (lazy loading)
-- Okar padding och gor korten nagot hogre for att rymma bilderna
-- Bilderna doljs pa mycket smala skarmar (`hidden xs:block`) om det behövs for att behalla responsivitet, men visas som standard
-
-### Kortstruktur (per kort)
+TabsList utvidgas fran tva till tre flikar. Pa desktop visas de som vanligt:
 
 ```text
-+--------------------------------------------------+
-|  [ikon]  Skapa bakgrund          [bild1] [bild2]  |
-|          - Designa egen miljo       (roterade,    |
-|          - Ladda upp referensbild    overlappande) |
-+--------------------------------------------------+
+[ Projekt ]  [ AI Studio ]  [ Galleri ]
 ```
 
-CSS for bilderna:
-- Container: `relative w-24 h-16 sm:w-28 sm:h-20 flex-shrink-0`
-- Bild 1: `absolute`, latt roterad (`-rotate-3`), rundade horn, skugga
-- Bild 2: `absolute`, roterad at andra hallet (`rotate-6`), overlappande
+Nar "AI Studio" klickas oppnas CreateSceneModal direkt, och fliken aterstalls till "Projekt" nar modalen stangs.
+
+### 2. Dropdown pa mobil istallet for tabs
+
+Pa skarmar under 768px (sm-breakpoint) doljs TabsList och en Select-dropdown visas istallet:
+
+```text
++---------------------+
+| Projekt           v |
++---------------------+
+```
+
+Dropdown-alternativen: Projekt, AI Studio, Galleri. Samma beteende som tabs men tar minimal plats. Anvander befintliga Select-komponenten fran `src/components/ui/select.tsx`.
+
+### 3. Enkel ikon i steg 4
+
+Den befintliga knappen (rad 967-975) behaljs som ikon-knapp med `size="icon"` och samma styling som ovriga verktyg (Sliders, Scissors, Download). Enda andringen ar att byta ut `<img src="/favicon.png" ...>` mot `<Sparkles className="w-4 h-4" />` for en renare, mer konsekvent ikon.
+
+## Teknisk plan
+
+### Fil: `src/pages/Index.tsx`
+
+**A) Imports (rad 1-30)**
+- Lagg till import av `Select, SelectContent, SelectItem, SelectTrigger, SelectValue` fran `@/components/ui/select`
+- Lagg till import av `useIsMobile` fran `@/hooks/use-mobile`
+
+**B) State (runt rad 60-80)**
+- Andra activeTab-typen fran `'new' | 'history'` till `'new' | 'ai-studio' | 'history'`
+
+**C) Tab-hantering for AI Studio**
+- Lagg till en `useEffect` eller inline-hantering: nar `activeTab` satts till `'ai-studio'`, oppna `showAiModal(true)` och aterstall till `'new'`
+- Alternativt hantera det i `onValueChange` direkt: om valt varde ar `'ai-studio'`, oppna modalen och behall foregaende flik
+
+**D) Header-navigering (rad 728-739)**
+- Wrappa TabsList i `hidden sm:inline-flex` sa den doljs pa mobil
+- Lagg till en Select-komponent med `sm:hidden` sa den bara visas pa mobil:
+
+```text
+Desktop:  [ Tabs: Projekt | AI Studio | Galleri ]
+Mobil:    [ Select: Projekt v ]
+```
+
+Select-komponenten:
+- Varde mappat till samma `activeTab` state
+- `onValueChange` med samma logik: om `ai-studio` valjs -> oppna modal, annars byt flik
+- Kompakt styling som matchar headern
+
+**E) Steg 4 AI-knapp (rad 967-975)**
+- Byt `<img src="/favicon.png" ...>` mot `<Sparkles className="w-4 h-4" />`
+- Behalj allt annat: `variant="outline"`, `size="icon"`, samma klasser, titel "Redigera med AI"
+- Lagg till logik for att skicka med aktuell bild som `initialImage` (prop pa CreateSceneModal)
+
+**F) CreateSceneModal prop**
+- Ny valfri prop: `initialImage?: string`
+- Nar satt: oppna chatten direkt i "free-create"-lage med bilden som referens
+- Ny state i Index.tsx: `aiModalInitialImage` som satts nar man klickar AI-ikonen i steg 4
+
+### Fil: `src/components/CreateSceneModal.tsx`
+
+- Ny prop `initialImage?: string`
+- I `useEffect` vid oppning: om `initialImage` finns, konvertera till base64 (befintlig logik), satt som referensbild, och hoppa direkt till "free-create"-laget
+- Visa informationsmeddelande i chatten: "1 bild vald for redigering. Beskriv vad du vill andra."
+
+## Vad som INTE andras
+
+- Hela Projekt-fliken (upload, bakgrundsgalleri, placera, redigera, logo) -- helt oforandrat
+- Galleri-fliken -- helt oforandrat
+- Befintliga CreateSceneModal-funktionalitet -- bara ny prop
+- Designsprak, farger, typografi
+- Steg 4 toolbar-layout (ikon-knappen behaljer exakt samma storlek och stil)
+
+## Andringssammanfattning
+
+| Komponent | Andring |
+|---|---|
+| Header tabs (desktop) | Ny tredje flik "AI Studio" med Sparkles-ikon |
+| Header tabs (mobil) | Tabs doljs, ersatts av Select-dropdown |
+| Steg 4 AI-knapp | Favicon-bild byts mot Sparkles-ikon, behaljs som icon-knapp |
+| CreateSceneModal | Ny `initialImage` prop for kontextuell oppning |
+| Index.tsx state | `activeTab` utvidgad + `aiModalInitialImage` tillagd |
 
