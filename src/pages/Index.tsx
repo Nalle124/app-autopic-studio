@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2 } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -129,14 +129,13 @@ function IndexContent() {
     bannerRotation: 0
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
-  const [showAiModal, setShowAiModal] = useState(false);
+  
 
-  // Handle tab changes — AI Studio opens modal instead of switching content
+  // Handle tab changes — AI Studio is now an inline tab
   const handleTabChange = (value: string) => {
     if (value === 'ai-studio') {
+      setActiveTab('ai-studio');
       setAiModalInitialImage(null);
-      setShowAiModal(true);
-      // Don't change activeTab — keep showing current content behind modal
     } else {
       setActiveTab(value as 'new' | 'history');
     }
@@ -749,7 +748,7 @@ function IndexContent() {
                     Projekt
                   </TabsTrigger>
                   <TabsTrigger value="ai-studio" className="gap-2">
-                    <Sparkles className="w-4 h-4" />
+                    <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
                     AI Studio
                   </TabsTrigger>
                   <TabsTrigger value="history" className="gap-2">
@@ -795,7 +794,28 @@ function IndexContent() {
 
       {/* Main Content - add margin-top for fixed header */}
       <main className="container mx-auto px-4 py-8 max-w-7xl mt-16">
-        {activeTab === 'history' ? <section className="space-y-6">
+        {activeTab === 'ai-studio' ? (
+          /* AI Studio – inline chat */
+          <section className="space-y-4">
+            <CreateSceneModal
+              open={true}
+              onOpenChange={() => {}}
+              onSceneCreated={() => {}}
+              onNavigateToMyScenes={() => {
+                setAiModalInitialImage(null);
+                setActiveTab('new');
+                setSceneSelectorKey(prev => prev + 1);
+                setTimeout(() => {
+                  document.getElementById('explore-scenes-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+              }}
+              uploadedImages={uploadedImages}
+              completedImages={uploadedImages.filter(img => img.status === 'completed')}
+              initialImage={aiModalInitialImage}
+              inline
+            />
+          </section>
+        ) : activeTab === 'history' ? <section className="space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-foreground mb-2">Dina Projekt</h2>
               <p className="text-muted-foreground">Se och hantera dina tidigare skapade bilgallerier</p>
@@ -805,17 +825,12 @@ function IndexContent() {
             </div>
             <ProjectGallery onUseAsNewImage={async imageUrl => {
           try {
-            // Fetch the image and create a File object
             const response = await fetch(imageUrl);
             const blob = await response.blob();
             const file = new File([blob], `gallery_image_${Date.now()}.jpg`, {
               type: 'image/jpeg'
             });
-
-            // Create preview URL
             const preview = URL.createObjectURL(blob);
-
-            // Add as new uploaded image
             const newImage: UploadedImage = {
               id: `gallery_${Date.now()}`,
               file,
@@ -824,8 +839,6 @@ function IndexContent() {
             };
             setUploadedImages(prev => [...prev, newImage]);
             setActiveTab('new');
-
-            // Scroll to upload section
             setTimeout(() => {
               window.scrollTo({
                 top: 0,
@@ -867,57 +880,14 @@ function IndexContent() {
           }} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={!isSubscribed && !isAdmin} />
             </section>
 
-            {/* AI Section - Standalone */}
-            <section
-              onClick={() => setShowAiModal(true)}
-              className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ai-create-card"
-              style={{ borderRadius: 'var(--radius-card)', background: 'var(--gradient-card)' }}
-            >
-              <div className="absolute inset-0 pointer-events-none rounded-[inherit] bg-foreground/[0.04] dark:bg-white/[0.04]" />
-              <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: 'inherit' }}>
-                <div className="ai-shimmer-sweep" />
-              </div>
-              <div className="absolute inset-0 rounded-[inherit] pointer-events-none border border-primary/[0.08] group-hover:border-primary/20 transition-colors duration-500" />
-              <div className="relative flex items-center gap-3.5 p-4 sm:p-5">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5">
-                    <h3 className="font-bold text-lg sm:text-xl text-foreground leading-tight">Skapa med AI</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium leading-none">Chatt-läge</span>
-                  </div>
-                  <p className="text-sm sm:text-base text-muted-foreground mt-1">Generera bakgrunder, redigera bilder, skapa annonser – allt med AI</p>
-                </div>
-                <div className="flex-shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <Plus className="w-5 h-5 text-primary" />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* AI Modal */}
-            <CreateSceneModal
-              open={showAiModal}
-              onOpenChange={(open) => {
-                setShowAiModal(open);
-                if (!open) setAiModalInitialImage(null);
-              }}
-              onSceneCreated={(scene) => {
-                // Don't auto-select/scroll when saving from AI modal
-                // The scene is saved to "Mina scener" - user stays where they are
-              }}
-              onNavigateToMyScenes={() => {
-                setShowAiModal(false);
-                setAiModalInitialImage(null);
-                // Force re-render SceneSelector with my-scenes as default
-                setSceneSelectorKey(prev => prev + 1);
-                setTimeout(() => {
-                  document.getElementById('explore-scenes-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-              }}
-              uploadedImages={uploadedImages}
-              completedImages={uploadedImages.filter(img => img.status === 'completed')}
-              initialImage={aiModalInitialImage}
-            />
+            {/* AI Notice - Discrete, non-clickable */}
+            <div className="flex items-center gap-3 px-4 py-3 rounded-[10px] border border-border/40 bg-muted/30">
+              <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert flex-shrink-0 opacity-60" />
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
+                Skapa egna bakgrunder, kampanjbilder och redigera fritt med AI – via <span className="font-medium">AI Studio</span> i menyn.
+              </p>
+            </div>
 
             {/* Explore Scenes - Always visible */}
             {uploadedImages.length === 0 && (
@@ -1019,10 +989,10 @@ function IndexContent() {
                           } else {
                             setAiModalInitialImage(null);
                           }
-                          setShowAiModal(true);
+                          setActiveTab('ai-studio');
                         }}
                       >
-                        <Sparkles className="w-4 h-4" />
+                        <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
                       </Button>
                       <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Redigera ${selectedImages.size} valda` : 'Redigera'} onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
