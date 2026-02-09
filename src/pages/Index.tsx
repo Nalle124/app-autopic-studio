@@ -27,6 +27,7 @@ import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -34,6 +35,7 @@ import { DemoPaywall } from '@/components/DemoPaywall';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { useOnboardingCheck } from '@/hooks/useOnboardingCheck';
 import { CreateSceneModal } from '@/components/CreateSceneModal';
+import { useIsMobile } from '@/hooks/use-mobile';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
@@ -101,7 +103,9 @@ function IndexContent() {
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [registrationNumber, setRegistrationNumber] = useState('');
-  const [activeTab, setActiveTab] = useState<'new' | 'history'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'ai-studio' | 'history'>('new');
+  const [aiModalInitialImage, setAiModalInitialImage] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
   const [relightEnabled, setRelightEnabled] = useState(false);
   const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());
@@ -126,6 +130,17 @@ function IndexContent() {
   });
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
+
+  // Handle tab changes — AI Studio opens modal instead of switching content
+  const handleTabChange = (value: string) => {
+    if (value === 'ai-studio') {
+      setAiModalInitialImage(null);
+      setShowAiModal(true);
+      // Don't change activeTab — keep showing current content behind modal
+    } else {
+      setActiveTab(value as 'new' | 'history');
+    }
+  };
   const [sceneSelectorKey, setSceneSelectorKey] = useState(0);
   // Unauthenticated users are redirected to /auth in the Index wrapper
 
@@ -725,18 +740,39 @@ function IndexContent() {
             )}
 
             
-            <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'new' | 'history')} className="w-auto">
-              <TabsList className="bg-background/80 backdrop-blur-sm">
-                <TabsTrigger value="new" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Projekt
-                </TabsTrigger>
-                <TabsTrigger value="history" className="gap-2">
-                  <History className="w-4 h-4" />
-                  Galleri
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {/* Desktop: Tabs */}
+            {!isMobile && (
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-auto">
+                <TabsList className="bg-background/80 backdrop-blur-sm">
+                  <TabsTrigger value="new" className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Projekt
+                  </TabsTrigger>
+                  <TabsTrigger value="ai-studio" className="gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    AI Studio
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-2">
+                    <History className="w-4 h-4" />
+                    Galleri
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
+
+            {/* Mobile: Select dropdown */}
+            {isMobile && (
+              <Select value={activeTab} onValueChange={handleTabChange}>
+                <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[60]">
+                  <SelectItem value="new">Projekt</SelectItem>
+                  <SelectItem value="ai-studio">AI Studio</SelectItem>
+                  <SelectItem value="history">Galleri</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             
             {user && (
               <Button
@@ -861,13 +897,17 @@ function IndexContent() {
             {/* AI Modal */}
             <CreateSceneModal
               open={showAiModal}
-              onOpenChange={setShowAiModal}
+              onOpenChange={(open) => {
+                setShowAiModal(open);
+                if (!open) setAiModalInitialImage(null);
+              }}
               onSceneCreated={(scene) => {
                 // Don't auto-select/scroll when saving from AI modal
                 // The scene is saved to "Mina scener" - user stays where they are
               }}
               onNavigateToMyScenes={() => {
                 setShowAiModal(false);
+                setAiModalInitialImage(null);
                 // Force re-render SceneSelector with my-scenes as default
                 setSceneSelectorKey(prev => prev + 1);
                 setTimeout(() => {
@@ -876,6 +916,7 @@ function IndexContent() {
               }}
               uploadedImages={uploadedImages}
               completedImages={uploadedImages.filter(img => img.status === 'completed')}
+              initialImage={aiModalInitialImage}
             />
 
             {/* Explore Scenes - Always visible */}
@@ -969,9 +1010,19 @@ function IndexContent() {
                         size="icon" 
                         className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
                         title="Redigera med AI"
-                        onClick={() => setShowAiModal(true)}
+                        onClick={() => {
+                          // Find the currently viewed image to pass as initial
+                          const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                          const currentImg = completedImages[galleryIndex];
+                          if (currentImg?.finalUrl) {
+                            setAiModalInitialImage(currentImg.finalUrl);
+                          } else {
+                            setAiModalInitialImage(null);
+                          }
+                          setShowAiModal(true);
+                        }}
                       >
-                        <img src="/favicon.png" alt="AI" className="w-5 h-5 object-contain dark:brightness-0 dark:invert" />
+                        <Sparkles className="w-4 h-4" />
                       </Button>
                       <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Redigera ${selectedImages.size} valda` : 'Redigera'} onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');

@@ -26,6 +26,7 @@ interface CreateSceneModalProps {
   onNavigateToMyScenes?: () => void;
   uploadedImages?: UploadedImage[];
   completedImages?: UploadedImage[];
+  initialImage?: string | null;
 }
 
 type ChatMode = 'background-studio' | 'free-create' | 'ad-create';
@@ -326,6 +327,7 @@ export const CreateSceneModal = ({
   onNavigateToMyScenes,
   uploadedImages: propUploadedImages = [],
   completedImages: propCompletedImages = [],
+  initialImage,
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
   const [chatMode, setChatMode] = useState<ChatMode | null>(null);
@@ -365,8 +367,37 @@ export const CreateSceneModal = ({
   useEffect(() => {
     if (open) {
       resetAll();
+      // If opened with an initial image, go straight to free-create mode
+      if (initialImage) {
+        setChatMode('free-create');
+        setMessages([
+          {
+            role: 'system',
+            text: '1 bild vald för redigering. Beskriv vad du vill ändra – eller ladda upp en ny bild istället.',
+          },
+        ]);
+        // Convert the image to base64 for AI compatibility
+        (async () => {
+          try {
+            if (initialImage.startsWith('data:')) {
+              setReferenceImage(initialImage);
+            } else {
+              const response = await fetch(initialImage);
+              const blob = await response.blob();
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                setReferenceImage(ev.target?.result as string);
+              };
+              reader.readAsDataURL(blob);
+            }
+          } catch {
+            // Fallback: set the URL directly
+            setReferenceImage(initialImage);
+          }
+        })();
+      }
     }
-  }, [open]);
+  }, [open, initialImage]);
 
   // Track visual viewport for mobile keyboard handling (rAF for smooth updates)
   useEffect(() => {
