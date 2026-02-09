@@ -27,6 +27,7 @@ interface CreateSceneModalProps {
   uploadedImages?: UploadedImage[];
   completedImages?: UploadedImage[];
   initialImage?: string | null;
+  inline?: boolean;
 }
 
 type ChatMode = 'background-studio' | 'free-create' | 'ad-create';
@@ -328,6 +329,7 @@ export const CreateSceneModal = ({
   uploadedImages: propUploadedImages = [],
   completedImages: propCompletedImages = [],
   initialImage,
+  inline = false,
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
   const [chatMode, setChatMode] = useState<ChatMode | null>(null);
@@ -363,39 +365,42 @@ export const CreateSceneModal = ({
   const activeFlows = chatMode === 'ad-create' ? AD_GUIDED_FLOWS : GUIDED_FLOWS;
   const activeCategories = chatMode === 'ad-create' ? AD_CATEGORIES : BACKGROUND_CATEGORIES;
 
-  // Reset state when modal opens
+  // Reset state when modal opens or initialImage changes (for inline mode)
   useEffect(() => {
-    if (open) {
-      resetAll();
-      // If opened with an initial image, go straight to free-create mode
-      if (initialImage) {
-        setChatMode('free-create');
-        setMessages([
-          {
-            role: 'system',
-            text: '1 bild vald för redigering. Beskriv vad du vill ändra – eller ladda upp en ny bild istället.',
-          },
-        ]);
-        // Convert the image to base64 for AI compatibility
-        (async () => {
-          try {
-            if (initialImage.startsWith('data:')) {
-              setReferenceImage(initialImage);
-            } else {
-              const response = await fetch(initialImage);
-              const blob = await response.blob();
-              const reader = new FileReader();
-              reader.onload = (ev) => {
-                setReferenceImage(ev.target?.result as string);
-              };
-              reader.readAsDataURL(blob);
-            }
-          } catch {
-            // Fallback: set the URL directly
+    if (!open) return;
+
+    // For inline mode, only react to initialImage changes
+    if (inline && !initialImage) return;
+
+    resetAll();
+    // If opened with an initial image, go straight to free-create mode
+    if (initialImage) {
+      setChatMode('free-create');
+      setMessages([
+        {
+          role: 'system',
+          text: '1 bild vald för redigering. Beskriv vad du vill ändra – eller ladda upp en ny bild istället.',
+        },
+      ]);
+      // Convert the image to base64 for AI compatibility
+      (async () => {
+        try {
+          if (initialImage.startsWith('data:')) {
             setReferenceImage(initialImage);
+          } else {
+            const response = await fetch(initialImage);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              setReferenceImage(ev.target?.result as string);
+            };
+            reader.readAsDataURL(blob);
           }
-        })();
-      }
+        } catch {
+          // Fallback: set the URL directly
+          setReferenceImage(initialImage);
+        }
+      })();
     }
   }, [open, initialImage]);
 
@@ -1198,12 +1203,8 @@ export const CreateSceneModal = ({
   const showPostGenSuggestions = lastMessage?.role === 'assistant-image';
 
   // ─── Render ────────────────────────────────────────────────
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent
-        className="sm:max-w-2xl bg-card border-border overflow-hidden p-0 gap-0 flex flex-col w-[calc(100%-1.5rem)] sm:w-full rounded-2xl sm:h-auto sm:max-h-[85vh] mobile-chat-height mx-auto"
-        hideCloseButton
-      >
+  const chatContent = (
+    <>
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 flex-shrink-0">
           <AutopicAvatar />
@@ -1223,12 +1224,14 @@ export const CreateSceneModal = ({
                 Meny
               </button>
             )}
-            <button
-              onClick={handleClose}
-              className="w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-5 h-5 sm:w-4 sm:h-4" />
-            </button>
+            {!inline && (
+              <button
+                onClick={handleClose}
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5 sm:w-4 sm:h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -1904,6 +1907,27 @@ export const CreateSceneModal = ({
           </div>
         )}
 
+    </>
+  );
+
+  // Inline mode: render directly without Dialog wrapper
+  if (inline) {
+    if (!open) return null;
+    return (
+      <div className="bg-card border border-border overflow-hidden flex flex-col rounded-2xl" style={{ height: 'calc(100vh - 10rem)', maxHeight: '85vh' }}>
+        {chatContent}
+      </div>
+    );
+  }
+
+  // Modal mode: wrap in Dialog
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent
+        className="sm:max-w-2xl bg-card border-border overflow-hidden p-0 gap-0 flex flex-col w-[calc(100%-1.5rem)] sm:w-full rounded-2xl sm:h-auto sm:max-h-[85vh] mobile-chat-height mx-auto"
+        hideCloseButton
+      >
+        {chatContent}
       </DialogContent>
     </Dialog>
   );
