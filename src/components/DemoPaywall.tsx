@@ -463,7 +463,7 @@ export const DemoPaywall = () => {
                     const isLoading = loadingTier === key;
                     const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
                     const isExpanded = expandedPlan === key;
-                    const isPremiumStyle = isScale || key === 'start';
+                    const isPremiumStyle = isScale || isBusiness || key === 'start';
 
                       return (
                         <div
@@ -474,7 +474,7 @@ export const DemoPaywall = () => {
                               : isBusiness 
                                 ? 'bg-[#1a1a1a] border border-border' 
                                 : isPopular 
-                                  ? 'ring-2 ring-primary/50 bg-muted/50' 
+                                  ? 'ring-2 ring-primary/50 bg-card border border-primary/30' 
                                   : 'bg-[#1a1a1a] border border-border'
                           }`}
                         >

@@ -248,10 +248,10 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card" />
             
             <div className="relative z-10 p-6 pb-8 text-center">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
+              <h2 className="text-2xl font-bold text-white mb-2">
                 {showEmailVerification ? 'Verifiera din e-post' : 'Skapa gratis konto'}
               </h2>
-              <p className="text-sm text-foreground/80">
+              <p className="text-sm text-white/80">
                 {showEmailVerification ? 'Ange koden du fick på mail' : 'Testa 2 bilder helt gratis'}
               </p>
             </div>
