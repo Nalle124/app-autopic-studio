@@ -40,6 +40,8 @@ type ChatMessage =
   | { role: 'assistant-image'; imageUrl: string; suggestedName: string; description: string; photoroomPrompt: string }
   | { role: 'assistant-loading' }
   | { role: 'assistant-error'; text: string; retryData?: { conversationHistory: Array<{ role: string; content: any }>; mode: string; format?: string } }
+  | { role: 'assistant-references'; text: string; references: Array<{ url: string; label: string }> }
+  | { role: 'assistant-summary'; category: string; selections: string[]; format?: string }
   | { role: 'mode-select' };
 
 const LOADING_PHRASES = [
@@ -67,15 +69,43 @@ const BACKGROUND_CATEGORIES: Array<{ label: string; value: string; icon: string 
   { label: 'Eget', value: 'custom', icon: '✏️' },
 ];
 
+// Reference scene thumbnails for each category
+const CATEGORY_REFERENCES: Record<string, Array<{ url: string; label: string }>> = {
+  'studio': [
+    { url: '/scenes/white-studio.png', label: 'Vit studio' },
+    { url: '/scenes/dark-studio.png', label: 'Mörk studio' },
+    { url: '/scenes/varmt-ljus-studio.png', label: 'Varm studio' },
+    { url: '/scenes/brun-spotlight-studio.png', label: 'Spotlight' },
+  ],
+  'studio-corner': [
+    { url: '/scenes/betong-kurva-studio.png', label: 'Betong' },
+    { url: '/scenes/grey-corner.png', label: 'Grå hörna' },
+    { url: '/scenes/studio-bojd-travagg.png', label: 'Trä' },
+    { url: '/scenes/betong-skuggor.png', label: 'Skuggor' },
+  ],
+  'outdoor': [
+    { url: '/scenes/hostgata.png', label: 'Höstgata' },
+    { url: '/scenes/kullerstengata.png', label: 'Kullerstengata' },
+    { url: '/scenes/skara-park.png', label: 'Park' },
+    { url: '/scenes/garageuppfart-grus.png', label: 'Uppfart' },
+  ],
+  'showroom': [
+    { url: '/scenes/nordic-showroom.png', label: 'Nordisk' },
+    { url: '/scenes/warszawa-showroom.png', label: 'Klassisk' },
+    { url: '/scenes/midnight-garage.png', label: 'Garage' },
+    { url: '/scenes/glas-walls.png', label: 'Glasväggar' },
+  ],
+};
+
 const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   'studio': [
     {
       question: 'Vilken ljussättning?',
       options: [
-        { label: 'Ljus & luftig', value: 'bright and airy with soft diffused lighting' },
-        { label: 'Mörk & dramatisk', value: 'dark and moody with dramatic directional lighting' },
-        { label: 'Varm & mysig', value: 'warm golden lighting with cozy atmosphere' },
-        { label: 'Neutral & ren', value: 'neutral even lighting, clean and minimal' },
+        { label: '☀️ Ljus & luftig', value: 'bright and airy with soft diffused lighting' },
+        { label: '🌑 Mörk & dramatisk', value: 'dark and moody with dramatic directional lighting' },
+        { label: '🔥 Varm & mysig', value: 'warm golden lighting with cozy atmosphere' },
+        { label: '⚪ Neutral & ren', value: 'neutral even lighting, clean and minimal' },
       ],
       allowCustom: true,
     },
@@ -125,22 +155,22 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     {
       question: 'Vilken miljö?',
       options: [
-        { label: 'Stadsgata', value: 'city street with buildings' },
-        { label: 'Hamn / kust', value: 'harbor or coastal area' },
-        { label: 'Natur / skog', value: 'nature or forest road' },
-        { label: 'Parkering', value: 'parking area or plaza' },
-        { label: 'Uppfart / villa', value: 'driveway by a nice house' },
+        { label: '🏙️ Stadsgata', value: 'city street with buildings' },
+        { label: '🌊 Hamn / kust', value: 'harbor or coastal area' },
+        { label: '🌲 Natur / skog', value: 'nature or forest road' },
+        { label: '🅿️ Parkering', value: 'parking area or plaza' },
+        { label: '🏠 Uppfart / villa', value: 'driveway by a nice house' },
       ],
       allowCustom: true,
     },
     {
       question: 'Vilken årstid/tid?',
       options: [
-        { label: 'Sommar, soligt', value: 'summer sunny day with blue sky' },
-        { label: 'Höst, gyllene', value: 'autumn with golden leaves and warm light' },
-        { label: 'Vinter, snö', value: 'winter with snow on the ground' },
-        { label: 'Skymning', value: 'dusk with dramatic sunset sky' },
-        { label: 'Kvällsljus', value: 'evening with city lights and ambient glow' },
+        { label: '☀️ Sommar, soligt', value: 'summer sunny day with blue sky' },
+        { label: '🍂 Höst, gyllene', value: 'autumn with golden leaves and warm light' },
+        { label: '❄️ Vinter, snö', value: 'winter with snow on the ground' },
+        { label: '🌅 Skymning', value: 'dusk with dramatic sunset sky' },
+        { label: '🌃 Kvällsljus', value: 'evening with city lights and ambient glow' },
       ],
       allowCustom: true,
     },
@@ -184,6 +214,15 @@ const POST_GENERATION_SUGGESTIONS_FREE = [
   'Ta bort bakgrunden',
   'Gör mer cinematisk',
   'Lägg till skuggor',
+];
+
+const FREE_QUICK_ACTIONS = [
+  { label: '🚫 Ta bort bakgrund helt', prompt: 'Remove the background completely, leave only the car on a transparent/white background' },
+  { label: '🔄 Ändra vinkel, behåll bilen', prompt: 'Change the camera angle slightly but keep the car exactly as it is' },
+  { label: '🌟 Mer cinematisk', prompt: 'Make the image more cinematic with dramatic lighting' },
+  { label: '☀️ Ljusare & varmare', prompt: 'Make the image brighter and warmer' },
+  { label: '🌙 Mörkare & moodier', prompt: 'Make the image darker and moodier with more contrast' },
+  { label: '🎨 Ändra färgpalett', prompt: 'Change the color palette of the background but keep the car unchanged' },
 ];
 
 const FREE_INSPIRATION = [
@@ -596,19 +635,33 @@ export const CreateSceneModal = ({
     setGuidedSelections([]);
     setAwaitingGuidedCustomInput(false);
 
+    // Show reference images for background mode categories
+    const refs = chatMode === 'background-studio' ? CATEGORY_REFERENCES[value] : null;
     const firstStep = flow[0];
-    setMessages(prev => [
-      ...prev,
+
+    const newMessages: ChatMessage[] = [
       { role: 'user', text: categoryLabel },
-      {
-        role: 'assistant-options',
-        text: firstStep.question,
-        options: [
-          ...firstStep.options,
-          ...(firstStep.allowCustom ? [{ label: '✏️ Skriv eget...', value: '__custom__' }] : []),
-        ],
-      },
-    ]);
+    ];
+
+    // Add reference images if available
+    if (refs && refs.length > 0) {
+      newMessages.push({
+        role: 'assistant-references',
+        text: 'Vill du använda en referensbild? Klicka för att välja, eller hoppa över.',
+        references: refs,
+      });
+    }
+
+    newMessages.push({
+      role: 'assistant-options',
+      text: firstStep.question,
+      options: [
+        ...firstStep.options,
+        ...(firstStep.allowCustom ? [{ label: '✏️ Skriv eget...', value: '__custom__' }] : []),
+      ],
+    });
+
+    setMessages(prev => [...prev, ...newMessages]);
   };
 
   const handleGuidedOptionSelect = (value: string) => {
@@ -666,7 +719,6 @@ export const CreateSceneModal = ({
             ],
           },
         ]);
-        // Store selections but wait for format choice
         setGuidedSelections(newSelections);
         return;
       }
@@ -675,8 +727,9 @@ export const CreateSceneModal = ({
         ...prev,
         { role: 'user', text: optionLabel },
         {
-          role: 'assistant',
-          text: `Bra val! Här är din plan:\n\n**${categoryLabel}**: ${newSelections.join(' · ')}\n\nLägg till fler detaljer i textfältet, eller klicka **Skapa bild** direkt.`,
+          role: 'assistant-summary',
+          category: categoryLabel,
+          selections: newSelections,
         },
       ]);
     }
@@ -770,12 +823,15 @@ export const CreateSceneModal = ({
       setAdFormat(selectedFormat);
       const formatLabel = selectedFormat === 'portrait' ? '📱 Stående (2:3)' : '📐 Liggande (3:2)';
       const categoryLabel = activeCategories.find(c => c.value === guidedCategory)?.label || guidedCategory;
+      setGuidedComplete(true);
       setMessages(prev => [
         ...prev,
         { role: 'user', text: formatLabel },
         {
-          role: 'assistant',
-          text: `Bra val! Här är din plan:\n\n**${categoryLabel}**: ${guidedSelections.join(' · ')}\n**Format**: ${selectedFormat === 'portrait' ? 'Stående' : 'Liggande'}\n\nLägg till fler detaljer i textfältet, eller klicka **Skapa annons** direkt.`,
+          role: 'assistant-summary',
+          category: categoryLabel,
+          selections: guidedSelections,
+          format: selectedFormat === 'portrait' ? 'Stående' : 'Liggande',
         },
       ]);
       return;
@@ -964,8 +1020,9 @@ export const CreateSceneModal = ({
             ...prev,
             { role: 'user', text: customText },
             {
-              role: 'assistant',
-              text: `Bra val! Här är din plan:\n\n**${categoryLabel}**: ${newSelections.join(' · ')}\n\nLägg till fler detaljer i textfältet, eller klicka **Skapa bild** direkt.`,
+              role: 'assistant-summary',
+              category: categoryLabel,
+              selections: newSelections,
             },
           ]);
         }
@@ -1369,29 +1426,115 @@ export const CreateSceneModal = ({
                     </div>
                   </div>
                   {chatMode === 'free-create' && messages.filter(m => m.role === 'user').length === 0 && (
-                    <div className="pl-9 space-y-1.5">
-                      <div className="flex flex-wrap gap-1.5">
-                        {(showAllSuggestions ? FREE_INSPIRATION : FREE_INSPIRATION.slice(0, 3)).map((s, idx) => (
+                    <div className="pl-9 space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Snabbval:</p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {FREE_QUICK_ACTIONS.map((action, idx) => (
                           <button
                             key={idx}
-                            onClick={() => setPrompt(s)}
-                            className="text-[13px] px-3.5 py-2 rounded-full border border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                            onClick={() => setPrompt(action.prompt)}
+                            className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug"
                           >
-                            {s}
+                            {action.label}
                           </button>
                         ))}
                       </div>
-                      {FREE_INSPIRATION.length > 3 && !showAllSuggestions && (
-                        <button
-                          onClick={() => setShowAllSuggestions(true)}
-                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors pl-1"
-                        >
-                          <ChevronDown className="w-3 h-3" />
-                          Visa fler förslag
-                        </button>
-                      )}
                     </div>
                   )}
+                </div>
+              );
+            }
+
+            // ─── Reference images ─────────────────────────
+            if (msg.role === 'assistant-references') {
+              return (
+                <div key={i} className="space-y-2">
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pl-9 overflow-x-auto scrollbar-hide pb-1">
+                    {msg.references.map((ref, idx) => (
+                      <button
+                        key={idx}
+                        onClick={async () => {
+                          try {
+                            const resp = await fetch(ref.url);
+                            const blob = await resp.blob();
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              setReferenceImage(ev.target?.result as string);
+                              setReferenceFile(null);
+                              setMessages(prev => [...prev, { role: 'user', text: `📷 Referens: ${ref.label}` }]);
+                            };
+                            reader.readAsDataURL(blob);
+                          } catch {
+                            toast.error('Kunde inte ladda referensbilden');
+                          }
+                        }}
+                        className="flex-shrink-0 rounded-xl overflow-hidden border-2 border-border/40 hover:border-primary/50 transition-colors group/ref"
+                      >
+                        <div className="relative w-20 h-14 sm:w-24 sm:h-16">
+                          <img src={ref.url} alt={ref.label} className="w-full h-full object-cover" loading="lazy" />
+                          <div className="absolute inset-0 bg-black/0 group-hover/ref:bg-black/20 transition-colors" />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground text-center py-1 truncate px-1">{ref.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
+            // ─── Summary card ─────────────────────────────
+            if (msg.role === 'assistant-summary') {
+              return (
+                <div key={i} className="space-y-3">
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
+                      <p className="text-sm font-medium text-foreground">Redo att generera! 🎉</p>
+                      <div className="bg-background/60 rounded-xl px-3 py-2.5 space-y-1.5 border border-border/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Typ</span>
+                          <span className="text-sm text-foreground">{msg.category}</span>
+                        </div>
+                        {msg.selections.map((sel, idx) => (
+                          <div key={idx} className="flex items-start gap-2">
+                            <Check className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-foreground leading-snug">{sel}</span>
+                          </div>
+                        ))}
+                        {msg.format && (
+                          <div className="flex items-center gap-2 pt-0.5 border-t border-border/20">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Format</span>
+                            <span className="text-sm text-foreground">{msg.format}</span>
+                          </div>
+                        )}
+                      </div>
+                      {referenceImage && (
+                        <div className="flex items-center gap-2 bg-background/40 rounded-lg px-2 py-1.5">
+                          <img src={referenceImage} alt="Referens" className="w-8 h-8 rounded object-cover" />
+                          <span className="text-xs text-muted-foreground">Referensbild vald</span>
+                        </div>
+                      )}
+                      <Button
+                        onClick={() => {
+                          const extra = prompt.trim();
+                          setPrompt('');
+                          generateFromGuidedSelections(extra || undefined);
+                        }}
+                        disabled={isGenerating}
+                        className="w-full rounded-full h-10"
+                      >
+                        {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                        {chatMode === 'ad-create' ? 'Generera annons' : 'Generera bakgrund'}
+                      </Button>
+                      <p className="text-[11px] text-muted-foreground text-center">Lägg till detaljer i textfältet innan du genererar</p>
+                    </div>
+                  </div>
                 </div>
               );
             }
@@ -1777,36 +1920,17 @@ export const CreateSceneModal = ({
                       handleGenerate();
                     }
                   }}
-                  className={`bg-muted/40 border-border/30 rounded-full text-sm h-10 ${guidedComplete ? 'pr-3' : 'pr-11'}`}
+                  className="bg-muted/40 border-border/30 rounded-full text-sm h-10 pr-11"
                 />
-                {!guidedComplete && (
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={!prompt.trim() || isGenerating}
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full"
-                  >
-                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </Button>
-                )}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!prompt.trim() || isGenerating}
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full"
+                >
+                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </Button>
               </div>
-
-              {guidedComplete && (
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    onClick={() => {
-                      const extra = prompt.trim();
-                      setPrompt('');
-                      generateFromGuidedSelections(extra || undefined);
-                    }}
-                    disabled={isGenerating}
-                    className="rounded-full flex-shrink-0 h-10 px-4"
-                  >
-                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                    {chatMode === 'ad-create' ? 'Skapa annons' : 'Skapa bild'}
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -1914,7 +2038,7 @@ export const CreateSceneModal = ({
   if (inline) {
     if (!open) return null;
     return (
-      <div className="bg-card border border-border overflow-hidden flex flex-col rounded-2xl" style={{ height: 'calc(100dvh - 10rem)', maxHeight: '85dvh' }}>
+      <div className="bg-card border border-border overflow-hidden flex flex-col rounded-2xl h-full max-h-full">
         {chatContent}
       </div>
     );

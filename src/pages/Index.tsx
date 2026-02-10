@@ -795,8 +795,8 @@ function IndexContent() {
       {/* Main Content - add margin-top for fixed header */}
       <main className="container mx-auto px-4 py-8 max-w-7xl mt-16">
         {activeTab === 'ai-studio' ? (
-          /* AI Studio – inline chat */
-          <section className="space-y-4">
+          /* AI Studio – inline chat, fills remaining viewport below header */
+          <section className="fixed inset-x-0 top-16 bottom-0 z-10 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3">
             <CreateSceneModal
               open={true}
               onOpenChange={() => {}}
