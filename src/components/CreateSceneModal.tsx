@@ -1218,7 +1218,7 @@ export const CreateSceneModal = ({
             {chatMode && (
               <button
                 onClick={handleNewChat}
-                className="flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-1"
+                className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-1"
               >
                 <Menu className="w-3 h-3" />
                 Meny
@@ -1914,7 +1914,7 @@ export const CreateSceneModal = ({
   if (inline) {
     if (!open) return null;
     return (
-      <div className="bg-card border border-border overflow-hidden flex flex-col rounded-2xl" style={{ height: 'calc(100vh - 10rem)', maxHeight: '85vh' }}>
+      <div className="bg-card border border-border overflow-hidden flex flex-col rounded-2xl" style={{ height: 'calc(100dvh - 10rem)', maxHeight: '85dvh' }}>
         {chatContent}
       </div>
     );
