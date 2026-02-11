@@ -1664,7 +1664,7 @@ export const CreateSceneModal = ({
                     <AutopicAvatar />
                     <div className="space-y-2 max-w-[85%]">
                       <div
-                        className="rounded-2xl rounded-tl-md overflow-hidden border border-border/30 animate-scale-in cursor-pointer relative group/img"
+                        className="rounded-2xl rounded-tl-md overflow-hidden border border-border/30 animate-scale-in cursor-pointer relative group/img max-w-[320px]"
                         onClick={() => setPreviewImage({ imageUrl: msg.imageUrl, name: msg.suggestedName })}
                       >
                         <img
