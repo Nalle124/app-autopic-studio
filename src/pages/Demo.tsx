@@ -36,7 +36,12 @@ const DemoContent = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { credits, canGenerate, decrementCredits, triggerPaywall, setShowPaywall, refetchCredits } = useDemo();
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
+  
+  // Force light theme on demo page
+  useEffect(() => {
+    setTheme('light');
+  }, [setTheme]);
   
   // Redirect logged-in users to the main app
   useEffect(() => {
@@ -609,37 +614,36 @@ const DemoContent = () => {
         <div className="container mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
-              <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-6 w-auto" />
+              <img src={autopicLogoDark} alt="Autopic" className="h-6 w-auto" />
             </a>
             <div className="flex items-center gap-3">
               {/* Demo nav dropdown - matches main app */}
               <Select 
                 value="demo" 
                 onValueChange={(v) => {
-                  if (v === 'ai-studio') setShowSignupModal(true);
+                  if (v === 'ai-studio' || v === 'galleri') setShowSignupModal(true);
                 }}
               >
-                <SelectTrigger className="w-[130px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+                <SelectTrigger className="w-[120px] bg-background/80 backdrop-blur-sm h-9 text-sm">
                   <SelectValue placeholder="Demo" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-[60]">
                   <SelectItem value="demo">Projekt</SelectItem>
                   <SelectItem value="ai-studio">
                     <span className="flex items-center gap-2">
-                      <img src="/favicon.png" alt="" className="w-3.5 h-3.5 object-contain dark:invert" />
+                      <img src="/favicon.png" alt="" className="w-3.5 h-3.5 object-contain" />
                       AI Studio
                     </span>
                   </SelectItem>
+                  <SelectItem value="galleri">Galleri</SelectItem>
                 </SelectContent>
               </Select>
               <Button 
                 onClick={handleCreateAccount}
-                variant="premium"
                 className="rounded-full text-sm px-4 h-9"
                 size="sm"
               >
-                Skapa konto
-                <Sparkles className="ml-2 w-4 h-4" />
+                Skaffa konto
               </Button>
             </div>
           </div>
