@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Sun, Moon, Settings2, ChevronDown, Info, Image as ImageIcon, Mail, Palette, RefreshCw, Plus } from 'lucide-react';
+import { Eye, Download, X, ChevronLeft, ChevronRight, Lock, Sparkles, Upload, Trash2, Scissors, Sliders, Focus, Settings2, ChevronDown, Info, Image as ImageIcon, Mail, Palette, RefreshCw, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
@@ -604,48 +604,44 @@ const DemoContent = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-2">
-          <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
-            <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-6 w-auto" />
-          </a>
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {/* Demo nav dropdown - matches main app */}
-            <Select 
-              value="demo" 
-              onValueChange={(v) => {
-                if (v === 'ai-studio') setShowSignupModal(true);
-              }}
-            >
-              <SelectTrigger className="w-[130px] bg-background/80 backdrop-blur-sm h-9 text-sm">
-                <SelectValue placeholder="Demo" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-[60]">
-                <SelectItem value="demo">Projekt</SelectItem>
-                <SelectItem value="ai-studio">AI Studio</SelectItem>
-              </SelectContent>
-            </Select>
-            {/* Theme toggle - sun/moon */}
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-muted/50 border border-border/50 flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0"
-              title={theme === 'dark' ? 'Ljust läge' : 'Mörkt läge'}
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-foreground" />
-              ) : (
-                <Moon className="w-4 h-4 text-foreground" />
-              )}
-            </button>
-            <Button 
-              onClick={handleCreateAccount}
-              className="rounded-full text-sm px-3 sm:px-4 h-9"
-              size="sm"
-            >
-              <span className="hidden xs:inline">Skapa gratis konto</span>
-              <span className="xs:hidden">Skapa konto</span>
-            </Button>
+      {/* Header - matches main app layout */}
+      <header className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-border/30 pt-[max(env(safe-area-inset-top),12px)]">
+        <div className="container mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            <a href={FRAMER_LANDING_URL} className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
+              <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="Autopic" className="h-6 w-auto" />
+            </a>
+            <div className="flex items-center gap-3">
+              {/* Demo nav dropdown - matches main app */}
+              <Select 
+                value="demo" 
+                onValueChange={(v) => {
+                  if (v === 'ai-studio') setShowSignupModal(true);
+                }}
+              >
+                <SelectTrigger className="w-[130px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+                  <SelectValue placeholder="Demo" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[60]">
+                  <SelectItem value="demo">Projekt</SelectItem>
+                  <SelectItem value="ai-studio">
+                    <span className="flex items-center gap-2">
+                      <img src="/favicon.png" alt="" className="w-3.5 h-3.5 object-contain dark:invert" />
+                      AI Studio
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleCreateAccount}
+                variant="premium"
+                className="rounded-full text-sm px-4 h-9"
+                size="sm"
+              >
+                Skapa konto
+                <Sparkles className="ml-2 w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
