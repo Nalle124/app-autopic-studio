@@ -62,11 +62,11 @@ type GuidedStep = {
 };
 
 const BACKGROUND_CATEGORIES: Array<{ label: string; value: string; icon: string }> = [
-  { label: 'Studio', value: 'studio', icon: '🏢' },
-  { label: 'Studio med hörn', value: 'studio-corner', icon: '📐' },
-  { label: 'Utomhus', value: 'outdoor', icon: '🌳' },
-  { label: 'Showroom', value: 'showroom', icon: '✨' },
-  { label: 'Eget', value: 'custom', icon: '✏️' },
+  { label: 'Studio', value: 'studio', icon: '' },
+  { label: 'Studio med hörn', value: 'studio-corner', icon: '' },
+  { label: 'Utomhus', value: 'outdoor', icon: '' },
+  { label: 'Showroom', value: 'showroom', icon: '' },
+  { label: 'Eget', value: 'custom', icon: '' },
 ];
 
 // Reference scene thumbnails for each category
@@ -236,26 +236,26 @@ const FREE_INSPIRATION = [
 
 // ─── Ad creation constants ──────────────────────────────────────
 const AD_CATEGORIES: Array<{ label: string; value: string; icon: string }> = [
-  { label: 'Bilannons', value: 'car-ad', icon: '🚗' },
-  { label: 'Kampanj', value: 'campaign', icon: '📢' },
-  { label: 'Social media', value: 'social-media', icon: '📱' },
-  { label: 'Eget', value: 'custom-ad', icon: '✏️' },
+  { label: 'Bilannons', value: 'car-ad', icon: '' },
+  { label: 'Kampanj', value: 'campaign', icon: '' },
+  { label: 'Social media', value: 'social-media', icon: '' },
+  { label: 'Eget', value: 'custom-ad', icon: '' },
 ];
 
 const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   'car-ad': [
     {
-      question: 'Vilken stil?',
+      question: 'Vilken stil ska annonsen ha?',
       options: [
-        { label: '🎯 Modern & minimalistisk', value: 'modern minimalist car advertisement' },
-        { label: '💎 Premium & lyxig', value: 'premium luxury car advertisement' },
-        { label: '⚡ Sportigt & energisk', value: 'sporty energetic car advertisement' },
-        { label: '🏛️ Klassisk & pålitlig', value: 'classic trustworthy car advertisement' },
+        { label: 'Modern & minimalistisk', value: 'modern minimalist car advertisement' },
+        { label: 'Premium & lyxig', value: 'premium luxury car advertisement' },
+        { label: 'Sportigt & energisk', value: 'sporty energetic car advertisement' },
+        { label: 'Klassisk & pålitlig', value: 'classic trustworthy car advertisement' },
       ],
       allowCustom: true,
     },
     {
-      question: 'Vilken rubrik ska synas?',
+      question: 'Skriv rubriken som ska synas på bilden:',
       options: [
         { label: '"Vi köper din bil"', value: 'headline text: Vi köper din bil' },
         { label: '"Nyinkommet"', value: 'headline text: Nyinkommet' },
@@ -264,7 +264,7 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
       allowCustom: true,
     },
     {
-      question: 'Ska det vara mer text, t.ex. undertext eller pris?',
+      question: 'Vill du lägga till undertext eller pris?',
       options: [
         { label: 'Nej, bara rubrik', value: 'no additional text, only headline' },
         { label: 'Lägg till pris', value: 'include price text below headline' },
@@ -277,15 +277,15 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     {
       question: 'Vilken typ av kampanj?',
       options: [
-        { label: '💰 Räntekampanj', value: 'interest rate financing campaign' },
-        { label: '🔄 Inbyteserbjudande', value: 'trade-in offer campaign' },
-        { label: '🏠 Öppet hus', value: 'open house dealership event' },
-        { label: '🏷️ Säsongsrea', value: 'seasonal sale promotion' },
+        { label: 'Räntekampanj', value: 'interest rate financing campaign' },
+        { label: 'Inbyteserbjudande', value: 'trade-in offer campaign' },
+        { label: 'Öppet hus', value: 'open house dealership event' },
+        { label: 'Säsongsrea', value: 'seasonal sale promotion' },
       ],
       allowCustom: true,
     },
     {
-      question: 'Vilken stil?',
+      question: 'Vilken stil passar bäst?',
       options: [
         { label: 'Professionell & clean', value: 'professional corporate clean style' },
         { label: 'Energisk & färgstark', value: 'energetic colorful bold style' },
@@ -294,7 +294,7 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
       allowCustom: true,
     },
     {
-      question: 'Vilken rubrik ska synas på bilden?',
+      question: 'Skriv rubriken som ska synas på bilden:',
       options: [
         { label: '"Räntekampanj 3.99%"', value: 'headline text: Räntekampanj 3.99%' },
         { label: '"Vi tar din bil i inbyte"', value: 'headline text: Vi tar din bil i inbyte' },
@@ -303,7 +303,7 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
       allowCustom: true,
     },
     {
-      question: 'Vill du ha undertext eller CTA-knapp?',
+      question: 'Ska det finnas en CTA-knapp eller kontaktinfo?',
       options: [
         { label: 'Nej, bara rubrik', value: 'no additional text elements' },
         { label: 'Lägg till CTA-knapp', value: 'add a call-to-action button' },
@@ -316,9 +316,9 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     {
       question: 'Vilken plattform?',
       options: [
-        { label: '📸 Instagram / Facebook', value: 'social media post for Instagram and Facebook' },
-        { label: '🛒 Blocket', value: 'Blocket marketplace listing banner' },
-        { label: '💼 LinkedIn', value: 'LinkedIn professional post' },
+        { label: 'Instagram / Facebook', value: 'social media post for Instagram and Facebook' },
+        { label: 'Blocket', value: 'Blocket marketplace listing banner' },
+        { label: 'LinkedIn', value: 'LinkedIn professional post' },
       ],
       allowCustom: true,
     },
@@ -332,7 +332,7 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
       allowCustom: true,
     },
     {
-      question: 'Vilken text ska synas på bilden?',
+      question: 'Skriv texten som ska synas på bilden:',
       options: [
         { label: '"Alltid 50 bilar i lager"', value: 'headline text: Alltid 50 bilar i lager' },
         { label: '"Besök oss i [stad]"', value: 'headline text: Besök oss' },
@@ -539,18 +539,18 @@ export const CreateSceneModal = ({
         {
           role: 'assistant-options',
           text: 'Vilken typ passar bäst?',
-          options: BACKGROUND_CATEGORIES.map(c => ({ label: `${c.icon} ${c.label}`, value: c.value })),
+          options: BACKGROUND_CATEGORIES.map(c => ({ label: c.icon ? `${c.icon} ${c.label}` : c.label, value: c.value })),
         },
       ]);
     } else if (mode === 'ad-create') {
       setMessages([
-        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial! 🎨' },
+        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial.' },
         {
           role: 'assistant-options',
           text: 'Vill du använda en egen bild som referens?',
           options: [
-            { label: '📷 Ladda upp referensbild', value: '__ad_ref_upload__' },
-            { label: '⏭️ Hoppa över', value: '__ad_ref_skip__' },
+            { label: 'Ladda upp referensbild', value: '__ad_ref_upload__' },
+            { label: 'Hoppa över', value: '__ad_ref_skip__' },
           ],
         },
       ]);
@@ -573,18 +573,18 @@ export const CreateSceneModal = ({
         {
           role: 'assistant-options',
           text: 'Vilken typ passar bäst?',
-          options: BACKGROUND_CATEGORIES.map(c => ({ label: `${c.icon} ${c.label}`, value: c.value })),
+          options: BACKGROUND_CATEGORIES.map(c => ({ label: c.icon ? `${c.icon} ${c.label}` : c.label, value: c.value })),
         },
       ]);
     } else if (mode === 'ad-create') {
       setMessages([
-        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial! 🎨' },
+        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial.' },
         {
           role: 'assistant-options',
           text: 'Vill du använda en egen bild som referens?',
           options: [
-            { label: '📷 Ladda upp referensbild', value: '__ad_ref_upload__' },
-            { label: '⏭️ Hoppa över', value: '__ad_ref_skip__' },
+            { label: 'Ladda upp referensbild', value: '__ad_ref_upload__' },
+            { label: 'Hoppa över', value: '__ad_ref_skip__' },
           ],
         },
       ]);
@@ -714,8 +714,8 @@ export const CreateSceneModal = ({
             role: 'assistant-options',
             text: 'Välj format:',
             options: [
-              { label: '📐 Liggande (3:2)', value: '__format_landscape__' },
-              { label: '📱 Stående (2:3)', value: '__format_portrait__' },
+              { label: 'Liggande (3:2)', value: '__format_landscape__' },
+              { label: 'Stående (2:3)', value: '__format_portrait__' },
             ],
           },
         ]);
@@ -793,12 +793,12 @@ export const CreateSceneModal = ({
       fileInputRef.current?.click();
       setMessages(prev => [
         ...prev,
-        { role: 'user', text: '📷 Ladda upp referensbild' },
+        { role: 'user', text: 'Ladda upp referensbild' },
         { role: 'assistant', text: 'Ladda upp din bild via +-knappen nedan. När du har valt en bild, fortsätt med att välja annonstyp.' },
         {
           role: 'assistant-options',
           text: 'Vad vill du skapa?',
-          options: AD_CATEGORIES.map(c => ({ label: `${c.icon} ${c.label}`, value: c.value })),
+          options: AD_CATEGORIES.map(c => ({ label: c.icon ? `${c.icon} ${c.label}` : c.label, value: c.value })),
         },
       ]);
       return;
@@ -811,7 +811,7 @@ export const CreateSceneModal = ({
         {
           role: 'assistant-options',
           text: 'Vad vill du skapa?',
-          options: AD_CATEGORIES.map(c => ({ label: `${c.icon} ${c.label}`, value: c.value })),
+          options: AD_CATEGORIES.map(c => ({ label: c.icon ? `${c.icon} ${c.label}` : c.label, value: c.value })),
         },
       ]);
       return;
@@ -1495,7 +1495,7 @@ export const CreateSceneModal = ({
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                      <p className="text-sm font-medium text-foreground">Redo att generera! 🎉</p>
+                      <p className="text-sm font-medium text-foreground">Redo att generera</p>
                       <div className="bg-background/60 rounded-xl px-3 py-2.5 space-y-1.5 border border-border/30">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Typ</span>
@@ -1681,14 +1681,13 @@ export const CreateSceneModal = ({
 
                       {/* Name & info */}
                       <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5">
-                        {!showNameField ? (
-                          <div className="space-y-1.5">
-                            <p className="text-sm sm:text-base text-foreground leading-relaxed">
-                              Här är din bild! Jag kallar den <span className="font-semibold">"{msg.suggestedName}"</span>.
-                            </p>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                              Förbättra eller ändra den – skriv nedan eller välj ett förslag.
-                            </p>
+                      {!showNameField ? (
+                          <div className="space-y-1">
+                            {(chatMode === 'background-studio') && (
+                              <p className="text-xs text-muted-foreground">
+                                För att placera bil på bakgrunden, gå tillbaka till Projekt och välj den under Mina Scener.
+                              </p>
+                            )}
                             {(chatMode === 'background-studio') && (
                               <button onClick={() => setShowNameField(true)} className="text-xs text-primary hover:underline">
                                 Byt namn
@@ -1697,7 +1696,7 @@ export const CreateSceneModal = ({
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            <p className="text-sm sm:text-base text-foreground leading-relaxed">Ge den ett namn:</p>
+                            <p className="text-sm text-foreground leading-relaxed">Ge den ett namn:</p>
                             <Input
                               placeholder={msg.suggestedName}
                               value={customName}
@@ -1720,8 +1719,8 @@ export const CreateSceneModal = ({
                               disabled={isSaving}
                               className="rounded-full flex-1 min-w-0"
                             >
-                              {isSaving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
-                              <span className="truncate">Spara som bakgrund</span>
+                             {isSaving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                              <span className="truncate">Lägg till i galleri</span>
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
