@@ -1,103 +1,147 @@
 
 
-# AI Studio-flik + mobil dropdown + enkel ikon i steg 4
+# AI Studio -- Forbattrade guidade floden och nya funktioner
 
 ## Oversikt
 
-Tre andringar baserat pa feedback:
+Omarbeta AI Studions chattfloden for att gora dem mer visuella, guidade och resultatfokuserade. Bilhandlare ska kunna klicka sig fram till proffsiga resultat utan att behova skriva egna prompter. Huvudflodet (ladda upp -> scen -> export) forblir oforandrat.
 
-1. **Desktop**: Tredje flik "AI Studio" i befintlig TabsList (Projekt | AI Studio | Galleri)
-2. **Mobil**: Byt ut TabsList mot en kompakt dropdown (Select) sa flikarna inte brakar om plats
-3. **Steg 4**: Behalj AI-knappen som en enkel ikon-knapp (samma stil som ovriga verktyg) -- bara byt favicon mot Sparkles-ikonen for tydlighet
+## Nya menykategorier
 
-## Vad som andras
+Utoka menyval fran 3 till 5:
 
-### 1. Ny flik "AI Studio" (desktop)
+1. **Skapa bakgrund** (befintlig, forbattrad)
+2. **Redigera fritt** (befintlig, oforandrad)
+3. **Skapa annons** (befintlig, omarbetad med mallar)
+4. **Blurra regskyltar** (NY -- batch-blur funktion)
+5. **Bildforslag** (NY -- kreativa forslag baserat pa uppladdade bilder)
 
-TabsList utvidgas fran tva till tre flikar. Pa desktop visas de som vanligt:
+## Forbattrade annonsmallar (Skapa annons)
 
-```text
-[ Projekt ]  [ AI Studio ]  [ Galleri ]
-```
+Inspirerat av de uppladdade exemplen, ersatt nuvarande generiska kategorier med specifika mallar:
 
-Nar "AI Studio" klickas oppnas CreateSceneModal direkt, och fliken aterstalls till "Projekt" nar modalen stangs.
+### Nya annonsmallkategorier:
 
-### 2. Dropdown pa mobil istallet for tabs
+| Mall | Beskrivning | Format | Referensbild |
+|------|-------------|--------|--------------|
+| **Inkommande bil** | Landskapsbild med plats-bakgrund, logo, rubrik, kontaktinfo | 3:2 | BilNet-exemplet |
+| **Kopannons / personlig** | Portratt med personlig bild, rubrik, bullet points, signatur | 2:3 | Gabriels lapp-exemplet |
+| **Kampanjbild** | Stor rubrik, vardebudskap, CTA-knapp, varumärke | Valbart | Kamux/Riddermark-exemplen |
+| **Social media** | Instagram/Facebook-optimerad, catchy text, bild + overlay | Valbart | Slipp annonsering-exemplet |
+| **Eget** | Fri beskrivning |  |  |
 
-Pa skarmar under 768px (sm-breakpoint) doljs TabsList och en Select-dropdown visas istallet:
-
-```text
-+---------------------+
-| Projekt           v |
-+---------------------+
-```
-
-Dropdown-alternativen: Projekt, AI Studio, Galleri. Samma beteende som tabs men tar minimal plats. Anvander befintliga Select-komponenten fran `src/components/ui/select.tsx`.
-
-### 3. Enkel ikon i steg 4
-
-Den befintliga knappen (rad 967-975) behaljs som ikon-knapp med `size="icon"` och samma styling som ovriga verktyg (Sliders, Scissors, Download). Enda andringen ar att byta ut `<img src="/favicon.png" ...>` mot `<Sparkles className="w-4 h-4" />` for en renare, mer konsekvent ikon.
-
-## Teknisk plan
-
-### Fil: `src/pages/Index.tsx`
-
-**A) Imports (rad 1-30)**
-- Lagg till import av `Select, SelectContent, SelectItem, SelectTrigger, SelectValue` fran `@/components/ui/select`
-- Lagg till import av `useIsMobile` fran `@/hooks/use-mobile`
-
-**B) State (runt rad 60-80)**
-- Andra activeTab-typen fran `'new' | 'history'` till `'new' | 'ai-studio' | 'history'`
-
-**C) Tab-hantering for AI Studio**
-- Lagg till en `useEffect` eller inline-hantering: nar `activeTab` satts till `'ai-studio'`, oppna `showAiModal(true)` och aterstall till `'new'`
-- Alternativt hantera det i `onValueChange` direkt: om valt varde ar `'ai-studio'`, oppna modalen och behall foregaende flik
-
-**D) Header-navigering (rad 728-739)**
-- Wrappa TabsList i `hidden sm:inline-flex` sa den doljs pa mobil
-- Lagg till en Select-komponent med `sm:hidden` sa den bara visas pa mobil:
+### Guidad mall-flow (exempel "Inkommande bil"):
 
 ```text
-Desktop:  [ Tabs: Projekt | AI Studio | Galleri ]
-Mobil:    [ Select: Projekt v ]
+1. [Valj mall: Inkommande bil]
+2. Chatten fragar: "Vilken rubrik?" 
+   -> Forslag: "Inkommande bil", "Nyinkommet", "Just nu i lager" + "Skriv eget"
+3. "Lagg till undertext?" 
+   -> Forslag: "I var bilhall i [stad]", "Tillganglig nu" + Textfalt
+4. "Kontaktinfo?"
+   -> Textfalt: Telefon, adress
+5. "Stil och kansla?"
+   -> Visuella referensbilder att klicka pa (3-4 thumbnails fran stock)
+6. "Format?"
+   -> Liggande / Staende
+7. Sammanfattning: "Jag har en bra bild av vad du soker. Skapar din annons..."
+   -> [Generera-knapp]
 ```
 
-Select-komponenten:
-- Varde mappat till samma `activeTab` state
-- `onValueChange` med samma logik: om `ai-studio` valjs -> oppna modal, annars byt flik
-- Kompakt styling som matchar headern
+### Smartare chattspraak:
 
-**E) Steg 4 AI-knapp (rad 967-975)**
-- Byt `<img src="/favicon.png" ...>` mot `<Sparkles className="w-4 h-4" />`
-- Behalj allt annat: `variant="outline"`, `size="icon"`, samma klasser, titel "Redigera med AI"
-- Lagg till logik for att skicka med aktuell bild som `initialImage` (prop pa CreateSceneModal)
+Istallet for att visa ratt prompt-lista, visa:
+- "Jag har nu en bra bild av vad du soker..." innan generering
+- "Skapar din annons..." under laddning (ersatter tekniska fraser)
+- Ingen punktlista med engelska promptvarden visas for anvandaren
 
-**F) CreateSceneModal prop**
-- Ny valfri prop: `initialImage?: string`
-- Nar satt: oppna chatten direkt i "free-create"-lage med bilden som referens
-- Ny state i Index.tsx: `aiModalInitialImage` som satts nar man klickar AI-ikonen i steg 4
+## Annonsreferensbilder (stock)
 
-### Fil: `src/components/CreateSceneModal.tsx`
+Lagg till 4-5 referensbilder i `public/ad-templates/` som visuella stilforslag anvandaren klickar pa:
 
-- Ny prop `initialImage?: string`
-- I `useEffect` vid oppning: om `initialImage` finns, konvertera till base64 (befintlig logik), satt som referensbild, och hoppa direkt till "free-create"-laget
-- Visa informationsmeddelande i chatten: "1 bild vald for redigering. Beskriv vad du vill andra."
+- `inkommande-bil.png` -- plats-baserad annons
+- `kopannons-personlig.png` -- personlig koplapp
+- `kampanj-bold.png` -- stor fetstil kampanj
+- `social-clean.png` -- ren social media stil
+- `minimal-dark.png` -- mork minimalistisk
+
+Dessa genereras med AI (Gemini image) via edge function, eller laggs till manuellt som stock.
+
+## Blurra regskyltar (ny meny)
+
+Ny kategori i AI Studio-menyn:
+
+1. Anvandaren valjer "Blurra regskyltar"
+2. Chatten visar uppladdade + genererade bilder fran projektet som ett rutnät
+3. Anvandaren valjer en eller flera bilder
+4. Klickar "Blurra valda"
+5. Anropar `generate-scene-image` i `free-create`-lage med prompt: "Blur/pixelate all license plates in this image, keep everything else exactly the same"
+6. Resultatet visas i chatten, en bild i taget
+
+## Tekniska forandringar
+
+### `CreateSceneModal.tsx`
+
+**Nya/andrade konstanter:**
+
+- `AD_TEMPLATES` -- ny array med malltyper (ersatter `AD_CATEGORIES`), varje mall har `label`, `value`, `icon`, `description`, `defaultFormat`, `guidedSteps`
+- `AD_TEMPLATE_REFERENCES` -- referensbilder per malltyp (thumbnails anvandaren klickar pa for stil-inspo)
+- `BLUR_PLATE_PROMPT` -- fast prompt for reg-blur
+- Borttagna emojis fran alla guided flows
+
+**Andrad chattlogik:**
+
+- `assistant-summary` visar "Jag har en bra bild av vad du soker..." istallet for raat promptinnehall
+- Dolj engelska prompt-varden fran sammanfattningskortet -- visa bara svenska etiketter
+- Ny `role: 'assistant-image-grid'` for att visa batch-bilder (regskyltar)
+- Uppdatera `selectMode` for nya menykategorier
+
+**Ny state:**
+
+- `selectedBlurImages: string[]` -- valda bilder for regskylts-blur
+
+### `generate-scene-image/index.ts`
+
+Inga angringar kravs -- befintlig `free-create` och `ad-create` mode hanterar redan allt. Prompt-forbattringarna sker enbart pa klientsidan genom smartare guidning.
+
+### Sammanfattningskort -- UX-forbattring
+
+Nuvarande:
+```text
+[Typ: Studio]
+[x] bright and airy with soft diffused lighting
+[x] polished concrete floor
+[Generera bakgrund]
+```
+
+Nytt:
+```text
+"Jag har en bra bild av vad du soker."
+[Studio | Ljust & luftigt | Polerad betong]
+[Generera bakgrund]
+```
+
+Visa svenska etiketter istallet for engelska prompt-varden. Lagra mappningen `label -> promptValue` internt.
+
+## Filer som andras
+
+| Fil | Typ av andring |
+|-----|----------------|
+| `src/components/CreateSceneModal.tsx` | Stor omarbetning av guided flows, nya menykategorier, smartare UI |
+| `public/ad-templates/` | Nya referensbilder for annonsmallar (kan behova skapas manuellt eller genereras) |
 
 ## Vad som INTE andras
 
-- Hela Projekt-fliken (upload, bakgrundsgalleri, placera, redigera, logo) -- helt oforandrat
-- Galleri-fliken -- helt oforandrat
-- Befintliga CreateSceneModal-funktionalitet -- bara ny prop
-- Designsprak, farger, typografi
-- Steg 4 toolbar-layout (ikon-knappen behaljer exakt samma storlek och stil)
+- Huvudflodet (steg 1-4: ladda upp -> valj scen -> generera -> redigera)
+- Edge function `generate-scene-image`
+- Bakgrundsstudio-flodet (bara smarre UI-polish)
+- Redigera fritt-flodet
 
-## Andringssammanfattning
+## Implementationsordning
 
-| Komponent | Andring |
-|---|---|
-| Header tabs (desktop) | Ny tredje flik "AI Studio" med Sparkles-ikon |
-| Header tabs (mobil) | Tabs doljs, ersatts av Select-dropdown |
-| Steg 4 AI-knapp | Favicon-bild byts mot Sparkles-ikon, behaljs som icon-knapp |
-| CreateSceneModal | Ny `initialImage` prop for kontextuell oppning |
-| Index.tsx state | `activeTab` utvidgad + `aiModalInitialImage` tillagd |
+1. Refaktorera annonsfloden med nya mallar och guidade steg
+2. Lagg till "Blurra regskyltar" som ny menykategori  
+3. Uppdatera sammanfattningskortet till smartare sprak (dolj engelska prompts)
+4. Lagg till referensbilder for annonsmallar
+5. Rensa emojis och polska chattmeddelanden
 
