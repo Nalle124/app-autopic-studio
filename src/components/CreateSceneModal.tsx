@@ -30,7 +30,7 @@ interface CreateSceneModalProps {
   inline?: boolean;
 }
 
-type ChatMode = 'background-studio' | 'free-create' | 'ad-create';
+type ChatMode = 'background-studio' | 'free-create' | 'ad-create' | 'blur-plates';
 
 type ChatMessage =
   | { role: 'system'; text: string }
@@ -41,7 +41,8 @@ type ChatMessage =
   | { role: 'assistant-loading' }
   | { role: 'assistant-error'; text: string; retryData?: { conversationHistory: Array<{ role: string; content: any }>; mode: string; format?: string } }
   | { role: 'assistant-references'; text: string; references: Array<{ url: string; label: string }> }
-  | { role: 'assistant-summary'; category: string; selections: string[]; format?: string }
+  | { role: 'assistant-summary'; category: string; selections: string[]; format?: string; selectionLabels?: string[] }
+  | { role: 'assistant-image-grid'; text: string; images: Array<{ url: string; id: string }> }
   | { role: 'mode-select' };
 
 const LOADING_PHRASES = [
@@ -102,10 +103,10 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     {
       question: 'Vilken ljussättning?',
       options: [
-        { label: '☀️ Ljus & luftig', value: 'bright and airy with soft diffused lighting' },
-        { label: '🌑 Mörk & dramatisk', value: 'dark and moody with dramatic directional lighting' },
-        { label: '🔥 Varm & mysig', value: 'warm golden lighting with cozy atmosphere' },
-        { label: '⚪ Neutral & ren', value: 'neutral even lighting, clean and minimal' },
+        { label: 'Ljus & luftig', value: 'bright and airy with soft diffused lighting' },
+        { label: 'Mörk & dramatisk', value: 'dark and moody with dramatic directional lighting' },
+        { label: 'Varm & mysig', value: 'warm golden lighting with cozy atmosphere' },
+        { label: 'Neutral & ren', value: 'neutral even lighting, clean and minimal' },
       ],
       allowCustom: true,
     },
@@ -155,22 +156,22 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     {
       question: 'Vilken miljö?',
       options: [
-        { label: '🏙️ Stadsgata', value: 'city street with buildings' },
-        { label: '🌊 Hamn / kust', value: 'harbor or coastal area' },
-        { label: '🌲 Natur / skog', value: 'nature or forest road' },
-        { label: '🅿️ Parkering', value: 'parking area or plaza' },
-        { label: '🏠 Uppfart / villa', value: 'driveway by a nice house' },
+        { label: 'Stadsgata', value: 'city street with buildings' },
+        { label: 'Hamn / kust', value: 'harbor or coastal area' },
+        { label: 'Natur / skog', value: 'nature or forest road' },
+        { label: 'Parkering', value: 'parking area or plaza' },
+        { label: 'Uppfart / villa', value: 'driveway by a nice house' },
       ],
       allowCustom: true,
     },
     {
       question: 'Vilken årstid/tid?',
       options: [
-        { label: '☀️ Sommar, soligt', value: 'summer sunny day with blue sky' },
-        { label: '🍂 Höst, gyllene', value: 'autumn with golden leaves and warm light' },
-        { label: '❄️ Vinter, snö', value: 'winter with snow on the ground' },
-        { label: '🌅 Skymning', value: 'dusk with dramatic sunset sky' },
-        { label: '🌃 Kvällsljus', value: 'evening with city lights and ambient glow' },
+        { label: 'Sommar, soligt', value: 'summer sunny day with blue sky' },
+        { label: 'Höst, gyllene', value: 'autumn with golden leaves and warm light' },
+        { label: 'Vinter, snö', value: 'winter with snow on the ground' },
+        { label: 'Skymning', value: 'dusk with dramatic sunset sky' },
+        { label: 'Kvällsljus', value: 'evening with city lights and ambient glow' },
       ],
       allowCustom: true,
     },
@@ -217,12 +218,12 @@ const POST_GENERATION_SUGGESTIONS_FREE = [
 ];
 
 const FREE_QUICK_ACTIONS = [
-  { label: '🚫 Ta bort bakgrund helt', prompt: 'Remove the background completely, leave only the car on a transparent/white background' },
-  { label: '🔄 Ändra vinkel, behåll bilen', prompt: 'Change the camera angle slightly but keep the car exactly as it is' },
-  { label: '🌟 Mer cinematisk', prompt: 'Make the image more cinematic with dramatic lighting' },
-  { label: '☀️ Ljusare & varmare', prompt: 'Make the image brighter and warmer' },
-  { label: '🌙 Mörkare & moodier', prompt: 'Make the image darker and moodier with more contrast' },
-  { label: '🎨 Ändra färgpalett', prompt: 'Change the color palette of the background but keep the car unchanged' },
+  { label: 'Ta bort bakgrund helt', prompt: 'Remove the background completely, leave only the car on a transparent/white background' },
+  { label: 'Ändra vinkel, behåll bilen', prompt: 'Change the camera angle slightly but keep the car exactly as it is' },
+  { label: 'Mer cinematisk', prompt: 'Make the image more cinematic with dramatic lighting' },
+  { label: 'Ljusare & varmare', prompt: 'Make the image brighter and warmer' },
+  { label: 'Mörkare & moodier', prompt: 'Make the image darker and moodier with more contrast' },
+  { label: 'Ändra färgpalett', prompt: 'Change the color palette of the background but keep the car unchanged' },
 ];
 
 const FREE_INSPIRATION = [
@@ -235,40 +236,70 @@ const FREE_INSPIRATION = [
 ];
 
 // ─── Ad creation constants ──────────────────────────────────────
-const AD_CATEGORIES: Array<{ label: string; value: string; icon: string }> = [
-  { label: 'Bilannons', value: 'car-ad', icon: '' },
-  { label: 'Kampanj', value: 'campaign', icon: '' },
-  { label: 'Social media', value: 'social-media', icon: '' },
-  { label: 'Eget', value: 'custom-ad', icon: '' },
+const AD_TEMPLATES: Array<{ label: string; value: string; icon: string; description: string; defaultFormat: 'landscape' | 'portrait' }> = [
+  { label: 'Inkommande bil', value: 'incoming-car', icon: '', description: 'Plats-bakgrund, logo & kontaktinfo', defaultFormat: 'landscape' },
+  { label: 'Köpannons', value: 'buy-ad', icon: '', description: 'Personlig annons med rubrik & info', defaultFormat: 'portrait' },
+  { label: 'Kampanjbild', value: 'campaign', icon: '', description: 'Stor rubrik, CTA & varumärke', defaultFormat: 'landscape' },
+  { label: 'Social media', value: 'social-media', icon: '', description: 'Instagram/Facebook-optimerad', defaultFormat: 'landscape' },
+  { label: 'Eget', value: 'custom-ad', icon: '', description: 'Fri beskrivning', defaultFormat: 'landscape' },
 ];
 
 const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
-  'car-ad': [
+  'incoming-car': [
     {
-      question: 'Vilken stil ska annonsen ha?',
+      question: 'Vilken rubrik?',
       options: [
-        { label: 'Modern & minimalistisk', value: 'modern minimalist car advertisement' },
-        { label: 'Premium & lyxig', value: 'premium luxury car advertisement' },
-        { label: 'Sportigt & energisk', value: 'sporty energetic car advertisement' },
-        { label: 'Klassisk & pålitlig', value: 'classic trustworthy car advertisement' },
+        { label: 'Inkommande bil', value: 'headline text: Inkommande bil' },
+        { label: 'Nyinkommet', value: 'headline text: Nyinkommet' },
+        { label: 'Just nu i lager', value: 'headline text: Just nu i lager' },
       ],
       allowCustom: true,
     },
     {
-      question: 'Skriv rubriken som ska synas på bilden:',
+      question: 'Lägg till undertext?',
       options: [
-        { label: '"Vi köper din bil"', value: 'headline text: Vi köper din bil' },
-        { label: '"Nyinkommet"', value: 'headline text: Nyinkommet' },
-        { label: '"Boka provkörning"', value: 'headline text: Boka provkörning' },
+        { label: 'I vår bilhall', value: 'subtitle text: I vår bilhall' },
+        { label: 'Tillgänglig nu', value: 'subtitle text: Tillgänglig nu' },
+        { label: 'Ingen undertext', value: 'no subtitle' },
       ],
       allowCustom: true,
     },
     {
-      question: 'Vill du lägga till undertext eller pris?',
+      question: 'Stil och känsla?',
       options: [
-        { label: 'Nej, bara rubrik', value: 'no additional text, only headline' },
-        { label: 'Lägg till pris', value: 'include price text below headline' },
-        { label: 'Lägg till undertext', value: 'include subtitle text below headline' },
+        { label: 'Modern & clean', value: 'modern minimalist clean style with good typography' },
+        { label: 'Premium & lyxig', value: 'premium luxury feel with elegant design' },
+        { label: 'Personlig & varm', value: 'warm personal trustworthy feel' },
+        { label: 'Mörk & kraftfull', value: 'dark bold powerful style' },
+      ],
+      allowCustom: true,
+    },
+  ],
+  'buy-ad': [
+    {
+      question: 'Vilken rubrik?',
+      options: [
+        { label: 'Vi köper din bil', value: 'headline text: Vi köper din bil' },
+        { label: 'Sälj din bil till oss', value: 'headline text: Sälj din bil till oss' },
+        { label: 'Bästa pris för din bil', value: 'headline text: Bästa pris för din bil' },
+      ],
+      allowCustom: true,
+    },
+    {
+      question: 'Kontaktinfo?',
+      options: [
+        { label: 'Telefonnummer', value: 'include phone number contact info' },
+        { label: 'Webbadress', value: 'include website URL' },
+        { label: 'Ingen kontaktinfo', value: 'no contact information' },
+      ],
+      allowCustom: true,
+    },
+    {
+      question: 'Stil?',
+      options: [
+        { label: 'Personlig & autentisk', value: 'personal authentic handwritten style note' },
+        { label: 'Professionell', value: 'professional corporate clean style' },
+        { label: 'Direkt & enkel', value: 'direct simple straightforward design' },
       ],
       allowCustom: true,
     },
@@ -279,35 +310,35 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
       options: [
         { label: 'Räntekampanj', value: 'interest rate financing campaign' },
         { label: 'Inbyteserbjudande', value: 'trade-in offer campaign' },
-        { label: 'Öppet hus', value: 'open house dealership event' },
         { label: 'Säsongsrea', value: 'seasonal sale promotion' },
+        { label: 'Öppet hus', value: 'open house dealership event' },
       ],
       allowCustom: true,
     },
     {
-      question: 'Vilken stil passar bäst?',
+      question: 'Skriv rubriken:',
+      options: [
+        { label: 'Räntekampanj 3.99%', value: 'headline text: Räntekampanj 3.99%' },
+        { label: 'Vi tar din bil i inbyte', value: 'headline text: Vi tar din bil i inbyte' },
+        { label: 'Besök oss idag', value: 'headline text: Besök oss idag' },
+      ],
+      allowCustom: true,
+    },
+    {
+      question: 'CTA eller kontaktinfo?',
+      options: [
+        { label: 'CTA-knapp', value: 'add a prominent call-to-action button' },
+        { label: 'Kontaktinfo', value: 'add contact information' },
+        { label: 'Bara rubrik', value: 'no additional text elements' },
+      ],
+      allowCustom: true,
+    },
+    {
+      question: 'Stil?',
       options: [
         { label: 'Professionell & clean', value: 'professional corporate clean style' },
         { label: 'Energisk & färgstark', value: 'energetic colorful bold style' },
         { label: 'Elegant & dämpad', value: 'elegant muted premium style' },
-      ],
-      allowCustom: true,
-    },
-    {
-      question: 'Skriv rubriken som ska synas på bilden:',
-      options: [
-        { label: '"Räntekampanj 3.99%"', value: 'headline text: Räntekampanj 3.99%' },
-        { label: '"Vi tar din bil i inbyte"', value: 'headline text: Vi tar din bil i inbyte' },
-        { label: '"Besök oss idag"', value: 'headline text: Besök oss idag' },
-      ],
-      allowCustom: true,
-    },
-    {
-      question: 'Ska det finnas en CTA-knapp eller kontaktinfo?',
-      options: [
-        { label: 'Nej, bara rubrik', value: 'no additional text elements' },
-        { label: 'Lägg till CTA-knapp', value: 'add a call-to-action button' },
-        { label: 'Lägg till kontaktinfo', value: 'add contact information text' },
       ],
       allowCustom: true,
     },
@@ -316,27 +347,27 @@ const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     {
       question: 'Vilken plattform?',
       options: [
-        { label: 'Instagram / Facebook', value: 'social media post for Instagram and Facebook' },
+        { label: 'Instagram / Facebook', value: 'social media post optimized for Instagram and Facebook' },
         { label: 'Blocket', value: 'Blocket marketplace listing banner' },
         { label: 'LinkedIn', value: 'LinkedIn professional post' },
       ],
       allowCustom: true,
     },
     {
-      question: 'Vilken stil?',
+      question: 'Skriv texten som ska synas:',
       options: [
-        { label: 'Trendig & catchy', value: 'trendy eye-catching social media design' },
-        { label: 'Professionell', value: 'professional clean social media design' },
-        { label: 'Personlig & autentisk', value: 'personal authentic feel' },
+        { label: 'Alltid bilar i lager', value: 'headline text: Alltid bilar i lager' },
+        { label: 'Besök oss', value: 'headline text: Besök oss' },
+        { label: 'Just nu: specialpris', value: 'headline text: Just nu - specialpris' },
       ],
       allowCustom: true,
     },
     {
-      question: 'Skriv texten som ska synas på bilden:',
+      question: 'Stil?',
       options: [
-        { label: '"Alltid 50 bilar i lager"', value: 'headline text: Alltid 50 bilar i lager' },
-        { label: '"Besök oss i [stad]"', value: 'headline text: Besök oss' },
-        { label: '"Just nu: specialpris"', value: 'headline text: Just nu - specialpris' },
+        { label: 'Trendig & catchy', value: 'trendy eye-catching social media design' },
+        { label: 'Professionell', value: 'professional clean social media design' },
+        { label: 'Personlig & autentisk', value: 'personal authentic social media feel' },
       ],
       allowCustom: true,
     },
@@ -351,6 +382,23 @@ const POST_GENERATION_SUGGESTIONS_AD = [
   'Lägg till undertext',
   'Mer utrymme för bild',
 ];
+
+const BLUR_PLATE_PROMPT = 'Blur and pixelate all license plates in this image. Keep everything else exactly the same. Do not change any other part of the image.';
+
+// Build reverse map: promptValue → Swedish label from all guided flows
+const buildLabelMap = (): Record<string, string> => {
+  const map: Record<string, string> = {};
+  const allFlows = { ...GUIDED_FLOWS, ...AD_GUIDED_FLOWS };
+  for (const steps of Object.values(allFlows)) {
+    for (const step of steps) {
+      for (const opt of step.options) {
+        map[opt.value] = opt.label;
+      }
+    }
+  }
+  return map;
+};
+const PROMPT_LABEL_MAP = buildLabelMap();
 
 const AutopicAvatar = () => (
   <img
@@ -399,10 +447,11 @@ export const CreateSceneModal = ({
   const [saveDialogImage, setSaveDialogImage] = useState<Extract<ChatMessage, { role: 'assistant-image' }> | null>(null);
   const [saveName, setSaveName] = useState('');
   const [adFormat, setAdFormat] = useState<'landscape' | 'portrait'>('landscape');
+  const [selectedBlurImages, setSelectedBlurImages] = useState<string[]>([]);
 
   // Derived values based on current mode
   const activeFlows = chatMode === 'ad-create' ? AD_GUIDED_FLOWS : GUIDED_FLOWS;
-  const activeCategories = chatMode === 'ad-create' ? AD_CATEGORIES : BACKGROUND_CATEGORIES;
+  const activeCategories = chatMode === 'ad-create' ? (AD_TEMPLATES as Array<{ label: string; value: string; icon: string }>) : BACKGROUND_CATEGORIES;
 
   // Reset state when modal opens or initialImage changes (for inline mode)
   useEffect(() => {
@@ -504,6 +553,7 @@ export const CreateSceneModal = ({
     setSaveDialogImage(null);
     setSaveName('');
     setAdFormat('landscape');
+    setSelectedBlurImages([]);
   };
 
   // Auto-scroll to bottom
@@ -554,6 +604,25 @@ export const CreateSceneModal = ({
           ],
         },
       ]);
+    } else if (mode === 'blur-plates') {
+      const allImages: Array<{ url: string; id: string }> = [];
+      propUploadedImages.forEach(img => {
+        const url = img.croppedUrl || img.preview;
+        if (url) allImages.push({ url, id: img.id });
+      });
+      propCompletedImages.forEach(img => {
+        const url = img.finalUrl || img.croppedUrl || img.preview;
+        if (url) allImages.push({ url, id: img.id });
+      });
+      if (allImages.length === 0) {
+        setMessages([
+          { role: 'assistant', text: 'Det finns inga bilder i projektet ännu. Ladda upp bilder först och kom sedan tillbaka för att blurra registreringsskyltar.' },
+        ]);
+      } else {
+        setMessages([
+          { role: 'assistant-image-grid', text: 'Välj de bilder du vill blurra registreringsskyltar på:', images: allImages },
+        ]);
+      }
     } else {
       setMessages([
         {
@@ -566,33 +635,7 @@ export const CreateSceneModal = ({
 
   const handleModeSwitch = (mode: ChatMode) => {
     if (mode === chatMode) return;
-    setChatMode(mode);
-    if (mode === 'background-studio') {
-      setMessages([
-        { role: 'assistant', text: 'Låt oss skapa en ny bakgrund!' },
-        {
-          role: 'assistant-options',
-          text: 'Vilken typ passar bäst?',
-          options: BACKGROUND_CATEGORIES.map(c => ({ label: c.icon ? `${c.icon} ${c.label}` : c.label, value: c.value })),
-        },
-      ]);
-    } else if (mode === 'ad-create') {
-      setMessages([
-        { role: 'assistant', text: 'Dags att skapa marknadsföringsmaterial.' },
-        {
-          role: 'assistant-options',
-          text: 'Vill du använda en egen bild som referens?',
-          options: [
-            { label: 'Ladda upp referensbild', value: '__ad_ref_upload__' },
-            { label: 'Hoppa över', value: '__ad_ref_skip__' },
-          ],
-        },
-      ]);
-    } else {
-      setMessages([
-        { role: 'system', text: 'Beskriv vad du vill skapa eller ladda upp en bild du vill redigera. Allt är möjligt!' },
-      ]);
-    }
+    // Reset shared state
     setPrompt('');
     setCustomName('');
     setShowNameField(false);
@@ -606,6 +649,9 @@ export const CreateSceneModal = ({
     setGuidedComplete(false);
     setPreviewImage(null);
     setPreviewPrompt('');
+    setSelectedBlurImages([]);
+    // Select the new mode (reuses selectMode logic)
+    selectMode(mode);
   };
 
   const handleNewChat = () => {
@@ -617,7 +663,7 @@ export const CreateSceneModal = ({
     if (value === 'custom' || value === 'custom-ad') {
       setMessages(prev => [
         ...prev,
-        { role: 'user', text: '✏️ Eget' },
+        { role: 'user', text: 'Eget' },
         { role: 'assistant', text: chatMode === 'ad-create'
           ? 'Beskriv din annons fritt nedan, eller ladda upp en referensbild som inspiration!'
           : 'Beskriv din bakgrund fritt nedan, eller ladda upp en referensbild som inspiration!' },
@@ -657,7 +703,7 @@ export const CreateSceneModal = ({
       text: firstStep.question,
       options: [
         ...firstStep.options,
-        ...(firstStep.allowCustom ? [{ label: '✏️ Skriv eget...', value: '__custom__' }] : []),
+        ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : []),
       ],
     });
 
@@ -697,7 +743,7 @@ export const CreateSceneModal = ({
           text: nextStep.question,
           options: [
             ...nextStep.options,
-            ...(nextStep.allowCustom ? [{ label: '✏️ Skriv eget...', value: '__custom__' }] : []),
+            ...(nextStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : []),
           ],
         },
       ]);
@@ -723,6 +769,7 @@ export const CreateSceneModal = ({
         return;
       }
       
+      const selLabels = newSelections.map(s => PROMPT_LABEL_MAP[s] || s);
       setMessages(prev => [
         ...prev,
         { role: 'user', text: optionLabel },
@@ -730,6 +777,7 @@ export const CreateSceneModal = ({
           role: 'assistant-summary',
           category: categoryLabel,
           selections: newSelections,
+          selectionLabels: selLabels,
         },
       ]);
     }
@@ -798,7 +846,7 @@ export const CreateSceneModal = ({
         {
           role: 'assistant-options',
           text: 'Vad vill du skapa?',
-          options: AD_CATEGORIES.map(c => ({ label: c.icon ? `${c.icon} ${c.label}` : c.label, value: c.value })),
+          options: AD_TEMPLATES.map(c => ({ label: c.label, value: c.value })),
         },
       ]);
       return;
@@ -811,7 +859,7 @@ export const CreateSceneModal = ({
         {
           role: 'assistant-options',
           text: 'Vad vill du skapa?',
-          options: AD_CATEGORIES.map(c => ({ label: c.icon ? `${c.icon} ${c.label}` : c.label, value: c.value })),
+          options: AD_TEMPLATES.map(c => ({ label: c.label, value: c.value })),
         },
       ]);
       return;
@@ -821,8 +869,9 @@ export const CreateSceneModal = ({
     if (value === '__format_landscape__' || value === '__format_portrait__') {
       const selectedFormat = value === '__format_portrait__' ? 'portrait' : 'landscape';
       setAdFormat(selectedFormat);
-      const formatLabel = selectedFormat === 'portrait' ? '📱 Stående (2:3)' : '📐 Liggande (3:2)';
+      const formatLabel = selectedFormat === 'portrait' ? 'Stående (2:3)' : 'Liggande (3:2)';
       const categoryLabel = activeCategories.find(c => c.value === guidedCategory)?.label || guidedCategory;
+      const selLabels = guidedSelections.map(s => PROMPT_LABEL_MAP[s] || s);
       setGuidedComplete(true);
       setMessages(prev => [
         ...prev,
@@ -831,6 +880,7 @@ export const CreateSceneModal = ({
           role: 'assistant-summary',
           category: categoryLabel,
           selections: guidedSelections,
+          selectionLabels: selLabels,
           format: selectedFormat === 'portrait' ? 'Stående' : 'Liggande',
         },
       ]);
@@ -1009,12 +1059,13 @@ export const CreateSceneModal = ({
               text: nextStep.question,
               options: [
                 ...nextStep.options,
-                ...(nextStep.allowCustom ? [{ label: '✏️ Skriv eget...', value: '__custom__' }] : []),
+                ...(nextStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : []),
               ],
             },
           ]);
         } else {
           const categoryLabel = activeCategories.find(c => c.value === guidedCategory)?.label || guidedCategory;
+          const selLabels = newSelections.map(s => PROMPT_LABEL_MAP[s] || s);
           setGuidedComplete(true);
           setMessages(prev => [
             ...prev,
@@ -1023,6 +1074,7 @@ export const CreateSceneModal = ({
               role: 'assistant-summary',
               category: categoryLabel,
               selections: newSelections,
+              selectionLabels: selLabels,
             },
           ]);
         }
@@ -1179,6 +1231,66 @@ export const CreateSceneModal = ({
   };
 
   const handleClose = () => onOpenChange(false);
+
+  // ─── Blur plates batch generation ──────────────────────────
+  const handleBlurGenerate = async () => {
+    if (selectedBlurImages.length === 0 || !user) return;
+    setIsGenerating(true);
+
+    for (const imageUrl of selectedBlurImages) {
+      try {
+        // Convert image to base64
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(blob);
+        });
+
+        const conversationHistory = [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: BLUR_PLATE_PROMPT },
+              { type: 'image_url', image_url: { url: base64 } },
+            ],
+          },
+        ];
+
+        setMessages(prev => [...prev, { role: 'assistant-loading' }]);
+
+        const { data, error } = await invokeWithTimeout({
+          conversationHistory,
+          mode: 'free-create',
+        });
+
+        setMessages(prev => prev.filter(m => m.role !== 'assistant-loading'));
+
+        if (error) {
+          setMessages(prev => [...prev, { role: 'assistant-error', text: 'Kunde inte blurra bilden. Försök igen.' }]);
+          continue;
+        }
+
+        if (data?.imageUrl) {
+          setMessages(prev => [...prev, {
+            role: 'assistant-image',
+            imageUrl: data.imageUrl,
+            suggestedName: `blurrad-${Date.now()}`,
+            description: 'Registreringsskyltar har blurrats',
+            photoroomPrompt: '',
+          }]);
+        }
+      } catch (err) {
+        console.error('Blur error:', err);
+        setMessages(prev => prev.filter(m => m.role !== 'assistant-loading'));
+        setMessages(prev => [...prev, { role: 'assistant-error', text: 'Fel vid blurring. Försök igen.' }]);
+      }
+    }
+
+    setSelectedBlurImages([]);
+    setIsGenerating(false);
+  };
 
   const handleRegenerate = () => {
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
@@ -1410,6 +1522,22 @@ export const CreateSceneModal = ({
                         />
                       </div>
                     </button>
+
+                    {/* Blurra regskyltar */}
+                    <button
+                      onClick={() => selectMode('blur-plates')}
+                      className="flex items-center justify-between gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group overflow-hidden"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
+                          <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z" opacity="0.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" opacity="0.3"/></svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-semibold text-foreground">Blurra regskyltar</p>
+                          <span className="text-[13px] sm:text-sm text-muted-foreground">Pixla registreringsskyltar i batch</span>
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 </div>
               );
@@ -1490,28 +1618,20 @@ export const CreateSceneModal = ({
 
             // ─── Summary card ─────────────────────────────
             if (msg.role === 'assistant-summary') {
+              const labels = msg.selectionLabels || msg.selections.map(s => PROMPT_LABEL_MAP[s] || s);
               return (
                 <div key={i} className="space-y-3">
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                      <p className="text-sm font-medium text-foreground">Redo att generera</p>
-                      <div className="bg-background/60 rounded-xl px-3 py-2.5 space-y-1.5 border border-border/30">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Typ</span>
-                          <span className="text-sm text-foreground">{msg.category}</span>
-                        </div>
-                        {msg.selections.map((sel, idx) => (
-                          <div key={idx} className="flex items-start gap-2">
-                            <Check className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-foreground leading-snug">{sel}</span>
-                          </div>
+                      <p className="text-sm font-medium text-foreground">Jag har en bra bild av vad du söker.</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">{msg.category}</span>
+                        {labels.map((label, idx) => (
+                          <span key={idx} className="text-xs px-2.5 py-1 rounded-full bg-background/80 text-foreground border border-border/30">{label}</span>
                         ))}
                         {msg.format && (
-                          <div className="flex items-center gap-2 pt-0.5 border-t border-border/20">
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Format</span>
-                            <span className="text-sm text-foreground">{msg.format}</span>
-                          </div>
+                          <span className="text-xs px-2.5 py-1 rounded-full bg-background/80 text-foreground border border-border/30">{msg.format}</span>
                         )}
                       </div>
                       {referenceImage && (
@@ -1530,11 +1650,62 @@ export const CreateSceneModal = ({
                         className="w-full rounded-full h-10"
                       >
                         {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                        {chatMode === 'ad-create' ? 'Generera annons' : 'Generera bakgrund'}
+                        {chatMode === 'ad-create' ? 'Skapa annons' : 'Skapa bakgrund'}
                       </Button>
                       <p className="text-[11px] text-muted-foreground text-center">Lägg till detaljer i textfältet innan du genererar</p>
                     </div>
                   </div>
+                </div>
+              );
+            }
+
+            // ─── Image grid (blur plates) ─────────────────
+            if (msg.role === 'assistant-image-grid') {
+              return (
+                <div key={i} className="space-y-3">
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pl-9">
+                    {msg.images.map((img) => {
+                      const isSelected = selectedBlurImages.includes(img.url);
+                      return (
+                        <button
+                          key={img.id}
+                          onClick={() => {
+                            setSelectedBlurImages(prev =>
+                              isSelected ? prev.filter(u => u !== img.url) : [...prev, img.url]
+                            );
+                          }}
+                          className={`relative rounded-xl overflow-hidden border-2 transition-colors aspect-[3/2] ${
+                            isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border/40 hover:border-primary/40'
+                          }`}
+                        >
+                          <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                              <Check className="w-6 h-6 text-primary bg-background rounded-full p-1" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedBlurImages.length > 0 && (
+                    <div className="pl-9">
+                      <Button
+                        onClick={handleBlurGenerate}
+                        disabled={isGenerating}
+                        className="w-full rounded-full h-10"
+                      >
+                        {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                        Blurra valda ({selectedBlurImages.length})
+                      </Button>
+                    </div>
+                  )}
                 </div>
               );
             }
