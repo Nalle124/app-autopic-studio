@@ -167,7 +167,27 @@ function IndexContent() {
     return () => { cancelled = true; };
   }, [user, fetchDrafts]);
 
-  // Helper function to add to edit history before making changes
+  // Listen for AI chat edit-image events (crop/adjust from chat preview)
+  useEffect(() => {
+    const handleAiEditImage = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail?.imageId || !detail?.type) return;
+      const completedImages = uploadedImages.filter(img => img.status === 'completed');
+      const image = completedImages.find(img => img.id === detail.imageId);
+      if (image?.finalUrl) {
+        setEditingImage({
+          id: image.id,
+          finalUrl: image.finalUrl,
+          fileName: image.file?.name || 'image.png',
+          type: detail.type,
+        });
+        setActiveTab('new');
+      }
+    };
+    window.addEventListener('ai-edit-image', handleAiEditImage);
+    return () => window.removeEventListener('ai-edit-image', handleAiEditImage);
+  }, [uploadedImages]);
+
   const addToEditHistory = (imageId: string, currentUrl: string) => {
     setEditHistory(prev => {
       const newMap = new Map(prev);
@@ -992,7 +1012,7 @@ function IndexContent() {
                           setActiveTab('ai-studio');
                         }}
                       >
-                        <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
+                        <img src="/favicon.png" alt="" className="w-7 h-7 object-contain dark:invert" />
                       </Button>
                       <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Redigera ${selectedImages.size} valda` : 'Redigera'} onClick={() => {
                   const completedImages = uploadedImages.filter(img => img.status === 'completed');
