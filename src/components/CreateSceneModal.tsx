@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown, Share2 } from 'lucide-react';
+import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown, Share2, Scissors, Sliders, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -43,6 +43,7 @@ type ChatMessage =
   | { role: 'assistant-references'; text: string; references: Array<{ url: string; label: string }> }
   | { role: 'assistant-summary'; category: string; selections: string[]; format?: string; selectionLabels?: string[] }
   | { role: 'assistant-image-grid'; text: string; images: Array<{ url: string; id: string }> }
+  | { role: 'assistant-category-grid'; text: string; categories: Array<{ label: string; value: string; thumbnail: string }> }
   | { role: 'mode-select' };
 
 const LOADING_PHRASES = [
@@ -383,7 +384,23 @@ const POST_GENERATION_SUGGESTIONS_AD = [
   'Mer utrymme för bild',
 ];
 
-const BLUR_PLATE_PROMPT = 'Blur and pixelate all license plates in this image. Keep everything else exactly the same. Do not change any other part of the image.';
+const BLUR_PLATE_PROMPT_MAP: Record<string, string> = {
+  'full-blur': 'Blur and heavily pixelate all license plates in this image so the text is completely unreadable. Keep everything else exactly the same. Do not change any other part of the image. The blur should be strong enough that no characters can be identified.',
+  'dark-inlay': 'Cover all license plates in this image with a solid dark/black rectangle or overlay that completely hides the plate text. Keep everything else exactly the same. The cover should look clean and intentional, matching the car color or using dark grey/black.',
+  'logo-overlay': 'Cover all license plates in this image with a clean logo overlay or branded element. Keep everything else exactly the same. The overlay should be centered on the plate and look professional.',
+};
+
+const BLUR_STYLE_OPTIONS = [
+  { label: 'Helt blurrad', value: 'full-blur', description: 'Pixlar så texten inte syns' },
+  { label: 'Mörk inlay', value: 'dark-inlay', description: 'Svart/mörk platta över skylten' },
+  { label: 'Egen logotyp', value: 'logo-overlay', description: 'Din logo över skylten' },
+];
+
+const POST_GENERATION_SUGGESTIONS_BLUR = [
+  'Starkare blur',
+  'Gör det mer diskret',
+  'Behåll mer av originalfärgen',
+];
 
 // Build reverse map: promptValue → Swedish label from all guided flows
 const buildLabelMap = (): Record<string, string> => {
@@ -448,6 +465,8 @@ export const CreateSceneModal = ({
   const [saveName, setSaveName] = useState('');
   const [adFormat, setAdFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [selectedBlurImages, setSelectedBlurImages] = useState<string[]>([]);
+  const [blurStyle, setBlurStyle] = useState<string | null>(null);
+  const blurFileInputRef = useRef<HTMLInputElement>(null);
 
   // Derived values based on current mode
   const activeFlows = chatMode === 'ad-create' ? AD_GUIDED_FLOWS : GUIDED_FLOWS;
@@ -554,6 +573,7 @@ export const CreateSceneModal = ({
     setSaveName('');
     setAdFormat('landscape');
     setSelectedBlurImages([]);
+    setBlurStyle(null);
   };
 
   // Auto-scroll to bottom
@@ -587,9 +607,15 @@ export const CreateSceneModal = ({
       setMessages([
         { role: 'assistant', text: 'Låt oss skapa en ny bakgrund!' },
         {
-          role: 'assistant-options',
+          role: 'assistant-category-grid',
           text: 'Vilken typ passar bäst?',
-          options: BACKGROUND_CATEGORIES.map(c => ({ label: c.icon ? `${c.icon} ${c.label}` : c.label, value: c.value })),
+          categories: [
+            { label: 'Studio', value: 'studio', thumbnail: '/scenes/white-studio.png' },
+            { label: 'Studio med hörn', value: 'studio-corner', thumbnail: '/scenes/betong-kurva-studio.png' },
+            { label: 'Utomhus', value: 'outdoor', thumbnail: '/scenes/hostgata.png' },
+            { label: 'Showroom', value: 'showroom', thumbnail: '/scenes/nordic-showroom.png' },
+            { label: 'Eget', value: 'custom', thumbnail: '/scenes/dark-studio.png' },
+          ],
         },
       ]);
     } else if (mode === 'ad-create') {
@@ -614,15 +640,19 @@ export const CreateSceneModal = ({
         const url = img.finalUrl || img.croppedUrl || img.preview;
         if (url) allImages.push({ url, id: img.id });
       });
-      if (allImages.length === 0) {
-        setMessages([
-          { role: 'assistant', text: 'Det finns inga bilder i projektet ännu. Ladda upp bilder först och kom sedan tillbaka för att blurra registreringsskyltar.' },
-        ]);
-      } else {
-        setMessages([
-          { role: 'assistant-image-grid', text: 'Välj de bilder du vill blurra registreringsskyltar på:', images: allImages },
-        ]);
-      }
+      setMessages([
+        { role: 'assistant', text: 'Välj hur registreringsskyltar ska döljas:' },
+        {
+          role: 'assistant-options',
+          text: 'Välj stil:',
+          options: BLUR_STYLE_OPTIONS.map(s => ({ label: s.label, value: `__blur_style_${s.value}__` })),
+        },
+        ...(allImages.length > 0 ? [
+          { role: 'assistant-image-grid' as const, text: 'Välj bilder att bearbeta, eller ladda upp nya:', images: allImages },
+        ] : [
+          { role: 'assistant' as const, text: 'Ladda upp bilder nedan för att komma igång.' },
+        ]),
+      ]);
     } else {
       setMessages([
         {
@@ -650,6 +680,7 @@ export const CreateSceneModal = ({
     setPreviewImage(null);
     setPreviewPrompt('');
     setSelectedBlurImages([]);
+    setBlurStyle(null);
     // Select the new mode (reuses selectMode logic)
     selectMode(mode);
   };
@@ -836,6 +867,15 @@ export const CreateSceneModal = ({
 
   // ─── Option click dispatcher ────────────────────────────────
   const handleOptionClick = (value: string) => {
+    // Handle blur style selection
+    if (value.startsWith('__blur_style_')) {
+      const style = value.replace('__blur_style_', '').replace('__', '');
+      setBlurStyle(style);
+      const styleLabel = BLUR_STYLE_OPTIONS.find(s => s.value === style)?.label || style;
+      setMessages(prev => [...prev, { role: 'user', text: styleLabel }]);
+      return;
+    }
+
     // Handle ad pre-flow: reference image question
     if (value === '__ad_ref_upload__') {
       fileInputRef.current?.click();
@@ -1232,10 +1272,43 @@ export const CreateSceneModal = ({
 
   const handleClose = () => onOpenChange(false);
 
+  // ─── Blur plates: handle file upload ────────────────────────
+  const handleBlurFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const newImages: Array<{ url: string; id: string }> = [];
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const url = URL.createObjectURL(file);
+      newImages.push({ url, id: `blur-upload-${Date.now()}-${Math.random()}` });
+    });
+    if (newImages.length > 0) {
+      // Add newly uploaded images to the grid
+      setMessages(prev => {
+        const updated = [...prev];
+        const gridIdx = updated.findIndex(m => m.role === 'assistant-image-grid');
+        if (gridIdx >= 0 && updated[gridIdx].role === 'assistant-image-grid') {
+          const gridMsg = updated[gridIdx] as Extract<ChatMessage, { role: 'assistant-image-grid' }>;
+          updated[gridIdx] = { ...gridMsg, images: [...gridMsg.images, ...newImages] };
+        } else {
+          updated.push({
+            role: 'assistant-image-grid',
+            text: 'Välj de bilder du vill bearbeta:',
+            images: newImages,
+          });
+        }
+        return updated;
+      });
+      toast.success(`${newImages.length} bild(er) tillagda`);
+    }
+    e.target.value = '';
+  };
+
   // ─── Blur plates batch generation ──────────────────────────
   const handleBlurGenerate = async () => {
-    if (selectedBlurImages.length === 0 || !user) return;
+    if (selectedBlurImages.length === 0 || !user || !blurStyle) return;
     setIsGenerating(true);
+    const blurPrompt = BLUR_PLATE_PROMPT_MAP[blurStyle] || BLUR_PLATE_PROMPT_MAP['full-blur'];
 
     for (const imageUrl of selectedBlurImages) {
       try {
@@ -1252,7 +1325,7 @@ export const CreateSceneModal = ({
           {
             role: 'user',
             content: [
-              { type: 'text', text: BLUR_PLATE_PROMPT },
+              { type: 'text', text: blurPrompt },
               { type: 'image_url', image_url: { url: base64 } },
             ],
           },
@@ -1268,7 +1341,7 @@ export const CreateSceneModal = ({
         setMessages(prev => prev.filter(m => m.role !== 'assistant-loading'));
 
         if (error) {
-          setMessages(prev => [...prev, { role: 'assistant-error', text: 'Kunde inte blurra bilden. Försök igen.' }]);
+          setMessages(prev => [...prev, { role: 'assistant-error', text: 'Kunde inte bearbeta bilden. Försök igen.' }]);
           continue;
         }
 
@@ -1277,14 +1350,14 @@ export const CreateSceneModal = ({
             role: 'assistant-image',
             imageUrl: data.imageUrl,
             suggestedName: `blurrad-${Date.now()}`,
-            description: 'Registreringsskyltar har blurrats',
+            description: 'Registreringsskyltar har dolts',
             photoroomPrompt: '',
           }]);
         }
       } catch (err) {
         console.error('Blur error:', err);
         setMessages(prev => prev.filter(m => m.role !== 'assistant-loading'));
-        setMessages(prev => [...prev, { role: 'assistant-error', text: 'Fel vid blurring. Försök igen.' }]);
+        setMessages(prev => [...prev, { role: 'assistant-error', text: 'Fel vid bearbetning. Försök igen.' }]);
       }
     }
 
@@ -1362,11 +1435,13 @@ export const CreateSceneModal = ({
     }
   };
 
-  const postGenSuggestions = chatMode === 'ad-create'
-    ? POST_GENERATION_SUGGESTIONS_AD
-    : chatMode === 'free-create'
-      ? POST_GENERATION_SUGGESTIONS_FREE
-      : POST_GENERATION_SUGGESTIONS_BG;
+  const postGenSuggestions = chatMode === 'blur-plates'
+    ? POST_GENERATION_SUGGESTIONS_BLUR
+    : chatMode === 'ad-create'
+      ? POST_GENERATION_SUGGESTIONS_AD
+      : chatMode === 'free-create'
+        ? POST_GENERATION_SUGGESTIONS_FREE
+        : POST_GENERATION_SUGGESTIONS_BG;
 
   const lastMessage = messages[messages.length - 1];
   const showPostGenSuggestions = lastMessage?.role === 'assistant-image';
@@ -1534,7 +1609,21 @@ export const CreateSceneModal = ({
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm sm:text-base font-semibold text-foreground">Blurra regskyltar</p>
-                          <span className="text-[13px] sm:text-sm text-muted-foreground">Pixla registreringsskyltar i batch</span>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Dölj registreringsskyltar
+                            </span>
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Batch-bearbetning
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="relative w-20 h-14 sm:w-28 sm:h-[4.5rem] flex-shrink-0">
+                        <div className="absolute inset-0 rounded-lg bg-muted/80 border border-border/30 flex items-center justify-center overflow-hidden">
+                          <div className="w-16 h-5 sm:w-20 sm:h-6 rounded bg-foreground/10 flex items-center justify-center">
+                            <div className="w-12 h-3 sm:w-16 sm:h-4 rounded-sm bg-foreground/20 backdrop-blur-sm" style={{ filter: 'blur(3px)' }} />
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -1693,19 +1782,65 @@ export const CreateSceneModal = ({
                         </button>
                       );
                     })}
+                    {/* Upload more button */}
+                    <button
+                      onClick={() => blurFileInputRef.current?.click()}
+                      className="relative rounded-xl overflow-hidden border-2 border-dashed border-border/60 hover:border-primary/40 transition-colors aspect-[3/2] flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Upload className="w-5 h-5" />
+                      <span className="text-[11px]">Ladda upp</span>
+                    </button>
                   </div>
+                  <input ref={blurFileInputRef} type="file" accept="image/*" multiple onChange={handleBlurFileUpload} className="hidden" />
                   {selectedBlurImages.length > 0 && (
-                    <div className="pl-9">
+                    <div className="pl-9 space-y-2">
+                      {blurStyle && (
+                        <p className="text-xs text-muted-foreground">
+                          Stil: <span className="text-foreground font-medium">{BLUR_STYLE_OPTIONS.find(s => s.value === blurStyle)?.label}</span>
+                        </p>
+                      )}
                       <Button
                         onClick={handleBlurGenerate}
-                        disabled={isGenerating}
+                        disabled={isGenerating || !blurStyle}
                         className="w-full rounded-full h-10"
                       >
                         {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                        Blurra valda ({selectedBlurImages.length})
+                        {!blurStyle ? 'Välj stil först' : `Bearbeta valda (${selectedBlurImages.length})`}
                       </Button>
                     </div>
                   )}
+                </div>
+              );
+            }
+
+            // ─── Category grid (visual mockups) ──────────
+            if (msg.role === 'assistant-category-grid') {
+              return (
+                <div key={i} className="space-y-3">
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pl-9">
+                    {msg.categories.map((cat, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleOptionClick(cat.value)}
+                        disabled={isGenerating}
+                        className="group/cat relative rounded-xl overflow-hidden border-2 border-border/40 hover:border-primary/50 transition-all disabled:opacity-40"
+                      >
+                        <div className="aspect-[3/2] relative">
+                          <img src={cat.thumbnail} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                          <p className="absolute bottom-1.5 left-2 right-2 text-white text-xs sm:text-sm font-medium truncate drop-shadow-md">
+                            {cat.label}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               );
             }
@@ -2117,6 +2252,40 @@ export const CreateSceneModal = ({
                   title={/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Dela' : 'Ladda ner'}
                 >
                   {/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? <Share2 className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => {
+                    // Close preview and pass image to crop editor
+                    setPreviewImage(null);
+                    setPreviewPrompt('');
+                    // Trigger crop via the image URL - close AI modal and navigate
+                    handleClose();
+                    // Find the completed image matching this URL and trigger crop
+                    const matchedImg = propCompletedImages.find(img => (img.finalUrl || img.croppedUrl || img.preview) === previewImage.imageUrl);
+                    if (matchedImg) {
+                      // The parent component handles editing - dispatch custom event
+                      window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageId: matchedImg.id, type: 'crop' } }));
+                    }
+                  }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  title="Beskär"
+                >
+                  <Scissors className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setPreviewImage(null);
+                    setPreviewPrompt('');
+                    handleClose();
+                    const matchedImg = propCompletedImages.find(img => (img.finalUrl || img.croppedUrl || img.preview) === previewImage.imageUrl);
+                    if (matchedImg) {
+                      window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageId: matchedImg.id, type: 'adjust' } }));
+                    }
+                  }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  title="Redigera ljus"
+                >
+                  <Sliders className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => { setPreviewImage(null); setPreviewPrompt(''); }}
