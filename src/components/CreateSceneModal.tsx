@@ -1522,7 +1522,7 @@ export const CreateSceneModal = ({
                           <Image className="w-4 h-4 text-primary" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm sm:text-base font-semibold text-foreground">Skapa bakgrund</p>
+                          <p className="text-sm sm:text-base font-semibold text-foreground">Skapa egen bakgrund</p>
                           <div className="flex flex-col gap-0.5 mt-1">
                             <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
                               <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Designa egen miljö
