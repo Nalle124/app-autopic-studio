@@ -30,7 +30,7 @@ interface CreateSceneModalProps {
   inline?: boolean;
 }
 
-type ChatMode = 'background-studio' | 'free-create' | 'ad-create' | 'blur-plates';
+type ChatMode = 'background-studio' | 'free-create' | 'ad-create' | 'blur-plates' | 'logo-studio';
 
 type ChatMessage =
   | { role: 'system'; text: string }
@@ -653,6 +653,24 @@ export const CreateSceneModal = ({
           { role: 'assistant' as const, text: 'Ladda upp bilder nedan för att komma igång.' },
         ]),
       ]);
+    } else if (mode === 'logo-studio') {
+      const allImages: Array<{ url: string; id: string }> = [];
+      propCompletedImages.forEach(img => {
+        const url = img.finalUrl || img.croppedUrl || img.preview;
+        if (url) allImages.push({ url, id: img.id });
+      });
+      propUploadedImages.forEach(img => {
+        const url = img.croppedUrl || img.preview;
+        if (url && !allImages.find(a => a.id === img.id)) allImages.push({ url, id: img.id });
+      });
+      setMessages([
+        { role: 'assistant', text: 'Logo Studio – lägg till din logotyp på bilder. Välj bilder att applicera logo på, eller gå direkt till Logo Studio i projektvyn.' },
+        ...(allImages.length > 0 ? [
+          { role: 'assistant-image-grid' as const, text: 'Välj bilder att lägga logo på:', images: allImages },
+        ] : [
+          { role: 'assistant' as const, text: 'Inga bilder tillgängliga. Generera bilder i projektvyn först.' },
+        ]),
+      ]);
     } else {
       setMessages([
         {
@@ -720,15 +738,7 @@ export const CreateSceneModal = ({
       { role: 'user', text: categoryLabel },
     ];
 
-    // Add reference images if available
-    if (refs && refs.length > 0) {
-      newMessages.push({
-        role: 'assistant-references',
-        text: 'Vill du använda en referensbild? Klicka för att välja, eller hoppa över.',
-        references: refs,
-      });
-    }
-
+    // Show first guided step question FIRST, then reference images below
     newMessages.push({
       role: 'assistant-options',
       text: firstStep.question,
@@ -737,6 +747,15 @@ export const CreateSceneModal = ({
         ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : []),
       ],
     });
+
+    // Add reference images after the question so the flow is clearer
+    if (refs && refs.length > 0) {
+      newMessages.push({
+        role: 'assistant-references',
+        text: 'Använd som inspiration (valfritt):',
+        references: refs,
+      });
+    }
 
     setMessages(prev => [...prev, ...newMessages]);
   };
@@ -1627,6 +1646,37 @@ export const CreateSceneModal = ({
                         </div>
                       </div>
                     </button>
+
+                    {/* Logo Studio */}
+                    <button
+                      onClick={() => selectMode('logo-studio')}
+                      className="flex items-center justify-between gap-3 w-full p-3.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left group overflow-hidden"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary/20 transition-colors">
+                          <ImageIcon className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm sm:text-base font-semibold text-foreground">Logo Studio</p>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Lägg till logo på bilder
+                            </span>
+                            <span className="text-[13px] sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" /> Batch-applicera på alla
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="relative w-20 h-14 sm:w-28 sm:h-[4.5rem] flex-shrink-0">
+                        <div className="absolute inset-0 rounded-lg bg-muted/80 border border-border/30 flex items-center justify-center overflow-hidden">
+                          <div className="text-center">
+                            <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground/50 mx-auto" />
+                            <p className="text-[9px] text-muted-foreground/60 mt-0.5">Logo</p>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 </div>
               );
@@ -2098,32 +2148,7 @@ export const CreateSceneModal = ({
                     </div>
                   </div>
 
-                  {/* Post-generation refinement suggestions */}
-                  {i === messages.length - 1 && (
-                    <div className="space-y-1.5 pl-9">
-                      <div className="flex flex-wrap gap-1.5">
-                        {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setPrompt(s)}
-                            className="text-[13px] px-3.5 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors animate-fade-in"
-                            style={{ animationDelay: `${idx * 60}ms` }}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                      {postGenSuggestions.length > 3 && !showAllSuggestions && (
-                        <button
-                          onClick={() => setShowAllSuggestions(true)}
-                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors pl-1"
-                        >
-                          <ChevronDown className="w-3 h-3" />
-                          Visa fler val
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  {/* Post-generation suggestions moved to above input area */}
                 </div>
               );
             }
@@ -2144,6 +2169,31 @@ export const CreateSceneModal = ({
               <button onClick={removeReferenceImage} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground">
                 <X className="w-3 h-3" />
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Post-generation suggestions above input */}
+        {showPostGenSuggestions && chatMode && (
+          <div className="px-4 pt-2 bg-background/50 flex-shrink-0">
+            <div className="flex flex-wrap gap-1.5">
+              {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setPrompt(s)}
+                  className="text-[13px] px-3.5 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+              {postGenSuggestions.length > 3 && !showAllSuggestions && (
+                <button
+                  onClick={() => setShowAllSuggestions(true)}
+                  className="text-[13px] px-3.5 py-1.5 rounded-full border border-border/30 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Fler...
+                </button>
+              )}
             </div>
           </div>
         )}

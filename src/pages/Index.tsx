@@ -1509,6 +1509,16 @@ function IndexContent() {
                         <Focus className="w-4 h-4" />
                         <span className="hidden sm:inline ml-1">Blur</span>
                       </Button>
+                      <Button size="sm" variant="outline" title="Använd som referens i AI Studio" onClick={() => {
+                    setPreviewImage(null);
+                    if (currentImage?.finalUrl) {
+                      setAiModalInitialImage(currentImage.finalUrl);
+                    }
+                    setActiveTab('ai-studio');
+                  }}>
+                        <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
+                        <span className="hidden sm:inline ml-1">AI</span>
+                      </Button>
                     </div>
                     
                     <Button size="sm" onClick={() => handleDownload(currentImage.finalUrl!, `${registrationNumber || 'bild'}_${currentImage.id}.jpg`)}>
