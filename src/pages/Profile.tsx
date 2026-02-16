@@ -271,7 +271,11 @@ const ProfileContent = () => {
                   <Plus className="w-4 h-4" />
                   Projekt
                 </TabsTrigger>
-                <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/')}>
+                <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
+                  <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="" className="w-4 h-4 object-contain" />
+                  AI Studio
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
                   <History className="w-4 h-4" />
                   Galleri
                 </TabsTrigger>
@@ -320,7 +324,11 @@ const ProfileContent = () => {
                   <Plus className="w-4 h-4" />
                   Projekt
                 </TabsTrigger>
-                <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/')}>
+                <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
+                  <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="" className="w-4 h-4 object-contain" />
+                  AI Studio
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
                   <History className="w-4 h-4" />
                   Galleri
                 </TabsTrigger>

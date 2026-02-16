@@ -614,7 +614,7 @@ export const CreateSceneModal = ({
         { label: 'Studio med hörn', value: 'studio-corner', thumbnail: '/scenes/betong-kurva-studio.png' },
         { label: 'Utomhus', value: 'outdoor', thumbnail: '/scenes/hostgata.png' },
         { label: 'Showroom', value: 'showroom', thumbnail: '/scenes/nordic-showroom.png' },
-        { label: 'Eget', value: 'custom', thumbnail: '/scenes/dark-studio.png' }]
+        { label: 'Eget', value: 'custom', thumbnail: '' }]
 
       }]
       );
@@ -641,14 +641,9 @@ export const CreateSceneModal = ({
         if (url) allImages.push({ url, id: img.id });
       });
       setMessages([
-      { role: 'assistant', text: 'Välj hur registreringsskyltar ska döljas:' },
-      {
-        role: 'assistant-options',
-        text: 'Välj stil:',
-        options: BLUR_STYLE_OPTIONS.map((s) => ({ label: s.label, value: `__blur_style_${s.value}__` }))
-      },
+      { role: 'assistant', text: 'Välj bilder vars registreringsskyltar ska döljas. Du kan även ladda upp nya.' },
       ...(allImages.length > 0 ? [
-      { role: 'assistant-image-grid' as const, text: 'Välj bilder att bearbeta, eller ladda upp nya:', images: allImages }] :
+      { role: 'assistant-image-grid' as const, text: 'Välj bilder att bearbeta:', images: allImages }] :
       [
       { role: 'assistant' as const, text: 'Ladda upp bilder nedan för att komma igång.' }])]
 
@@ -664,9 +659,9 @@ export const CreateSceneModal = ({
         if (url && !allImages.find((a) => a.id === img.id)) allImages.push({ url, id: img.id });
       });
       setMessages([
-      { role: 'assistant', text: 'Logo Studio – lägg till din logotyp på bilder. Välj bilder att applicera logo på, eller gå direkt till Logo Studio i projektvyn.' },
+      { role: 'assistant', text: 'Välj vilka bilder du vill lägga logo på. Du kan även ladda upp nya.' },
       ...(allImages.length > 0 ? [
-      { role: 'assistant-image-grid' as const, text: 'Välj bilder att lägga logo på:', images: allImages }] :
+      { role: 'assistant-image-grid' as const, text: 'Välj bilder:', images: allImages }] :
       [
       { role: 'assistant' as const, text: 'Inga bilder tillgängliga. Generera bilder i projektvyn först.' }])]
 
@@ -892,6 +887,25 @@ export const CreateSceneModal = ({
       setBlurStyle(style);
       const styleLabel = BLUR_STYLE_OPTIONS.find((s) => s.value === style)?.label || style;
       setMessages((prev) => [...prev, { role: 'user', text: styleLabel }]);
+      return;
+    }
+
+    // Handle logo studio flow options
+    if (value === '__logo_profile__') {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: 'Min sparade logo' },
+        { role: 'assistant', text: 'Din sparade logotyp kommer att användas. Funktionen applicerar logon via Logo Studio i projektvyn.' }
+      ]);
+      return;
+    }
+    if (value === '__logo_upload__') {
+      fileInputRef.current?.click();
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: 'Ladda upp egen logo' },
+        { role: 'assistant', text: 'Ladda upp din logo via +-knappen nedan.' }
+      ]);
       return;
     }
 
@@ -1479,13 +1493,15 @@ export const CreateSceneModal = ({
           </div>
           <div className="flex items-center gap-1">
             {chatMode &&
-        <button
-          onClick={handleNewChat}
-          className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-1">
+        <>
+              <button
+            onClick={handleNewChat}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-1">
 
                 <Menu className="w-3 h-3" />
                 Meny
               </button>
+            </>
         }
             {!inline &&
         <button
@@ -1734,14 +1750,16 @@ export const CreateSceneModal = ({
                       reader.onload = (ev) => {
                         setReferenceImage(ev.target?.result as string);
                         setReferenceFile(null);
-                        setMessages((prev) => [...prev, { role: 'user', text: `📷 Referens: ${ref.label}` }]);
+                        toast.success(`Referens "${ref.label}" vald`);
                       };
                       reader.readAsDataURL(blob);
                     } catch {
                       toast.error('Kunde inte ladda referensbilden');
                     }
                   }}
-                  className="flex-shrink-0 rounded-xl overflow-hidden border-2 border-border/40 hover:border-primary/50 transition-colors group/ref">
+                  className={`flex-shrink-0 rounded-xl overflow-hidden border-2 transition-colors group/ref ${
+                    referenceImage ? 'border-border/40' : 'border-border/40 hover:border-primary/50'
+                  }`}>
 
                         <div className="relative w-20 h-14 sm:w-24 sm:h-16">
                           <img src={ref.url} alt={ref.label} className="w-full h-full object-cover" loading="lazy" />
@@ -1842,20 +1860,59 @@ export const CreateSceneModal = ({
                     </button>
                   </div>
                   <input ref={blurFileInputRef} type="file" accept="image/*" multiple onChange={handleBlurFileUpload} className="hidden" />
-                  {selectedBlurImages.length > 0 &&
+                  {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && !blurStyle &&
+              <div className="pl-9">
+                      <Button
+                  onClick={() => {
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: 'user', text: `${selectedBlurImages.length} bild(er) valda` },
+                      {
+                        role: 'assistant-options',
+                        text: 'Välj hur skylten ska döljas:',
+                        options: BLUR_STYLE_OPTIONS.map((s) => ({ label: s.label, value: `__blur_style_${s.value}__` }))
+                      }
+                    ]);
+                  }}
+                  className="w-full rounded-full h-10">
+                        Nästa ({selectedBlurImages.length} valda)
+                      </Button>
+                    </div>
+              }
+                  {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle &&
               <div className="pl-9 space-y-2">
-                      {blurStyle &&
-                <p className="text-xs text-muted-foreground">
-                          Stil: <span className="text-foreground font-medium">{BLUR_STYLE_OPTIONS.find((s) => s.value === blurStyle)?.label}</span>
-                        </p>
-                }
+                      <p className="text-xs text-muted-foreground">
+                        Stil: <span className="text-foreground font-medium">{BLUR_STYLE_OPTIONS.find((s) => s.value === blurStyle)?.label}</span>
+                      </p>
                       <Button
                   onClick={handleBlurGenerate}
-                  disabled={isGenerating || !blurStyle}
+                  disabled={isGenerating}
                   className="w-full rounded-full h-10">
-
                         {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                        {!blurStyle ? 'Välj stil först' : `Bearbeta valda (${selectedBlurImages.length})`}
+                        Bearbeta valda ({selectedBlurImages.length})
+                      </Button>
+                    </div>
+              }
+                  {selectedBlurImages.length > 0 && chatMode === 'logo-studio' &&
+              <div className="pl-9">
+                      <Button
+                  onClick={() => {
+                    // Advance to logo selection step
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: 'user', text: `${selectedBlurImages.length} bild(er) valda` },
+                      {
+                        role: 'assistant-options',
+                        text: 'Välj vilken logo du vill använda:',
+                        options: [
+                          { label: 'Min sparade logo', value: '__logo_profile__' },
+                          { label: 'Ladda upp egen', value: '__logo_upload__' }
+                        ]
+                      }
+                    ]);
+                  }}
+                  className="w-full rounded-full h-10">
+                        Nästa ({selectedBlurImages.length} valda)
                       </Button>
                     </div>
               }
@@ -1882,7 +1939,14 @@ export const CreateSceneModal = ({
                   className="group/cat relative rounded-xl overflow-hidden border-2 border-border/40 hover:border-primary/50 transition-all disabled:opacity-40">
 
                         <div className="aspect-[3/2] relative">
-                          <img src={cat.thumbnail} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
+                          {cat.thumbnail ? (
+                            <img src={cat.thumbnail} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full bg-muted/60 flex flex-col items-center justify-center gap-1 text-muted-foreground">
+                              <Plus className="w-5 h-5" />
+                              <span className="text-[10px]">Beskriv fritt</span>
+                            </div>
+                          )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                           <p className="absolute bottom-1.5 left-2 right-2 text-white text-xs sm:text-sm font-medium truncate drop-shadow-md">
                             {cat.label}
