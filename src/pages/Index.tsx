@@ -41,6 +41,7 @@ import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
 function IndexContent() {
   const navigate = useNavigate();
+  const location = window.location;
   const { theme } = useTheme();
   const {
     user,
@@ -103,7 +104,13 @@ function IndexContent() {
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [registrationNumber, setRegistrationNumber] = useState('');
-  const [activeTab, setActiveTab] = useState<'new' | 'ai-studio' | 'history'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'ai-studio' | 'history'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'ai-studio') return 'ai-studio';
+    if (tab === 'gallery') return 'history';
+    return 'new';
+  });
   const [aiModalInitialImage, setAiModalInitialImage] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
