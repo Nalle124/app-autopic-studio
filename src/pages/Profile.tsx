@@ -8,14 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard, BookOpen } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard, BookOpen, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -40,6 +42,7 @@ const ProfileContent = () => {
   const navigate = useNavigate();
   const { credits, triggerPaywall } = useDemo();
   const { subscribed: isSubscribed, planName } = useSubscription();
+  const isMobile = useIsMobile();
   
   const handleLogout = async () => {
     await signOut();
@@ -265,22 +268,40 @@ const ProfileContent = () => {
               <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Tillbaka" className="flex-shrink-0">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
-            <Tabs value="profile" className="w-auto flex-shrink-0">
-              <TabsList className="bg-background/80 backdrop-blur-sm">
-                <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
-                  <Plus className="w-4 h-4" />
-                  Projekt
-                </TabsTrigger>
-                <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
-                  <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="" className="w-4 h-4 object-contain" />
-                  AI Studio
-                </TabsTrigger>
-                <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
-                  <History className="w-4 h-4" />
-                  Galleri
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {!isMobile ? (
+              <Tabs value="profile" className="w-auto flex-shrink-0">
+                <TabsList className="bg-background/80 backdrop-blur-sm">
+                  <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
+                    <Plus className="w-4 h-4" />
+                    Projekt
+                  </TabsTrigger>
+                  <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
+                    <Sparkles className="w-4 h-4" />
+                    AI Studio
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
+                    <History className="w-4 h-4" />
+                    Galleri
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : (
+              <Select value="profile" onValueChange={(v) => {
+                if (v === 'new') navigate('/');
+                else if (v === 'ai-studio') navigate('/?tab=ai-studio');
+                else if (v === 'history') navigate('/?tab=gallery');
+              }}>
+                <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+                  <SelectValue placeholder="Profil" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[60]">
+                  <SelectItem value="new">Projekt</SelectItem>
+                  <SelectItem value="ai-studio">AI Studio</SelectItem>
+                  <SelectItem value="history">Galleri</SelectItem>
+                  <SelectItem value="profile">Profil</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
               <Button variant="ghost" size="icon" className="bg-primary/10 flex-shrink-0">
                 <User className="w-5 h-5" />
               </Button>
@@ -318,22 +339,40 @@ const ProfileContent = () => {
               <ChevronLeft className="w-5 h-5" />
             </Button>
             
-            <Tabs value="profile" className="w-auto flex-shrink-0">
-              <TabsList className="bg-background/80 backdrop-blur-sm">
-                <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
-                  <Plus className="w-4 h-4" />
-                  Projekt
-                </TabsTrigger>
-                <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
-                  <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="" className="w-4 h-4 object-contain" />
-                  AI Studio
-                </TabsTrigger>
-                <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
-                  <History className="w-4 h-4" />
-                  Galleri
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {!isMobile ? (
+              <Tabs value="profile" className="w-auto flex-shrink-0">
+                <TabsList className="bg-background/80 backdrop-blur-sm">
+                  <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
+                    <Plus className="w-4 h-4" />
+                    Projekt
+                  </TabsTrigger>
+                  <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
+                    <Sparkles className="w-4 h-4" />
+                    AI Studio
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
+                    <History className="w-4 h-4" />
+                    Galleri
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : (
+              <Select value="profile" onValueChange={(v) => {
+                if (v === 'new') navigate('/');
+                else if (v === 'ai-studio') navigate('/?tab=ai-studio');
+                else if (v === 'history') navigate('/?tab=gallery');
+              }}>
+                <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+                  <SelectValue placeholder="Profil" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[60]">
+                  <SelectItem value="new">Projekt</SelectItem>
+                  <SelectItem value="ai-studio">AI Studio</SelectItem>
+                  <SelectItem value="history">Galleri</SelectItem>
+                  <SelectItem value="profile">Profil</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             
             <Button variant="ghost" size="icon" className="bg-primary/10 flex-shrink-0">
               <User className="w-5 h-5" />
