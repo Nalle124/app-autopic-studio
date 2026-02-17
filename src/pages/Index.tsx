@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2 } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -775,7 +775,7 @@ function IndexContent() {
                     Projekt
                   </TabsTrigger>
                   <TabsTrigger value="ai-studio" className="gap-2">
-                    <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
+                    <Sparkles className="w-4 h-4" />
                     AI Studio
                   </TabsTrigger>
                   <TabsTrigger value="history" className="gap-2">

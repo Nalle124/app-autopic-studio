@@ -5,7 +5,7 @@ import {
 '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown, Share2, Scissors, Sliders, Upload } from 'lucide-react';
+import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown, Share2, Scissors, Sliders, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -89,7 +89,11 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/hostgata.png', label: 'Höstgata' },
   { url: '/scenes/kullerstengata.png', label: 'Kullerstengata' },
   { url: '/scenes/skara-park.png', label: 'Park' },
-  { url: '/scenes/garageuppfart-grus.png', label: 'Uppfart' }],
+  { url: '/scenes/garageuppfart-grus.png', label: 'Uppfart' },
+  { url: '/scenes/chateau-allee.png', label: 'Allé' },
+  { url: '/scenes/slattebraten-vintersken.png', label: 'Vinter' },
+  { url: '/scenes/svenskt-industriomrade-sommar.png', label: 'Sommar' },
+  { url: '/scenes/dusk-plaza.png', label: 'Skymning' }],
 
   'showroom': [
   { url: '/scenes/nordic-showroom.png', label: 'Nordisk' },
@@ -166,13 +170,23 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     allowCustom: true
   },
   {
-    question: 'Vilken årstid/tid?',
+    question: 'Vilken årstid?',
     options: [
-    { label: 'Sommar, soligt', value: 'summer sunny day with blue sky' },
-    { label: 'Höst, gyllene', value: 'autumn with golden leaves and warm light' },
-    { label: 'Vinter, snö', value: 'winter with snow on the ground' },
-    { label: 'Skymning', value: 'dusk with dramatic sunset sky' },
-    { label: 'Kvällsljus', value: 'evening with city lights and ambient glow' }],
+    { label: 'Sommar', value: 'summer season with green trees and vegetation' },
+    { label: 'Höst', value: 'autumn season with golden and orange leaves' },
+    { label: 'Vinter', value: 'winter season with snow on the ground' },
+    { label: 'Vår', value: 'spring season with blooming flowers and fresh green' }],
+
+    allowCustom: true
+  },
+  {
+    question: 'Vilken tid & väder?',
+    options: [
+    { label: 'Soligt dagsljus', value: 'sunny day with blue sky and bright natural light' },
+    { label: 'Molnigt & mjukt', value: 'overcast sky with soft diffused light' },
+    { label: 'Skymning', value: 'dusk with dramatic sunset sky and warm colors' },
+    { label: 'Kvällsljus', value: 'evening with city lights and ambient warm glow' },
+    { label: 'Morgondimma', value: 'morning mist with soft ethereal light' }],
 
     allowCustom: true
   }],
@@ -467,6 +481,36 @@ export const CreateSceneModal = ({
   const [selectedBlurImages, setSelectedBlurImages] = useState<string[]>([]);
   const [blurStyle, setBlurStyle] = useState<string | null>(null);
   const blurFileInputRef = useRef<HTMLInputElement>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Saved chat state for "return to chat" feature
+  const [savedChat, setSavedChat] = useState<{
+    mode: ChatMode;
+    messages: ChatMessage[];
+    guidedCategory: string | null;
+    guidedStepIndex: number;
+    guidedSelections: string[];
+    referenceImage: string | null;
+    hasGeneratedImage: boolean;
+  } | null>(null);
+
+  // Expanded reference images
+  const [expandedReferences, setExpandedReferences] = useState(false);
+
+  // Logo studio state
+  const [selectedLogoUrl, setSelectedLogoUrl] = useState<string | null>(null);
+  const [selectedLogoPreset, setSelectedLogoPreset] = useState<string | null>(null);
+  const [profileLogo, setProfileLogo] = useState<string | null>(null);
+
+  // Load profile logo on mount
+  useEffect(() => {
+    if (user?.id) {
+      supabase.from('profiles').select('logo_light, logo_dark').eq('id', user.id).single().then(({ data }) => {
+        if (data?.logo_light) setProfileLogo(data.logo_light);
+        else if (data?.logo_dark) setProfileLogo(data.logo_dark);
+      });
+    }
+  }, [user]);
 
   // Derived values based on current mode
   const activeFlows = chatMode === 'ad-create' ? AD_GUIDED_FLOWS : GUIDED_FLOWS;
@@ -699,7 +743,31 @@ export const CreateSceneModal = ({
   };
 
   const handleNewChat = () => {
+    // Save current chat if it has content
+    if (chatMode && messages.length > 1) {
+      setSavedChat({
+        mode: chatMode,
+        messages: [...messages],
+        guidedCategory,
+        guidedStepIndex,
+        guidedSelections: [...guidedSelections],
+        referenceImage,
+        hasGeneratedImage,
+      });
+    }
     resetAll();
+  };
+
+  const handleReturnToChat = () => {
+    if (!savedChat) return;
+    setChatMode(savedChat.mode);
+    setMessages(savedChat.messages);
+    setGuidedCategory(savedChat.guidedCategory);
+    setGuidedStepIndex(savedChat.guidedStepIndex);
+    setGuidedSelections(savedChat.guidedSelections);
+    setReferenceImage(savedChat.referenceImage);
+    setHasGeneratedImage(savedChat.hasGeneratedImage);
+    setSavedChat(null);
   };
 
   // ─── Guided flow ───────────────────────────────────────────
@@ -892,19 +960,53 @@ export const CreateSceneModal = ({
 
     // Handle logo studio flow options
     if (value === '__logo_profile__') {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'user', text: 'Min sparade logo' },
-        { role: 'assistant', text: 'Din sparade logotyp kommer att användas. Funktionen applicerar logon via Logo Studio i projektvyn.' }
-      ]);
+      if (profileLogo) {
+        setSelectedLogoUrl(profileLogo);
+        setMessages((prev) => [
+          ...prev,
+          { role: 'user', text: 'Min sparade logo' },
+          {
+            role: 'assistant-options',
+            text: 'Välj placering och stil:',
+            options: [
+              { label: 'Liten, nere till höger', value: '__logo_preset_br_small__' },
+              { label: 'Liten, nere till vänster', value: '__logo_preset_bl_small__' },
+              { label: 'Liten, uppe till höger', value: '__logo_preset_tr_small__' },
+              { label: 'Medium, centrerad uppe', value: '__logo_preset_tc_medium__' },
+              { label: 'Medium, centrerad nere', value: '__logo_preset_bc_medium__' },
+              { label: 'Liten, uppe till vänster', value: '__logo_preset_tl_small__' },
+            ]
+          }
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'user', text: 'Min sparade logo' },
+          { role: 'assistant', text: 'Du har ingen sparad logo i din profil. Ladda upp en logo istället.' }
+        ]);
+      }
       return;
     }
     if (value === '__logo_upload__') {
-      fileInputRef.current?.click();
+      logoFileInputRef.current?.click();
+      return;
+    }
+    // Handle logo preset selection
+    if (value.startsWith('__logo_preset_')) {
+      setSelectedLogoPreset(value);
+      const presetLabels: Record<string, string> = {
+        '__logo_preset_br_small__': 'Liten, nere till höger',
+        '__logo_preset_bl_small__': 'Liten, nere till vänster',
+        '__logo_preset_tr_small__': 'Liten, uppe till höger',
+        '__logo_preset_tc_medium__': 'Medium, centrerad uppe',
+        '__logo_preset_bc_medium__': 'Medium, centrerad nere',
+        '__logo_preset_tl_small__': 'Liten, uppe till vänster',
+      };
+      const presetLabel = presetLabels[value] || value;
       setMessages((prev) => [
         ...prev,
-        { role: 'user', text: 'Ladda upp egen logo' },
-        { role: 'assistant', text: 'Ladda upp din logo via +-knappen nedan.' }
+        { role: 'user', text: presetLabel },
+        { role: 'assistant', text: `Logo kommer att placeras: ${presetLabel}. Klicka på "Applicera logo" nedan.` }
       ]);
       return;
     }
@@ -1398,6 +1500,105 @@ export const CreateSceneModal = ({
     setIsGenerating(false);
   };
 
+  // ─── Logo studio: handle file upload ──────────────────────
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const logoUrl = ev.target?.result as string;
+      setSelectedLogoUrl(logoUrl);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: 'Egen logo uppladdad' },
+        {
+          role: 'assistant-options',
+          text: 'Välj placering och stil:',
+          options: [
+            { label: 'Liten, nere till höger', value: '__logo_preset_br_small__' },
+            { label: 'Liten, nere till vänster', value: '__logo_preset_bl_small__' },
+            { label: 'Liten, uppe till höger', value: '__logo_preset_tr_small__' },
+            { label: 'Medium, centrerad uppe', value: '__logo_preset_tc_medium__' },
+            { label: 'Medium, centrerad nere', value: '__logo_preset_bc_medium__' },
+            { label: 'Liten, uppe till vänster', value: '__logo_preset_tl_small__' },
+          ]
+        }
+      ]);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // ─── Logo studio: apply logo to images via AI ──────────────
+  const handleApplyLogo = async () => {
+    if (!selectedLogoUrl || selectedBlurImages.length === 0 || !user || !selectedLogoPreset) return;
+    setIsGenerating(true);
+
+    const presetMap: Record<string, string> = {
+      '__logo_preset_br_small__': 'small logo in the bottom-right corner',
+      '__logo_preset_bl_small__': 'small logo in the bottom-left corner',
+      '__logo_preset_tr_small__': 'small logo in the top-right corner',
+      '__logo_preset_tc_medium__': 'medium-sized logo centered at the top',
+      '__logo_preset_bc_medium__': 'medium-sized logo centered at the bottom',
+      '__logo_preset_tl_small__': 'small logo in the top-left corner',
+    };
+    const placementDesc = presetMap[selectedLogoPreset] || 'small logo in the bottom-right corner';
+
+    for (const imageUrl of selectedBlurImages) {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(blob);
+        });
+
+        const conversationHistory = [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The logo should be semi-transparent, professional, and NOT cover the car. Keep the original image exactly the same, only add the logo overlay. Make it look natural and clean.` },
+              { type: 'image_url', image_url: { url: base64 } },
+              { type: 'image_url', image_url: { url: selectedLogoUrl } }
+            ]
+          }
+        ];
+
+        setMessages((prev) => [...prev, { role: 'assistant-loading' }]);
+
+        const { data, error } = await invokeWithTimeout({
+          conversationHistory,
+          mode: 'free-create'
+        });
+
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+
+        if (error) {
+          setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.' }]);
+          continue;
+        }
+
+        if (data?.imageUrl) {
+          setMessages((prev) => [...prev, {
+            role: 'assistant-image',
+            imageUrl: data.imageUrl,
+            suggestedName: `logo-${Date.now()}`,
+            description: 'Logo applicerad på bilden',
+            photoroomPrompt: ''
+          }]);
+        }
+      } catch (err) {
+        console.error('Logo apply error:', err);
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+        setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid applicering. Försök igen.' }]);
+      }
+    }
+
+    setSelectedBlurImages([]);
+    setIsGenerating(false);
+  };
+
   const handleRegenerate = () => {
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
     if (lastUserMsg && 'text' in lastUserMsg) {
@@ -1527,6 +1728,15 @@ export const CreateSceneModal = ({
                       <p className="text-sm sm:text-base text-foreground leading-relaxed">Hej! Vad vill du göra?</p>
                     </div>
                   </div>
+                  {/* Return to previous chat */}
+                  {savedChat && (
+                    <button
+                      onClick={handleReturnToChat}
+                      className="flex items-center gap-2 mb-3 mx-auto px-4 py-2 rounded-full text-sm font-medium text-primary hover:bg-primary/10 transition-colors border border-primary/20">
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      Återgå till pågående chatt
+                    </button>
+                  )}
                   <div className="space-y-2.5 w-full max-w-md sm:max-w-lg mx-auto">
                     {/* Skapa bakgrund */}
                     <button
@@ -1730,6 +1940,8 @@ export const CreateSceneModal = ({
 
         // ─── Reference images ─────────────────────────
         if (msg.role === 'assistant-references') {
+          const visibleRefs = expandedReferences ? msg.references : msg.references.slice(0, 4);
+          const hasMore = msg.references.length > 4;
           return (
             <div key={i} className="space-y-2">
                   <div className="flex gap-2.5 items-start">
@@ -1738,8 +1950,8 @@ export const CreateSceneModal = ({
                       <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2 pl-9 overflow-x-auto scrollbar-hide pb-1">
-                    {msg.references.map((ref, idx) =>
+                  <div className="flex gap-2 pl-9 overflow-x-auto scrollbar-hide pb-1 flex-wrap">
+                    {visibleRefs.map((ref, idx) =>
                 <button
                   key={idx}
                   onClick={async () => {
@@ -1768,6 +1980,14 @@ export const CreateSceneModal = ({
                         <p className="text-[10px] text-muted-foreground text-center py-1 truncate px-1">{ref.label}</p>
                       </button>
                 )}
+                    {hasMore && !expandedReferences && (
+                      <button
+                        onClick={() => setExpandedReferences(true)}
+                        className="flex-shrink-0 rounded-xl overflow-hidden border-2 border-dashed border-border/40 hover:border-primary/40 transition-colors w-20 sm:w-24 flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground">
+                        <ChevronDown className="w-4 h-4" />
+                        <span className="text-[10px]">Se fler</span>
+                      </button>
+                    )}
                   </div>
                 </div>);
 
@@ -1893,11 +2113,10 @@ export const CreateSceneModal = ({
                       </Button>
                     </div>
               }
-                  {selectedBlurImages.length > 0 && chatMode === 'logo-studio' &&
+                  {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && !selectedLogoUrl &&
               <div className="pl-9">
                       <Button
                   onClick={() => {
-                    // Advance to logo selection step
                     setMessages((prev) => [
                       ...prev,
                       { role: 'user', text: `${selectedBlurImages.length} bild(er) valda` },
@@ -1905,7 +2124,7 @@ export const CreateSceneModal = ({
                         role: 'assistant-options',
                         text: 'Välj vilken logo du vill använda:',
                         options: [
-                          { label: 'Min sparade logo', value: '__logo_profile__' },
+                          ...(profileLogo ? [{ label: 'Min sparade logo', value: '__logo_profile__' }] : []),
                           { label: 'Ladda upp egen', value: '__logo_upload__' }
                         ]
                       }
@@ -1916,6 +2135,19 @@ export const CreateSceneModal = ({
                       </Button>
                     </div>
               }
+                  {/* Logo apply button */}
+                  {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset &&
+              <div className="pl-9">
+                      <Button
+                  onClick={handleApplyLogo}
+                  disabled={isGenerating}
+                  className="w-full rounded-full h-10">
+                        {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                        Applicera logo ({selectedBlurImages.length})
+                      </Button>
+                    </div>
+              }
+                  <input ref={logoFileInputRef} type="file" accept="image/*" onChange={handleLogoFileUpload} className="hidden" />
                 </div>);
 
         }
