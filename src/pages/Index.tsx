@@ -178,14 +178,29 @@ function IndexContent() {
   useEffect(() => {
     const handleAiEditImage = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (!detail?.imageId || !detail?.type) return;
-      const completedImages = uploadedImages.filter(img => img.status === 'completed');
-      const image = completedImages.find(img => img.id === detail.imageId);
-      if (image?.finalUrl) {
+      if (!detail?.type) return;
+      
+      // Handle by imageId (matched project image)
+      if (detail.imageId) {
+        const completedImages = uploadedImages.filter(img => img.status === 'completed');
+        const image = completedImages.find(img => img.id === detail.imageId);
+        if (image?.finalUrl) {
+          setEditingImage({
+            id: image.id,
+            finalUrl: image.finalUrl,
+            fileName: image.file?.name || 'image.png',
+            type: detail.type,
+          });
+          setActiveTab('new');
+        }
+      } 
+      // Handle by imageUrl (AI-generated, not in project)
+      else if (detail.imageUrl) {
+        const tempId = `ai-gen-${Date.now()}`;
         setEditingImage({
-          id: image.id,
-          finalUrl: image.finalUrl,
-          fileName: image.file?.name || 'image.png',
+          id: tempId,
+          finalUrl: detail.imageUrl,
+          fileName: detail.imageName || 'ai-generated.png',
           type: detail.type,
         });
         setActiveTab('new');
@@ -775,7 +790,7 @@ function IndexContent() {
                     Projekt
                   </TabsTrigger>
                   <TabsTrigger value="ai-studio" className="gap-2">
-                    <Sparkles className="w-4 h-4" />
+                    <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
                     AI Studio
                   </TabsTrigger>
                   <TabsTrigger value="history" className="gap-2">
