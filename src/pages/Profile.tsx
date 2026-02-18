@@ -276,7 +276,7 @@ const ProfileContent = () => {
                     Projekt
                   </TabsTrigger>
                   <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
-                    <Sparkles className="w-4 h-4" />
+                    <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
                     AI Studio
                   </TabsTrigger>
                   <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
@@ -298,7 +298,6 @@ const ProfileContent = () => {
                   <SelectItem value="new">Projekt</SelectItem>
                   <SelectItem value="ai-studio">AI Studio</SelectItem>
                   <SelectItem value="history">Galleri</SelectItem>
-                  <SelectItem value="profile">Profil</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -347,7 +346,7 @@ const ProfileContent = () => {
                     Projekt
                   </TabsTrigger>
                   <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
-                    <Sparkles className="w-4 h-4" />
+                    <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
                     AI Studio
                   </TabsTrigger>
                   <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
@@ -369,7 +368,6 @@ const ProfileContent = () => {
                   <SelectItem value="new">Projekt</SelectItem>
                   <SelectItem value="ai-studio">AI Studio</SelectItem>
                   <SelectItem value="history">Galleri</SelectItem>
-                  <SelectItem value="profile">Profil</SelectItem>
                 </SelectContent>
               </Select>
             )}

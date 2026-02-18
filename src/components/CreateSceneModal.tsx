@@ -1669,6 +1669,26 @@ export const CreateSceneModal = ({
     }
   };
 
+  // Auto-send a suggestion without filling the input field
+  const handleSuggestionSend = async (suggestion: string) => {
+    if (!user || isGenerating) return;
+    const userMessage: ChatMessage = { role: 'user', text: suggestion };
+    const updatedMessages = [...messages, userMessage];
+    setMessages([...updatedMessages, { role: 'assistant-loading' }]);
+    setShowAllSuggestions(false);
+    setIsGenerating(true);
+
+    try {
+      const conversationHistory = buildConversationHistory(updatedMessages);
+      const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
+      const { data, error } = await invokeWithTimeout(retryPayload);
+      handleGenerateResponse(data, error, updatedMessages, retryPayload);
+    } catch (err) {
+      const conversationHistory = buildConversationHistory(updatedMessages);
+      handleGenerateError(err, { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined });
+    }
+  };
+
   const postGenSuggestions = chatMode === 'blur-plates' ?
   POST_GENERATION_SUGGESTIONS_BLUR :
   chatMode === 'ad-create' ?
@@ -1925,7 +1945,7 @@ export const CreateSceneModal = ({
                         {FREE_QUICK_ACTIONS.map((action, idx) =>
                   <button
                     key={idx}
-                    onClick={() => setPrompt(action.prompt)}
+                    onClick={() => handleSuggestionSend(action.prompt)}
                     className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
 
                             {action.label}
@@ -2476,7 +2496,7 @@ export const CreateSceneModal = ({
               {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) =>
         <button
           key={idx}
-          onClick={() => setPrompt(s)}
+          onClick={() => handleSuggestionSend(s)}
           className="text-[13px] px-3.5 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
 
                   {s}
@@ -2601,16 +2621,18 @@ export const CreateSceneModal = ({
                 </button>
                 <button
             onClick={() => {
-              // Close preview and pass image to crop editor
+              const imageUrl = previewImage.imageUrl;
+              const imageName = previewImage.name || 'ai-generated';
               setPreviewImage(null);
               setPreviewPrompt('');
-              // Trigger crop via the image URL - close AI modal and navigate
               handleClose();
-              // Find the completed image matching this URL and trigger crop
-              const matchedImg = propCompletedImages.find((img) => (img.finalUrl || img.croppedUrl || img.preview) === previewImage.imageUrl);
+              // Try matching completed images first, otherwise dispatch with URL directly
+              const matchedImg = propCompletedImages.find((img) => (img.finalUrl || img.croppedUrl || img.preview) === imageUrl);
               if (matchedImg) {
-                // The parent component handles editing - dispatch custom event
                 window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageId: matchedImg.id, type: 'crop' } }));
+              } else {
+                // For AI-generated images not in project, dispatch with URL
+                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageUrl, imageName, type: 'crop' } }));
               }
             }}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
@@ -2620,12 +2642,16 @@ export const CreateSceneModal = ({
                 </button>
                 <button
             onClick={() => {
+              const imageUrl = previewImage.imageUrl;
+              const imageName = previewImage.name || 'ai-generated';
               setPreviewImage(null);
               setPreviewPrompt('');
               handleClose();
-              const matchedImg = propCompletedImages.find((img) => (img.finalUrl || img.croppedUrl || img.preview) === previewImage.imageUrl);
+              const matchedImg = propCompletedImages.find((img) => (img.finalUrl || img.croppedUrl || img.preview) === imageUrl);
               if (matchedImg) {
                 window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageId: matchedImg.id, type: 'adjust' } }));
+              } else {
+                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageUrl, imageName, type: 'adjust' } }));
               }
             }}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
@@ -2648,7 +2674,27 @@ export const CreateSceneModal = ({
               {postGenSuggestions.map((s, idx) =>
         <button
           key={idx}
-          onClick={() => setPreviewPrompt(s)}
+          onClick={() => {
+            // Auto-send from preview: include the preview image as context
+            const imageUrl = previewImage.imageUrl;
+            setPreviewImage(null);
+            setPreviewPrompt('');
+            const userMsg: ChatMessage = { role: 'user', text: s, image: imageUrl };
+            const updatedMessages = [...messages, userMsg];
+            setMessages([...updatedMessages, { role: 'assistant-loading' }]);
+            setIsGenerating(true);
+            (async () => {
+              try {
+                const conversationHistory = buildConversationHistory(updatedMessages);
+                const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
+                const { data, error } = await invokeWithTimeout(retryPayload);
+                handleGenerateResponse(data, error, updatedMessages, retryPayload);
+              } catch (err) {
+                const conversationHistory = buildConversationHistory(updatedMessages);
+                handleGenerateError(err, { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined });
+              }
+            })();
+          }}
           className="text-[13px] px-3.5 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
 
                   {s}
