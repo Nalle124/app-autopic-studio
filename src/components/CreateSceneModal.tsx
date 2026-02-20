@@ -462,6 +462,7 @@ export const CreateSceneModal = ({
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [hasGeneratedImage, setHasGeneratedImage] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Guided flow state
@@ -620,9 +621,14 @@ export const CreateSceneModal = ({
     setBlurStyle(null);
   };
 
-  // Auto-scroll to bottom
+  // Auto-scroll: scroll to bottom for new messages, but scroll to top for mode-select (menu)
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length === 1 && messages[0].role === 'mode-select') {
+      // Scroll to top when showing the menu
+      chatAreaRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    } else {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, loadingPhraseIndex]);
 
   // Cycle loading phrases
@@ -954,7 +960,46 @@ export const CreateSceneModal = ({
       const style = value.replace('__blur_style_', '').replace('__', '');
       setBlurStyle(style);
       const styleLabel = BLUR_STYLE_OPTIONS.find((s) => s.value === style)?.label || style;
-      setMessages((prev) => [...prev, { role: 'user', text: styleLabel }]);
+      
+      // Check if logo-overlay selected – need logo selection step
+      if (style === 'logo-overlay') {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'user', text: styleLabel },
+          {
+            role: 'assistant-options',
+            text: 'Välj vilken logo du vill använda på skylten:',
+            options: [
+              ...(profileLogo ? [{ label: 'Min sparade logo', value: '__blur_logo_profile__' }] : []),
+              { label: 'Ladda upp egen', value: '__blur_logo_upload__' }
+            ]
+          }
+        ]);
+      } else {
+        // For non-logo styles, show the generate button as a new message
+        setMessages((prev) => [
+          ...prev,
+          { role: 'user', text: styleLabel },
+          { role: 'assistant', text: `Stil vald: ${styleLabel}. Klicka nedan för att bearbeta.` }
+        ]);
+      }
+      return;
+    }
+
+    // Handle blur-plates logo selection
+    if (value === '__blur_logo_profile__') {
+      if (profileLogo) {
+        setSelectedLogoUrl(profileLogo);
+        setMessages((prev) => [
+          ...prev,
+          { role: 'user', text: 'Min sparade logo' },
+          { role: 'assistant', text: 'Logo vald! Klicka nedan för att bearbeta registreringsskyltarna.' }
+        ]);
+      }
+      return;
+    }
+    if (value === '__blur_logo_upload__') {
+      logoFileInputRef.current?.click();
       return;
     }
 
@@ -1006,7 +1051,7 @@ export const CreateSceneModal = ({
       setMessages((prev) => [
         ...prev,
         { role: 'user', text: presetLabel },
-        { role: 'assistant', text: `Logo kommer att placeras: ${presetLabel}. Klicka på "Applicera logo" nedan.` }
+        { role: 'assistant', text: `Logo placering: ${presetLabel}. Klicka nedan för att applicera.` }
       ]);
       return;
     }
@@ -1443,7 +1488,12 @@ export const CreateSceneModal = ({
   const handleBlurGenerate = async () => {
     if (selectedBlurImages.length === 0 || !user || !blurStyle) return;
     setIsGenerating(true);
-    const blurPrompt = BLUR_PLATE_PROMPT_MAP[blurStyle] || BLUR_PLATE_PROMPT_MAP['full-blur'];
+    
+    // For logo-overlay with custom logo, build a special prompt
+    const isLogoOverlay = blurStyle === 'logo-overlay' && selectedLogoUrl;
+    const blurPrompt = isLogoOverlay
+      ? 'Cover all license plates in this image with the provided logo. The logo should be placed centered on each plate, scaled to fit the plate size. Keep everything else exactly the same. The overlay should look clean and professional.'
+      : (BLUR_PLATE_PROMPT_MAP[blurStyle] || BLUR_PLATE_PROMPT_MAP['full-blur']);
 
     for (const imageUrl of selectedBlurImages) {
       try {
@@ -1461,8 +1511,9 @@ export const CreateSceneModal = ({
           role: 'user',
           content: [
           { type: 'text', text: blurPrompt },
-          { type: 'image_url', image_url: { url: base64 } }]
-
+          { type: 'image_url', image_url: { url: base64 } },
+          ...(isLogoOverlay ? [{ type: 'image_url', image_url: { url: selectedLogoUrl } }] : [])
+          ]
         }];
 
 
@@ -1500,7 +1551,7 @@ export const CreateSceneModal = ({
     setIsGenerating(false);
   };
 
-  // ─── Logo studio: handle file upload ──────────────────────
+  // ─── Logo file upload (shared by logo-studio and blur-plates logo-overlay) ──
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
@@ -1508,22 +1559,33 @@ export const CreateSceneModal = ({
     reader.onload = (ev) => {
       const logoUrl = ev.target?.result as string;
       setSelectedLogoUrl(logoUrl);
-      setMessages((prev) => [
-        ...prev,
-        { role: 'user', text: 'Egen logo uppladdad' },
-        {
-          role: 'assistant-options',
-          text: 'Välj placering och stil:',
-          options: [
-            { label: 'Liten, nere till höger', value: '__logo_preset_br_small__' },
-            { label: 'Liten, nere till vänster', value: '__logo_preset_bl_small__' },
-            { label: 'Liten, uppe till höger', value: '__logo_preset_tr_small__' },
-            { label: 'Medium, centrerad uppe', value: '__logo_preset_tc_medium__' },
-            { label: 'Medium, centrerad nere', value: '__logo_preset_bc_medium__' },
-            { label: 'Liten, uppe till vänster', value: '__logo_preset_tl_small__' },
-          ]
-        }
-      ]);
+      
+      if (chatMode === 'blur-plates') {
+        // For blur-plates logo-overlay, just confirm logo and show generate button
+        setMessages((prev) => [
+          ...prev,
+          { role: 'user', text: 'Egen logo uppladdad' },
+          { role: 'assistant', text: 'Logo vald! Klicka nedan för att bearbeta registreringsskyltarna.' }
+        ]);
+      } else {
+        // For logo-studio, show placement options
+        setMessages((prev) => [
+          ...prev,
+          { role: 'user', text: 'Egen logo uppladdad' },
+          {
+            role: 'assistant-options',
+            text: 'Välj placering och stil:',
+            options: [
+              { label: 'Liten, nere till höger', value: '__logo_preset_br_small__' },
+              { label: 'Liten, nere till vänster', value: '__logo_preset_bl_small__' },
+              { label: 'Liten, uppe till höger', value: '__logo_preset_tr_small__' },
+              { label: 'Medium, centrerad uppe', value: '__logo_preset_tc_medium__' },
+              { label: 'Medium, centrerad nere', value: '__logo_preset_bc_medium__' },
+              { label: 'Liten, uppe till vänster', value: '__logo_preset_tl_small__' },
+            ]
+          }
+        ]);
+      }
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -1736,7 +1798,7 @@ export const CreateSceneModal = ({
         </div>
 
         {/* Chat area */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 py-4 space-y-4 sm:space-y-6 bg-background/50">
+        <div ref={chatAreaRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 py-4 space-y-4 sm:space-y-6 bg-background/50">
           {messages.map((msg, i) => {
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
@@ -2119,20 +2181,6 @@ export const CreateSceneModal = ({
                       </Button>
                     </div>
               }
-                  {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle &&
-              <div className="pl-9 space-y-2">
-                      <p className="text-xs text-muted-foreground">
-                        Stil: <span className="text-foreground font-medium">{BLUR_STYLE_OPTIONS.find((s) => s.value === blurStyle)?.label}</span>
-                      </p>
-                      <Button
-                  onClick={handleBlurGenerate}
-                  disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                        {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                        Bearbeta valda ({selectedBlurImages.length})
-                      </Button>
-                    </div>
-              }
                   {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && !selectedLogoUrl &&
               <div className="pl-9">
                       <Button
@@ -2152,18 +2200,6 @@ export const CreateSceneModal = ({
                   }}
                   className="w-full rounded-full h-10">
                         Nästa ({selectedBlurImages.length} valda)
-                      </Button>
-                    </div>
-              }
-                  {/* Logo apply button */}
-                  {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset &&
-              <div className="pl-9">
-                      <Button
-                  onClick={handleApplyLogo}
-                  disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                        {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                        Applicera logo ({selectedBlurImages.length})
                       </Button>
                     </div>
               }
@@ -2471,6 +2507,58 @@ export const CreateSceneModal = ({
 
         return null;
       })}
+          {/* Standalone action buttons - rendered after all messages for blur/logo flows */}
+          {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle && blurStyle !== 'logo-overlay' && (
+            <div className="pl-9 space-y-2">
+              <div className="flex gap-2.5 items-start">
+                <AutopicAvatar />
+                <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] w-full space-y-3">
+                  <p className="text-sm text-foreground">Redo att bearbeta {selectedBlurImages.length} bild(er) med stil: <span className="font-medium">{BLUR_STYLE_OPTIONS.find((s) => s.value === blurStyle)?.label}</span></p>
+                  <Button
+                    onClick={handleBlurGenerate}
+                    disabled={isGenerating}
+                    className="w-full rounded-full h-10">
+                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                    Bearbeta valda ({selectedBlurImages.length})
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle === 'logo-overlay' && selectedLogoUrl && (
+            <div className="pl-9 space-y-2">
+              <div className="flex gap-2.5 items-start">
+                <AutopicAvatar />
+                <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] w-full space-y-3">
+                  <p className="text-sm text-foreground">Redo att dölja skyltar med din logo på {selectedBlurImages.length} bild(er).</p>
+                  <Button
+                    onClick={handleBlurGenerate}
+                    disabled={isGenerating}
+                    className="w-full rounded-full h-10">
+                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                    Bearbeta valda ({selectedBlurImages.length})
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset && (
+            <div className="pl-9 space-y-2">
+              <div className="flex gap-2.5 items-start">
+                <AutopicAvatar />
+                <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] w-full space-y-3">
+                  <p className="text-sm text-foreground">Redo att applicera logo på {selectedBlurImages.length} bild(er).</p>
+                  <Button
+                    onClick={handleApplyLogo}
+                    disabled={isGenerating}
+                    className="w-full rounded-full h-10">
+                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                    Applicera logo ({selectedBlurImages.length})
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           <div ref={chatEndRef} />
         </div>
 
