@@ -264,7 +264,7 @@ const ProfileContent = () => {
           <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity hidden sm:block">
               <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
             </button>
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial justify-between sm:justify-end">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial justify-center sm:justify-end">
               <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Tillbaka" className="flex-shrink-0">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -276,7 +276,7 @@ const ProfileContent = () => {
                     Projekt
                   </TabsTrigger>
                   <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
-                    <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
+                    <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
                     AI Studio
                   </TabsTrigger>
                   <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
@@ -326,50 +326,61 @@ const ProfileContent = () => {
             <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
           </button>
           
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial justify-between sm:justify-end">
-            {/* Back button */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              title="Tillbaka"
-              className="flex-shrink-0"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-            
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial justify-center sm:justify-end">
             {!isMobile ? (
-              <Tabs value="profile" className="w-auto flex-shrink-0">
-                <TabsList className="bg-background/80 backdrop-blur-sm">
-                  <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
-                    <Plus className="w-4 h-4" />
-                    Projekt
-                  </TabsTrigger>
-                  <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
-                    <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
-                    AI Studio
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
-                    <History className="w-4 h-4" />
-                    Galleri
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate('/')}
+                  title="Tillbaka"
+                  className="flex-shrink-0"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <Tabs value="profile" className="w-auto flex-shrink-0">
+                  <TabsList className="bg-background/80 backdrop-blur-sm">
+                    <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
+                      <Plus className="w-4 h-4" />
+                      Projekt
+                    </TabsTrigger>
+                    <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
+                      <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
+                      AI Studio
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
+                      <History className="w-4 h-4" />
+                      Galleri
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </>
             ) : (
-              <Select value="profile" onValueChange={(v) => {
-                if (v === 'new') navigate('/');
-                else if (v === 'ai-studio') navigate('/?tab=ai-studio');
-                else if (v === 'history') navigate('/?tab=gallery');
-              }}>
-                <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
-                  <SelectValue placeholder="Profil" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-[60]">
-                  <SelectItem value="new">Projekt</SelectItem>
-                  <SelectItem value="ai-studio">AI Studio</SelectItem>
-                  <SelectItem value="history">Galleri</SelectItem>
-                </SelectContent>
-              </Select>
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate('/')}
+                  title="Tillbaka"
+                  className="flex-shrink-0"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+                <Select value="profile" onValueChange={(v) => {
+                  if (v === 'new') navigate('/');
+                  else if (v === 'ai-studio') navigate('/?tab=ai-studio');
+                  else if (v === 'history') navigate('/?tab=gallery');
+                }}>
+                  <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+                    <SelectValue placeholder="Profil" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-[60]">
+                    <SelectItem value="new">Projekt</SelectItem>
+                    <SelectItem value="ai-studio">AI Studio</SelectItem>
+                    <SelectItem value="history">Galleri</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
             )}
             
             <Button variant="ghost" size="icon" className="bg-primary/10 flex-shrink-0">

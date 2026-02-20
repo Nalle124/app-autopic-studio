@@ -790,7 +790,7 @@ function IndexContent() {
                     Projekt
                   </TabsTrigger>
                   <TabsTrigger value="ai-studio" className="gap-2">
-                    <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
+                    <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
                     AI Studio
                   </TabsTrigger>
                   <TabsTrigger value="history" className="gap-2">
