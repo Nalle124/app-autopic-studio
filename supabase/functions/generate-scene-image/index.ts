@@ -11,6 +11,13 @@ const BACKGROUND_SYSTEM_PROMPT = `You are an AI that generates professional auto
 
 PURPOSE: These images are used as BACKGROUNDS for digitally placing car photos onto. The car will be cut out from its original photo and composited onto this background. Therefore the perspective, ground surface, and lighting must be suitable for this purpose.
 
+GEOGRAPHIC & CULTURAL CONTEXT:
+- By default, all scenes should have a NORDIC or EUROPEAN aesthetic. Architecture, vegetation, road markings, signage, and general atmosphere should feel like Sweden or Northern Europe.
+- If the user specifies a particular location (e.g. "Stockholm", "Göteborg hamn"), match that location specifically.
+- For generic outdoor prompts (e.g. "parking lot", "spring morning"), default to a Swedish/Scandinavian setting with appropriate vegetation, building styles, and light conditions.
+- Avoid distinctly non-European aesthetics (e.g. Japanese, American, tropical) unless the user explicitly requests them.
+- Keep the scene minimal — do NOT add prominent buildings, signs, or landmarks unless specifically requested. The European feel should come from subtle cues like road surfaces, vegetation types, and light quality.
+
 ABSOLUTE RULES FOR EVERY IMAGE:
 1. EMPTY SCENE — No vehicles, no cars, no motorcycles, no people, no animals, no text, no watermarks, no logos. The scene must be COMPLETELY EMPTY. This is critical — the user will place their own car image on top.
 2. CAMERA ANGLE — Always a straight-on, eye-level perspective (approximately 1.0-1.2m height). NEVER aerial, bird's-eye, top-down, drone-style, or extreme low angles. The camera should face slightly downward toward the ground plane, as if photographing a car from a natural standing position.
@@ -28,11 +35,12 @@ WHEN USER DESCRIBES A LOCATION (e.g. "Göteborg hamn", "Stockholm gata"):
 
 SCENE TYPES (adapt based on user request):
 - Studio: Clean cyclorama walls, controlled lighting, simple floors (concrete, epoxy, tile)
-- Outdoor: Streets, parking areas, driveways, parks — always at ground level perspective
+- Outdoor: Streets, parking areas, driveways, parks — always at ground level perspective, with Nordic/European character
 - Showroom: Polished floors, architectural elements, premium lighting
-- Seasonal: Autumn leaves, winter snow, spring blooms — always with driveable ground surface
+- Seasonal: Autumn leaves, winter snow, spring blooms — always with driveable ground surface, Scandinavian vegetation
 
-When the user asks to modify a previous image (e.g. "make it brighter", "change the floor"), generate a NEW image with those changes while keeping the overall concept.
+ITERATIVE EDITING:
+When the user asks to modify a previous image (e.g. "make it brighter", "change the floor"), you MUST use the provided reference image as the base and generate a NEW image that is clearly a modified version of that same scene. Do NOT create a completely different scene. Keep ALL unchanged elements (location, mood, architecture, surfaces) and ONLY change what the user specifically asked to change.
 
 When a reference image is provided, use it as inspiration for style, mood, colors, and lighting — but always maintain the correct perspective and empty scene rules.
 
@@ -45,7 +53,7 @@ RULES:
 2. If a reference image is provided, use it as a base for modifications and edits. Preserve details faithfully unless asked to change them.
 3. Always maintain photographic realism — natural lighting, realistic textures, proper depth of field.
 4. ASPECT RATIO — MUST be wide landscape orientation with EXACT 3:2 aspect ratio (1536x1024).
-5. When asked to modify a previous image, generate a NEW image with those changes while keeping the overall concept and all unchanged details intact.
+5. When asked to modify a previous image, you MUST use the provided reference image as the BASE and generate a NEW image that is clearly a modified version. Do NOT create a completely different image. Keep ALL unchanged elements and ONLY change what was specifically requested.
 6. No text, watermarks, or logos in the generated images unless explicitly requested.
 7. When asked to change one aspect (like color, angle, or lighting), preserve everything else as faithfully as possible.
 
@@ -97,8 +105,9 @@ const BACKGROUND_PROMPT_SUFFIX = `
 3. Flat, empty ground/floor surface MUST occupy the lower ~40% of the image — this is where a car will be digitally placed later
 4. Aspect ratio: 3:2 landscape (1536x1024)
 5. Photorealistic photograph — NOT CGI, illustration, painting, or 3D render
+6. The scene should have a NORDIC/EUROPEAN aesthetic by default — Swedish or Scandinavian feel in architecture, vegetation, and light quality
 This image is a BACKGROUND for automotive photo compositing. A car will be digitally placed on the ground surface.
-IMPORTANT: When modifying a previous image, keep ALL unchanged elements (location, mood, architecture) and ONLY change what the user specifically asked to change.`;
+IMPORTANT: When modifying a previous image, use the provided reference image as the BASE. Keep ALL unchanged elements (location, mood, architecture) and ONLY change what the user specifically asked to change. The result must be recognizably the same scene with the requested modification applied.`;
 
 // AD_PROMPT_SUFFIX is now dynamically generated based on format (see serve handler)
 

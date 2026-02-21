@@ -1179,9 +1179,14 @@ export const CreateSceneModal = ({
           history.push({ role: 'user', content: msg.text });
         }
       } else if (msg.role === 'assistant-image') {
+        // Include the generated image as both text context AND as an actual image reference
+        // so that follow-up modifications (e.g. "make it brighter") can use it as a visual base
         history.push({
           role: 'assistant',
-          content: `I generated a background image called "${msg.suggestedName}": ${msg.description}. The image is available at ${msg.imageUrl}`
+          content: [
+            { type: 'text', text: `I generated a background image called "${msg.suggestedName}": ${msg.description}` },
+            { type: 'image_url', image_url: { url: msg.imageUrl } }
+          ]
         });
       } else if (msg.role === 'assistant') {
         history.push({ role: 'assistant', content: msg.text });
