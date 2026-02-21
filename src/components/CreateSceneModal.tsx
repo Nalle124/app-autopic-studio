@@ -2713,14 +2713,13 @@ export const CreateSceneModal = ({
               const imageName = previewImage.name || 'ai-generated';
               setPreviewImage(null);
               setPreviewPrompt('');
-              handleClose();
               // Try matching completed images first, otherwise dispatch with URL directly
               const matchedImg = propCompletedImages.find((img) => (img.finalUrl || img.croppedUrl || img.preview) === imageUrl);
               if (matchedImg) {
-                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageId: matchedImg.id, type: 'crop' } }));
+                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageId: matchedImg.id, type: 'crop', source: 'ai-studio' } }));
               } else {
                 // For AI-generated images not in project, dispatch with URL
-                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageUrl, imageName, type: 'crop' } }));
+                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageUrl, imageName, type: 'crop', source: 'ai-studio' } }));
               }
             }}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
@@ -2734,12 +2733,11 @@ export const CreateSceneModal = ({
               const imageName = previewImage.name || 'ai-generated';
               setPreviewImage(null);
               setPreviewPrompt('');
-              handleClose();
               const matchedImg = propCompletedImages.find((img) => (img.finalUrl || img.croppedUrl || img.preview) === imageUrl);
               if (matchedImg) {
-                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageId: matchedImg.id, type: 'adjust' } }));
+                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageId: matchedImg.id, type: 'adjust', source: 'ai-studio' } }));
               } else {
-                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageUrl, imageName, type: 'adjust' } }));
+                window.dispatchEvent(new CustomEvent('ai-edit-image', { detail: { imageUrl, imageName, type: 'adjust', source: 'ai-studio' } }));
               }
             }}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
