@@ -94,6 +94,7 @@ function IndexContent() {
     finalUrl: string;
     fileName: string;
     type: 'crop' | 'adjust' | 'blur';
+    source?: 'ai-studio';
   } | null>(null);
   const [editingOriginal, setEditingOriginal] = useState<{
     id: string;
@@ -180,6 +181,8 @@ function IndexContent() {
       const detail = (e as CustomEvent).detail;
       if (!detail?.type) return;
       
+      const source = detail.source as 'ai-studio' | undefined;
+      
       // Handle by imageId (matched project image)
       if (detail.imageId) {
         const completedImages = uploadedImages.filter(img => img.status === 'completed');
@@ -190,8 +193,9 @@ function IndexContent() {
             finalUrl: image.finalUrl,
             fileName: image.file?.name || 'image.png',
             type: detail.type,
+            source,
           });
-          setActiveTab('new');
+          if (!source) setActiveTab('new');
         }
       } 
       // Handle by imageUrl (AI-generated, not in project)
@@ -202,8 +206,9 @@ function IndexContent() {
           finalUrl: detail.imageUrl,
           fileName: detail.imageName || 'ai-generated.png',
           type: detail.type,
+          source,
         });
-        setActiveTab('new');
+        if (!source) setActiveTab('new');
       }
     };
     window.addEventListener('ai-edit-image', handleAiEditImage);
@@ -1563,13 +1568,18 @@ function IndexContent() {
         finalUrl: editingImage.finalUrl,
         fileName: editingImage.fileName
       }} onClose={() => {
+        const wasFromAiStudio = editingImage.source === 'ai-studio';
         setEditingImage(null);
-        // Return to preview gallery
-        const idx = completedImages.findIndex(img => img.id === editingImage.id);
-        if (idx !== -1) {
-          setGalleryIndex(idx);
-          const updatedImage = uploadedImages.find(img => img.id === editingImage.id);
-          setPreviewImage(updatedImage?.finalUrl || editingImage.finalUrl);
+        if (wasFromAiStudio) {
+          setActiveTab('ai-studio');
+        } else {
+          // Return to preview gallery
+          const idx = completedImages.findIndex(img => img.id === editingImage.id);
+          if (idx !== -1) {
+            setGalleryIndex(idx);
+            const updatedImage = uploadedImages.find(img => img.id === editingImage.id);
+            setPreviewImage(updatedImage?.finalUrl || editingImage.finalUrl);
+          }
         }
       }} currentIndex={currentIdx} totalCount={completedImages.length} onPrevious={() => {
         if (currentIdx > 0) {
@@ -1603,13 +1613,18 @@ function IndexContent() {
           finalUrl: croppedUrl
         } : img));
         setAspectRatio(newAspectRatio);
+        const wasFromAiStudio = editingImage?.source === 'ai-studio';
         setEditingImage(null);
-        // Return to preview gallery
-        const completedImages = uploadedImages.filter(img => img.status === 'completed');
-        const index = completedImages.findIndex(img => img.id === imageId);
-        if (index !== -1) {
-          setGalleryIndex(index);
-          setPreviewImage(croppedUrl);
+        if (wasFromAiStudio) {
+          setActiveTab('ai-studio');
+        } else {
+          // Return to preview gallery
+          const completedImages = uploadedImages.filter(img => img.status === 'completed');
+          const index = completedImages.findIndex(img => img.id === imageId);
+          if (index !== -1) {
+            setGalleryIndex(index);
+            setPreviewImage(croppedUrl);
+          }
         }
       }} onApplyToAll={async (croppedUrl, newAspectRatio, cropSettings) => {
         if (!editingImage) return;
@@ -1685,10 +1700,12 @@ function IndexContent() {
           } : img;
         }));
         setAspectRatio(newAspectRatio);
+        const wasFromAiStudio = editingImage?.source === 'ai-studio';
         setEditingImage(null);
 
-        // Return to gallery
-        if (completedImages.length > 0) {
+        if (wasFromAiStudio) {
+          setActiveTab('ai-studio');
+        } else if (completedImages.length > 0) {
           setGalleryIndex(0);
           setPreviewImage(croppedUrl);
         }
@@ -1700,12 +1717,16 @@ function IndexContent() {
       const completedImages = uploadedImages.filter(img => img.status === 'completed');
       const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
       return <OriginalImageEditor imageUrl={editingImage.finalUrl} imageName={editingImage.fileName} open={true} onClose={() => {
+        const wasFromAiStudio = editingImage.source === 'ai-studio';
         setEditingImage(null);
-        // Return to preview gallery
-        const idx = completedImages.findIndex(img => img.id === editingImage.id);
-        if (idx !== -1) {
-          setGalleryIndex(idx);
-          setPreviewImage(completedImages[idx].finalUrl!);
+        if (wasFromAiStudio) {
+          setActiveTab('ai-studio');
+        } else {
+          const idx = completedImages.findIndex(img => img.id === editingImage.id);
+          if (idx !== -1) {
+            setGalleryIndex(idx);
+            setPreviewImage(completedImages[idx].finalUrl!);
+          }
         }
       }} currentIndex={currentIdx} totalCount={completedImages.length} onPrevious={() => {
         if (currentIdx > 0) {
@@ -1738,13 +1759,18 @@ function IndexContent() {
           finalUrl: adjustedUrl,
           carAdjustments: adjustments
         } : img));
+        const wasFromAiStudio = editingImage?.source === 'ai-studio';
         setEditingImage(null);
-        // Return to preview gallery with updated image
-        const completedImages = uploadedImages.filter(img => img.status === 'completed');
-        const index = completedImages.findIndex(img => img.id === editingImage.id);
-        if (index !== -1) {
-          setGalleryIndex(index);
-          setPreviewImage(adjustedUrl);
+        if (wasFromAiStudio) {
+          setActiveTab('ai-studio');
+        } else {
+          // Return to preview gallery with updated image
+          const completedImages = uploadedImages.filter(img => img.status === 'completed');
+          const index = completedImages.findIndex(img => img.id === editingImage.id);
+          if (index !== -1) {
+            setGalleryIndex(index);
+            setPreviewImage(adjustedUrl);
+          }
         }
       }} onApplyToAll={async adjustments => {
         // Mark all completed images as loading
@@ -1789,11 +1815,16 @@ function IndexContent() {
       const completedImages = uploadedImages.filter(img => img.status === 'completed');
       const currentIdx = completedImages.findIndex(img => img.id === editingImage.id);
       return <BackgroundBlurEditor imageUrl={editingImage.finalUrl} open={true} onClose={() => {
+        const wasFromAiStudio = editingImage.source === 'ai-studio';
         setEditingImage(null);
-        const idx = completedImages.findIndex(img => img.id === editingImage.id);
-        if (idx !== -1) {
-          setGalleryIndex(idx);
-          setPreviewImage(completedImages[idx].finalUrl!);
+        if (wasFromAiStudio) {
+          setActiveTab('ai-studio');
+        } else {
+          const idx = completedImages.findIndex(img => img.id === editingImage.id);
+          if (idx !== -1) {
+            setGalleryIndex(idx);
+            setPreviewImage(completedImages[idx].finalUrl!);
+          }
         }
       }} currentIndex={currentIdx} totalCount={completedImages.length} onPrevious={() => {
         if (currentIdx > 0) {
@@ -1824,11 +1855,16 @@ function IndexContent() {
           ...img,
           finalUrl: blurredUrl
         } : img));
+        const wasFromAiStudio = editingImage?.source === 'ai-studio';
         setEditingImage(null);
-        const idx = completedImages.findIndex(img => img.id === editingImage.id);
-        if (idx !== -1) {
-          setGalleryIndex(idx);
-          setPreviewImage(blurredUrl);
+        if (wasFromAiStudio) {
+          setActiveTab('ai-studio');
+        } else {
+          const idx = completedImages.findIndex(img => img.id === editingImage.id);
+          if (idx !== -1) {
+            setGalleryIndex(idx);
+            setPreviewImage(blurredUrl);
+          }
         }
       }} onApplyToAll={async (blurSettings: any) => {
         // Apply blur settings to ALL images - process each separately
