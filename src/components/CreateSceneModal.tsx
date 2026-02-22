@@ -1737,21 +1737,32 @@ export const CreateSceneModal = ({
   };
 
   // Auto-send a suggestion without filling the input field
-  const handleSuggestionSend = async (suggestion: string) => {
+  const handleSuggestionSend = async (suggestion: string, swedishLabel?: string) => {
     if (!user || isGenerating) return;
-    const userMessage: ChatMessage = { role: 'user', text: suggestion };
-    const updatedMessages = [...messages, userMessage];
-    setMessages([...updatedMessages, { role: 'assistant-loading' }]);
+    // Use Swedish label for chat display, but keep English prompt for AI
+    const displayText = swedishLabel || suggestion;
+    const userMessage: ChatMessage = referenceImage ?
+      { role: 'user', text: displayText, image: referenceImage } :
+      { role: 'user', text: displayText };
+    // Build the actual AI message with the English prompt
+    const aiMessage: ChatMessage = referenceImage ?
+      { role: 'user', text: suggestion, image: referenceImage } :
+      { role: 'user', text: suggestion };
+    const displayMessages = [...messages, userMessage];
+    const aiMessages = [...messages, aiMessage];
+    setMessages([...displayMessages, { role: 'assistant-loading' }]);
     setShowAllSuggestions(false);
+    setReferenceImage(null);
+    setReferenceFile(null);
     setIsGenerating(true);
 
     try {
-      const conversationHistory = buildConversationHistory(updatedMessages);
+      const conversationHistory = buildConversationHistory(aiMessages);
       const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
       const { data, error } = await invokeWithTimeout(retryPayload);
-      handleGenerateResponse(data, error, updatedMessages, retryPayload);
+      handleGenerateResponse(data, error, displayMessages, retryPayload);
     } catch (err) {
-      const conversationHistory = buildConversationHistory(updatedMessages);
+      const conversationHistory = buildConversationHistory(aiMessages);
       handleGenerateError(err, { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined });
     }
   };
@@ -1780,8 +1791,24 @@ export const CreateSceneModal = ({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {savedChat && !chatMode &&
+        <button
+          onClick={handleReturnToChat}
+          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          title="Återgå till pågående chatt">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+        }
             {chatMode &&
         <>
+              {savedChat &&
+          <button
+            onClick={handleReturnToChat}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            title="Återgå till pågående chatt">
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+          }
               <button
             onClick={handleNewChat}
             className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-1">
@@ -1815,15 +1842,7 @@ export const CreateSceneModal = ({
                       <p className="text-sm sm:text-base text-foreground leading-relaxed">Hej! Vad vill du göra?</p>
                     </div>
                   </div>
-                  {/* Return to previous chat */}
-                  {savedChat && (
-                    <button
-                      onClick={handleReturnToChat}
-                      className="flex items-center gap-2 mb-3 mx-auto px-4 py-2 rounded-full text-sm font-medium text-primary hover:bg-primary/10 transition-colors border border-primary/20">
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      Återgå till pågående chatt
-                    </button>
-                  )}
+                  {/* Return to previous chat - now in header */}
                   <div className="space-y-2.5 w-full max-w-md sm:max-w-lg mx-auto">
                     {/* Skapa bakgrund */}
                     <button
@@ -2006,13 +2025,47 @@ export const CreateSceneModal = ({
                     </div>
                   </div>
                   {chatMode === 'free-create' && messages.filter((m) => m.role === 'user').length === 0 &&
-              <div className="pl-9 space-y-2">
+              <div className="pl-9 space-y-3">
+                      {/* Upload section */}
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground">Ladda upp en bild att redigera:</p>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl border border-dashed border-border/60 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-muted/40 transition-colors text-left">
+                          <Upload className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-[13px]">Välj bild från enhet</span>
+                        </button>
+                        {(propUploadedImages.length > 0 || propCompletedImages.length > 0) &&
+                    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+                            {propUploadedImages.slice(0, 6).map((img) =>
+                      <button
+                        key={img.id}
+                        onClick={() => handleSelectProjectImage(img.croppedUrl || img.preview)}
+                        className={`w-12 h-12 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-colors ${
+                          referenceImage ? 'border-border/40' : 'border-border/40 hover:border-primary/50'
+                        }`}>
+                                <img src={img.croppedUrl || img.preview} alt="" className="w-full h-full object-cover" />
+                              </button>
+                      )}
+                            {propCompletedImages.slice(0, 6).map((img) =>
+                      <button
+                        key={img.id}
+                        onClick={() => handleSelectProjectImage(img.finalUrl || img.croppedUrl || img.preview)}
+                        className={`w-12 h-12 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-colors ${
+                          referenceImage ? 'border-border/40' : 'border-border/40 hover:border-primary/50'
+                        }`}>
+                                <img src={img.finalUrl || img.croppedUrl || img.preview} alt="" className="w-full h-full object-cover" />
+                              </button>
+                      )}
+                          </div>
+                    }
+                      </div>
                       <p className="text-xs font-medium text-muted-foreground">Snabbval:</p>
                       <div className="grid grid-cols-2 gap-1.5">
                         {FREE_QUICK_ACTIONS.map((action, idx) =>
                   <button
                     key={idx}
-                    onClick={() => handleSuggestionSend(action.prompt)}
+                    onClick={() => handleSuggestionSend(action.prompt, action.label)}
                     className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
 
                             {action.label}
