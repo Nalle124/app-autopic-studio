@@ -251,12 +251,24 @@ const FREE_INSPIRATION = [
 
 
 // ─── Ad creation constants ──────────────────────────────────────
-const AD_TEMPLATES: Array<{label: string;value: string;icon: string;description: string;defaultFormat: 'landscape' | 'portrait';}> = [
-{ label: 'Inkommande bil', value: 'incoming-car', icon: '', description: 'Plats-bakgrund, logo & kontaktinfo', defaultFormat: 'landscape' },
-{ label: 'Köpannons', value: 'buy-ad', icon: '', description: 'Personlig annons med rubrik & info', defaultFormat: 'portrait' },
-{ label: 'Kampanjbild', value: 'campaign', icon: '', description: 'Stor rubrik, CTA & varumärke', defaultFormat: 'landscape' },
-{ label: 'Social media', value: 'social-media', icon: '', description: 'Instagram/Facebook-optimerad', defaultFormat: 'landscape' },
-{ label: 'Eget', value: 'custom-ad', icon: '', description: 'Fri beskrivning', defaultFormat: 'landscape' }];
+const AD_TEMPLATES: Array<{label: string;value: string;icon: string;description: string;defaultFormat: 'landscape' | 'portrait';mockups: Array<{url: string;label: string;}>;}> = [
+{ label: 'Inkommande bil', value: 'incoming-car', icon: '', description: 'Plats-bakgrund, logo & kontaktinfo', defaultFormat: 'landscape', mockups: [
+  { url: '/ad-templates/inkommande-bil-1.png', label: 'Ljus & clean' },
+  { url: '/ad-templates/inkommande-bil-2.png', label: 'Mörk & premium' }
+] },
+{ label: 'Köpannons', value: 'buy-ad', icon: '', description: 'Personlig annons med rubrik & info', defaultFormat: 'portrait', mockups: [
+  { url: '/ad-templates/kopannons-1.png', label: 'Personlig & varm' },
+  { url: '/ad-templates/kopannons-2.png', label: 'Direkt & enkel' }
+] },
+{ label: 'Kampanjbild', value: 'campaign', icon: '', description: 'Stor rubrik, CTA & varumärke', defaultFormat: 'landscape', mockups: [
+  { url: '/ad-templates/kampanj-1.png', label: 'Energisk kampanj' },
+  { url: '/ad-templates/kampanj-2.png', label: 'Elegant & dämpad' }
+] },
+{ label: 'Social media', value: 'social-media', icon: '', description: 'Instagram/Facebook-optimerad', defaultFormat: 'landscape', mockups: [
+  { url: '/ad-templates/social-1.png', label: 'Trendig & catchy' },
+  { url: '/ad-templates/social-2.png', label: 'Professionell' }
+] },
+{ label: 'Eget', value: 'custom-ad', icon: '', description: 'Fri beskrivning', defaultFormat: 'landscape', mockups: [] }];
 
 
 const AD_GUIDED_FLOWS: Record<string, GuidedStep[]> = {
@@ -1064,9 +1076,15 @@ export const CreateSceneModal = ({
       { role: 'user', text: 'Ladda upp referensbild' },
       { role: 'assistant', text: 'Ladda upp din bild via +-knappen nedan. När du har valt en bild, fortsätt med att välja annonstyp.' },
       {
-        role: 'assistant-options',
+        role: 'assistant-category-grid',
         text: 'Vad vill du skapa?',
-        options: AD_TEMPLATES.map((c) => ({ label: c.label, value: c.value }))
+        categories: AD_TEMPLATES.filter((t) => t.mockups.length > 0).flatMap((t) =>
+          t.mockups.map((m, idx) => ({
+            label: `${t.label} — ${m.label}`,
+            value: `${t.value}__mockup_${idx}`,
+            thumbnail: m.url
+          }))
+        ).concat([{ label: 'Eget', value: 'custom-ad', thumbnail: '' }])
       }]
       );
       return;
@@ -1077,9 +1095,15 @@ export const CreateSceneModal = ({
       ...prev,
       { role: 'user', text: 'Hoppa över' },
       {
-        role: 'assistant-options',
+        role: 'assistant-category-grid',
         text: 'Vad vill du skapa?',
-        options: AD_TEMPLATES.map((c) => ({ label: c.label, value: c.value }))
+        categories: AD_TEMPLATES.filter((t) => t.mockups.length > 0).flatMap((t) =>
+          t.mockups.map((m, idx) => ({
+            label: `${t.label} — ${m.label}`,
+            value: `${t.value}__mockup_${idx}`,
+            thumbnail: m.url
+          }))
+        ).concat([{ label: 'Eget', value: 'custom-ad', thumbnail: '' }])
       }]
       );
       return;
@@ -1105,6 +1129,32 @@ export const CreateSceneModal = ({
       }]
       );
       return;
+    }
+
+    // Handle mockup-based ad template selection (e.g. "incoming-car__mockup_0")
+    if (value.includes('__mockup_')) {
+      const baseValue = value.split('__mockup_')[0];
+      const mockupIdx = parseInt(value.split('__mockup_')[1], 10);
+      const template = AD_TEMPLATES.find((t) => t.value === baseValue);
+      if (template && template.mockups[mockupIdx]) {
+        const mockup = template.mockups[mockupIdx];
+        // Use the mockup image as reference for the AI
+        (async () => {
+          try {
+            const resp = await fetch(mockup.url);
+            const blob = await resp.blob();
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              setReferenceImage(ev.target?.result as string);
+              setReferenceFile(null);
+            };
+            reader.readAsDataURL(blob);
+          } catch { /* ignore */ }
+        })();
+        // Route to the template's guided flow
+        handleCategorySelect(baseValue);
+        return;
+      }
     }
 
     if (!guidedCategory && (chatMode === 'background-studio' || chatMode === 'ad-create')) {
