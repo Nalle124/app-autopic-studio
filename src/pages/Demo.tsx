@@ -629,12 +629,7 @@ const DemoContent = () => {
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-[60]">
                   <SelectItem value="demo">Projekt</SelectItem>
-                  <SelectItem value="ai-studio">
-                    <span className="flex items-center gap-2">
-                      <img src="/favicon.png" alt="" className="w-3.5 h-3.5 object-contain" />
-                      AI Studio
-                    </span>
-                  </SelectItem>
+                  <SelectItem value="ai-studio">AI Studio</SelectItem>
                   <SelectItem value="galleri">Galleri</SelectItem>
                 </SelectContent>
               </Select>

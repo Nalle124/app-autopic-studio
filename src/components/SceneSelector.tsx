@@ -97,7 +97,6 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
 const POPULAR_SCENE_IDS = [
   'hostgata',
   'kullerstengata',
-  'plathall-studio',
   'vit-kakel',
   'outdoor-park',
   'bla-sammet-draperi',
@@ -156,7 +155,7 @@ export const SceneSelector = ({
   onSceneSelect,
   orientation = 'landscape',
   onOrientationChange,
-  defaultCategory = 'my-scenes'
+  defaultCategory = 'popular'
 }: SceneSelectorProps) => {
   const [scenes, setScenes] = useState<SceneMetadata[]>([]);
   const [userScenes, setUserScenes] = useState<SceneMetadata[]>([]);
@@ -535,7 +534,7 @@ export const SceneSelector = ({
                       Favoriter
                     </span>
                   ) : activeCategory === 'my-scenes' ? (
-                    'Mina scener'
+                    <span className="flex items-center gap-2">Mina scener</span>
                   ) : (
                     getCategoryDisplayName(activeCategory)
                   )}
@@ -550,7 +549,7 @@ export const SceneSelector = ({
                         Favoriter
                       </span>
                     ) : category === 'my-scenes' ? (
-                      'Mina scener'
+                      <span className="flex items-center gap-2">Mina scener</span>
                     ) : category === 'popular' ? (
                       <span className="flex items-center gap-2">
                         <Star className="w-4 h-4 fill-current text-primary" />
