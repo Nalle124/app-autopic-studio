@@ -604,14 +604,6 @@ export const DemoPaywall = () => {
               </Collapsible>
             </div>
 
-            {/* Founder quote */}
-            <div className="px-6 pb-6">
-              <div className="text-center py-4">
-                <blockquote className="text-sm italic text-muted-foreground">
-                  "Skapad med passion, kaffe och bakgrundsjazz."
-                </blockquote>
-              </div>
-            </div>
 
             {/* Close/skip */}
             <button

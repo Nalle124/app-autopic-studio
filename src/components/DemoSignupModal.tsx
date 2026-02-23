@@ -239,19 +239,19 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         onInteractOutside={(e) => e.preventDefault()}
       >
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
-          {/* Header with brand gradient (blue-black-orange) */}
+          {/* Header with brand gradient (light blue-red-orange) */}
           <div className="relative overflow-hidden">
             <div 
-              className="absolute inset-0 opacity-90"
-              style={{ background: 'linear-gradient(135deg, hsl(220, 27%, 41%) 0%, hsl(0, 0%, 7%) 50%, hsl(26, 73%, 38%) 100%)' }}
+              className="absolute inset-0 opacity-80"
+              style={{ background: 'linear-gradient(135deg, hsl(210, 60%, 75%) 0%, hsl(0, 60%, 65%) 40%, hsl(25, 80%, 60%) 70%, hsl(40, 80%, 75%) 100%)' }}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card" />
             
             <div className="relative z-10 p-6 pb-8 text-center">
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
                 {showEmailVerification ? 'Verifiera din e-post' : 'Skapa gratis konto'}
               </h2>
-              <p className="text-sm text-white/80">
+              <p className="text-sm text-foreground/70">
                 {showEmailVerification ? 'Ange koden du fick på mail' : 'Testa 2 bilder helt gratis'}
               </p>
             </div>
@@ -424,10 +424,6 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
               )}
             </p>
 
-            {/* Founder quote */}
-            <div className="pt-3 border-t border-border">
-              <FounderQuote />
-            </div>
           </form>
           )}
         </div>

@@ -264,7 +264,7 @@ const ProfileContent = () => {
           <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity hidden sm:block">
               <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
             </button>
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial justify-center sm:justify-end">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Tillbaka" className="flex-shrink-0">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -326,7 +326,7 @@ const ProfileContent = () => {
             <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
           </button>
           
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial justify-center sm:justify-end">
+          <div className="flex items-center gap-2 sm:gap-3">
             {!isMobile ? (
               <>
                 <Button 

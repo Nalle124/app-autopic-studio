@@ -819,24 +819,24 @@ export const CreateSceneModal = ({
     { role: 'user', text: categoryLabel }];
 
 
-    // Show first guided step question FIRST, then reference images below
+    // Show reference images BEFORE the question for clearer flow
+    if (refs && refs.length > 0) {
+      newMessages.push({
+        role: 'assistant-references',
+        text: 'Inspiration (klicka inte här – välj nedan):',
+        references: refs
+      });
+    }
+
+    // Show guided step question after references
     newMessages.push({
       role: 'assistant-options',
-      text: firstStep.question,
+      text: `${firstStep.question} 👇`,
       options: [
       ...firstStep.options,
       ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])]
 
     });
-
-    // Add reference images after the question so the flow is clearer
-    if (refs && refs.length > 0) {
-      newMessages.push({
-        role: 'assistant-references',
-        text: 'Använd som inspiration (valfritt):',
-        references: refs
-      });
-    }
 
     setMessages((prev) => [...prev, ...newMessages]);
   };

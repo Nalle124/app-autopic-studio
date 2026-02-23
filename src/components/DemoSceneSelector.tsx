@@ -30,7 +30,6 @@ interface DemoSceneSelectorProps {
 const DEMO_SCENE_IDS = [
   'hostgata',
   'kullerstengata',
-  'plathall-studio',
   'vit-kakel',
   'outdoor-park',
   'bla-sammet-draperi',
