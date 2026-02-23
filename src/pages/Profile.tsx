@@ -260,47 +260,10 @@ const ProfileContent = () => {
         {/* Header matching Index.tsx */}
         <header className="border-b border-border/30 bg-card/50 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/50 before:-z-10">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            {/* Logo - hidden on mobile to give space for nav */}
-          <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity hidden sm:block">
+            <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
               <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
             </button>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Tillbaka" className="flex-shrink-0">
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-            {!isMobile ? (
-              <Tabs value="profile" className="w-auto flex-shrink-0">
-                <TabsList className="bg-background/80 backdrop-blur-sm">
-                  <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
-                    <Plus className="w-4 h-4" />
-                    Projekt
-                  </TabsTrigger>
-                  <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
-                    <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
-                    AI Studio
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
-                    <History className="w-4 h-4" />
-                    Galleri
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : (
-              <Select value="profile" onValueChange={(v) => {
-                if (v === 'new') navigate('/');
-                else if (v === 'ai-studio') navigate('/?tab=ai-studio');
-                else if (v === 'history') navigate('/?tab=gallery');
-              }}>
-                <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
-                  <SelectValue placeholder="Profil" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-[60]">
-                  <SelectItem value="new">Projekt</SelectItem>
-                  <SelectItem value="ai-studio">AI Studio</SelectItem>
-                  <SelectItem value="history">Galleri</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="bg-primary/10 flex-shrink-0">
                 <User className="w-5 h-5" />
               </Button>
@@ -321,12 +284,12 @@ const ProfileContent = () => {
       {/* Header matching Index.tsx layout */}
         <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo - hidden on mobile to give space for nav */}
-          <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity hidden sm:block">
+          {/* Logo - always visible, matching Index.tsx */}
+          <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
             <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
           </button>
           
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             {!isMobile ? (
               <>
                 <Button 
@@ -356,31 +319,20 @@ const ProfileContent = () => {
                 </Tabs>
               </>
             ) : (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate('/')}
-                  title="Tillbaka"
-                  className="flex-shrink-0"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-                <Select value="profile" onValueChange={(v) => {
-                  if (v === 'new') navigate('/');
-                  else if (v === 'ai-studio') navigate('/?tab=ai-studio');
-                  else if (v === 'history') navigate('/?tab=gallery');
-                }}>
-                  <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
-                    <SelectValue placeholder="Profil" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-[60]">
-                    <SelectItem value="new">Projekt</SelectItem>
-                    <SelectItem value="ai-studio">AI Studio</SelectItem>
-                    <SelectItem value="history">Galleri</SelectItem>
-                  </SelectContent>
-                </Select>
-              </>
+              <Select value="profile" onValueChange={(v) => {
+                if (v === 'new') navigate('/');
+                else if (v === 'ai-studio') navigate('/?tab=ai-studio');
+                else if (v === 'history') navigate('/?tab=gallery');
+              }}>
+                <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+                  <SelectValue placeholder="Profil" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[60]">
+                  <SelectItem value="new">Projekt</SelectItem>
+                  <SelectItem value="ai-studio">AI Studio</SelectItem>
+                  <SelectItem value="history">Galleri</SelectItem>
+                </SelectContent>
+              </Select>
             )}
             
             <Button variant="ghost" size="icon" className="bg-primary/10 flex-shrink-0">
