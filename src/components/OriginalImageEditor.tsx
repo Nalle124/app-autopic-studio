@@ -51,7 +51,7 @@ const adjustmentConfig: { key: AdjustmentType; icon: typeof Sun; label: string }
 
 export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave, onApplyToAll, onPrevious, onNext, currentIndex, totalCount }: OriginalImageEditorProps) => {
   const [adjustments, setAdjustments] = useState<CarAdjustments>(defaultAdjustments);
-  const [previewUrl, setPreviewUrl] = useState<string>(imageUrl);
+  
   const [applyToAllChecked, setApplyToAllChecked] = useState(false);
   const [selectedParam, setSelectedParam] = useState<AdjustmentType>('brightness');
   const [history, setHistory] = useState<CarAdjustments[]>([defaultAdjustments]);
@@ -62,115 +62,77 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
   };
 
   useEffect(() => {
-    setPreviewUrl(imageUrl);
     setAdjustments(defaultAdjustments);
     setApplyToAllChecked(false);
     setHistory([defaultAdjustments]);
   }, [imageUrl]);
 
-  // Debounced preview update
-  const applyAdjustments = useCallback(() => {
-    if (!open) return;
-
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
+  // Build CSS filter string for instant preview (no pixel processing)
+  const getCssFilter = useCallback(() => {
+    const brightness = 1 + (adjustments.brightness / 100);
+    const contrast = (adjustments.contrast + 100) / 100;
+    const saturate = 1 + (adjustments.saturation / 100);
+    // Warmth approximated via hue-rotate and sepia
+    const warmth = adjustments.warmth;
+    const warmthSepia = warmth > 0 ? warmth / 100 * 0.15 : 0;
+    const warmthHue = warmth < 0 ? warmth * 0.3 : 0;
+    // Shadows approximated by adjusting brightness slightly
+    const shadowLift = adjustments.shadows / 200;
+    const finalBrightness = Math.max(0, brightness + shadowLift);
     
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) return;
-      
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      // Draw original image
-      ctx.drawImage(img, 0, 0);
-      
-      // Get image data
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      
-      // Calculate adjustment factors
-      const brightnessFactor = 1 + (adjustments.brightness / 100);
-      const contrastFactor = (adjustments.contrast + 100) / 100;
-      const warmthFactor = adjustments.warmth / 100;
-      const shadowsFactor = adjustments.shadows / 100;
-      const saturationFactor = 1 + (adjustments.saturation / 100);
-      
-      // Apply adjustments pixel by pixel
-      for (let i = 0; i < data.length; i += 4) {
-        let r = data[i];
-        let g = data[i + 1];
-        let b = data[i + 2];
-        
-        // Apply brightness
-        r *= brightnessFactor;
-        g *= brightnessFactor;
-        b *= brightnessFactor;
-        
-        // Apply contrast
-        r = ((r - 128) * contrastFactor) + 128;
-        g = ((g - 128) * contrastFactor) + 128;
-        b = ((b - 128) * contrastFactor) + 128;
-        
-        // Apply warmth
-        if (warmthFactor > 0) {
-          r += warmthFactor * 30;
-          g += warmthFactor * 15;
-          b -= warmthFactor * 20;
-        } else if (warmthFactor < 0) {
-          r += warmthFactor * 20;
-          g += warmthFactor * 10;
-          b -= warmthFactor * 30;
+    return `brightness(${finalBrightness}) contrast(${contrast}) saturate(${saturate})${warmthSepia > 0 ? ` sepia(${warmthSepia})` : ''}${warmthHue !== 0 ? ` hue-rotate(${warmthHue}deg)` : ''}`;
+  }, [adjustments]);
+
+  // Full pixel processing only on save
+  const processImageForSave = useCallback((): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(imageUrl); return; }
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        const brightnessFactor = 1 + (adjustments.brightness / 100);
+        const contrastFactor = (adjustments.contrast + 100) / 100;
+        const warmthFactor = adjustments.warmth / 100;
+        const shadowsFactor = adjustments.shadows / 100;
+        const saturationFactor = 1 + (adjustments.saturation / 100);
+        for (let i = 0; i < data.length; i += 4) {
+          let r = data[i], g = data[i + 1], b = data[i + 2];
+          r *= brightnessFactor; g *= brightnessFactor; b *= brightnessFactor;
+          r = ((r - 128) * contrastFactor) + 128;
+          g = ((g - 128) * contrastFactor) + 128;
+          b = ((b - 128) * contrastFactor) + 128;
+          if (warmthFactor > 0) { r += warmthFactor * 30; g += warmthFactor * 15; b -= warmthFactor * 20; }
+          else if (warmthFactor < 0) { r += warmthFactor * 20; g += warmthFactor * 10; b -= warmthFactor * 30; }
+          const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+          if (luminance < 128) { const sa = shadowsFactor * (128 - luminance) / 128; r += sa * 50; g += sa * 50; b += sa * 50; }
+          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          r = gray + (r - gray) * saturationFactor;
+          g = gray + (g - gray) * saturationFactor;
+          b = gray + (b - gray) * saturationFactor;
+          data[i] = Math.max(0, Math.min(255, r));
+          data[i + 1] = Math.max(0, Math.min(255, g));
+          data[i + 2] = Math.max(0, Math.min(255, b));
         }
-        
-        // Apply shadows
-        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-        if (luminance < 128) {
-          const shadowAdjustment = shadowsFactor * (128 - luminance) / 128;
-          r += shadowAdjustment * 50;
-          g += shadowAdjustment * 50;
-          b += shadowAdjustment * 50;
-        }
-        
-        // Apply saturation
-        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        r = gray + (r - gray) * saturationFactor;
-        g = gray + (g - gray) * saturationFactor;
-        b = gray + (b - gray) * saturationFactor;
-        
-        // Clamp values
-        data[i] = Math.max(0, Math.min(255, r));
-        data[i + 1] = Math.max(0, Math.min(255, g));
-        data[i + 2] = Math.max(0, Math.min(255, b));
-      }
-      
-      // Put adjusted image data back
-      ctx.putImageData(imageData, 0, 0);
-      
-      // Export as PNG for lossless quality (important for ad images)
-      setPreviewUrl(canvas.toDataURL('image/png', 1.0));
-    };
-    
-    img.src = imageUrl;
-  }, [imageUrl, open, adjustments]);
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL('image/png', 1.0));
+      };
+      img.src = imageUrl;
+    });
+  }, [imageUrl, adjustments]);
 
-  useEffect(() => {
-    if (!open) return;
-    
-    const timeoutId = setTimeout(() => {
-      applyAdjustments();
-    }, 150); // Debounce for better performance
-
-    return () => clearTimeout(timeoutId);
-  }, [adjustments, applyAdjustments, open]);
-
-  const handleSave = () => {
+  const handleSave = async () => {
+    const finalUrl = await processImageForSave();
     if (applyToAllChecked && onApplyToAll) {
       onApplyToAll(adjustments, false);
     }
-    onSave(previewUrl, adjustments);
+    onSave(finalUrl, adjustments);
     handleClose();
   };
 
@@ -239,9 +201,10 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
             
             <div className="flex-1 relative bg-muted rounded-lg overflow-hidden max-h-[40vh] sm:max-h-[50vh] lg:max-h-[70vh]">
               <img
-                src={previewUrl}
+                src={imageUrl}
                 alt="Preview"
                 className="w-full h-auto max-h-full object-contain"
+                style={{ filter: getCssFilter() }}
               />
               
               {/* Counter */}
@@ -268,16 +231,6 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
 
           {/* Desktop Controls - Side Panel */}
           <div className="hidden lg:flex lg:w-[260px] flex-col gap-4 overflow-y-auto">
-            {/* Clean Boost Preset */}
-            <Button 
-              variant="outline" 
-              className="w-full gap-2 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30 hover:bg-primary/20"
-              onClick={handleCleanBoost}
-            >
-              <Sparkles className="w-4 h-4" />
-              Clean Boost
-            </Button>
-
             {adjustmentConfig.map(({ key, label }) => (
               <div key={key} className="space-y-2">
                 <Label>{label} ({adjustments[key]})</Label>
@@ -380,15 +333,6 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
                 </Button>
               </>
             )}
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="gap-1"
-              onClick={handleCleanBoost}
-            >
-              <Sparkles className="w-4 h-4" />
-            </Button>
             
             {onApplyToAll && (
               <div className="flex items-center gap-2">
