@@ -68,10 +68,11 @@ type GuidedStep = {
 };
 
 const BACKGROUND_CATEGORIES: Array<{label: string;value: string;icon: string;}> = [
-{ label: 'Studio', value: 'studio', icon: '' },
-{ label: 'Studio med hörn', value: 'studio-corner', icon: '' },
+{ label: 'Ljus studio', value: 'studio', icon: '' },
+{ label: 'Mörk studio', value: 'studio-dark', icon: '' },
 { label: 'Utomhus', value: 'outdoor', icon: '' },
 { label: 'Showroom', value: 'showroom', icon: '' },
+{ label: 'Premium', value: 'premium', icon: '' },
 { label: 'Eget', value: 'custom', icon: '' }];
 
 
@@ -79,15 +80,15 @@ const BACKGROUND_CATEGORIES: Array<{label: string;value: string;icon: string;}> 
 const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> = {
   'studio': [
   { url: '/scenes/white-studio.png', label: 'Vit studio' },
-  { url: '/scenes/dark-studio.png', label: 'Mörk studio' },
+  { url: '/scenes/vit-rundad-studio.png', label: 'Rundad' },
   { url: '/scenes/varmt-ljus-studio.png', label: 'Varm studio' },
-  { url: '/scenes/brun-spotlight-studio.png', label: 'Spotlight' }],
+  { url: '/scenes/betong-takspots.png', label: 'Takspots' }],
 
-  'studio-corner': [
-  { url: '/scenes/betong-kurva-studio.png', label: 'Betong' },
-  { url: '/scenes/grey-corner.png', label: 'Grå hörna' },
-  { url: '/scenes/studio-bojd-travagg.png', label: 'Trä' },
-  { url: '/scenes/betong-skuggor.png', label: 'Skuggor' }],
+  'studio-dark': [
+  { url: '/scenes/dark-studio.png', label: 'Mörk studio' },
+  { url: '/scenes/brun-spotlight-studio.png', label: 'Spotlight' },
+  { url: '/scenes/mork-draperi-spotlight.png', label: 'Draperi' },
+  { url: '/scenes/svart-platvagg.png', label: 'Svart vägg' }],
 
   'outdoor': [
   { url: '/scenes/hostgata.png', label: 'Höstgata' },
@@ -103,8 +104,13 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/nordic-showroom.png', label: 'Nordisk' },
   { url: '/scenes/warszawa-showroom.png', label: 'Klassisk' },
   { url: '/scenes/midnight-garage.png', label: 'Garage' },
-  { url: '/scenes/glas-walls.png', label: 'Glasväggar' }]
+  { url: '/scenes/glas-walls.png', label: 'Glasväggar' }],
 
+  'premium': [
+  { url: '/scenes/lyxigt-fjallhus.png', label: 'Fjällhus' },
+  { url: '/scenes/klassisk-innergard-kvall.png', label: 'Innergård' },
+  { url: '/scenes/dyr-utsikt.png', label: 'Utsikt' },
+  { url: '/scenes/chateau-allee.png', label: 'Allé' }]
 };
 
 const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
@@ -113,10 +119,8 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     question: 'Vilken ljussättning?',
     options: [
     { label: 'Ljus & luftig', value: 'bright and airy with soft diffused lighting' },
-    { label: 'Mörk & dramatisk', value: 'dark and moody with dramatic directional lighting' },
     { label: 'Varm & mysig', value: 'warm golden lighting with cozy atmosphere' },
     { label: 'Neutral & ren', value: 'neutral even lighting, clean and minimal' }],
-
     allowCustom: true
   },
   {
@@ -124,9 +128,7 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     options: [
     { label: 'Polerad betong', value: 'polished concrete floor' },
     { label: 'Vitt epoxigolv', value: 'white epoxy floor' },
-    { label: 'Mörk sten', value: 'dark stone floor' },
     { label: 'Trägolv', value: 'wood plank floor' }],
-
     allowCustom: true
   },
   {
@@ -134,30 +136,33 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     options: [
     { label: 'Sömlös cyklorama', value: 'seamless cyclorama wall' },
     { label: 'Ljusgrå vägg', value: 'light grey painted wall' },
-    { label: 'Mörk vägg', value: 'dark charcoal wall' },
     { label: 'Ingen synlig', value: 'no visible back wall, infinite background' }],
-
     allowCustom: true
   }],
 
-  'studio-corner': [
+  'studio-dark': [
   {
-    question: 'Vilken stil?',
+    question: 'Vilken känsla?',
     options: [
-    { label: 'Betongväggar', value: 'raw concrete walls meeting at a corner' },
-    { label: 'Industriell', value: 'industrial corner with steel and exposed materials' },
-    { label: 'Mörkt & elegant', value: 'dark elegant corner with subtle architectural details' },
-    { label: 'Ljust & modernt', value: 'bright modern corner with clean lines' }],
-
+    { label: 'Mörk & dramatisk', value: 'dark and moody with dramatic directional lighting' },
+    { label: 'Spotlight & kontrast', value: 'single spotlight with high contrast and dark surroundings' },
+    { label: 'Dämpad & elegant', value: 'subtle muted dark tones with elegant atmosphere' }],
     allowCustom: true
   },
   {
-    question: 'Ljussättning?',
+    question: 'Vilket golv?',
     options: [
-    { label: 'Mjukt sidoljus', value: 'soft side lighting from one direction' },
-    { label: 'Dramatiska skuggor', value: 'dramatic shadows with strong directional light' },
-    { label: 'Jämnt ljus', value: 'even balanced lighting' }],
-
+    { label: 'Mörk betong', value: 'dark polished concrete floor' },
+    { label: 'Mörk sten', value: 'dark stone floor' },
+    { label: 'Svart epoxy', value: 'black glossy epoxy floor with reflections' }],
+    allowCustom: true
+  },
+  {
+    question: 'Bakgrund?',
+    options: [
+    { label: 'Mörk vägg', value: 'dark charcoal wall' },
+    { label: 'Svart cyklorama', value: 'black seamless cyclorama' },
+    { label: 'Draperi', value: 'dark fabric curtain backdrop' }],
     allowCustom: true
   }],
 
@@ -170,7 +175,6 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     { label: 'Natur / skog', value: 'nature or forest road' },
     { label: 'Parkering', value: 'parking area or plaza' },
     { label: 'Uppfart / villa', value: 'driveway by a nice house' }],
-
     allowCustom: true
   },
   {
@@ -180,7 +184,6 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     { label: 'Höst', value: 'autumn season with golden and orange leaves' },
     { label: 'Vinter', value: 'winter season with snow on the ground' },
     { label: 'Vår', value: 'spring season with blooming flowers and fresh green' }],
-
     allowCustom: true
   },
   {
@@ -191,7 +194,6 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     { label: 'Skymning', value: 'dusk with dramatic sunset sky and warm colors' },
     { label: 'Kvällsljus', value: 'evening with city lights and ambient warm glow' },
     { label: 'Morgondimma', value: 'morning mist with soft ethereal light' }],
-
     allowCustom: true
   }],
 
@@ -203,7 +205,6 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     { label: 'Klassisk bilhall', value: 'classic car dealership hall with large windows' },
     { label: 'Lyxig garage', value: 'luxury private garage with premium finishes' },
     { label: 'Minimalistisk', value: 'minimalist white showroom space' }],
-
     allowCustom: true
   },
   {
@@ -212,10 +213,27 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
     { label: 'Premium spotlights', value: 'premium spotlight lighting from above' },
     { label: 'Dagsljus genom fönster', value: 'natural daylight through large windows' },
     { label: 'Stämningsfullt', value: 'atmospheric ambient lighting with warm tones' }],
+    allowCustom: true
+  }],
 
+  'premium': [
+  {
+    question: 'Vilken miljö?',
+    options: [
+    { label: 'Lyxig villa', value: 'luxury modern villa driveway with premium architecture' },
+    { label: 'Fjälllandskap', value: 'scenic mountain lodge with dramatic landscape' },
+    { label: 'Innergård kvällsljus', value: 'elegant courtyard at dusk with ambient lighting' },
+    { label: 'Havsutsikt', value: 'ocean view terrace with premium surroundings' }],
+    allowCustom: true
+  },
+  {
+    question: 'Vilken känsla?',
+    options: [
+    { label: 'Exklusiv & lyxig', value: 'exclusive luxury atmosphere with premium materials' },
+    { label: 'Elegant & tidlös', value: 'elegant timeless classic feel' },
+    { label: 'Modern & minimalistisk', value: 'modern minimalist premium design' }],
     allowCustom: true
   }]
-
 };
 
 const POST_GENERATION_SUGGESTIONS_BG = [
@@ -700,12 +718,12 @@ export const CreateSceneModal = ({
         role: 'assistant-category-grid',
         text: 'Vilken typ passar bäst?',
         categories: [
-        { label: 'Studio', value: 'studio', thumbnail: '/scenes/white-studio.png' },
-        { label: 'Studio med hörn', value: 'studio-corner', thumbnail: '/scenes/betong-kurva-studio.png' },
+        { label: 'Ljus studio', value: 'studio', thumbnail: '/scenes/white-studio.png' },
+        { label: 'Mörk studio', value: 'studio-dark', thumbnail: '/scenes/dark-studio.png' },
         { label: 'Utomhus', value: 'outdoor', thumbnail: '/scenes/hostgata.png' },
         { label: 'Showroom', value: 'showroom', thumbnail: '/scenes/nordic-showroom.png' },
+        { label: 'Premium', value: 'premium', thumbnail: '/scenes/lyxigt-fjallhus.png' },
         { label: 'Eget', value: 'custom', thumbnail: '' }]
-
       }]
       );
     } else if (mode === 'ad-create') {
@@ -2376,9 +2394,10 @@ export const CreateSceneModal = ({
               <div className="pl-9">
                       <Button
                   onClick={() => {
+                    // Subtle confirmation instead of big user message
                     setMessages((prev) => [
                       ...prev,
-                      { role: 'user', text: `${selectedBlurImages.length} bild(er) valda` },
+                      { role: 'assistant', text: `✓ ${selectedBlurImages.length} bild(er) valda` },
                       {
                         role: 'assistant-options',
                         text: 'Välj hur skylten ska döljas:',
@@ -2395,9 +2414,10 @@ export const CreateSceneModal = ({
               <div className="pl-9">
                       <Button
                   onClick={() => {
+                    // Subtle confirmation instead of big user message
                     setMessages((prev) => [
                       ...prev,
-                      { role: 'user', text: `${selectedBlurImages.length} bild(er) valda` },
+                      { role: 'assistant', text: `✓ ${selectedBlurImages.length} bild(er) valda` },
                       {
                         role: 'assistant-options',
                         text: 'Välj vilken logo du vill använda:',
@@ -2538,19 +2558,33 @@ export const CreateSceneModal = ({
                   <AutopicAvatar />
                   <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%] space-y-2">
                     <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
-                    {msg.retryData &&
+                    {msg.retryData ? (
                 <button
                   onClick={() => handleRetry(msg.retryData!)}
                   disabled={isGenerating}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
-
                         <RotateCcw className="w-3 h-3" />
                         Försök igen
                       </button>
-                }
+                ) : (
+                <button
+                  onClick={() => {
+                    // Generic retry: go back to menu for the current mode
+                    setMessages((prev) => prev.filter((m) => m.role !== 'assistant-error'));
+                    if (chatMode === 'blur-plates' && selectedBlurImages.length > 0 && blurStyle) {
+                      handleBlurGenerate();
+                    } else if (chatMode === 'logo-studio' && selectedBlurImages.length > 0 && selectedLogoUrl && selectedLogoPreset) {
+                      handleApplyLogo();
+                    }
+                  }}
+                  disabled={isGenerating}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50">
+                        <RotateCcw className="w-3 h-3" />
+                        Försök igen
+                      </button>
+                )}
                   </div>
                 </div>);
-
         }
 
         // ─── Loading ──────────────────────────────────
@@ -2718,54 +2752,48 @@ export const CreateSceneModal = ({
         return null;
       })}
           {/* Standalone action buttons - rendered after all messages for blur/logo flows */}
-          {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle && blurStyle !== 'logo-overlay' && (
-            <div className="pl-9 space-y-2">
-              <div className="flex gap-2.5 items-start">
-                <AutopicAvatar />
-                <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] w-full space-y-3">
-                  <p className="text-sm text-foreground">Redo att bearbeta {selectedBlurImages.length} bild(er) med stil: <span className="font-medium">{BLUR_STYLE_OPTIONS.find((s) => s.value === blurStyle)?.label}</span></p>
-                  <Button
-                    onClick={handleBlurGenerate}
-                    disabled={isGenerating}
-                    className="w-full rounded-full h-10">
-                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                    Bearbeta valda ({selectedBlurImages.length})
-                  </Button>
-                </div>
+           {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle && blurStyle !== 'logo-overlay' && (
+            <div className="flex gap-2.5 items-start">
+              <AutopicAvatar />
+              <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
+                <p className="text-sm text-foreground">Redo att bearbeta {selectedBlurImages.length} bild(er).</p>
+                <Button
+                  onClick={handleBlurGenerate}
+                  disabled={isGenerating}
+                  className="w-full rounded-full h-10">
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  Bearbeta
+                </Button>
               </div>
             </div>
           )}
           {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle === 'logo-overlay' && selectedLogoUrl && (
-            <div className="pl-9 space-y-2">
-              <div className="flex gap-2.5 items-start">
-                <AutopicAvatar />
-                <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] w-full space-y-3">
-                  <p className="text-sm text-foreground">Redo att dölja skyltar med din logo på {selectedBlurImages.length} bild(er).</p>
-                  <Button
-                    onClick={handleBlurGenerate}
-                    disabled={isGenerating}
-                    className="w-full rounded-full h-10">
-                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                    Bearbeta valda ({selectedBlurImages.length})
-                  </Button>
-                </div>
+            <div className="flex gap-2.5 items-start">
+              <AutopicAvatar />
+              <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
+                <p className="text-sm text-foreground">Redo att dölja skyltar med din logo.</p>
+                <Button
+                  onClick={handleBlurGenerate}
+                  disabled={isGenerating}
+                  className="w-full rounded-full h-10">
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  Bearbeta
+                </Button>
               </div>
             </div>
           )}
           {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset && (
-            <div className="pl-9 space-y-2">
-              <div className="flex gap-2.5 items-start">
-                <AutopicAvatar />
-                <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] w-full space-y-3">
-                  <p className="text-sm text-foreground">Redo att applicera logo på {selectedBlurImages.length} bild(er).</p>
-                  <Button
-                    onClick={handleApplyLogo}
-                    disabled={isGenerating}
-                    className="w-full rounded-full h-10">
-                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                    Applicera logo ({selectedBlurImages.length})
-                  </Button>
-                </div>
+            <div className="flex gap-2.5 items-start">
+              <AutopicAvatar />
+              <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
+                <p className="text-sm text-foreground">Redo att applicera logo på {selectedBlurImages.length} bild(er).</p>
+                <Button
+                  onClick={handleApplyLogo}
+                  disabled={isGenerating}
+                  className="w-full rounded-full h-10">
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  Applicera logo
+                </Button>
               </div>
             </div>
           )}
