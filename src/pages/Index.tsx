@@ -1616,6 +1616,8 @@ function IndexContent() {
         const wasFromAiStudio = editingImage?.source === 'ai-studio';
         setEditingImage(null);
         if (wasFromAiStudio) {
+          // Dispatch event so AI Studio chat can update the image
+          window.dispatchEvent(new CustomEvent('ai-studio-edit-result', { detail: { originalUrl: editingImage?.finalUrl, editedUrl: croppedUrl } }));
           setActiveTab('ai-studio');
         } else {
           // Return to preview gallery
@@ -1704,6 +1706,7 @@ function IndexContent() {
         setEditingImage(null);
 
         if (wasFromAiStudio) {
+          window.dispatchEvent(new CustomEvent('ai-studio-edit-result', { detail: { originalUrl: editingImage?.finalUrl, editedUrl: croppedUrl } }));
           setActiveTab('ai-studio');
         } else if (completedImages.length > 0) {
           setGalleryIndex(0);
@@ -1762,6 +1765,7 @@ function IndexContent() {
         const wasFromAiStudio = editingImage?.source === 'ai-studio';
         setEditingImage(null);
         if (wasFromAiStudio) {
+          window.dispatchEvent(new CustomEvent('ai-studio-edit-result', { detail: { originalUrl: editingImage?.finalUrl, editedUrl: adjustedUrl } }));
           setActiveTab('ai-studio');
         } else {
           // Return to preview gallery with updated image
