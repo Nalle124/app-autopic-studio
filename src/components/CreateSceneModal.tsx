@@ -674,7 +674,23 @@ export const CreateSceneModal = ({
     }
   }, [messages]);
 
-  // ─── Mode selection ─────────────────────────────────────────
+  // Listen for edit results from crop/adjust tools to update chat images
+  useEffect(() => {
+    const handleEditResult = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail?.originalUrl || !detail?.editedUrl) return;
+      setMessages((prev) => prev.map((msg) => {
+        if (msg.role === 'assistant-image' && msg.imageUrl === detail.originalUrl) {
+          return { ...msg, imageUrl: detail.editedUrl };
+        }
+        return msg;
+      }));
+    };
+    window.addEventListener('ai-studio-edit-result', handleEditResult);
+    return () => window.removeEventListener('ai-studio-edit-result', handleEditResult);
+  }, []);
+
+
   const selectMode = (mode: ChatMode) => {
     setChatMode(mode);
     if (mode === 'background-studio') {
@@ -825,30 +841,35 @@ export const CreateSceneModal = ({
 
     // Show reference images for background mode categories
     const refs = chatMode === 'background-studio' ? CATEGORY_REFERENCES[value] : null;
-    const firstStep = flow[0];
 
     const newMessages: ChatMessage[] = [
     { role: 'user', text: categoryLabel }];
 
-
-    // Show reference images BEFORE the question for clearer flow
     if (refs && refs.length > 0) {
+      // Step 1: Show inspiration images with option to skip
       newMessages.push({
         role: 'assistant-references',
-        text: 'Inspiration (klicka inte här – välj nedan):',
+        text: 'Vill du använda en inspirationsbild?',
         references: refs
       });
+      newMessages.push({
+        role: 'assistant-options',
+        text: '',
+        options: [
+          { label: 'Hoppa över inspiration', value: '__skip_inspiration__' }
+        ]
+      });
+    } else {
+      // No references, go straight to first guided step
+      const firstStep = flow[0];
+      newMessages.push({
+        role: 'assistant-options',
+        text: `${firstStep.question}`,
+        options: [
+        ...firstStep.options,
+        ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])]
+      });
     }
-
-    // Show guided step question after references
-    newMessages.push({
-      role: 'assistant-options',
-      text: `${firstStep.question} 👇`,
-      options: [
-      ...firstStep.options,
-      ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])]
-
-    });
 
     setMessages((prev) => [...prev, ...newMessages]);
   };
@@ -1143,6 +1164,27 @@ export const CreateSceneModal = ({
         ...prev,
         { role: 'user', text: presetLabel },
         { role: 'assistant', text: `Logo placering: ${presetLabel}. Klicka nedan för att applicera.` }
+      ]);
+      return;
+    }
+
+    // Handle skip inspiration in background studio
+    if (value === '__skip_inspiration__') {
+      if (!guidedCategory) return;
+      const flow = activeFlows[guidedCategory];
+      if (!flow) return;
+      const firstStep = flow[0];
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: 'Hoppa över' },
+        {
+          role: 'assistant-options',
+          text: firstStep.question,
+          options: [
+            ...firstStep.options,
+            ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])
+          ]
+        }
       ]);
       return;
     }
@@ -2194,6 +2236,25 @@ export const CreateSceneModal = ({
                         setReferenceImage(ev.target?.result as string);
                         setReferenceFile(null);
                         toast.success(`Referens "${ref.label}" vald`);
+                        // After selecting inspiration, proceed to the first guided step
+                        if (guidedCategory && guidedCategory !== 'custom' && guidedCategory !== 'custom-ad') {
+                          const flow = activeFlows[guidedCategory];
+                          if (flow) {
+                            const firstStep = flow[0];
+                            setMessages((prev) => [
+                              ...prev,
+                              { role: 'user', text: `Inspiration: ${ref.label}` },
+                              {
+                                role: 'assistant-options',
+                                text: firstStep.question,
+                                options: [
+                                  ...firstStep.options,
+                                  ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])
+                                ]
+                              }
+                            ]);
+                          }
+                        }
                       };
                       reader.readAsDataURL(blob);
                     } catch {
@@ -2906,7 +2967,7 @@ export const CreateSceneModal = ({
               <img src={previewImage.imageUrl} alt={previewImage.name} className="max-w-full max-h-full rounded-xl object-contain shadow-lg" />
             </div>
             <div className="px-4 py-2 flex flex-wrap gap-1.5 flex-shrink-0 border-t border-border/30">
-              {postGenSuggestions.map((s, idx) =>
+              {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) =>
         <button
           key={idx}
           onClick={() => {
@@ -2914,6 +2975,7 @@ export const CreateSceneModal = ({
             const imageUrl = previewImage.imageUrl;
             setPreviewImage(null);
             setPreviewPrompt('');
+            setShowAllSuggestions(false);
             const userMsg: ChatMessage = { role: 'user', text: s, image: imageUrl };
             const updatedMessages = [...messages, userMsg];
             setMessages([...updatedMessages, { role: 'assistant-loading' }]);
@@ -2935,6 +2997,13 @@ export const CreateSceneModal = ({
                   {s}
                 </button>
         )}
+              {postGenSuggestions.length > 3 && !showAllSuggestions &&
+                <button
+                  onClick={() => setShowAllSuggestions(true)}
+                  className="text-[13px] px-3.5 py-1.5 rounded-full border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
+                  Fler...
+                </button>
+              }
             </div>
             <div className="px-4 py-3 border-t border-border/50 flex-shrink-0">
               <div className="flex items-end gap-2">
