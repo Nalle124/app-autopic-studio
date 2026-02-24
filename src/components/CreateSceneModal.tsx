@@ -1045,7 +1045,10 @@ export const CreateSceneModal = ({
 
     // Default: non-template ad or background studio flow
     const modeLabel = chatMode === 'ad-create' ? 'advertisement' : 'background';
-    const combinedPrompt = `${categoryLabel} ${modeLabel}: ${guidedSelections.join('. ')}${extraDetails ? `. ${extraDetails}` : ''}.`;
+    const inspirationNote = referenceImage
+      ? ' IMPORTANT: The attached image is ONLY a style/mood reference for inspiration. Do NOT reproduce or copy it. Create a completely NEW and ORIGINAL scene that captures a similar mood, lighting style, or atmosphere, but with a different composition, angle, and details.'
+      : '';
+    const combinedPrompt = `${categoryLabel} ${modeLabel}: ${guidedSelections.join('. ')}${extraDetails ? `. ${extraDetails}` : ''}.${inspirationNote}`;
 
     // Build the prompt silently - include reference image if one is set
     const silentUserMsg: ChatMessage = referenceImage ?
@@ -1437,8 +1440,13 @@ export const CreateSceneModal = ({
 
   // ─── Retry from error ──────────────────────────────────────
   const handleRetry = async (retryData: {conversationHistory: Array<{role: string;content: any;}>;mode: string;format?: string;}) => {
-    // Remove the error message and add loading
-    setMessages((prev) => [...prev.filter((m) => m.role !== 'assistant-error'), { role: 'assistant-loading' }]);
+    // Remove the error message; only add loading bubble if no summary/button is visible
+    setMessages((prev) => {
+      const cleaned = prev.filter((m) => m.role !== 'assistant-error' && m.role !== 'assistant-loading');
+      // If there's a summary card with a generate button visible, skip the chat loading bubble
+      const hasSummary = cleaned.some((m) => m.role === 'assistant-summary');
+      return hasSummary ? cleaned : [...cleaned, { role: 'assistant-loading' }];
+    });
     setIsGenerating(true);
 
     try {
@@ -2348,7 +2356,7 @@ export const CreateSceneModal = ({
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                      <p className="text-sm font-medium text-foreground">Jag har en bra bild av vad du söker.</p>
+                      <p className="text-sm font-medium text-foreground">Jag har en bild av vad du söker.</p>
                       <div className="flex flex-wrap gap-1.5">
                         <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">{msg.category}</span>
                         {labels.map((label, idx) =>
