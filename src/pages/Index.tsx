@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -29,6 +29,13 @@ import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
+import JSZip from 'jszip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { DemoPaywall } from '@/components/DemoPaywall';
@@ -607,6 +614,39 @@ function IndexContent() {
       toast.error('Nedladdning misslyckades');
     }
   };
+  const handleDownloadAsZip = async (images: typeof uploadedImages) => {
+    if (images.length === 0) return;
+    try {
+      toast.info('Förbereder nedladdning...');
+      const zip = new JSZip();
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        if (!img.finalUrl) continue;
+        const response = await fetch(img.finalUrl);
+        const blob = await response.blob();
+        zip.file(`${registrationNumber || 'bild'}_${i + 1}.jpg`, blob);
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = window.URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${registrationNumber || 'bilder'}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Zip download failed:', error);
+      toast.error('Nedladdning misslyckades');
+    }
+  };
+  const handleDownloadOneByOne = async (images: typeof uploadedImages) => {
+    for (const image of images) {
+      if (!image.finalUrl) continue;
+      await handleDownload(image.finalUrl, `${registrationNumber || 'bild'}_${image.id}.jpg`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
   const handleShareSelected = async () => {
     const selected = uploadedImages.filter(img => selectedImages.has(img.id) && img.finalUrl);
     if (selected.length === 0) {
@@ -1080,17 +1120,39 @@ function IndexContent() {
                         <Scissors className="w-4 h-4" />
                       </Button>
                       
-                      <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={selectedImages.size > 0 ? `Ladda ner ${selectedImages.size}` : 'Ladda ner alla'} onClick={() => {
-                  // If no images selected, download all
-                  const completedImages = uploadedImages.filter(img => img.status === 'completed');
-                  const imagesToDownload = selectedImages.size > 0 ? completedImages.filter(img => selectedImages.has(img.id)) : completedImages;
-                  imagesToDownload.forEach(async (image, idx) => {
-                    await new Promise(resolve => setTimeout(resolve, idx * 300));
-                    handleDownload(image.finalUrl!, `${registrationNumber || 'bild'}_${image.id}.jpg`);
-                  });
-                }}>
-                        <Download className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Ladda ner">
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={() => {
+                            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                            handleDownloadAsZip(completedImages);
+                          }}>
+                            <FolderDown className="w-4 h-4 mr-2" />
+                            Ladda ner som ZIP
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            const completedImages = uploadedImages.filter(img => img.status === 'completed');
+                            handleDownloadOneByOne(completedImages);
+                          }}>
+                            <ListOrdered className="w-4 h-4 mr-2" />
+                            Ladda ner en och en
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            disabled={selectedImages.size === 0}
+                            onClick={() => {
+                              const completedImages = uploadedImages.filter(img => img.status === 'completed' && selectedImages.has(img.id));
+                              handleDownloadAsZip(completedImages);
+                            }}
+                          >
+                            <CheckSquare className="w-4 h-4 mr-2" />
+                            Ladda ner markerade{selectedImages.size > 0 ? ` (${selectedImages.size})` : ''}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       
                       {/* Clear selection button - only show when images are selected */}
                       {selectedImages.size > 0 && (
