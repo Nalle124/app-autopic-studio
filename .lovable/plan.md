@@ -1,51 +1,75 @@
 
 
-# Teknisk Audit — AutoPic Studio
+## Plan: Ångra val i guidade flöden + UX-genomgång av AI Studio
 
-## Sammanfattning
+### Problem
+1. **Klick på redan-besvarad fråga skickar ett nytt (svagt) meddelande** istolat for att uppdatera valet. Om användaren klickar "Sommar" efter att ha valt "Höst", skapas ett nytt user-meddelande med prompt-texten ("Summer season with green trees and vegetation") istället för att byta ut det tidigare valet.
+2. **Årstidsprompt-värden är för specifika** (t.ex. "summer season with green trees and vegetation") -- om de skickas som fristående meddelande blir det ett svagt prompt.
+3. **Inga visuella indikationer** på vilka val som redan gjorts, och ingen möjlighet att ändra.
 
-Appen har en solid grundarkitektur med bra RLS-policies, serversidig validering i edge functions, och atomisk kreditavräkning. Flera kritiska brister har nu åtgärdats.
+### Lösning: "Editable guided selections"
 
----
+**Kärnidé**: Istället för att varje guided option-klick lägger till ett user-meddelande och gör steget "permanent", ska alla val hållas i `guidedSelections`-arrayen som en ändningsbar state. Options-knapparna förblir interaktiva (inte disabled) ända tills användaren klickar "Skapa bakgrund". Valt alternativ visas med en svag highlight.
 
-## ✅ ÅTGÄRDAT
+#### Tekniska ändringar i `CreateSceneModal.tsx`:
 
-### 1. generate-scene-image: kreditavräkning + rate limiting ✅
-Implementerat atomisk `decrement_credits` före AI-generering samt per-user rate limiting (max 10/minut). Credit transactions loggas med `ai_studio_generation` typ.
+**1. Lägg till `guidedSelectionLabels` state**
+- Ny state `guidedSelectionLabels: string[]` som trackar svenska etiketter parallellt med `guidedSelections`.
 
-### 2. CORS begränsat på ALLA edge functions ✅
-Skapade `supabase/functions/_shared/cors.ts` med dynamisk origin-validering. Alla 17 edge functions uppdaterade från `*` till tillåtna origins (`app-autopic-studio.lovable.app` + preview).
+**2. Refaktorera `handleGuidedOptionSelect`**
+- Istället för att pusha user-meddelanden för varje steg, uppdatera bara `guidedSelections[stepIndex]` och `guidedSelectionLabels[stepIndex]`.
+- Om användaren klickar ett alternativ i ett *redan besvarat steg* (t.ex. steg 1 "Vilken årstid?" när vi redan är på steg 2), uppdatera `guidedSelections[thatStepIndex]` och trunkera allt efter (om steget ändras, kan efterföljande val bli irrelevanta -- men i de flesta fall behåll dem).
+- Flytta fram `guidedStepIndex` bara om steget var det nuvarande.
 
-### 3. process-demo-image: temp-filer rensas i finally-block ✅
-Flyttat cleanup av `uploadFilename` till `finally`-block så temp-filer alltid rensas, även vid PhotoRoom-fel.
+**3. Ändra rendering av `assistant-options`**
+- Varje options-knapp som redan valts (dvs. dess `value` finns i `guidedSelections` för det stegets index) får en svag highlight-stil: `bg-primary/10 border-primary/30 text-primary`.
+- Knapparna förblir klickbara (inte disabled) så länge `guidedComplete` är false eller summary-kortet visas men generering inte startats.
+- Behöver koppla varje `assistant-options`-meddelande till dess steg-index. Enklast via en ny fält i `ChatMessage`: `stepIndex?: number`.
 
-### 4. Dubbel kreditavräkning — INTE en bugg ✅
-Undersökt: `DemoContext.decrementCredits()` anropas ENBART i `Demo.tsx` (demo-flödet via `process-demo-image`), inte i `Index.tsx` (huvudflödet via `process-car-image`). Backend-deduction i `process-car-image` och frontend-deduction i demo-flödet är separata kodstigar — ingen dubbel avräkning sker.
+**4. Uppdatera `assistant-options` ChatMessage-typ**
+- Lägg till optional `stepIndex?: number` på `assistant-options`-meddelanden.
+- Sätt detta när meddelandet skapas i `handleGuidedOptionSelect` och `handleCategorySelect`.
 
----
+**5. Uppdatera summary-kortet dynamiskt**
+- Summary-kortet ska alltid reflektera den senaste `guidedSelections`/`guidedSelectionLabels`, inte de som sparades vid skapande. Rendera det baserat på current state istället för `msg.selections`.
 
-## VIKTIGT (Fixas inom 2 veckor)
+**6. Ta bort user-meddelanden för guided-steg**
+- Guided-val ska inte längre generera `{ role: 'user', text: optionLabel }`-meddelanden. Istället visas valen inline som highlighted chips i options-raderna.
+- Sammanfattningskortet visar alla val.
 
-### 5. Storage bucket "processed-cars" är publikt — alla URL:er är permanenta
-**Lösning:** Schemalägg `cleanup-old-images` att rensa `demo/` och `demo-temp/`-prefix äldre än 24h.
+**7. Simplifiering av prompt-värden för årstider**
+- Ändra årstidernas `value` till kortare, mer generella prompts:
+  - "Sommar" -> `"summer season"` (inte "with green trees and vegetation")
+  - "Höst" -> `"autumn season with warm golden tones"`
+  - "Vinter" -> `"winter season with snow"`
+  - "Vår" -> `"spring season with fresh green"`
 
-### 6. CreateSceneModal.tsx: 3312 rader — underhållsmardröm
-**Lösning:** Bryt ut varje mode till en egen komponent.
+### UX-brister identifierade i andra flöden
 
-### 7. Index.tsx: 2165 rader med samma problem
-**Lösning:** Extrahera till moduler.
+**A. Ad-create guided flow** -- Samma problem: val kan inte ändras efter klick. Samma lösning appliceras.
 
-### 8. check-subscription: 28-dagars fönster är fragilt
-**Lösning:** Byt till `periodKey`-baserad idempotency.
+**B. Showroom / Premium / Studio flows** -- Samma mönster, samma fix.
 
-### 9. Ingen Stripe webhook-verifiering
-**Lösning:** Implementera webhook-endpoint som backup.
+**C. "Redigera fritt" -- saknar "ångra" på snabbval.** Om man klickar ett snabbval-kort och det skickas, kan man inte ångra. Men detta är en "send"-action, inte en guided-selection, så det är rimligt att det inte kan ångras.
 
----
+**D. Blur/Logo flow -- bilder kan inte avmarkeras efter "Nästa".** När man klickat "Nästa" efter bildval kan man inte gå tillbaka och ändra bilderna. Kan förbättras men är sekundärt.
 
-## REKOMMENDATION (Backlog)
+**E. Inspiration-bild kan inte bytas.** Efter att man valt en inspirationsbild och gått vidare till steg 1, kan man inte byta inspiration. Lösningen ovan löser detta indirekt genom att alla steg förblir interaktiva.
 
-### 10. Sentry breadcrumbs
-### 11. Övervaknings-alert för tredjepartskostnader
-### 12. localStorage → draft_images-tabell
-### 13. Memoization i tunga komponenter
+**F. Referensbild i "Skapa annons" kan inte bytas.** Om man hoppar över referensbild och sedan ångrar sig, finns inget sätt att gå tillbaka. Sekundär prioritet.
+
+### Implementationsordning
+
+1. Lägg till `stepIndex` i `assistant-options` meddelandetypen
+2. Refaktorera `handleGuidedOptionSelect` till att mutera state istället för att pusha meddelanden
+3. Uppdatera rendering: highlight valt alternativ, håll knappar klickbara
+4. Gör summary-kortet dynamiskt baserat på current `guidedSelections`
+5. Simplify årstids-prompts
+6. Applicera samma logik i `AD_GUIDED_FLOWS`
+7. Testa alla flöden: bakgrund (alla 5 kategorier), annonser (alla 4 typer)
+
+### Påverkan
+- Filen `src/components/CreateSceneModal.tsx` -- primär och enda fil som ändras
+- Ingen backend-ändring behövs
+- Ingen databasändring behövs
+
