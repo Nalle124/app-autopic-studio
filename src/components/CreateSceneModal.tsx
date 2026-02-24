@@ -75,7 +75,7 @@ const BACKGROUND_CATEGORIES: Array<{label: string;value: string;icon: string;}> 
 { label: 'Utomhus', value: 'outdoor', icon: '' },
 { label: 'Showroom', value: 'showroom', icon: '' },
 { label: 'Premium', value: 'premium', icon: '' },
-{ label: 'Eget', value: 'custom', icon: '' }];
+{ label: 'Beskriv fritt', value: 'custom', icon: '' }];
 
 
 // Reference scene thumbnails for each category
@@ -726,7 +726,7 @@ export const CreateSceneModal = ({
         { label: 'Utomhus', value: 'outdoor', thumbnail: '/scenes/hostgata.png' },
         { label: 'Showroom', value: 'showroom', thumbnail: '/scenes/nordic-showroom.png' },
         { label: 'Premium', value: 'premium', thumbnail: '/scenes/lyxigt-fjallhus.png' },
-        { label: 'Eget', value: 'custom', thumbnail: '' }]
+        { label: 'Beskriv fritt', value: 'custom', thumbnail: '' }]
       }]
       );
     } else if (mode === 'ad-create') {
@@ -867,18 +867,11 @@ export const CreateSceneModal = ({
     { role: 'user', text: categoryLabel }];
 
     if (refs && refs.length > 0) {
-      // Step 1: Show inspiration images with option to skip
+      // Step 1: Show inspiration images with skip option integrated
       newMessages.push({
         role: 'assistant-references',
         text: 'Vill du använda en inspirationsbild?',
         references: refs
-      });
-      newMessages.push({
-        role: 'assistant-options',
-        text: '',
-        options: [
-          { label: 'Hoppa över inspiration', value: '__skip_inspiration__' }
-        ]
       });
     } else {
       // No references, go straight to first guided step
@@ -1019,7 +1012,7 @@ export const CreateSceneModal = ({
         : { role: 'user', text: combinedPrompt };
       const updatedMessages = [...messages, silentUserMsg];
 
-      setMessages([...messages, { role: 'assistant-loading' }]);
+      setMessages([...messages]);
       setIsGenerating(true);
       setGuidedComplete(false);
       setReferenceImage(null);
@@ -1068,8 +1061,8 @@ export const CreateSceneModal = ({
     { role: 'user', text: combinedPrompt, image: referenceImage } :
     { role: 'user', text: combinedPrompt };
     const updatedMessages = [...messages, silentUserMsg];
-    // Only show loading indicator, not the raw prompt
-    setMessages([...messages, { role: 'assistant-loading' }]);
+    // Don't show loading chat bubble - button already shows loading state
+    setMessages([...messages]);
     setIsGenerating(true);
     setGuidedComplete(false);
     setReferenceImage(null);
@@ -1715,7 +1708,7 @@ export const CreateSceneModal = ({
         }];
 
 
-        setMessages((prev) => [...prev, { role: 'assistant-loading' }]);
+        // Don't add loading bubble here - the button already shows loading state
 
         const { data, error } = await invokeWithTimeout({
           conversationHistory,
@@ -2301,6 +2294,13 @@ export const CreateSceneModal = ({
                         <span className="text-[10px]">Se fler</span>
                       </button>
                     )}
+                    {/* Skip inspiration button integrated into the gallery */}
+                    <button
+                      onClick={() => handleOptionClick('__skip_inspiration__')}
+                      disabled={isGenerating}
+                      className="text-[13px] px-3.5 py-2 rounded-full border border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors self-center ml-1">
+                      Hoppa över inspiration
+                    </button>
                   </div>
                 </div>);
 
@@ -2486,7 +2486,6 @@ export const CreateSceneModal = ({
                           ) : (
                             <div className="w-full h-full bg-muted/60 flex flex-col items-center justify-center gap-1 text-muted-foreground">
                               <Plus className="w-5 h-5" />
-                              <span className="text-[10px]">Beskriv fritt</span>
                             </div>
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -2503,14 +2502,18 @@ export const CreateSceneModal = ({
 
         // ─── Options ──────────────────────────────────
         if (msg.role === 'assistant-options') {
+          // Don't render empty option bubbles
+          if (!msg.text && msg.options.length === 0) return null;
           return (
             <div key={i} className="space-y-3">
+                  {msg.text && (
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
                       <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
                     </div>
                   </div>
+                  )}
                   <div className="flex flex-wrap gap-1.5 pl-9">
                     {msg.options.map((opt, idx) =>
                 <button
@@ -2878,8 +2881,8 @@ export const CreateSceneModal = ({
           <div ref={chatEndRef} />
         </div>
 
-        {/* Reference image preview */}
-        {referenceImage &&
+        {/* Reference image preview - hide when in guided background flow (inspiration already integrated) */}
+        {referenceImage && !(chatMode === 'background-studio' && guidedCategory && guidedCategory !== 'custom') &&
     <div className="px-4 pt-2 bg-background/50 border-t border-border/30 flex-shrink-0">
             <div className="flex items-center gap-2 bg-muted/40 rounded-lg px-3 py-2">
               <img src={referenceImage} alt="Referens" className="w-10 h-10 rounded object-cover" />
@@ -2895,22 +2898,20 @@ export const CreateSceneModal = ({
 
         {/* Post-generation suggestions above input */}
         {showPostGenSuggestions && chatMode &&
-    <div className="px-4 pt-2 bg-background/50 flex-shrink-0">
-            <div className="flex flex-wrap gap-1.5">
+    <div className="px-4 pt-2 pb-1 bg-background/50 flex-shrink-0">
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
               {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) =>
         <button
           key={idx}
           onClick={() => handleSuggestionSend(s)}
-          className="text-[13px] px-3.5 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
-
-                  {s}
+          className="text-[13px] py-1 text-primary/80 hover:text-primary transition-colors">
+                  {s}...
                 </button>
         )}
               {postGenSuggestions.length > 3 && !showAllSuggestions &&
         <button
           onClick={() => setShowAllSuggestions(true)}
-          className="text-[13px] px-3.5 py-1.5 rounded-full border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
-
+          className="text-[13px] py-1 text-muted-foreground hover:text-foreground transition-colors">
                   Fler...
                 </button>
         }
@@ -3072,12 +3073,11 @@ export const CreateSceneModal = ({
             <div className="flex-1 overflow-auto p-4 flex items-center justify-center min-h-0">
               <img src={previewImage.imageUrl} alt={previewImage.name} className="max-w-full max-h-full rounded-xl object-contain shadow-lg" />
             </div>
-            <div className="px-4 py-2 flex flex-wrap gap-1.5 flex-shrink-0 border-t border-border/30">
+            <div className="px-4 py-2 flex flex-wrap gap-x-3 gap-y-1 flex-shrink-0 border-t border-border/30">
               {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) =>
         <button
           key={idx}
           onClick={() => {
-            // Auto-send from preview: include the preview image as context
             const imageUrl = previewImage.imageUrl;
             setPreviewImage(null);
             setPreviewPrompt('');
@@ -3098,15 +3098,14 @@ export const CreateSceneModal = ({
               }
             })();
           }}
-          className="text-[13px] px-3.5 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
-
-                  {s}
+          className="text-[13px] py-1 text-primary/80 hover:text-primary transition-colors">
+                  {s}...
                 </button>
         )}
               {postGenSuggestions.length > 3 && !showAllSuggestions &&
                 <button
                   onClick={() => setShowAllSuggestions(true)}
-                  className="text-[13px] px-3.5 py-1.5 rounded-full border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
+                  className="text-[13px] py-1 text-muted-foreground hover:text-foreground transition-colors">
                   Fler...
                 </button>
               }
