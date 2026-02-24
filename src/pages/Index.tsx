@@ -843,7 +843,8 @@ function IndexContent() {
       <main className="container mx-auto px-4 py-8 max-w-7xl mt-16">
         {activeTab === 'ai-studio' ? (
           /* AI Studio – inline chat, fills remaining viewport below header */
-          <section className="fixed inset-x-0 top-16 bottom-0 z-10 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3">
+          <section className="fixed inset-x-0 top-16 bottom-0 z-10 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 flex justify-center">
+            <div className="w-full max-w-2xl h-full">
             <CreateSceneModal
               open={true}
               onOpenChange={() => {}}
@@ -861,6 +862,7 @@ function IndexContent() {
               initialImage={aiModalInitialImage}
               inline
             />
+            </div>
           </section>
         ) : activeTab === 'history' ? <section className="space-y-6">
             <div>
