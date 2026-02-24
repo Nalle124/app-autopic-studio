@@ -1,201 +1,124 @@
 
-# AI Studio -- Optimering av floden, meny och annonsverktyg
 
-## Oversikt
+# Teknisk Audit — AutoPic Studio
 
-Tre sammanlankade forbattringsomraden for AI Studio:
+## Sammanfattning
 
-1. **Menydesign** -- Fran enkel lista till visuellt kort-grid med tydlig hierarki
-2. **Annonsflode med text-overlay** -- AI skapar bakgrund/layout, text laggs pa som redigerbart UI-overlay
-3. **Forbattrade guidade floden** -- Smartare prompter, battre mockup-bibliotek, tydligare UX
+Appen har en solid grundarkitektur med bra RLS-policies, serversidig validering i edge functions, och atomisk kreditavräkning. Men det finns flera kritiska och viktiga brister som bör åtgärdas.
 
 ---
 
-## Del 1: Ny menydesign
+## KRITISKT (Fixas omedelbart)
 
-### Nuvarande problem
-- Menyn kanns som en enkel lista med knappar
-- Alla fem alternativ har samma visuella vikt
-- Saknar den "magiska" kanslan som en bildverktygs-app bor ha
+### 1. generate-scene-image saknar kreditavräkning
 
-### Ny design
+**Fil:** `supabase/functions/generate-scene-image/index.ts`
+**Risk:** Intäktsläckage. Varje anrop till AI Studio-chatten (skapa bakgrund, fri generering, annons) genererar en bild via Lovable AI Gateway men drar INGEN credit. Användare kan generera obegränsat antal bakgrundsbilder utan kostnad.
+**Konsekvens:** Reell kostnad per anrop till AI-gateway utan intäkt. Användare kan exploatera detta medvetet.
+**Lösning:** Implementera samma atomiska `decrement_credits`-mönster som i `process-car-image/index.ts` — kreditkontroll före, atomisk avräkning efter lyckad generering.
 
-**Layout: Kort-grid med hierarki**
+### 2. generate-scene-image saknar rate limiting
 
-```text
-+------------------------------------------+
-|  AutoChat AI (beta)        [<-] [Meny]   |
-+------------------------------------------+
-|                                          |
-|  Vad vill du skapa?                      |
-|                                          |
-|  +----------------+  +----------------+ |
-|  | [thumbnail]    |  | [thumbnail]    | |
-|  | Skapa          |  | Redigera       | |
-|  | bakgrund       |  | fritt          | |
-|  | Designa miljö  |  | AI redigerar   | |
-|  +----------------+  +----------------+ |
-|                                          |
-|  +------------------------------------+ |
-|  | [thumbnails]     Skapa annons      | |
-|  |                  Marknadsföring &  | |
-|  |                  kreativt material | |
-|  +------------------------------------+ |
-|                                          |
-|  --- Verktyg ---                         |
-|  [Blurra regskyltar]  [Applicera logo]  |
-|                                          |
-+------------------------------------------+
-```
+**Fil:** `supabase/functions/generate-scene-image/index.ts`
+**Risk:** Kostnadsbomb. En enskild autentiserad användare (eller ett stulet JWT) kan köra hundratals AI-genereringar per minut. Eftersom det inte finns kreditavräkning (se punkt 1) finns ingen broms alls.
+**Konsekvens:** Okontrollerad kostnad mot Lovable AI Gateway.
+**Lösning:** Implementera rate limiting (t.ex. max 10 genereringar/minut/användare) antingen via in-memory store (som i `process-demo-image`) eller via en databas-baserad räknare.
 
-**Forandringar:**
-- De tre huvudfunktionerna visas som stora kort i ett 2+1 grid (bakgrund + redigera fritt pa rad 1, annons som full bredd pa rad 2)
-- "Blurra regskyltar" och "Applicera logo" grupperas under en separator med rubriken "Verktyg" som mindre, kompakta knappar
-- Varje kort har en thumbnail-forhandsvisning, titel och kort beskrivning
-- Hover-effekt med subtil skala och border-farg
+### 3. process-demo-image: Ingen autentisering krävs + temp-filer rensas inte vid fel
+
+**Fil:** `supabase/functions/process-demo-image/index.ts`
+**Risk:** Kostnadsbomb. Funktionen kräver ingen JWT — vem som helst kan anropa den. Rate limiting är in-memory och nollställs vid cold start. En angripare kan rotera IP-adresser för att kringgå begränsningen och generera obegränsat antal bilder via PhotoRoom API:t på er bekostnad.
+**Konsekvens:** Direkt monetär förlust via PhotoRoom-fakturor.
+**Lösning:** (a) Flytta till persistent rate limiting (databas-tabell med IP + timestamp). (b) Överväg CAPTCHA eller signerade tokens. (c) I catch-blocket: rensa temp-filen `uploadFilename` som läcker i storage vid fel.
+
+### 4. Dubbel kreditavräkning — frontend + backend
+
+**Fil:** `src/contexts/DemoContext.tsx` (rad 74-105) + `supabase/functions/process-car-image/index.ts` (rad 463-506)
+**Risk:** Race condition. `DemoContext.decrementCredits()` gör en icke-atomisk `update` klientside (RLS-skyddad), och sedan gör edge function `decrement_credits` atomiskt serversides. Om båda körs, dras 2 credits per bild.
+**Konsekvens:** Användare förlorar credits dubbelt — ger supportärenden och missnöje.
+**Lösning:** Undersök om frontend-decrementet faktiskt anropas vid process-car-image. Om backend redan hanterar det atomiskt, ta bort frontend-decrementet helt och låt backend vara single source of truth. Refetcha credits efter backend-svar.
+
+### 5. Storage bucket "processed-cars" är publikt — alla URL:er är permanenta
+
+**Fil:** Storage-konfiguration
+**Risk:** Dataläckage. Alla genererade bilder är publikt tillgängliga via URL:er som aldrig expirerar. Om en URL läcker kan vem som helst se bilden. Demo-bilder (`demo/`-prefix) och temp-filer (`demo-temp/`) hamnar i samma publika bucket.
+**Konsekvens:** Kunders bilannonser kan indexeras av sökmotorer eller delas utan kontroll.
+**Lösning:** (a) Kort sikt: implementera `cleanup-old-images` för demo/temp-filer med kort TTL. (b) Lång sikt: överväg privat bucket med signed URLs (kort expiry) för känsligare användares bilder.
 
 ---
 
-## Del 2: Annonsflode med text-overlay-system
+## VIKTIGT (Fixas inom 2 veckor)
 
-### Problemet idag
-- AI genererar text direkt i bilden -- resulterar i stavfel, felaktiga tecken
-- Nar anvandaren valjer "Personlig & autentisk" som stil, skriver AI bokstavligt "personlig" och "autentisk" pa bilden
-- Ingen kontroll over typografi, placering eller redigering
+### 6. CreateSceneModal.tsx: 3312 rader — underhållsmardröm
 
-### Ny approach: Hybrid med text-overlay
+**Fil:** `src/components/CreateSceneModal.tsx`
+**Risk:** Teknisk skuld. Filen är 3312 rader och hanterar minst 5 olika "modes" (background-studio, free-create, ad-create, blur-plates, logo-studio) med all logik i en enda komponent. Extremt svår att debugga, testa och underhålla.
+**Konsekvens:** Varje ändring riskerar att bryta andra modes. Utvecklingshastigheten minskar exponentiellt.
+**Lösning:** Bryt ut varje mode till en egen komponent. Skapa en gemensam hook (`useChatSession`) för delad chattlogik.
 
-**Flode:**
+### 7. Index.tsx: 2165 rader med samma problem
 
-```text
-1. Anvandaren valjer mockup-mall (t.ex. "Inkommande bil -- Ljus & clean")
-2. Guidad chatt fragar efter text-innehall:
-   - "Vilken rubrik?" -> "Inkommande bil" / "Nyinkommet" / Eget
-   - "Undertext?" -> "I var bilhall i Skara" / Eget
-   - "Kontaktinfo?" -> Telefon, e-post
-3. AI genererar BAKGRUNDSBILDEN utan text (med stil, layout-komposition)
-4. Text laggs pa som HTML/Canvas overlay i appen
-5. Anvandaren kan redigera text, flytta element, andra storlek
-```
+**Fil:** `src/pages/Index.tsx`
+**Risk:** Teknisk skuld. Huvudsidan med all bildhantering, galleri, export, nedladdning, redigering i en fil.
+**Lösning:** Extrahera till moduler: `useImageProcessing`, `useDownload`, `GallerySection`, `ExportSection`.
 
-### Teknisk implementation
+### 8. check-subscription: Kreditreset-logik med 28-dagars fönster är fragil
 
-**Ny komponent: `AdTextOverlayEditor.tsx`**
+**Fil:** `supabase/functions/check-subscription/index.ts`
+**Risk:** Edge case vid planbyten. 28-dagars time-window för idempotency kan missa en riktig renewal om användaren byter plan mitt i cykeln, eller kan resetta credits dubbelt om intervallet är kortare (t.ex. testläge).
+**Konsekvens:** Användare kan få för många eller för få credits vid planbyten.
+**Lösning:** Byt till `periodKey`-baserad idempotency (Stripe `current_period_end` + subscription ID) istället för tidsbaserad. Perioden är unik per billing cycle.
 
-En Canvas/HTML-baserad editor som:
-- Visar den AI-genererade bakgrundsbilden
-- Lagger pa textelement (rubrik, undertext, CTA) som draggbara/redigerbara lager
-- Stoder fontinstellningar (storlek, farg, font-familj)
-- Exporterar slutresultatet som en sammanfogad PNG/JPG
-- Varje mockup-mall definierar default-positioner for text-elementen
+### 9. Ingen Stripe webhook-verifiering
 
-**Datastruktur for text-overlay:**
+**Risk:** Ingen webhook-listener finns. Hela betalningsflödet förlitar sig på att klienten anropar `verify-payment` med `session_id` efter redirect. Om användaren stänger fliken innan redirecten sker, registreras aldrig betalningen och credits tilldelas aldrig.
+**Konsekvens:** Betalande kunder som inte får sina credits — supportbelastning och intäktsförlust.
+**Lösning:** Implementera en Stripe webhook-endpoint (`checkout.session.completed`) som backup. Den behöver inte ersätta verify-payment men ska fånga upp missade sessioner.
 
-```text
-AdOverlayConfig {
-  backgroundImageUrl: string
-  elements: [
-    { type: "headline", text: "Inkommande bil", x, y, fontSize, color, fontFamily }
-    { type: "subtitle", text: "I var bilhall", x, y, fontSize, color, fontFamily }
-    { type: "cta", text: "Ring 0500-123456", x, y, fontSize, color, fontFamily }
-    { type: "logo", imageUrl: "...", x, y, width, height }
-  ]
-  format: "landscape" | "portrait"
-}
-```
+### 10. process-demo-image: Demo-bilder rensas aldrig
 
-**Andrad edge function-logik for annonser:**
+**Fil:** `supabase/functions/process-demo-image/index.ts` + `supabase/functions/cleanup-old-images/index.ts`
+**Risk:** Kostnadstillväxt. Demo-bilder under `demo/`-prefixet i storage ackumuleras utan rensning. Varje demo-generering skapar en permanent fil.
+**Konsekvens:** Storage-kostnader växer kontinuerligt utan intäkt.
+**Lösning:** Schemalägg `cleanup-old-images` att rensa `demo/` och `demo-temp/`-prefix äldre än 24h.
 
-AD_CREATE_SYSTEM_PROMPT uppdateras med en ny instruktion:
-- "Skapa en professionell bakgrundsbild for en bilannons. Inkludera INTE nagon text i bilden. Lat omraden dar text ska placeras vara tomma eller ha diskret negativ yta. Fokuera pa komposition, farger och stamnning."
-- Prompten byggs fran mallinformation (stil, fargschema, layout-typ) men utan textkrav
+### 11. CORS: Access-Control-Allow-Origin: * på alla edge functions
 
-### Mockup-mallbibliotek (forbattrat)
-
-Varje mall definierar:
-
-| Egenskap | Beskrivning |
-|----------|-------------|
-| `backgroundPrompt` | Master-prompt for AI-bakgrunden (utan text) |
-| `textSlots` | Vilka textelement som behovs (rubrik, undertext, CTA, kontakt) |
-| `defaultPositions` | Var textelementen placeras default (x%, y%) |
-| `colorScheme` | Foreslagna farger for text (ljus/mork/accent) |
-| `fontPreset` | Default font-familj och storlekar |
-| `format` | Landskaps eller portratt |
-
-**Exempel -- "Inkommande bil, Ljus & clean":**
-
-```text
-backgroundPrompt: "Professional automotive dealership marketing background.
-  Clean, bright, modern composition with soft gradient from light grey to white.
-  Large negative space in upper portion for headline placement.
-  Lower section has subtle road/asphalt texture. Premium lighting with soft shadows.
-  Color palette: cool whites, light blues, subtle silver tones."
-
-textSlots: [
-  { id: "headline", label: "Rubrik", default: "Inkommande bil", position: top-center }
-  { id: "subtitle", label: "Undertext", default: "I var bilhall", position: below-headline }
-  { id: "contact", label: "Kontakt", default: "", position: bottom-right }
-]
-
-colorScheme: { text: "#1a1a1a", accent: "#3b82f6", background: "rgba(255,255,255,0.85)" }
-fontPreset: { headline: "Inter Bold 48px", subtitle: "Inter Regular 24px" }
-```
-
-### Nar anvandaren valjer en mockup:
-
-1. Mockup-bilden visas som referens i chatten
-2. Guidade fragor samlar text-innehall (rubrik, undertext, CTA)
-3. En "bakgrundsprompt" (utan text) skickas till AI
-4. AI returnerar en ren bakgrundsbild
-5. `AdTextOverlayEditor` oppnas med bakgrundsbilden + textelementen fran guiden
-6. Anvandaren kan dra, redigera och styla texten
-7. "Exportera" sammanfogar allt till en slutbild
+**Fil:** Alla edge functions
+**Risk:** Säkerhetssvaghet. Alla edge functions accepterar requests från vilken origin som helst. En angripare kan skapa en webbsida som gör autentiserade anrop till era edge functions om en användare besöker sidan medan de är inloggade.
+**Konsekvens:** CSRF-liknande attacker mot autentiserade endpoints.
+**Lösning:** Begränsa till kända origins: `app-autopic-studio.lovable.app` och preview-domänen.
 
 ---
 
-## Del 3: Forbattrade guidade floden
+## REKOMMENDATION (Backlog)
 
-### Skapa bakgrund -- forenkling
+### 12. Sentry är integrerat men utan breadcrumbs
 
-**Andring:** Nar anvandaren valjer en kategori (t.ex. Utomhus) och far inspirationsbilder + forval:
-- Ta bort den separata raden "Anvands som inspiration (valfritt)" -- slå ihop med inspirationsbilderna
-- Gor tydligare att man MASTE valja ett av forvalen for att ga vidare
-- Lagg till en tunn separator och text "Valj ett alternativ for att fortsatta:" ovanfor knapparna
+**Fil:** `src/contexts/AuthContext.tsx`, `src/main.tsx`
+**Risk:** Sentry fångar errors men utan kontext om vilken edge function eller vilken generering som triggas.
+**Lösning:** Lägg till Sentry breadcrumbs före varje API-anrop och edge function-invokation.
 
-### Redigera fritt -- battre referensbildshantering
+### 13. Ingen övervaknings-alert för tredjepartskostnader
 
-**Nuvarande:** Uppladdningssektionen fungerar men ar inte tillrackligt framtradande.
+**Risk:** Om PhotoRoom eller Lovable AI Gateway-kostnader spårar ur, märks det först på fakturan.
+**Lösning:** Implementera en enkel daglig edge function som räknar `credit_transactions` med `transaction_type = 'generation'` och skickar en alert (via Resend) om volymen överstiger ett tröskelvärde.
 
-**Forbattring:**
-- Om anvandaren har uppladdade projektbilder, visa de 4 senaste som standard (utan att behova klicka "Valj bild fran enhet" forst)
-- Nar en bild ar vald, visa tydlig "vald"-markering (bla kant + bock)
-- Snabbvalen (Andra vinkel, Ta bort bakgrund etc.) ska tydligt kommunicera att de appliceras PA den valda bilden
+### 14. localStorage-persistens av bilddata
 
----
+**Fil:** `src/pages/Index.tsx` (rad 72-93, 241-267)
+**Risk:** localStorage har 5-10MB gräns. Vid många bilder kan quota exceeded-fel uppstå (hanteras med catch men ger tyst förlust).
+**Lösning:** Flytta persistens helt till `draft_images`-tabellen i databasen. localStorage kan användas som cache men inte som primär lagring.
 
-## Filer som andras
+### 15. Memoization saknas i tunga komponenter
 
-| Fil | Andring |
-|-----|---------|
-| `src/components/CreateSceneModal.tsx` | Ny menydesign (kort-grid), forbattrade guidade floden, text-overlay integration |
-| `src/components/AdTextOverlayEditor.tsx` | **NY** -- Canvas/HTML editor for text pa annonser |
-| `supabase/functions/generate-scene-image/index.ts` | Ny `ad-create-background` sub-mode som genererar bakgrund utan text |
-| `public/ad-templates/` | Eventuellt nya/uppdaterade mockup-bilder |
+**Fil:** `src/pages/Index.tsx`, `src/components/CreateSceneModal.tsx`
+**Risk:** Onödiga re-renders vid varje state-ändring i 2000+ raders komponenter.
+**Lösning:** Bryt ut sub-komponenter med `React.memo`, använd `useMemo` för tunga beräkningar och `useCallback` konsekvent.
 
-## Vad som INTE andras
+### 16. Demo-temp filer läcker vid fel
 
-- Huvudflodet (ladda upp -> valj scen -> generera -> redigera)
-- Bakgrundsstudio-funktionaliteten (bara UX-forbattringar)
-- Redigera fritt-karnlogiken
-- Betalningsfloden, auth eller profilsidor
-
-## Implementationsordning
-
-1. **Menydesign** -- Ny kort-grid layout med hierarki och separator for verktyg
-2. **Ad text-overlay editor** -- Ny komponent `AdTextOverlayEditor.tsx` med draggbara textelement
-3. **Mockup-mallbibliotek** -- Definiera `backgroundPrompt`, `textSlots`, positioner for varje mall
-4. **Edge function uppdatering** -- Ny sub-mode for textfri annons-bakgrund
-5. **Integration** -- Koppla ihop guidad chatt -> AI bakgrund -> text-overlay editor -> export
-6. **UX-polish** -- Forbattra guidade floden, tydligare instruktioner, battre bilder
+**Fil:** `supabase/functions/process-demo-image/index.ts`
+**Risk:** Om PhotoRoom-anropet misslyckas (rad 293-296) kastas ett fel innan cleanup (rad 329-332) körs. Temp-filen `uploadFilename` blir kvar permanent i storage.
+**Lösning:** Flytta cleanup till en `finally`-block.
 
