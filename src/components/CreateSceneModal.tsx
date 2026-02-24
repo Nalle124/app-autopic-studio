@@ -18,6 +18,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger } from
 '@/components/ui/dropdown-menu';
+import { AdTextOverlayEditor } from '@/components/AdTextOverlayEditor';
+import { AD_MOCKUP_TEMPLATES, getTemplateById } from '@/data/adTemplates';
+import type { AdTemplate } from '@/data/adTemplates';
 
 interface CreateSceneModalProps {
   open: boolean;
@@ -44,6 +47,7 @@ type ChatMessage =
 {role: 'assistant-summary';category: string;selections: string[];format?: string;selectionLabels?: string[];} |
 {role: 'assistant-image-grid';text: string;images: Array<{url: string;id: string;}>;} |
 {role: 'assistant-category-grid';text: string;categories: Array<{label: string;value: string;thumbnail: string;}>;} |
+{role: 'assistant-ad-overlay';backgroundUrl: string;templateId: string;userTexts: Record<string, string>;} |
 {role: 'mode-select';};
 
 const LOADING_PHRASES = [
@@ -495,6 +499,11 @@ export const CreateSceneModal = ({
   const [blurStyle, setBlurStyle] = useState<string | null>(null);
   const blurFileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Ad overlay editor state
+  const [overlayEditor, setOverlayEditor] = useState<{backgroundUrl: string; template: AdTemplate; userTexts: Record<string, string>;} | null>(null);
+  const [selectedAdTemplateId, setSelectedAdTemplateId] = useState<string | null>(null);
+  const [adUserTexts, setAdUserTexts] = useState<Record<string, string>>({});
 
   // Saved chat state for "return to chat" feature
   const [savedChat, setSavedChat] = useState<{

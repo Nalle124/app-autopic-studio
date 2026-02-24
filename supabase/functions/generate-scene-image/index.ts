@@ -96,6 +96,28 @@ When the user asks to modify a previous image, generate a NEW image with those c
 
 CRITICAL: Always output an image. Never skip image generation.`;
 
+const AD_BACKGROUND_SYSTEM_PROMPT = `You are an AI that generates professional marketing background images for automotive businesses. You MUST produce a new image with every response. Never respond with only text. NEVER use emojis in your text responses.
+
+PURPOSE: Create BACKGROUND IMAGES for automotive marketing materials. Text will be added separately as an overlay by the application — DO NOT include any text, letters, numbers, words, headlines, or typography in the generated image.
+
+ABSOLUTE RULES FOR EVERY IMAGE:
+1. NEVER include ANY text, letters, numbers, words, headlines, watermarks, logos, or typography. This is the MOST CRITICAL rule.
+2. Create visually appealing backgrounds with ample negative space where text can be overlaid later.
+3. Leave large open areas (especially upper third and center) clean and suitable for text overlay.
+4. Use professional compositions with gradients, lighting effects, textures, or abstract design elements.
+5. ASPECT RATIO — Match the requested format. Default is wide landscape 3:2 (1536x1024). If portrait is requested, use 2:3 (1024x1536).
+6. PHOTOGRAPHIC REALISM — Real photo quality with professional lighting. Must look like a real photograph, NOT a 3D render, illustration, or CGI.
+7. Use modern, clean design aesthetics appropriate for automotive marketing.
+8. Consider areas where text will be placed — ensure good contrast potential (either consistently light or dark areas for text).
+9. Include design elements like gradients, subtle textures, bokeh, or architectural elements when appropriate.
+10. The image should feel premium and professional, suitable for a car dealership's marketing.
+
+CRITICAL: ZERO text in the image. Not even a single letter or number. The application will add all text as a separate layer.
+
+When the user asks to modify a previous image, generate a NEW image with those changes while keeping the overall concept.
+
+CRITICAL: Always output an image. Never skip image generation.`;
+
 // Invisible context injected into user prompts for background mode
 const BACKGROUND_PROMPT_SUFFIX = `
 
@@ -216,6 +238,7 @@ serve(async (req) => {
 
     const isBackgroundMode = !mode || mode === 'background-studio';
     const isAdMode = mode === 'ad-create';
+    const isAdBgMode = mode === 'ad-create-background';
     const isPortrait = format === 'portrait';
 
     console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (mode: ${mode}, format: ${format || 'landscape'}, ${conversationHistory.length} messages)`);
@@ -234,8 +257,21 @@ serve(async (req) => {
 8. CRITICAL: All text MUST be spelled correctly — every letter, number, and symbol exactly as specified
 IMPORTANT: When modifying a previous image, keep ALL unchanged elements and ONLY change what the user specifically asked to change.`;
 
+    // Build ad-background prompt suffix (no text mode)
+    const adBgPromptSuffix = `
+
+[RULES FOR THIS IMAGE]:
+1. This is a BACKGROUND IMAGE for automotive marketing — text will be added separately as overlay
+2. DO NOT include ANY text, letters, numbers, words, headlines, or typography in the image
+3. Leave large open areas suitable for text overlay (upper third and center especially)
+4. Aspect ratio: ${isPortrait ? '2:3 portrait (1024x1536)' : '3:2 landscape (1536x1024)'}
+5. Photorealistic quality with professional design elements
+6. Create areas with consistent brightness (either light or dark) where text can be placed with good contrast
+7. Modern, clean automotive marketing aesthetic
+CRITICAL: ZERO text in the image. The application handles all text as a separate layer.`;
+
     // Determine which prompt suffix to inject
-    const modeSuffix = isBackgroundMode ? BACKGROUND_PROMPT_SUFFIX : isAdMode ? adPromptSuffix : null;
+    const modeSuffix = isBackgroundMode ? BACKGROUND_PROMPT_SUFFIX : isAdMode ? adPromptSuffix : isAdBgMode ? adBgPromptSuffix : null;
 
     // Process conversation history with mode-specific context
     const processedHistory = conversationHistory.map((msg: any, idx: number) => {
@@ -272,7 +308,9 @@ IMPORTANT: When modifying a previous image, keep ALL unchanged elements and ONLY
 
     // Select system prompt based on mode
     let systemPrompt: string;
-    if (isAdMode) {
+    if (isAdBgMode) {
+      systemPrompt = AD_BACKGROUND_SYSTEM_PROMPT;
+    } else if (isAdMode) {
       systemPrompt = AD_CREATE_SYSTEM_PROMPT;
     } else if (mode === 'free-create') {
       systemPrompt = FREE_CREATE_SYSTEM_PROMPT;
