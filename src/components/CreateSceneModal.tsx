@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useDemo } from '@/contexts/DemoContext';
 import {
   Dialog,
   DialogContent } from
@@ -486,6 +487,7 @@ export const CreateSceneModal = ({
   inline = false
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
+  const { triggerPaywall, refetchCredits } = useDemo();
   const [chatMode, setChatMode] = useState<ChatMode | null>(null);
   const [prompt, setPrompt] = useState('');
   const [customName, setCustomName] = useState('');
@@ -1370,6 +1372,17 @@ export const CreateSceneModal = ({
 
     if (error) {
       console.error('Edge function error:', error);
+      
+      // Check for 402 (insufficient credits) — trigger paywall
+      const is402 = error?.message?.includes('non-2xx') || error?.context?.status === 402;
+      if (is402) {
+        setIsGenerating(false);
+        // Refetch credits to ensure UI is in sync
+        refetchCredits();
+        triggerPaywall('subscriber-limit');
+        return;
+      }
+      
       const isNetworkError = error?.message?.includes('Load failed') || error?.context?.message?.includes('Load failed');
       const errorMsg = isNetworkError ?
       'Nätverksfel — bildskapandet tog för lång tid.' :
@@ -1384,6 +1397,13 @@ export const CreateSceneModal = ({
     }
 
     if (data?.error) {
+      // Also check for credit errors in data response
+      if (data.error === 'insufficient_credits') {
+        setIsGenerating(false);
+        refetchCredits();
+        triggerPaywall('subscriber-limit');
+        return;
+      }
       setMessages((prev) => [...prev, { role: 'assistant', text: data.error }]);
       setIsGenerating(false);
       return;
@@ -1399,6 +1419,8 @@ export const CreateSceneModal = ({
       photoroomPrompt: data.photoroomPrompt
     }]
     );
+    // Refetch credits after successful generation to update UI counter
+    refetchCredits();
     setIsGenerating(false);
   };
 
