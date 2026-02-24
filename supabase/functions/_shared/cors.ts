@@ -1,6 +1,7 @@
 const ALLOWED_ORIGINS = [
   "https://app-autopic-studio.lovable.app",
   "https://id-preview--e871a48d-694c-4769-86d6-0283b75b182f.lovable.app",
+  "https://e871a48d-694c-4769-86d6-0283b75b182f.lovableproject.com",
 ];
 
 export function getCorsHeaders(req: Request) {
