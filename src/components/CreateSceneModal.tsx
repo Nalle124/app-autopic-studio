@@ -1832,14 +1832,10 @@ export const CreateSceneModal = ({
           }
         ];
 
-        setMessages((prev) => [...prev, { role: 'assistant-loading' }]);
-
         const { data, error } = await invokeWithTimeout({
           conversationHistory,
           mode: 'free-create'
         });
-
-        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
 
         if (error) {
           setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.' }]);
@@ -1857,7 +1853,7 @@ export const CreateSceneModal = ({
         }
       } catch (err) {
         console.error('Logo apply error:', err);
-        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+        // No loading bubble to clean up - button handles loading state
         setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid applicering. Försök igen.' }]);
       }
     }
@@ -2868,13 +2864,13 @@ export const CreateSceneModal = ({
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
                 <p className="text-sm text-foreground">Redo att applicera logo på {selectedBlurImages.length} bild(er).</p>
-                {!isGenerating && (
-                  <Button
-                    onClick={handleApplyLogo}
-                    className="w-full rounded-full h-10">
-                    Applicera logo
-                  </Button>
-                )}
+                <Button
+                  onClick={handleApplyLogo}
+                  disabled={isGenerating}
+                  className="w-full rounded-full h-10">
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  Applicera logo
+                </Button>
               </div>
             </div>
           )}
@@ -3004,7 +3000,7 @@ export const CreateSceneModal = ({
             size="icon"
             className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full">
 
-                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <Send className="w-4 h-4" />
                 </Button>
               </div>
             </div>
