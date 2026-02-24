@@ -1507,8 +1507,17 @@ export const CreateSceneModal = ({
     }
 
     // Normal generate flow
-    const userMessage: ChatMessage = referenceImage ?
-    { role: 'user', text: prompt.trim(), image: referenceImage } :
+    // Auto-attach last generated image for iteration when no explicit reference is set
+    let effectiveReference = referenceImage;
+    if (!effectiveReference && hasGeneratedImage) {
+      const lastGeneratedMsg = [...messages].reverse().find((m) => m.role === 'assistant-image') as Extract<ChatMessage, {role: 'assistant-image'}> | undefined;
+      if (lastGeneratedMsg?.imageUrl) {
+        effectiveReference = lastGeneratedMsg.imageUrl;
+      }
+    }
+
+    const userMessage: ChatMessage = effectiveReference ?
+    { role: 'user', text: prompt.trim(), image: effectiveReference } :
     { role: 'user', text: prompt.trim() };
 
     const updatedMessages = [...messages, userMessage];
@@ -1850,7 +1859,7 @@ export const CreateSceneModal = ({
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. CRITICAL: Output the EXACT same image dimensions and aspect ratio as the input photo. Do NOT crop, resize, or change the framing in any way. The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. Keep everything about the original image identical, only add the logo overlay.` },
+              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. CRITICAL RULES: 1) Output the EXACT same image dimensions, aspect ratio, and orientation as the input photo — if the input is portrait (taller than wide), the output MUST be portrait. If landscape (wider than tall), the output MUST be landscape. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) The output image MUST have the EXACT same width-to-height ratio as the input.` },
               { type: 'image_url', image_url: { url: base64 } },
               { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
@@ -2083,12 +2092,17 @@ export const CreateSceneModal = ({
                             src="/scenes/white-studio.png"
                             alt=""
                             loading="lazy"
-                            className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 group-hover:-rotate-1 transition-transform ml-1.5 mt-1.5" />
+                            className="absolute top-0 left-1 w-[55%] h-[75%] object-cover rounded-lg shadow-sm -rotate-6 group-hover:-rotate-3 transition-transform mt-2" />
+                          <img
+                            src="/scenes/nordic-showroom.png"
+                            alt=""
+                            loading="lazy"
+                            className="absolute top-1 left-1/2 -translate-x-1/2 w-[55%] h-[75%] object-cover rounded-lg shadow-md rotate-0 group-hover:rotate-1 transition-transform z-10" />
                           <img
                             src="/scenes/hostgata.png"
                             alt=""
                             loading="lazy"
-                            className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 group-hover:rotate-3 transition-transform mr-1 mb-1" />
+                            className="absolute bottom-0 right-1 w-[55%] h-[75%] object-cover rounded-lg shadow-lg rotate-6 group-hover:rotate-3 transition-transform" />
                         </div>
                         <div className="p-3 pt-2">
                           <p className="text-sm font-semibold text-foreground">Skapa bakgrund</p>
@@ -2105,16 +2119,15 @@ export const CreateSceneModal = ({
                             src="/mode-previews/porsche-transport.jpg"
                             alt=""
                             loading="lazy"
-                            className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 group-hover:-rotate-1 transition-transform ml-1.5 mt-1.5" />
-                          <img
-                            src="/scenes/dark-studio.png"
-                            alt=""
-                            loading="lazy"
-                            className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 group-hover:rotate-3 transition-transform mr-1 mb-1" />
+                            className="absolute inset-0 w-full h-full object-cover" />
+                          {/* Chat bubble mockup overlay */}
+                          <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-sm rounded-xl px-3 py-2 shadow-lg">
+                            <p className="text-[10px] sm:text-[11px] text-white/90 leading-snug truncate">Ändra vinkeln och gör ljusare...</p>
+                          </div>
                         </div>
                         <div className="p-3 pt-2">
                           <p className="text-sm font-semibold text-foreground">Redigera fritt</p>
-                          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">AI redigerar din bild</p>
+                          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Prompta AI på din bild</p>
                         </div>
                       </button>
                     </div>
