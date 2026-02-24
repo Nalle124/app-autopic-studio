@@ -2900,15 +2900,15 @@ export const CreateSceneModal = ({
         {showPostGenSuggestions && chatMode &&
     <div className="px-4 pt-2 pb-1 bg-background/50 flex-shrink-0">
             <div className="flex flex-wrap gap-x-3 gap-y-1">
-              {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) =>
+              {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 2)).map((s, idx) =>
         <button
           key={idx}
-          onClick={() => handleSuggestionSend(s)}
+          onClick={() => setPrompt(s + ' ')}
           className="text-[13px] py-1 text-primary/80 hover:text-primary transition-colors">
                   {s}...
                 </button>
         )}
-              {postGenSuggestions.length > 3 && !showAllSuggestions &&
+              {postGenSuggestions.length > 2 && !showAllSuggestions &&
         <button
           onClick={() => setShowAllSuggestions(true)}
           className="text-[13px] py-1 text-muted-foreground hover:text-foreground transition-colors">
