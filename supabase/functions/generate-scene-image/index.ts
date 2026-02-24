@@ -196,27 +196,30 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Verify user from JWT using direct HTTP request (more reliable in edge functions)
-    const token = authHeader.replace("Bearer ", "");
-    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
-      },
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Create client with user's auth for token validation
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
     });
 
-    if (!userResponse.ok) {
-      console.error("Auth validation failed:", userResponse.status);
+    // Verify user using getClaims
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims) {
+      console.error("Auth validation failed:", claimsError?.message || "no claims");
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const user = await userResponse.json();
+    const user = { id: claimsData.claims.sub, email: claimsData.claims.email };
+    
+    // Service role client for DB operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { conversationHistory, mode, format } = await req.json();
 
