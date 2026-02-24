@@ -49,6 +49,7 @@ type ChatMessage =
 {role: 'assistant-category-grid';text: string;categories: Array<{label: string;value: string;thumbnail: string;}>;} |
 {role: 'assistant-ad-overlay';backgroundUrl: string;templateId: string;userTexts: Record<string, string>;} |
 {role: 'assistant-logo-presets';text: string;} |
+{role: 'assistant-status';text: string;} |
 {role: 'mode-select';};
 
 const LOADING_PHRASES = [
@@ -1140,7 +1141,7 @@ export const CreateSceneModal = ({
         setSelectedLogoUrl(profileLogo);
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', text: '✓ Logo vald' },
+          { role: 'assistant-status', text: 'Logo vald' },
           {
             role: 'assistant-logo-presets' as any,
             text: 'Välj placering:',
@@ -1172,7 +1173,7 @@ export const CreateSceneModal = ({
       const presetLabel = presetLabels[value] || value;
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', text: `✓ Placering: ${presetLabel}` }
+        { role: 'assistant-status', text: `Placering: ${presetLabel}` }
       ]);
       return;
     }
@@ -1769,7 +1770,7 @@ export const CreateSceneModal = ({
         // For logo-studio, show visual placement presets
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', text: '✓ Logo vald' },
+          { role: 'assistant-status', text: 'Logo vald' },
           {
             role: 'assistant-logo-presets' as any,
             text: 'Välj placering:',
@@ -1779,6 +1780,25 @@ export const CreateSceneModal = ({
     };
     reader.readAsDataURL(file);
     e.target.value = '';
+  };
+
+  // ─── Convert SVG to PNG (AI doesn't support SVG) ────────────
+  const convertSvgToPng = async (url: string): Promise<string> => {
+    if (!url.includes('image/svg') && !url.endsWith('.svg')) return url;
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || 400;
+        canvas.height = img.naturalHeight || 400;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(url); // fallback
+      img.src = url;
+    });
   };
 
   // ─── Logo studio: apply logo to images via AI ──────────────
@@ -1796,6 +1816,9 @@ export const CreateSceneModal = ({
     };
     const placementDesc = presetMap[selectedLogoPreset] || 'small logo in the bottom-right corner';
 
+    // Convert logo to PNG if it's SVG (AI gateway doesn't support SVG)
+    const logoDataUrl = await convertSvgToPng(selectedLogoUrl);
+
     for (const imageUrl of selectedBlurImages) {
       try {
         const response = await fetch(imageUrl);
@@ -1812,7 +1835,7 @@ export const CreateSceneModal = ({
             content: [
               { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The logo should be semi-transparent, professional, and NOT cover the car. Keep the original image exactly the same, only add the logo overlay. Make it look natural and clean.` },
               { type: 'image_url', image_url: { url: base64 } },
-              { type: 'image_url', image_url: { url: selectedLogoUrl } }
+              { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
           }
         ];
@@ -2242,7 +2265,7 @@ export const CreateSceneModal = ({
                             const firstStep = flow[0];
                             setMessages((prev) => [
                               ...prev,
-                              { role: 'assistant', text: `✓ Inspiration: ${ref.label}` },
+                              { role: 'assistant-status', text: `Inspiration: ${ref.label}` },
                               {
                                 role: 'assistant-options',
                                 text: firstStep.question,
@@ -2378,7 +2401,7 @@ export const CreateSceneModal = ({
                     // Subtle confirmation instead of big user message
                     setMessages((prev) => [
                       ...prev,
-                      { role: 'assistant', text: `✓ ${selectedBlurImages.length} bild(er) valda` },
+                      { role: 'assistant-status', text: `${selectedBlurImages.length} bild(er) valda` },
                       {
                         role: 'assistant-options',
                         text: 'Välj hur skylten ska döljas:',
@@ -2397,7 +2420,7 @@ export const CreateSceneModal = ({
                   onClick={() => {
                     setMessages((prev) => [
                       ...prev,
-                      { role: 'assistant', text: `✓ ${selectedBlurImages.length} bild(er) valda` },
+                      { role: 'assistant-status', text: `${selectedBlurImages.length} bild(er) valda` },
                       { role: 'assistant', text: 'Välj vilken logo du vill använda:' }
                     ]);
                   }}
@@ -2557,6 +2580,16 @@ export const CreateSceneModal = ({
                   </div>
                 </div>);
 
+        }
+
+        // ─── Status indicator (subtle, no bubble) ─────
+        if (msg.role === 'assistant-status') {
+          return (
+            <div key={i} className="flex items-center gap-2 pl-11 py-1">
+              <Check className="w-3.5 h-3.5 text-muted-foreground/70" />
+              <span className="text-xs text-muted-foreground">{msg.text}</span>
+            </div>
+          );
         }
 
         // ─── Assistant text ───────────────────────────
