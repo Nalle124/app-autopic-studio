@@ -48,6 +48,7 @@ type ChatMessage =
 {role: 'assistant-image-grid';text: string;images: Array<{url: string;id: string;}>;} |
 {role: 'assistant-category-grid';text: string;categories: Array<{label: string;value: string;thumbnail: string;}>;} |
 {role: 'assistant-ad-overlay';backgroundUrl: string;templateId: string;userTexts: Record<string, string>;} |
+{role: 'assistant-logo-presets';text: string;} |
 {role: 'mode-select';};
 
 const LOADING_PHRASES = [
@@ -1139,24 +1140,15 @@ export const CreateSceneModal = ({
         setSelectedLogoUrl(profileLogo);
         setMessages((prev) => [
           ...prev,
-          { role: 'user', text: 'Min sparade logo' },
+          { role: 'assistant', text: '✓ Logo vald' },
           {
-            role: 'assistant-options',
-            text: 'Välj placering och stil:',
-            options: [
-              { label: 'Liten, nere till höger', value: '__logo_preset_br_small__' },
-              { label: 'Liten, nere till vänster', value: '__logo_preset_bl_small__' },
-              { label: 'Liten, uppe till höger', value: '__logo_preset_tr_small__' },
-              { label: 'Medium, centrerad uppe', value: '__logo_preset_tc_medium__' },
-              { label: 'Medium, centrerad nere', value: '__logo_preset_bc_medium__' },
-              { label: 'Liten, uppe till vänster', value: '__logo_preset_tl_small__' },
-            ]
+            role: 'assistant-logo-presets' as any,
+            text: 'Välj placering:',
           }
         ]);
       } else {
         setMessages((prev) => [
           ...prev,
-          { role: 'user', text: 'Min sparade logo' },
           { role: 'assistant', text: 'Du har ingen sparad logo i din profil. Ladda upp en logo istället.' }
         ]);
       }
@@ -1170,18 +1162,17 @@ export const CreateSceneModal = ({
     if (value.startsWith('__logo_preset_')) {
       setSelectedLogoPreset(value);
       const presetLabels: Record<string, string> = {
-        '__logo_preset_br_small__': 'Liten, nere till höger',
-        '__logo_preset_bl_small__': 'Liten, nere till vänster',
-        '__logo_preset_tr_small__': 'Liten, uppe till höger',
-        '__logo_preset_tc_medium__': 'Medium, centrerad uppe',
-        '__logo_preset_bc_medium__': 'Medium, centrerad nere',
-        '__logo_preset_tl_small__': 'Liten, uppe till vänster',
+        '__logo_preset_br_small__': 'Nere höger',
+        '__logo_preset_bl_small__': 'Nere vänster',
+        '__logo_preset_tr_small__': 'Uppe höger',
+        '__logo_preset_tc_medium__': 'Center uppe',
+        '__logo_preset_bc_medium__': 'Center nere',
+        '__logo_preset_tl_small__': 'Uppe vänster',
       };
       const presetLabel = presetLabels[value] || value;
       setMessages((prev) => [
         ...prev,
-        { role: 'user', text: presetLabel },
-        { role: 'assistant', text: `Logo placering: ${presetLabel}. Klicka nedan för att applicera.` }
+        { role: 'assistant', text: `✓ Placering: ${presetLabel}` }
       ]);
       return;
     }
@@ -1687,7 +1678,6 @@ export const CreateSceneModal = ({
         }
         return updated;
       });
-      toast.success(`${newImages.length} bild(er) tillagda`);
     }
     e.target.value = '';
   };
@@ -1776,21 +1766,13 @@ export const CreateSceneModal = ({
           { role: 'assistant', text: 'Logo vald! Klicka nedan för att bearbeta registreringsskyltarna.' }
         ]);
       } else {
-        // For logo-studio, show placement options
+        // For logo-studio, show visual placement presets
         setMessages((prev) => [
           ...prev,
-          { role: 'user', text: 'Egen logo uppladdad' },
+          { role: 'assistant', text: '✓ Logo vald' },
           {
-            role: 'assistant-options',
-            text: 'Välj placering och stil:',
-            options: [
-              { label: 'Liten, nere till höger', value: '__logo_preset_br_small__' },
-              { label: 'Liten, nere till vänster', value: '__logo_preset_bl_small__' },
-              { label: 'Liten, uppe till höger', value: '__logo_preset_tr_small__' },
-              { label: 'Medium, centrerad uppe', value: '__logo_preset_tc_medium__' },
-              { label: 'Medium, centrerad nere', value: '__logo_preset_bc_medium__' },
-              { label: 'Liten, uppe till vänster', value: '__logo_preset_tl_small__' },
-            ]
+            role: 'assistant-logo-presets' as any,
+            text: 'Välj placering:',
           }
         ]);
       }
@@ -2253,15 +2235,14 @@ export const CreateSceneModal = ({
                       reader.onload = (ev) => {
                         setReferenceImage(ev.target?.result as string);
                         setReferenceFile(null);
-                        toast.success(`Referens "${ref.label}" vald`);
-                        // After selecting inspiration, proceed to the first guided step
+                        // After selecting inspiration, proceed to the first guided step (subtle system message, not user message)
                         if (guidedCategory && guidedCategory !== 'custom' && guidedCategory !== 'custom-ad') {
                           const flow = activeFlows[guidedCategory];
                           if (flow) {
                             const firstStep = flow[0];
                             setMessages((prev) => [
                               ...prev,
-                              { role: 'user', text: `Inspiration: ${ref.label}` },
+                              { role: 'assistant', text: `✓ Inspiration: ${ref.label}` },
                               {
                                 role: 'assistant-options',
                                 text: firstStep.question,
@@ -2411,26 +2392,39 @@ export const CreateSceneModal = ({
                     </div>
               }
                   {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && !selectedLogoUrl &&
-              <div className="pl-9">
+              <div className="pl-9 space-y-3">
                       <Button
                   onClick={() => {
-                    // Subtle confirmation instead of big user message
                     setMessages((prev) => [
                       ...prev,
                       { role: 'assistant', text: `✓ ${selectedBlurImages.length} bild(er) valda` },
-                      {
-                        role: 'assistant-options',
-                        text: 'Välj vilken logo du vill använda:',
-                        options: [
-                          ...(profileLogo ? [{ label: 'Min sparade logo', value: '__logo_profile__' }] : []),
-                          { label: 'Ladda upp egen', value: '__logo_upload__' }
-                        ]
-                      }
+                      { role: 'assistant', text: 'Välj vilken logo du vill använda:' }
                     ]);
                   }}
                   className="w-full rounded-full h-10">
                         Nästa ({selectedBlurImages.length} valda)
                       </Button>
+                    </div>
+              }
+                  {/* Logo picker - shown after logo prompt */}
+                  {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && !selectedLogoUrl && messages.some(m => m.role === 'assistant' && typeof (m as any).text === 'string' && (m as any).text.includes('Välj vilken logo')) &&
+              <div className="pl-9 space-y-2">
+                      {profileLogo && (
+                        <button
+                          onClick={() => handleOptionClick('__logo_profile__')}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 hover:bg-muted hover:border-primary/40 transition-colors text-left">
+                          <img src={profileLogo} alt="Min logo" className="w-10 h-10 rounded-lg object-contain bg-background border border-border/30 p-1" />
+                          <span className="text-sm text-foreground">Min logo</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleOptionClick('__logo_upload__')}
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border border-dashed border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/40 transition-colors text-left text-muted-foreground hover:text-foreground">
+                        <div className="w-10 h-10 rounded-lg bg-muted/60 flex items-center justify-center">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm">Ladda upp logo</span>
+                      </button>
                     </div>
               }
                   <input ref={logoFileInputRef} type="file" accept="image/*" onChange={handleLogoFileUpload} className="hidden" />
@@ -2501,6 +2495,50 @@ export const CreateSceneModal = ({
                   </div>
                 </div>);
 
+        }
+
+        // ─── Logo presets (visual grid) ───────────────
+        if (msg.role === 'assistant-logo-presets') {
+          const LOGO_PRESETS = [
+            { value: '__logo_preset_tl_small__', label: 'Uppe vänster', dotClass: 'top-1.5 left-1.5 w-3 h-2' },
+            { value: '__logo_preset_tc_medium__', label: 'Center uppe', dotClass: 'top-1.5 left-1/2 -translate-x-1/2 w-5 h-2.5' },
+            { value: '__logo_preset_tr_small__', label: 'Uppe höger', dotClass: 'top-1.5 right-1.5 w-3 h-2' },
+            { value: '__logo_preset_bl_small__', label: 'Nere vänster', dotClass: 'bottom-3.5 left-1.5 w-3 h-2' },
+            { value: '__logo_preset_bc_medium__', label: 'Center nere', dotClass: 'bottom-3.5 left-1/2 -translate-x-1/2 w-5 h-2.5' },
+            { value: '__logo_preset_br_small__', label: 'Nere höger', dotClass: 'bottom-3.5 right-1.5 w-3 h-2' },
+          ];
+          return (
+            <div key={i} className="space-y-2">
+              <div className="flex gap-2.5 items-start">
+                <AutopicAvatar />
+                <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                  <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pl-9 max-w-[320px]">
+                {LOGO_PRESETS.map((preset) => (
+                  <button
+                    key={preset.value}
+                    onClick={() => handleOptionClick(preset.value)}
+                    disabled={isGenerating}
+                    className={`relative rounded-lg border-2 transition-all p-1.5 aspect-[16/10] ${
+                      selectedLogoPreset === preset.value
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50 bg-muted/50'
+                    }`}
+                  >
+                    {/* Car silhouette placeholder */}
+                    <div className="absolute inset-2 rounded bg-muted/30 flex items-center justify-center">
+                      <div className="w-8 h-4 bg-muted-foreground/15 rounded" />
+                    </div>
+                    {/* Logo dot indicator */}
+                    <div className={`absolute ${preset.dotClass} rounded-sm bg-foreground/60`} />
+                    <span className="absolute bottom-0.5 inset-x-0 text-[8px] text-center text-muted-foreground leading-none">{preset.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
         }
 
         // ─── User message ─────────────────────────────
@@ -3105,12 +3143,17 @@ export const CreateSceneModal = ({
       userTexts={overlayEditor.userTexts}
       onClose={() => setOverlayEditor(null)}
       onExport={(dataUrl, name) => {
-        // Download the exported image
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `${name.replace(/\s+/g, '-').toLowerCase()}.png`;
-        link.click();
-        toast.success('Annons exporterad!');
+        // Save to chat as assistant-image so user can see it and iterate
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant-image' as const,
+            imageUrl: dataUrl,
+            suggestedName: name.replace(/\s+/g, '-').toLowerCase(),
+            description: 'Exporterad annons',
+            photoroomPrompt: ''
+          }
+        ]);
         setOverlayEditor(null);
       }}
     />

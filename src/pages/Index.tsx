@@ -284,7 +284,7 @@ function IndexContent() {
   if (!user) return null;
   const handleSceneSelect = (scene: SceneMetadata) => {
     if (uploadedImages.length === 0) {
-      toast('Ladda upp minst en bild först för att använda bakgrunden', {
+      toast('Ladda först upp en bild i steg 1 längst upp på sidan.', {
         icon: <ImageIcon className="w-4 h-4" />,
       });
       // Scroll to upload section
