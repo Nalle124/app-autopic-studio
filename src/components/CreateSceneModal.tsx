@@ -435,9 +435,9 @@ const POST_GENERATION_SUGGESTIONS_AD = [
 
 
 const BLUR_PLATE_PROMPT_MAP: Record<string, string> = {
-  'full-blur': 'Blur and heavily pixelate all license plates in this image so the text is completely unreadable. Keep everything else exactly the same. Do not change any other part of the image. The blur should be strong enough that no characters can be identified.',
-  'dark-inlay': 'Cover all license plates in this image with a solid dark/black rectangle or overlay that completely hides the plate text. Keep everything else exactly the same. The cover should look clean and intentional, matching the car color or using dark grey/black.',
-  'logo-overlay': 'Cover all license plates in this image with a clean logo overlay or branded element. Keep everything else exactly the same. The overlay should be centered on the plate and look professional.'
+  'full-blur': 'Find all license plates in this image and blur/pixelate them so the text is completely unreadable. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT add any logos, watermarks, or text anywhere else on the image. Only blur the license plate area(s). Keep everything else pixel-perfect identical.',
+  'dark-inlay': 'Find all license plates in this image and cover them with a solid dark/black rectangle that completely hides the plate text. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT add any logos, watermarks, or text anywhere else on the image. Only cover the license plate area(s). The cover should look clean, using dark grey/black. Keep everything else pixel-perfect identical.',
+  'logo-overlay': 'Find all license plates in this image and cover them with the provided logo, centered and scaled to fit each plate. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT place the logo anywhere else on the image - ONLY on the license plate(s). Keep everything else pixel-perfect identical.'
 };
 
 const BLUR_STYLE_OPTIONS = [
@@ -810,18 +810,7 @@ export const CreateSceneModal = ({
   };
 
   const handleNewChat = () => {
-    // Save current chat if it has content
-    if (chatMode && messages.length > 1) {
-      setSavedChat({
-        mode: chatMode,
-        messages: [...messages],
-        guidedCategory,
-        guidedStepIndex,
-        guidedSelections: [...guidedSelections],
-        referenceImage,
-        hasGeneratedImage,
-      });
-    }
+    // Full reset - start fresh
     resetAll();
   };
 
@@ -1092,22 +1081,15 @@ export const CreateSceneModal = ({
         setMessages((prev) => [
           ...prev,
           { role: 'user', text: styleLabel },
-          {
-            role: 'assistant-options',
-            text: 'Välj vilken logo du vill använda på skylten:',
-            options: [
-              ...(profileLogoLight ? [{ label: 'Ljus logo', value: '__blur_logo_profile_light__' }] : []),
-              ...(profileLogoDark ? [{ label: 'Mörk logo', value: '__blur_logo_profile_dark__' }] : []),
-              { label: 'Ladda upp egen', value: '__blur_logo_upload__' }
-            ]
-          }
+          { role: 'assistant', text: 'Välj vilken logo du vill använda på skylten:' }
         ]);
+        // Logo picker will be rendered inline below this message
       } else {
-        // For non-logo styles, show the generate button as a new message
+        // For non-logo styles, show the generate button
         setMessages((prev) => [
           ...prev,
           { role: 'user', text: styleLabel },
-          { role: 'assistant', text: `Stil vald: ${styleLabel}. Klicka nedan för att bearbeta.` }
+          { role: 'assistant-status', text: `Stil vald: ${styleLabel}` }
         ]);
       }
       return;
@@ -1120,8 +1102,7 @@ export const CreateSceneModal = ({
         setSelectedLogoUrl(logo);
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant-status', text: 'Logo vald' },
-          { role: 'assistant', text: 'Klicka nedan för att bearbeta registreringsskyltarna.' }
+          { role: 'assistant-status', text: 'Logo vald' }
         ]);
       }
       return;
@@ -1682,11 +1663,38 @@ export const CreateSceneModal = ({
     
     // For logo-overlay with custom logo, build a special prompt
     const isLogoOverlay = blurStyle === 'logo-overlay' && selectedLogoUrl;
+    const logoDataForBlur = isLogoOverlay ? await convertSvgToPng(selectedLogoUrl!) : null;
     const blurPrompt = isLogoOverlay
-      ? 'Cover all license plates in this image with the provided logo. The logo should be placed centered on each plate, scaled to fit the plate size. Keep everything else exactly the same. The overlay should look clean and professional.'
+      ? BLUR_PLATE_PROMPT_MAP['logo-overlay']
       : (BLUR_PLATE_PROMPT_MAP[blurStyle] || BLUR_PLATE_PROMPT_MAP['full-blur']);
 
-    for (const imageUrl of selectedBlurImages) {
+    const total = selectedBlurImages.length;
+
+    for (let idx = 0; idx < selectedBlurImages.length; idx++) {
+      const imageUrl = selectedBlurImages[idx];
+      
+      // Show progress
+      setMessages((prev) => [
+        ...prev.filter((m) => m.role !== 'assistant-loading'),
+        { role: 'assistant-loading' }
+      ]);
+      // Update a status message for progress
+      if (total > 1) {
+        setMessages((prev) => {
+          // Remove previous progress status
+          const filtered = prev.filter((m) => !(m.role === 'assistant-status' && (m as any).text?.includes('av ' + total)));
+          const loadingIdx = filtered.findIndex((m) => m.role === 'assistant-loading');
+          if (loadingIdx >= 0) {
+            return [
+              ...filtered.slice(0, loadingIdx),
+              { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` },
+              ...filtered.slice(loadingIdx)
+            ];
+          }
+          return [...filtered, { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` }];
+        });
+      }
+
       try {
         // Convert image to base64
         const response = await fetch(imageUrl);
@@ -1703,12 +1711,9 @@ export const CreateSceneModal = ({
           content: [
           { type: 'text', text: blurPrompt },
           { type: 'image_url', image_url: { url: base64 } },
-          ...(isLogoOverlay ? [{ type: 'image_url', image_url: { url: selectedLogoUrl } }] : [])
+          ...(isLogoOverlay && logoDataForBlur ? [{ type: 'image_url', image_url: { url: logoDataForBlur } }] : [])
           ]
         }];
-
-
-        // Don't add loading bubble here - the button already shows loading state
 
         const { data, error } = await invokeWithTimeout({
           conversationHistory,
@@ -1718,7 +1723,7 @@ export const CreateSceneModal = ({
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
 
         if (error) {
-          setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte bearbeta bilden. Försök igen.' }]);
+          setMessages((prev) => [...prev, { role: 'assistant-error', text: `Kunde inte bearbeta bild ${idx + 1}. Försök igen.` }]);
           continue;
         }
 
@@ -1734,7 +1739,7 @@ export const CreateSceneModal = ({
       } catch (err) {
         console.error('Blur error:', err);
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
-        setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid bearbetning. Försök igen.' }]);
+        setMessages((prev) => [...prev, { role: 'assistant-error', text: `Fel vid bearbetning av bild ${idx + 1}. Försök igen.` }]);
       }
     }
 
@@ -1752,11 +1757,9 @@ export const CreateSceneModal = ({
       setSelectedLogoUrl(logoUrl);
       
       if (chatMode === 'blur-plates') {
-        // For blur-plates logo-overlay, just confirm logo and show generate button
         setMessages((prev) => [
           ...prev,
-          { role: 'user', text: 'Egen logo uppladdad' },
-          { role: 'assistant', text: 'Logo vald! Klicka nedan för att bearbeta registreringsskyltarna.' }
+          { role: 'assistant-status', text: 'Logo vald' }
         ]);
       } else {
         // For logo-studio, show visual placement presets
@@ -1863,6 +1866,14 @@ export const CreateSceneModal = ({
   };
 
   const handleRegenerate = () => {
+    // For blur-plates and logo-studio, restart the same mode fresh
+    if (chatMode === 'blur-plates' || chatMode === 'logo-studio') {
+      const mode = chatMode;
+      resetAll();
+      // Re-enter the same mode
+      setTimeout(() => selectMode(mode), 0);
+      return;
+    }
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
     if (lastUserMsg && 'text' in lastUserMsg) {
       setPrompt(lastUserMsg.text);
@@ -2393,7 +2404,6 @@ export const CreateSceneModal = ({
               <div className="pl-9">
                       <Button
                   onClick={() => {
-                    // Subtle confirmation instead of big user message
                     setMessages((prev) => [
                       ...prev,
                       { role: 'assistant-status', text: `${selectedBlurImages.length} bild(er) valda` },
@@ -2404,8 +2414,9 @@ export const CreateSceneModal = ({
                       }
                     ]);
                   }}
+                  variant="outline"
                   className="w-full rounded-full h-10">
-                        Nästa ({selectedBlurImages.length} valda)
+                        Nästa
                       </Button>
                     </div>
               }
@@ -2419,8 +2430,9 @@ export const CreateSceneModal = ({
                       { role: 'assistant', text: 'Välj vilken logo du vill använda:' }
                     ]);
                   }}
+                  variant="outline"
                   className="w-full rounded-full h-10">
-                        Nästa ({selectedBlurImages.length} valda)
+                        Nästa
                       </Button>
                     </div>
               }
@@ -2500,6 +2512,59 @@ export const CreateSceneModal = ({
         if (msg.role === 'assistant-options') {
           // Don't render empty option bubbles
           if (!msg.text && msg.options.length === 0) return null;
+          
+          // Detect blur style options for visual mockup rendering
+          const isBlurStylePicker = msg.options.some((o) => o.value.startsWith('__blur_style_'));
+          
+          if (isBlurStylePicker) {
+            return (
+              <div key={i} className="space-y-3">
+                {msg.text && (
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-3 gap-2 pl-9 max-w-[320px]">
+                  {msg.options.map((opt, idx) => {
+                    // Determine visual style
+                    const isBlur = opt.value.includes('full-blur');
+                    const isDark = opt.value.includes('dark-inlay');
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleOptionClick(opt.value)}
+                        disabled={isGenerating}
+                        className="group/blur relative rounded-xl overflow-hidden border-2 border-border/40 hover:border-primary/50 transition-all disabled:opacity-40">
+                        <div className="aspect-[4/3] relative bg-muted/40 flex items-center justify-center">
+                          {/* Mini visual mockup */}
+                          <div className="w-12 h-5 rounded-sm relative overflow-hidden">
+                            {isBlur ? (
+                              <>
+                                <div className="absolute inset-0 bg-muted-foreground/20 rounded-sm" />
+                                <div className="absolute inset-0 backdrop-blur-sm bg-muted-foreground/30 rounded-sm" />
+                                <div className="absolute inset-[2px] bg-gradient-to-r from-muted-foreground/40 via-muted-foreground/20 to-muted-foreground/40 rounded-sm" />
+                              </>
+                            ) : isDark ? (
+                              <div className="absolute inset-0 bg-foreground/80 rounded-sm" />
+                            ) : (
+                              <div className="absolute inset-0 bg-primary/30 rounded-sm flex items-center justify-center">
+                                <ImageIcon className="w-3 h-3 text-primary" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-[10px] font-medium text-center py-1.5 px-1 text-foreground leading-tight truncate">{opt.label}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={i} className="space-y-3">
                   {msg.text && (
@@ -2833,7 +2898,7 @@ export const CreateSceneModal = ({
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                <p className="text-sm text-foreground">Redo att bearbeta {selectedBlurImages.length} bild(er).</p>
+                <p className="text-sm text-foreground">Redo att applicera.</p>
                 <Button
                   onClick={handleBlurGenerate}
                   disabled={isGenerating}
@@ -2844,11 +2909,40 @@ export const CreateSceneModal = ({
               </div>
             </div>
           )}
+          {/* Blur-plates logo picker - shown after selecting logo-overlay style */}
+          {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle === 'logo-overlay' && !selectedLogoUrl && (
+            <div className="pl-9 space-y-2">
+              {profileLogoLight && (
+                <button
+                  onClick={() => handleOptionClick('__blur_logo_profile_light__')}
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 hover:bg-muted hover:border-primary/40 transition-colors text-left">
+                  <img src={profileLogoLight} alt="Ljus logo" className="w-10 h-10 rounded-lg object-contain bg-background border border-border/30 p-1" />
+                  <span className="text-sm text-foreground">Ljus logo</span>
+                </button>
+              )}
+              {profileLogoDark && (
+                <button
+                  onClick={() => handleOptionClick('__blur_logo_profile_dark__')}
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 hover:bg-muted hover:border-primary/40 transition-colors text-left">
+                  <img src={profileLogoDark} alt="Mörk logo" className="w-10 h-10 rounded-lg object-contain bg-muted border border-border/30 p-1" />
+                  <span className="text-sm text-foreground">Mörk logo</span>
+                </button>
+              )}
+              <button
+                onClick={() => logoFileInputRef.current?.click()}
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border border-dashed border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/40 transition-colors text-left text-muted-foreground hover:text-foreground">
+                <div className="w-10 h-10 rounded-lg bg-muted/60 flex items-center justify-center">
+                  <Upload className="w-4 h-4" />
+                </div>
+                <span className="text-sm">Ladda upp logo</span>
+              </button>
+            </div>
+          )}
           {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle === 'logo-overlay' && selectedLogoUrl && (
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                <p className="text-sm text-foreground">Redo att dölja skyltar med din logo.</p>
+                <p className="text-sm text-foreground">Redo att applicera.</p>
                 <Button
                   onClick={handleBlurGenerate}
                   disabled={isGenerating}
@@ -2863,7 +2957,7 @@ export const CreateSceneModal = ({
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                <p className="text-sm text-foreground">Redo att applicera logo på {selectedBlurImages.length} bild(er).</p>
+                <p className="text-sm text-foreground">Redo att applicera.</p>
                 <Button
                   onClick={handleApplyLogo}
                   disabled={isGenerating}
