@@ -2011,8 +2011,7 @@ export const CreateSceneModal = ({
   const chatContent =
   <>
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 flex-shrink-0">
-          <AutopicAvatar />
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/50 flex-shrink-0">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-foreground leading-tight">AutoPic AI</h3>
@@ -2081,16 +2080,15 @@ export const CreateSceneModal = ({
                         className="group relative flex flex-col rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.02] active:scale-[0.98]">
                         <div className="relative w-full aspect-[4/3] overflow-hidden rounded-t-2xl bg-muted/50">
                           <img
+                            src="/scenes/white-studio.png"
+                            alt=""
+                            loading="lazy"
+                            className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 group-hover:-rotate-1 transition-transform ml-1.5 mt-1.5" />
+                          <img
                             src="/scenes/hostgata.png"
                             alt=""
                             loading="lazy"
-                            className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-                          <div className="absolute top-2 left-2">
-                            <div className="w-7 h-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center">
-                              <Image className="w-3.5 h-3.5 text-primary" />
-                            </div>
-                          </div>
+                            className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 group-hover:rotate-3 transition-transform mr-1 mb-1" />
                         </div>
                         <div className="p-3 pt-2">
                           <p className="text-sm font-semibold text-foreground">Skapa bakgrund</p>
@@ -2107,13 +2105,12 @@ export const CreateSceneModal = ({
                             src="/mode-previews/porsche-transport.jpg"
                             alt=""
                             loading="lazy"
-                            className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-                          <div className="absolute top-2 left-2">
-                            <div className="w-7 h-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center">
-                              <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:brightness-0 dark:invert" />
-                            </div>
-                          </div>
+                            className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 group-hover:-rotate-1 transition-transform ml-1.5 mt-1.5" />
+                          <img
+                            src="/scenes/dark-studio.png"
+                            alt=""
+                            loading="lazy"
+                            className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 group-hover:rotate-3 transition-transform mr-1 mb-1" />
                         </div>
                         <div className="p-3 pt-2">
                           <p className="text-sm font-semibold text-foreground">Redigera fritt</p>
@@ -2139,14 +2136,9 @@ export const CreateSceneModal = ({
                           className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 group-hover:rotate-3 transition-transform mr-1 mb-1" />
                       </div>
                       <div className="flex-1 py-3 pr-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <Type className="w-3.5 h-3.5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">Skapa annons</p>
-                            <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
-                          </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">Skapa annons</p>
+                          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
                         </div>
                       </div>
                     </button>
@@ -2167,9 +2159,9 @@ export const CreateSceneModal = ({
                         <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
                           <svg className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" opacity="0.5" /><path d="M3 9h18M3 15h18M9 3v18M15 3v18" opacity="0.3" /></svg>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-medium text-foreground leading-tight">Blurra regskyltar</p>
-                          <p className="text-[10px] text-muted-foreground">Dölj skyltar</p>
+                         <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground leading-tight">Blurra regskyltar</p>
+                          <p className="text-[11px] sm:text-xs text-muted-foreground">Dölj skyltar</p>
                         </div>
                       </button>
 
@@ -2181,8 +2173,8 @@ export const CreateSceneModal = ({
                           <ImageIcon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[13px] font-medium text-foreground leading-tight">Applicera logo</p>
-                          <p className="text-[10px] text-muted-foreground">Lägg logo på bilder</p>
+                          <p className="text-sm font-medium text-foreground leading-tight">Applicera logo</p>
+                          <p className="text-[11px] sm:text-xs text-muted-foreground">Lägg logo på bilder</p>
                         </div>
                       </button>
                     </div>
