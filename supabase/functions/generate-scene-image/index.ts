@@ -1,11 +1,35 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+// Rate limiting: max 10 generations per minute per user
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const MAX_REQUESTS_PER_WINDOW = 10;
+const userRateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function checkUserRateLimit(userId: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const record = userRateLimits.get(userId);
+  
+  // Cleanup occasionally
+  if (userRateLimits.size > 500) {
+    for (const [id, data] of userRateLimits.entries()) {
+      if (data.resetAt < now) userRateLimits.delete(id);
+    }
+  }
+
+  if (!record || record.resetAt < now) {
+    userRateLimits.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return { allowed: false, remaining: 0, resetIn: record.resetAt - now };
+  }
+
+  record.count++;
+  return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - record.count, resetIn: record.resetAt - now };
+}
 
 const BACKGROUND_SYSTEM_PROMPT = `You are an AI that generates professional automotive photography background scenes. You MUST produce a new image with every response. Never respond with only text. NEVER use emojis in your text responses.
 
@@ -176,6 +200,8 @@ async function inlineImages(history: any[]): Promise<any[]> {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -220,6 +246,28 @@ serve(async (req) => {
     
     // Service role client for DB operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Rate limiting per user
+    const rateLimit = checkUserRateLimit(user.id);
+    if (!rateLimit.allowed) {
+      const resetSec = Math.ceil(rateLimit.resetIn / 1000);
+      console.log(`[RATE LIMIT] User ${user.id} exceeded rate limit`);
+      return new Response(
+        JSON.stringify({ error: `För många förfrågningar. Försök igen om ${resetSec} sekunder.` }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": resetSec.toString() } }
+      );
+    }
+
+    // Credit check — atomic decrement before generation
+    const { data: newBalance, error: creditError } = await supabase.rpc("decrement_credits", { p_user_id: user.id });
+    if (creditError) {
+      console.log(`[CREDITS] User ${user.id} has insufficient credits:`, creditError.message);
+      return new Response(
+        JSON.stringify({ error: "Inga credits kvar. Uppgradera ditt abonnemang för fler." }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.log(`[CREDITS] Deducted 1 credit for user ${user.id}, new balance: ${newBalance}`);
 
     const { conversationHistory, mode, format } = await req.json();
 
@@ -483,6 +531,15 @@ NEVER use emojis. Respond ONLY with valid JSON in this exact format:
         console.warn("Failed to parse meta response, using defaults:", e);
       }
     }
+
+    // Log credit transaction
+    await supabase.from("credit_transactions").insert({
+      user_id: user.id,
+      amount: -1,
+      balance_after: newBalance,
+      transaction_type: "ai_studio_generation",
+      description: `AI Studio: ${suggestedName}`,
+    });
 
     console.log(`Scene generated: "${suggestedName}" -> ${publicUrl}`);
 
