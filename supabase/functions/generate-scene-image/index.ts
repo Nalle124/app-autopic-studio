@@ -258,16 +258,9 @@ serve(async (req) => {
       );
     }
 
-    // Credit check — atomic decrement before generation
-    const { data: newBalance, error: creditError } = await supabase.rpc("decrement_credits", { p_user_id: user.id });
-    if (creditError) {
-      console.log(`[CREDITS] User ${user.id} has insufficient credits:`, creditError.message);
-      return new Response(
-        JSON.stringify({ error: "Inga credits kvar. Uppgradera ditt abonnemang för fler." }),
-        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    console.log(`[CREDITS] Deducted 1 credit for user ${user.id}, new balance: ${newBalance}`);
+    // Note: generate-scene-image does NOT cost credits.
+    // Credits are only deducted by process-car-image (the actual background swap).
+    // Rate limiting above is sufficient to prevent abuse.
 
     const { conversationHistory, mode, format } = await req.json();
 
@@ -532,14 +525,7 @@ NEVER use emojis. Respond ONLY with valid JSON in this exact format:
       }
     }
 
-    // Log credit transaction
-    await supabase.from("credit_transactions").insert({
-      user_id: user.id,
-      amount: -1,
-      balance_after: newBalance,
-      transaction_type: "ai_studio_generation",
-      description: `AI Studio: ${suggestedName}`,
-    });
+    // No credit transaction logging — this function is free (rate-limited only)
 
     console.log(`Scene generated: "${suggestedName}" -> ${publicUrl}`);
 
