@@ -542,14 +542,15 @@ export const CreateSceneModal = ({
   // Logo studio state
   const [selectedLogoUrl, setSelectedLogoUrl] = useState<string | null>(null);
   const [selectedLogoPreset, setSelectedLogoPreset] = useState<string | null>(null);
-  const [profileLogo, setProfileLogo] = useState<string | null>(null);
+  const [profileLogoLight, setProfileLogoLight] = useState<string | null>(null);
+  const [profileLogoDark, setProfileLogoDark] = useState<string | null>(null);
 
-  // Load profile logo on mount
+  // Load profile logos on mount
   useEffect(() => {
     if (user?.id) {
       supabase.from('profiles').select('logo_light, logo_dark').eq('id', user.id).single().then(({ data }) => {
-        if (data?.logo_light) setProfileLogo(data.logo_light);
-        else if (data?.logo_dark) setProfileLogo(data.logo_dark);
+        if (data?.logo_light) setProfileLogoLight(data.logo_light);
+        if (data?.logo_dark) setProfileLogoDark(data.logo_dark);
       });
     }
   }, [user]);
@@ -1102,7 +1103,8 @@ export const CreateSceneModal = ({
             role: 'assistant-options',
             text: 'Välj vilken logo du vill använda på skylten:',
             options: [
-              ...(profileLogo ? [{ label: 'Min sparade logo', value: '__blur_logo_profile__' }] : []),
+              ...(profileLogoLight ? [{ label: 'Ljus logo', value: '__blur_logo_profile_light__' }] : []),
+              ...(profileLogoDark ? [{ label: 'Mörk logo', value: '__blur_logo_profile_dark__' }] : []),
               { label: 'Ladda upp egen', value: '__blur_logo_upload__' }
             ]
           }
@@ -1119,13 +1121,14 @@ export const CreateSceneModal = ({
     }
 
     // Handle blur-plates logo selection
-    if (value === '__blur_logo_profile__') {
-      if (profileLogo) {
-        setSelectedLogoUrl(profileLogo);
+    if (value === '__blur_logo_profile_light__' || value === '__blur_logo_profile_dark__') {
+      const logo = value === '__blur_logo_profile_light__' ? profileLogoLight : profileLogoDark;
+      if (logo) {
+        setSelectedLogoUrl(logo);
         setMessages((prev) => [
           ...prev,
-          { role: 'user', text: 'Min sparade logo' },
-          { role: 'assistant', text: 'Logo vald! Klicka nedan för att bearbeta registreringsskyltarna.' }
+          { role: 'assistant-status', text: 'Logo vald' },
+          { role: 'assistant', text: 'Klicka nedan för att bearbeta registreringsskyltarna.' }
         ]);
       }
       return;
@@ -1136,9 +1139,10 @@ export const CreateSceneModal = ({
     }
 
     // Handle logo studio flow options
-    if (value === '__logo_profile__') {
-      if (profileLogo) {
-        setSelectedLogoUrl(profileLogo);
+    if (value === '__logo_profile_light__' || value === '__logo_profile_dark__') {
+      const logo = value === '__logo_profile_light__' ? profileLogoLight : profileLogoDark;
+      if (logo) {
+        setSelectedLogoUrl(logo);
         setMessages((prev) => [
           ...prev,
           { role: 'assistant-status', text: 'Logo vald' },
@@ -1146,11 +1150,6 @@ export const CreateSceneModal = ({
             role: 'assistant-logo-presets' as any,
             text: 'Välj placering:',
           }
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', text: 'Du har ingen sparad logo i din profil. Ladda upp en logo istället.' }
         ]);
       }
       return;
@@ -1833,7 +1832,7 @@ export const CreateSceneModal = ({
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The logo should be semi-transparent, professional, and NOT cover the car. Keep the original image exactly the same, only add the logo overlay. Make it look natural and clean.` },
+              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. CRITICAL: Output the EXACT same image dimensions and aspect ratio as the input photo. Do NOT crop, resize, or change the framing in any way. The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. Keep everything about the original image identical, only add the logo overlay.` },
               { type: 'image_url', image_url: { url: base64 } },
               { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
@@ -2432,12 +2431,20 @@ export const CreateSceneModal = ({
                   {/* Logo picker - shown after logo prompt */}
                   {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && !selectedLogoUrl && messages.some(m => m.role === 'assistant' && typeof (m as any).text === 'string' && (m as any).text.includes('Välj vilken logo')) &&
               <div className="pl-9 space-y-2">
-                      {profileLogo && (
+                      {profileLogoLight && (
                         <button
-                          onClick={() => handleOptionClick('__logo_profile__')}
+                          onClick={() => handleOptionClick('__logo_profile_light__')}
                           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 hover:bg-muted hover:border-primary/40 transition-colors text-left">
-                          <img src={profileLogo} alt="Min logo" className="w-10 h-10 rounded-lg object-contain bg-background border border-border/30 p-1" />
-                          <span className="text-sm text-foreground">Min logo</span>
+                          <img src={profileLogoLight} alt="Ljus logo" className="w-10 h-10 rounded-lg object-contain bg-background border border-border/30 p-1" />
+                          <span className="text-sm text-foreground">Ljus logo</span>
+                        </button>
+                      )}
+                      {profileLogoDark && (
+                        <button
+                          onClick={() => handleOptionClick('__logo_profile_dark__')}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 hover:bg-muted hover:border-primary/40 transition-colors text-left">
+                          <img src={profileLogoDark} alt="Mörk logo" className="w-10 h-10 rounded-lg object-contain bg-muted border border-border/30 p-1" />
+                          <span className="text-sm text-foreground">Mörk logo</span>
                         </button>
                       )}
                       <button
@@ -2858,13 +2865,13 @@ export const CreateSceneModal = ({
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
                 <p className="text-sm text-foreground">Redo att applicera logo på {selectedBlurImages.length} bild(er).</p>
-                <Button
-                  onClick={handleApplyLogo}
-                  disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  Applicera logo
-                </Button>
+                {!isGenerating && (
+                  <Button
+                    onClick={handleApplyLogo}
+                    className="w-full rounded-full h-10">
+                    Applicera logo
+                  </Button>
+                )}
               </div>
             </div>
           )}
