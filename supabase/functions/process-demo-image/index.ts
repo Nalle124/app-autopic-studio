@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 interface SceneMetadata {
   id: string;
@@ -104,9 +101,15 @@ function checkRateLimit(clientIp: string): { allowed: boolean; remaining: number
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Track temp file for cleanup in finally block
+  let uploadFilename: string | null = null;
+  let supabase: ReturnType<typeof createClient> | null = null;
 
   try {
     // Rate limiting check
@@ -142,7 +145,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey);
 
     const formData = await req.formData();
     const imageFile = formData.get('image') as File;
@@ -214,7 +217,7 @@ serve(async (req) => {
 
     // Step 1: Upload original image to storage to get a URL
     const imageBuffer = await imageFile.arrayBuffer();
-    const uploadFilename = `demo-temp/${crypto.randomUUID()}-original.${imageFile.name.split('.').pop()}`;
+    uploadFilename = `demo-temp/${crypto.randomUUID()}-original.${imageFile.name.split('.').pop()}`;
     
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('processed-cars')
@@ -326,11 +329,6 @@ serve(async (req) => {
 
     console.log('[DEMO] ✅ Final image uploaded:', finalPublicUrlData.publicUrl);
 
-    // Clean up temp file
-    await supabase.storage
-      .from('processed-cars')
-      .remove([uploadFilename]);
-
     return new Response(
       JSON.stringify({
         success: true,
@@ -357,5 +355,15 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
+  } finally {
+    // Always clean up temp file, even on error
+    if (uploadFilename && supabase) {
+      try {
+        await supabase.storage.from('processed-cars').remove([uploadFilename]);
+        console.log(`[DEMO] Cleaned up temp file: ${uploadFilename}`);
+      } catch (cleanupErr) {
+        console.warn(`[DEMO] Failed to clean up temp file ${uploadFilename}:`, cleanupErr);
+      }
+    }
   }
 });
