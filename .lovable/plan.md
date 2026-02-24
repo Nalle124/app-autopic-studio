@@ -1,147 +1,201 @@
 
-
-# AI Studio -- Forbattrade guidade floden och nya funktioner
+# AI Studio -- Optimering av floden, meny och annonsverktyg
 
 ## Oversikt
 
-Omarbeta AI Studions chattfloden for att gora dem mer visuella, guidade och resultatfokuserade. Bilhandlare ska kunna klicka sig fram till proffsiga resultat utan att behova skriva egna prompter. Huvudflodet (ladda upp -> scen -> export) forblir oforandrat.
+Tre sammanlankade forbattringsomraden for AI Studio:
 
-## Nya menykategorier
+1. **Menydesign** -- Fran enkel lista till visuellt kort-grid med tydlig hierarki
+2. **Annonsflode med text-overlay** -- AI skapar bakgrund/layout, text laggs pa som redigerbart UI-overlay
+3. **Forbattrade guidade floden** -- Smartare prompter, battre mockup-bibliotek, tydligare UX
 
-Utoka menyval fran 3 till 5:
+---
 
-1. **Skapa bakgrund** (befintlig, forbattrad)
-2. **Redigera fritt** (befintlig, oforandrad)
-3. **Skapa annons** (befintlig, omarbetad med mallar)
-4. **Blurra regskyltar** (NY -- batch-blur funktion)
-5. **Bildforslag** (NY -- kreativa forslag baserat pa uppladdade bilder)
+## Del 1: Ny menydesign
 
-## Forbattrade annonsmallar (Skapa annons)
+### Nuvarande problem
+- Menyn kanns som en enkel lista med knappar
+- Alla fem alternativ har samma visuella vikt
+- Saknar den "magiska" kanslan som en bildverktygs-app bor ha
 
-Inspirerat av de uppladdade exemplen, ersatt nuvarande generiska kategorier med specifika mallar:
+### Ny design
 
-### Nya annonsmallkategorier:
-
-| Mall | Beskrivning | Format | Referensbild |
-|------|-------------|--------|--------------|
-| **Inkommande bil** | Landskapsbild med plats-bakgrund, logo, rubrik, kontaktinfo | 3:2 | BilNet-exemplet |
-| **Kopannons / personlig** | Portratt med personlig bild, rubrik, bullet points, signatur | 2:3 | Gabriels lapp-exemplet |
-| **Kampanjbild** | Stor rubrik, vardebudskap, CTA-knapp, varumärke | Valbart | Kamux/Riddermark-exemplen |
-| **Social media** | Instagram/Facebook-optimerad, catchy text, bild + overlay | Valbart | Slipp annonsering-exemplet |
-| **Eget** | Fri beskrivning |  |  |
-
-### Guidad mall-flow (exempel "Inkommande bil"):
+**Layout: Kort-grid med hierarki**
 
 ```text
-1. [Valj mall: Inkommande bil]
-2. Chatten fragar: "Vilken rubrik?" 
-   -> Forslag: "Inkommande bil", "Nyinkommet", "Just nu i lager" + "Skriv eget"
-3. "Lagg till undertext?" 
-   -> Forslag: "I var bilhall i [stad]", "Tillganglig nu" + Textfalt
-4. "Kontaktinfo?"
-   -> Textfalt: Telefon, adress
-5. "Stil och kansla?"
-   -> Visuella referensbilder att klicka pa (3-4 thumbnails fran stock)
-6. "Format?"
-   -> Liggande / Staende
-7. Sammanfattning: "Jag har en bra bild av vad du soker. Skapar din annons..."
-   -> [Generera-knapp]
++------------------------------------------+
+|  AutoChat AI (beta)        [<-] [Meny]   |
++------------------------------------------+
+|                                          |
+|  Vad vill du skapa?                      |
+|                                          |
+|  +----------------+  +----------------+ |
+|  | [thumbnail]    |  | [thumbnail]    | |
+|  | Skapa          |  | Redigera       | |
+|  | bakgrund       |  | fritt          | |
+|  | Designa miljö  |  | AI redigerar   | |
+|  +----------------+  +----------------+ |
+|                                          |
+|  +------------------------------------+ |
+|  | [thumbnails]     Skapa annons      | |
+|  |                  Marknadsföring &  | |
+|  |                  kreativt material | |
+|  +------------------------------------+ |
+|                                          |
+|  --- Verktyg ---                         |
+|  [Blurra regskyltar]  [Applicera logo]  |
+|                                          |
++------------------------------------------+
 ```
 
-### Smartare chattspraak:
+**Forandringar:**
+- De tre huvudfunktionerna visas som stora kort i ett 2+1 grid (bakgrund + redigera fritt pa rad 1, annons som full bredd pa rad 2)
+- "Blurra regskyltar" och "Applicera logo" grupperas under en separator med rubriken "Verktyg" som mindre, kompakta knappar
+- Varje kort har en thumbnail-forhandsvisning, titel och kort beskrivning
+- Hover-effekt med subtil skala och border-farg
 
-Istallet for att visa ratt prompt-lista, visa:
-- "Jag har nu en bra bild av vad du soker..." innan generering
-- "Skapar din annons..." under laddning (ersatter tekniska fraser)
-- Ingen punktlista med engelska promptvarden visas for anvandaren
+---
 
-## Annonsreferensbilder (stock)
+## Del 2: Annonsflode med text-overlay-system
 
-Lagg till 4-5 referensbilder i `public/ad-templates/` som visuella stilforslag anvandaren klickar pa:
+### Problemet idag
+- AI genererar text direkt i bilden -- resulterar i stavfel, felaktiga tecken
+- Nar anvandaren valjer "Personlig & autentisk" som stil, skriver AI bokstavligt "personlig" och "autentisk" pa bilden
+- Ingen kontroll over typografi, placering eller redigering
 
-- `inkommande-bil.png` -- plats-baserad annons
-- `kopannons-personlig.png` -- personlig koplapp
-- `kampanj-bold.png` -- stor fetstil kampanj
-- `social-clean.png` -- ren social media stil
-- `minimal-dark.png` -- mork minimalistisk
+### Ny approach: Hybrid med text-overlay
 
-Dessa genereras med AI (Gemini image) via edge function, eller laggs till manuellt som stock.
+**Flode:**
 
-## Blurra regskyltar (ny meny)
-
-Ny kategori i AI Studio-menyn:
-
-1. Anvandaren valjer "Blurra regskyltar"
-2. Chatten visar uppladdade + genererade bilder fran projektet som ett rutnät
-3. Anvandaren valjer en eller flera bilder
-4. Klickar "Blurra valda"
-5. Anropar `generate-scene-image` i `free-create`-lage med prompt: "Blur/pixelate all license plates in this image, keep everything else exactly the same"
-6. Resultatet visas i chatten, en bild i taget
-
-## Tekniska forandringar
-
-### `CreateSceneModal.tsx`
-
-**Nya/andrade konstanter:**
-
-- `AD_TEMPLATES` -- ny array med malltyper (ersatter `AD_CATEGORIES`), varje mall har `label`, `value`, `icon`, `description`, `defaultFormat`, `guidedSteps`
-- `AD_TEMPLATE_REFERENCES` -- referensbilder per malltyp (thumbnails anvandaren klickar pa for stil-inspo)
-- `BLUR_PLATE_PROMPT` -- fast prompt for reg-blur
-- Borttagna emojis fran alla guided flows
-
-**Andrad chattlogik:**
-
-- `assistant-summary` visar "Jag har en bra bild av vad du soker..." istallet for raat promptinnehall
-- Dolj engelska prompt-varden fran sammanfattningskortet -- visa bara svenska etiketter
-- Ny `role: 'assistant-image-grid'` for att visa batch-bilder (regskyltar)
-- Uppdatera `selectMode` for nya menykategorier
-
-**Ny state:**
-
-- `selectedBlurImages: string[]` -- valda bilder for regskylts-blur
-
-### `generate-scene-image/index.ts`
-
-Inga angringar kravs -- befintlig `free-create` och `ad-create` mode hanterar redan allt. Prompt-forbattringarna sker enbart pa klientsidan genom smartare guidning.
-
-### Sammanfattningskort -- UX-forbattring
-
-Nuvarande:
 ```text
-[Typ: Studio]
-[x] bright and airy with soft diffused lighting
-[x] polished concrete floor
-[Generera bakgrund]
+1. Anvandaren valjer mockup-mall (t.ex. "Inkommande bil -- Ljus & clean")
+2. Guidad chatt fragar efter text-innehall:
+   - "Vilken rubrik?" -> "Inkommande bil" / "Nyinkommet" / Eget
+   - "Undertext?" -> "I var bilhall i Skara" / Eget
+   - "Kontaktinfo?" -> Telefon, e-post
+3. AI genererar BAKGRUNDSBILDEN utan text (med stil, layout-komposition)
+4. Text laggs pa som HTML/Canvas overlay i appen
+5. Anvandaren kan redigera text, flytta element, andra storlek
 ```
 
-Nytt:
+### Teknisk implementation
+
+**Ny komponent: `AdTextOverlayEditor.tsx`**
+
+En Canvas/HTML-baserad editor som:
+- Visar den AI-genererade bakgrundsbilden
+- Lagger pa textelement (rubrik, undertext, CTA) som draggbara/redigerbara lager
+- Stoder fontinstellningar (storlek, farg, font-familj)
+- Exporterar slutresultatet som en sammanfogad PNG/JPG
+- Varje mockup-mall definierar default-positioner for text-elementen
+
+**Datastruktur for text-overlay:**
+
 ```text
-"Jag har en bra bild av vad du soker."
-[Studio | Ljust & luftigt | Polerad betong]
-[Generera bakgrund]
+AdOverlayConfig {
+  backgroundImageUrl: string
+  elements: [
+    { type: "headline", text: "Inkommande bil", x, y, fontSize, color, fontFamily }
+    { type: "subtitle", text: "I var bilhall", x, y, fontSize, color, fontFamily }
+    { type: "cta", text: "Ring 0500-123456", x, y, fontSize, color, fontFamily }
+    { type: "logo", imageUrl: "...", x, y, width, height }
+  ]
+  format: "landscape" | "portrait"
+}
 ```
 
-Visa svenska etiketter istallet for engelska prompt-varden. Lagra mappningen `label -> promptValue` internt.
+**Andrad edge function-logik for annonser:**
+
+AD_CREATE_SYSTEM_PROMPT uppdateras med en ny instruktion:
+- "Skapa en professionell bakgrundsbild for en bilannons. Inkludera INTE nagon text i bilden. Lat omraden dar text ska placeras vara tomma eller ha diskret negativ yta. Fokuera pa komposition, farger och stamnning."
+- Prompten byggs fran mallinformation (stil, fargschema, layout-typ) men utan textkrav
+
+### Mockup-mallbibliotek (forbattrat)
+
+Varje mall definierar:
+
+| Egenskap | Beskrivning |
+|----------|-------------|
+| `backgroundPrompt` | Master-prompt for AI-bakgrunden (utan text) |
+| `textSlots` | Vilka textelement som behovs (rubrik, undertext, CTA, kontakt) |
+| `defaultPositions` | Var textelementen placeras default (x%, y%) |
+| `colorScheme` | Foreslagna farger for text (ljus/mork/accent) |
+| `fontPreset` | Default font-familj och storlekar |
+| `format` | Landskaps eller portratt |
+
+**Exempel -- "Inkommande bil, Ljus & clean":**
+
+```text
+backgroundPrompt: "Professional automotive dealership marketing background.
+  Clean, bright, modern composition with soft gradient from light grey to white.
+  Large negative space in upper portion for headline placement.
+  Lower section has subtle road/asphalt texture. Premium lighting with soft shadows.
+  Color palette: cool whites, light blues, subtle silver tones."
+
+textSlots: [
+  { id: "headline", label: "Rubrik", default: "Inkommande bil", position: top-center }
+  { id: "subtitle", label: "Undertext", default: "I var bilhall", position: below-headline }
+  { id: "contact", label: "Kontakt", default: "", position: bottom-right }
+]
+
+colorScheme: { text: "#1a1a1a", accent: "#3b82f6", background: "rgba(255,255,255,0.85)" }
+fontPreset: { headline: "Inter Bold 48px", subtitle: "Inter Regular 24px" }
+```
+
+### Nar anvandaren valjer en mockup:
+
+1. Mockup-bilden visas som referens i chatten
+2. Guidade fragor samlar text-innehall (rubrik, undertext, CTA)
+3. En "bakgrundsprompt" (utan text) skickas till AI
+4. AI returnerar en ren bakgrundsbild
+5. `AdTextOverlayEditor` oppnas med bakgrundsbilden + textelementen fran guiden
+6. Anvandaren kan dra, redigera och styla texten
+7. "Exportera" sammanfogar allt till en slutbild
+
+---
+
+## Del 3: Forbattrade guidade floden
+
+### Skapa bakgrund -- forenkling
+
+**Andring:** Nar anvandaren valjer en kategori (t.ex. Utomhus) och far inspirationsbilder + forval:
+- Ta bort den separata raden "Anvands som inspiration (valfritt)" -- slå ihop med inspirationsbilderna
+- Gor tydligare att man MASTE valja ett av forvalen for att ga vidare
+- Lagg till en tunn separator och text "Valj ett alternativ for att fortsatta:" ovanfor knapparna
+
+### Redigera fritt -- battre referensbildshantering
+
+**Nuvarande:** Uppladdningssektionen fungerar men ar inte tillrackligt framtradande.
+
+**Forbattring:**
+- Om anvandaren har uppladdade projektbilder, visa de 4 senaste som standard (utan att behova klicka "Valj bild fran enhet" forst)
+- Nar en bild ar vald, visa tydlig "vald"-markering (bla kant + bock)
+- Snabbvalen (Andra vinkel, Ta bort bakgrund etc.) ska tydligt kommunicera att de appliceras PA den valda bilden
+
+---
 
 ## Filer som andras
 
-| Fil | Typ av andring |
-|-----|----------------|
-| `src/components/CreateSceneModal.tsx` | Stor omarbetning av guided flows, nya menykategorier, smartare UI |
-| `public/ad-templates/` | Nya referensbilder for annonsmallar (kan behova skapas manuellt eller genereras) |
+| Fil | Andring |
+|-----|---------|
+| `src/components/CreateSceneModal.tsx` | Ny menydesign (kort-grid), forbattrade guidade floden, text-overlay integration |
+| `src/components/AdTextOverlayEditor.tsx` | **NY** -- Canvas/HTML editor for text pa annonser |
+| `supabase/functions/generate-scene-image/index.ts` | Ny `ad-create-background` sub-mode som genererar bakgrund utan text |
+| `public/ad-templates/` | Eventuellt nya/uppdaterade mockup-bilder |
 
 ## Vad som INTE andras
 
-- Huvudflodet (steg 1-4: ladda upp -> valj scen -> generera -> redigera)
-- Edge function `generate-scene-image`
-- Bakgrundsstudio-flodet (bara smarre UI-polish)
-- Redigera fritt-flodet
+- Huvudflodet (ladda upp -> valj scen -> generera -> redigera)
+- Bakgrundsstudio-funktionaliteten (bara UX-forbattringar)
+- Redigera fritt-karnlogiken
+- Betalningsfloden, auth eller profilsidor
 
 ## Implementationsordning
 
-1. Refaktorera annonsfloden med nya mallar och guidade steg
-2. Lagg till "Blurra regskyltar" som ny menykategori  
-3. Uppdatera sammanfattningskortet till smartare sprak (dolj engelska prompts)
-4. Lagg till referensbilder for annonsmallar
-5. Rensa emojis och polska chattmeddelanden
+1. **Menydesign** -- Ny kort-grid layout med hierarki och separator for verktyg
+2. **Ad text-overlay editor** -- Ny komponent `AdTextOverlayEditor.tsx` med draggbara textelement
+3. **Mockup-mallbibliotek** -- Definiera `backgroundPrompt`, `textSlots`, positioner for varje mall
+4. **Edge function uppdatering** -- Ny sub-mode for textfri annons-bakgrund
+5. **Integration** -- Koppla ihop guidad chatt -> AI bakgrund -> text-overlay editor -> export
+6. **UX-polish** -- Forbattra guidade floden, tydligare instruktioner, battre bilder
 
