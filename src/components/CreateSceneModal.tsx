@@ -640,6 +640,9 @@ export const CreateSceneModal = ({
     setAdFormat('landscape');
     setSelectedBlurImages([]);
     setBlurStyle(null);
+    setOverlayEditor(null);
+    setSelectedAdTemplateId(null);
+    setAdUserTexts({});
   };
 
   // Auto-scroll: scroll to bottom for new messages, but scroll to top for mode-select (menu)
@@ -948,6 +951,73 @@ export const CreateSceneModal = ({
     if (!user || !guidedCategory) return;
 
     const categoryLabel = activeCategories.find((c) => c.value === guidedCategory)?.label || guidedCategory;
+
+    // If an ad template is selected, use the hybrid text-overlay approach
+    const adTemplate = selectedAdTemplateId ? getTemplateById(selectedAdTemplateId) : null;
+
+    if (adTemplate && chatMode === 'ad-create') {
+      // Extract user texts from guided selections
+      const extractedTexts: Record<string, string> = {};
+      for (const sel of guidedSelections) {
+        const headlineMatch = sel.match(/^headline text:\s*(.+)$/i);
+        if (headlineMatch) extractedTexts['headline'] = headlineMatch[1];
+        const subtitleMatch = sel.match(/^subtitle text:\s*(.+)$/i);
+        if (subtitleMatch) extractedTexts['subtitle'] = subtitleMatch[1];
+      }
+      if (extraDetails) {
+        // If extra text was provided, add it as subtitle if no subtitle yet
+        if (!extractedTexts['subtitle']) extractedTexts['subtitle'] = extraDetails;
+      }
+      setAdUserTexts(extractedTexts);
+
+      // Use the template's backgroundPrompt + ad-create-background mode
+      const combinedPrompt = `${adTemplate.backgroundPrompt}${extraDetails ? ` Additional: ${extraDetails}` : ''}`;
+      const silentUserMsg: ChatMessage = referenceImage
+        ? { role: 'user', text: combinedPrompt, image: referenceImage }
+        : { role: 'user', text: combinedPrompt };
+      const updatedMessages = [...messages, silentUserMsg];
+
+      setMessages([...messages, { role: 'assistant-loading' }]);
+      setIsGenerating(true);
+      setGuidedComplete(false);
+      setReferenceImage(null);
+      setReferenceFile(null);
+
+      try {
+        const conversationHistory = buildConversationHistory(updatedMessages);
+        const retryPayload = { conversationHistory, mode: 'ad-create-background', format: adFormat };
+        const { data, error } = await invokeWithTimeout(retryPayload);
+
+        // Instead of normal response handling, route to overlay editor
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+        setIsGenerating(false);
+
+        if (error || data?.error) {
+          const errorMsg = data?.error || 'Något gick fel vid skapandet av bakgrunden.';
+          setMessages((prev) => [...prev, { role: 'assistant-error', text: errorMsg, retryData: retryPayload }]);
+          return;
+        }
+
+        if (data?.imageUrl) {
+          // Open the overlay editor with the generated background + template text slots
+          setOverlayEditor({
+            backgroundUrl: data.imageUrl,
+            template: adTemplate,
+            userTexts: extractedTexts,
+          });
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', text: 'Bakgrunden är klar! Redigera text, flytta element och exportera din annons.' },
+          ]);
+        }
+      } catch (err) {
+        const conversationHistory = buildConversationHistory(updatedMessages);
+        handleGenerateError(err, { conversationHistory, mode: 'ad-create-background', format: adFormat });
+      }
+      return;
+    }
+
+    // Default: non-template ad or background studio flow
     const modeLabel = chatMode === 'ad-create' ? 'advertisement' : 'background';
     const combinedPrompt = `${categoryLabel} ${modeLabel}: ${guidedSelections.join('. ')}${extraDetails ? `. ${extraDetails}` : ''}.`;
 
@@ -1147,6 +1217,20 @@ export const CreateSceneModal = ({
       const template = AD_TEMPLATES.find((t) => t.value === baseValue);
       if (template && template.mockups[mockupIdx]) {
         const mockup = template.mockups[mockupIdx];
+
+        // Map (category, mockupIdx) to AdTemplate id from adTemplates.ts
+        const MOCKUP_TO_TEMPLATE_ID: Record<string, string[]> = {
+          'incoming-car': ['incoming-light', 'incoming-dark'],
+          'buy-ad': ['buy-warm', 'buy-direct'],
+          'campaign': ['campaign-energetic', 'campaign-elegant'],
+          'social-media': ['social-trendy', 'social-professional'],
+        };
+        const templateIds = MOCKUP_TO_TEMPLATE_ID[baseValue];
+        if (templateIds && templateIds[mockupIdx]) {
+          setSelectedAdTemplateId(templateIds[mockupIdx]);
+          setAdUserTexts({});
+        }
+
         // Use the mockup image as reference for the AI
         (async () => {
           try {
@@ -2916,12 +3000,31 @@ export const CreateSceneModal = ({
     </>;
 
 
+  // Overlay editor content (replaces chat when active)
+  const overlayContent = overlayEditor ? (
+    <AdTextOverlayEditor
+      backgroundImageUrl={overlayEditor.backgroundUrl}
+      template={overlayEditor.template}
+      userTexts={overlayEditor.userTexts}
+      onClose={() => setOverlayEditor(null)}
+      onExport={(dataUrl, name) => {
+        // Download the exported image
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `${name.replace(/\s+/g, '-').toLowerCase()}.png`;
+        link.click();
+        toast.success('Annons exporterad!');
+        setOverlayEditor(null);
+      }}
+    />
+  ) : null;
+
   // Inline mode: render directly without Dialog wrapper
   if (inline) {
     if (!open) return null;
     return (
       <div className="bg-card border border-border overflow-hidden flex flex-col rounded-2xl h-full max-h-full">
-        {chatContent}
+        {overlayEditor ? overlayContent : chatContent}
       </div>);
 
   }
@@ -2933,7 +3036,7 @@ export const CreateSceneModal = ({
         className="sm:max-w-2xl bg-card border-border overflow-hidden p-0 gap-0 flex flex-col w-[calc(100%-1.5rem)] sm:w-full rounded-2xl sm:h-auto sm:max-h-[85vh] mobile-chat-height mx-auto"
         hideCloseButton>
 
-        {chatContent}
+        {overlayEditor ? overlayContent : chatContent}
       </DialogContent>
     </Dialog>);
 
