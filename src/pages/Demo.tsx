@@ -264,7 +264,7 @@ const DemoContent = () => {
           
           const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') 
             ? selectedScene.fullResUrl 
-            : `${window.location.origin}${selectedScene.fullResUrl}`;
+            : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${selectedScene.fullResUrl}`;
           formData.append('backgroundUrl', backgroundUrl);
           formData.append('orientation', aspectRatio);
           formData.append('relight', relightEnabled ? 'true' : 'false');
@@ -550,7 +550,7 @@ const DemoContent = () => {
       formData.append('scene', JSON.stringify(selectedScene));
       const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') 
         ? selectedScene.fullResUrl 
-        : `${window.location.origin}${selectedScene.fullResUrl}`;
+        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${selectedScene.fullResUrl}`;
       formData.append('backgroundUrl', backgroundUrl);
       formData.append('orientation', aspectRatio);
       formData.append('relight', relightEnabled ? 'true' : 'false');

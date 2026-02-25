@@ -460,7 +460,7 @@ function IndexContent() {
             }
           }
           formData.append('scene', JSON.stringify(selectedScene));
-          const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
+          const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${selectedScene.fullResUrl}`;
           formData.append('backgroundUrl', backgroundUrl);
           formData.append('userId', user.id);
           formData.append('orientation', aspectRatio);
@@ -1515,7 +1515,7 @@ function IndexContent() {
                     }
                   }
                   formData.append('scene', JSON.stringify(selectedScene));
-                  const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${window.location.origin}${selectedScene.fullResUrl}`;
+                  const backgroundUrl = selectedScene.fullResUrl.startsWith('http') || selectedScene.fullResUrl.startsWith('data:') ? selectedScene.fullResUrl : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${selectedScene.fullResUrl}`;
                   formData.append('backgroundUrl', backgroundUrl);
                   formData.append('userId', user.id);
                   // Send original dimensions for dynamic output sizing (prevents upscaling)
