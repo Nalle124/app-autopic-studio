@@ -401,21 +401,32 @@ function IndexContent() {
 
             // Always convert to JPEG and compress edited images
             console.log(`Converting edited image to JPEG: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
-            const img = new Image();
-            img.src = image.croppedUrl;
-            await new Promise(resolve => {
-              img.onload = resolve;
-            });
-            const canvas = document.createElement('canvas');
-            const maxDim = 4096;
-            const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.9));
-              console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+            try {
+              const img = new Image();
+              img.src = image.croppedUrl;
+              await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = () => reject(new Error('Kunde inte ladda redigerad bild'));
+              });
+              const canvas = document.createElement('canvas');
+              const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+              const maxDim = isMobileDevice ? 3000 : 4096;
+              const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                blob = await new Promise<Blob>((resolve, reject) => {
+                  canvas.toBlob(b => {
+                    if (b) resolve(b);
+                    else reject(new Error('Canvas toBlob misslyckades'));
+                  }, 'image/jpeg', 0.9);
+                });
+                console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+              }
+            } catch (compressError: any) {
+              console.warn('Edit compression failed, using original blob:', compressError.message);
             }
             const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg';
             formData.append('image', blob, fileName);
@@ -434,25 +445,41 @@ function IndexContent() {
             console.log(`Processing original image: ${fileToSend.name} (${(fileToSend.size / 1024 / 1024).toFixed(2)}MB)`);
             if (fileToSend.size > 5 * 1024 * 1024) {
               console.log('Original image is large, compressing...');
-              const imgUrl = URL.createObjectURL(fileToSend);
-              const img = new Image();
-              img.src = imgUrl;
-              await new Promise(resolve => { img.onload = resolve; });
-              URL.revokeObjectURL(imgUrl);
-              const canvas = document.createElement('canvas');
-              const maxDim = 4096;
-              const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
-              canvas.width = img.width * scale;
-              canvas.height = img.height * scale;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                // Send PNG (lossless) to PhotoRoom for best AI input quality
-                const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/png', 1.0));
-                console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
-                const fileName = fileToSend.name.replace(/\.[^/.]+$/, '') + '.jpg';
-                formData.append('image', blob, fileName);
-              } else {
+              try {
+                const imgUrl = URL.createObjectURL(fileToSend);
+                const img = new Image();
+                img.src = imgUrl;
+                await new Promise((resolve, reject) => { 
+                  img.onload = resolve; 
+                  img.onerror = () => reject(new Error('Kunde inte ladda bilden för komprimering'));
+                });
+                URL.revokeObjectURL(imgUrl);
+                const canvas = document.createElement('canvas');
+                // Mobile Safari has a ~16MP canvas limit - cap at 3000px to be safe
+                const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const maxDim = isMobileDevice ? 3000 : 4096;
+                const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                console.log(`Canvas size: ${canvas.width}x${canvas.height} (mobile: ${isMobileDevice})`);
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  // Send PNG (lossless) to PhotoRoom for best AI input quality
+                  const blob = await new Promise<Blob>((resolve, reject) => {
+                    canvas.toBlob(b => {
+                      if (b) resolve(b);
+                      else reject(new Error('Canvas toBlob misslyckades - möjligt minnesproblem'));
+                    }, 'image/png', 1.0);
+                  });
+                  console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+                  const fileName = fileToSend.name.replace(/\.[^/.]+$/, '') + '.jpg';
+                  formData.append('image', blob, fileName);
+                } else {
+                  formData.append('image', fileToSend);
+                }
+              } catch (compressError: any) {
+                console.warn('Compression failed, sending original:', compressError.message);
                 formData.append('image', fileToSend);
               }
             } else {
@@ -536,14 +563,15 @@ function IndexContent() {
           } catch (fetchError: any) {
             clearTimeout(timeoutId);
             if (fetchError.name === 'AbortError') {
-              throw new Error('Timeout: AI-bearbetning tog för lång tid');
+              throw new Error('Timeout: AI-bearbetning tog för lång tid (90s)');
             }
             throw fetchError;
           }
         } catch (error: any) {
           errorCount++;
-          console.error('Error processing image:', error);
-          toast.error(`Fel: ${error.message || 'Okänt fel'}`);
+          const errorMsg = error?.message || 'Okänt fel';
+          console.error('Error processing image:', image.file?.name, errorMsg, error);
+          toast.error(`Fel vid "${image.file?.name || 'bild'}": ${errorMsg}`, { duration: 8000 });
           // Keep isOriginal true so the image remains visible in uploads
           setUploadedImages(prev => prev.map(img => img.id === image.id ? {
             ...img,
