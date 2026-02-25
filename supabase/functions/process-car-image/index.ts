@@ -172,17 +172,20 @@ serve(async (req) => {
       );
     }
 
-    // Validate backgroundUrl format
-    try {
-      const bgUrl = new URL(backgroundImageUrl);
-      if (!['http:', 'https:'].includes(bgUrl.protocol)) {
-        throw new Error('Invalid protocol');
+    // Validate backgroundUrl format - allow http/https URLs and data URIs
+    const isDataUri = backgroundImageUrl.startsWith('data:image/');
+    if (!isDataUri) {
+      try {
+        const bgUrl = new URL(backgroundImageUrl);
+        if (!['http:', 'https:'].includes(bgUrl.protocol)) {
+          throw new Error('Invalid protocol');
+        }
+      } catch {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid background URL format' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    } catch {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid background URL format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
     // Validate projectId format if provided
@@ -272,15 +275,48 @@ serve(async (req) => {
     const useCompositeMode = scene.compositeMode === true;
     console.log('Composite mode:', useCompositeMode);
 
+    // If backgroundUrl is a data URI, upload it to storage first so PhotoRoom can fetch it
+    let resolvedBackgroundUrl = backgroundImageUrl;
+    let tempBgPath: string | null = null;
+    if (isDataUri) {
+      console.log('Background is a data URI, uploading to storage...');
+      const matches = backgroundImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        const base64Data = matches[2];
+        const binaryStr = atob(base64Data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        tempBgPath = `temp/${crypto.randomUUID()}-bg.${ext}`;
+        const { error: bgUploadError } = await supabase.storage
+          .from('processed-cars')
+          .upload(tempBgPath, bytes.buffer, {
+            contentType: `image/${matches[1]}`,
+            upsert: false,
+          });
+        if (bgUploadError) {
+          console.error('Failed to upload data URI background:', bgUploadError);
+          throw new Error('Failed to process background image');
+        }
+        const { data: bgUrlData } = supabase.storage
+          .from('processed-cars')
+          .getPublicUrl(tempBgPath);
+        resolvedBackgroundUrl = bgUrlData.publicUrl;
+        console.log('Background uploaded to:', resolvedBackgroundUrl);
+      } else {
+        throw new Error('Invalid data URI format for background');
+      }
+    }
+
     if (useCompositeMode) {
       // Composite mode - use exact background image (no AI generation)
-      // Hybrid approach: Step 1 - Use transparent background to get AI-positioned car with shadows
-      // We'll composite onto exact background in step 2
       photoroomFormData.append('background.color', 'transparent');
       console.log('Using TRANSPARENT background for hybrid composite (step 1)');
     } else {
       // AI-generated background mode - use guidance
-      photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
+      photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
       const referenceScale = scene.referenceScale ?? 0.7;
       photoroomFormData.append('background.guidance.scale', referenceScale.toString());
       console.log('Reference scale:', referenceScale);
@@ -360,7 +396,7 @@ serve(async (req) => {
     photoroomFormData.append('export.format', 'png');
     
     console.log('Photoroom request prepared:');
-    console.log('- Reference URL:', backgroundImageUrl);
+    console.log('- Reference URL:', resolvedBackgroundUrl.substring(0, 100));
     console.log('- Seed:', PHOTOROOM_SEED);
     console.log('- Shadow mode:', shadowMode);
     console.log('- Padding:', paddingValue);
@@ -427,7 +463,7 @@ serve(async (req) => {
       // Step 2: Composite transparent car onto exact background
       const step2FormData = new FormData();
       step2FormData.append('imageUrl', transparentCarUrl);
-      step2FormData.append('background.imageUrl', backgroundImageUrl);
+      step2FormData.append('background.imageUrl', resolvedBackgroundUrl);
       step2FormData.append('padding', '0'); // No additional padding - car is already positioned
       step2FormData.append('scaling', 'fill'); // Fill to preserve positioning from step 1
       step2FormData.append('outputSize', outputSize);
@@ -577,7 +613,11 @@ serve(async (req) => {
       thumbnailUrl = finalPublicUrlData.publicUrl;
     }
 
-    // No temp file to clean up (image sent directly to PhotoRoom)
+    // Clean up temp background file if we uploaded one
+    if (tempBgPath) {
+      await supabase.storage.from('processed-cars').remove([tempBgPath]);
+      console.log('Cleaned up temp background file');
+    }
 
     // Save to processing_jobs
     let jobId: string | null = null;
