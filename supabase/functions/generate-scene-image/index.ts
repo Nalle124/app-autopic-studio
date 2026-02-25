@@ -142,6 +142,18 @@ When the user asks to modify a previous image, generate a NEW image with those c
 
 CRITICAL: Always output an image. Never skip image generation.`;
 
+const LOGO_APPLY_SYSTEM_PROMPT = `You are an AI that applies logos onto photographs. You MUST produce a new image with every response. Never respond with only text. NEVER use emojis in your text responses.
+
+ABSOLUTE RULES:
+1. PRESERVE the EXACT original image dimensions, aspect ratio, and orientation. If the input is landscape (wider than tall), the output MUST be landscape with the same proportions. If portrait, output must be portrait. NEVER output a square image unless the input is square.
+2. Do NOT crop, resize, zoom, stretch, or change the framing of the original image in ANY way.
+3. The logo should be placed as a semi-transparent watermark — professional and subtle, NOT covering the main subject.
+4. Keep everything about the original image pixel-perfect identical — only add the logo overlay.
+5. The output resolution should match the input as closely as possible.
+6. When asked to modify placement, size, or transparency of the logo, apply ONLY that change while keeping the image otherwise identical.
+
+CRITICAL: The output image must have the EXACT same width-to-height ratio as the input. Do NOT make images square. Always output an image.`;
+
 // Invisible context injected into user prompts for background mode
 const BACKGROUND_PROMPT_SUFFIX = `
 
@@ -290,6 +302,7 @@ serve(async (req) => {
     const isBackgroundMode = !mode || mode === 'background-studio';
     const isAdMode = mode === 'ad-create';
     const isAdBgMode = mode === 'ad-create-background';
+    const isLogoApplyMode = mode === 'logo-apply';
     const isPortrait = format === 'portrait';
 
     console.log(`Generating scene for user ${user.id}: "${latestPromptText}" (mode: ${mode}, format: ${format || 'landscape'}, ${conversationHistory.length} messages)`);
@@ -359,7 +372,9 @@ CRITICAL: ZERO text in the image. The application handles all text as a separate
 
     // Select system prompt based on mode
     let systemPrompt: string;
-    if (isAdBgMode) {
+    if (isLogoApplyMode) {
+      systemPrompt = LOGO_APPLY_SYSTEM_PROMPT;
+    } else if (isAdBgMode) {
       systemPrompt = AD_BACKGROUND_SYSTEM_PROMPT;
     } else if (isAdMode) {
       systemPrompt = AD_CREATE_SYSTEM_PROMPT;
@@ -386,7 +401,9 @@ CRITICAL: ZERO text in the image. The application handles all text as a separate
         : [
             { 
               role: "user", 
-              content: isBackgroundMode
+              content: isLogoApplyMode
+                ? `Apply the logo onto the photo as instructed. CRITICAL: Preserve the EXACT original image dimensions and aspect ratio. Do NOT make it square. Do NOT crop or resize. Only add the logo overlay. Generate the image now.`
+                : isBackgroundMode
                 ? `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, COMPLETELY EMPTY scene with absolutely no cars, no people, no vehicles. Eye-level camera angle at ~1.2m height. Flat ground surface in lower 40%. Realistic photo style. Generate the image now.`
                 : isAdMode
                   ? `Generate a professional automotive marketing advertisement image: ${latestPromptText}. Include any specified text/headlines prominently with bold readable typography. All text must be spelled correctly. MUST be ${isPortrait ? 'portrait 2:3 ratio' : 'landscape 3:2 ratio'}. Photorealistic professional marketing design. Generate the image now.`

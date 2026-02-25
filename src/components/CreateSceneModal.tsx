@@ -53,13 +53,49 @@ type ChatMessage =
 {role: 'assistant-status';text: string;} |
 {role: 'mode-select';};
 
-const LOADING_PHRASES = [
-'Analyserar din beskrivning...',
-'Bygger upp scenen...',
-'Fixar belysningen...',
-'Lägger till detaljer...',
-'Finjusterar perspektivet...',
-'Nästan klar...'];
+const LOADING_PHRASES_LIBRARY = [
+  'Analyserar din beskrivning...',
+  'Bygger upp scenen...',
+  'Fixar belysningen...',
+  'Lägger till detaljer...',
+  'Finjusterar perspektivet...',
+  'Nästan klar...',
+  'Skapar ljussättningen...',
+  'Placerar skuggorna...',
+  'Arbetar med kompositionen...',
+  'Finslipar detaljerna...',
+  'Justerar färgtemperaturen...',
+  'Renderar texturer...',
+  'Optimerar kontraster...',
+  'Balanserar tonerna...',
+  'Förbereder slutresultatet...',
+  'Lägger sista handen...',
+  'Mixar bakgrundselementen...',
+  'Beräknar ljusriktningar...',
+  'Skapar djupskärpa...',
+  'Anpassar atmosfären...',
+  'Jobbar med reflektionerna...',
+  'Skapar realistiska ytor...',
+  'Bearbetar perspektivet...',
+  'Finjusterar skärpan...',
+  'Komponerar bilden...',
+  'Slår ihop lagren...',
+  'Polerar resultatet...',
+  'Testar ljusbalansen...',
+  'Bygger stämningen...',
+  'Arbetar med horisonten...',
+  'Finslipar övergångarna...',
+  'Lägger till realism...',
+  'Räknar ut skuggvinklar...',
+  'Skapar materialkänsla...',
+  'Justerar vitbalansen...',
+];
+
+// Shuffle and pick 6 random phrases for each generation session
+const getRandomLoadingPhrases = (): string[] => {
+  const shuffled = [...LOADING_PHRASES_LIBRARY].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 6);
+};
 
 
 // ─── Background studio guided flow ───────────────────────────────
@@ -452,6 +488,14 @@ const POST_GENERATION_SUGGESTIONS_BLUR = [
 'Gör det mer diskret',
 'Behåll mer av originalfärgen'];
 
+const POST_GENERATION_SUGGESTIONS_LOGO = [
+'Flytta logon till andra hörnet',
+'Gör logon större',
+'Gör logon mer transparent',
+'Ändra till mörk logo',
+'Gör logon mindre',
+'Centrera logon'];
+
 
 // Build reverse map: promptValue → Swedish label from all guided flows
 const buildLabelMap = (): Record<string, string> => {
@@ -496,6 +540,7 @@ export const CreateSceneModal = ({
   const [isSaving, setIsSaving] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'mode-select' }]);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+  const [loadingPhrases, setLoadingPhrases] = useState<string[]>(getRandomLoadingPhrases);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [hasGeneratedImage, setHasGeneratedImage] = useState(false);
@@ -685,9 +730,10 @@ export const CreateSceneModal = ({
   useEffect(() => {
     if (!isGenerating) return;
     setLoadingPhraseIndex(0);
+    setLoadingPhrases(getRandomLoadingPhrases());
     const interval = setInterval(() => {
       setLoadingPhraseIndex((prev) =>
-      prev >= LOADING_PHRASES.length - 1 ? prev : prev + 1
+      prev >= 5 ? prev : prev + 1
       );
     }, 2200);
     return () => clearInterval(interval);
@@ -1917,7 +1963,7 @@ export const CreateSceneModal = ({
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. CRITICAL RULES: 1) Output the EXACT same image dimensions, aspect ratio, and orientation as the input photo — if the input is portrait (taller than wide), the output MUST be portrait. If landscape (wider than tall), the output MUST be landscape. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) The output image MUST have the EXACT same width-to-height ratio as the input.` },
+              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. CRITICAL RULES: 1) Output the EXACT same image dimensions, aspect ratio, and orientation as the input photo — if the input is portrait (taller than wide), the output MUST be portrait. If landscape (wider than tall), the output MUST be landscape. The output resolution and pixel dimensions must match the input EXACTLY. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) The output image MUST have the EXACT same width-to-height ratio as the input. 6) Do NOT make the image square — preserve the original shape.` },
               { type: 'image_url', image_url: { url: base64 } },
               { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
@@ -1926,7 +1972,7 @@ export const CreateSceneModal = ({
 
         const { data, error } = await invokeWithTimeout({
           conversationHistory,
-          mode: 'free-create'
+          mode: 'logo-apply'
         });
 
         if (error) {
@@ -2054,17 +2100,21 @@ export const CreateSceneModal = ({
 
     try {
       const conversationHistory = buildConversationHistory(aiMessages);
-      const retryPayload = { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined };
+      const effectiveMode = chatMode === 'logo-studio' ? 'logo-apply' : (chatMode || 'background-studio');
+      const retryPayload = { conversationHistory, mode: effectiveMode, format: chatMode === 'ad-create' ? adFormat : undefined };
       const { data, error } = await invokeWithTimeout(retryPayload);
       handleGenerateResponse(data, error, displayMessages, retryPayload);
     } catch (err) {
       const conversationHistory = buildConversationHistory(aiMessages);
-      handleGenerateError(err, { conversationHistory, mode: chatMode || 'background-studio', format: chatMode === 'ad-create' ? adFormat : undefined });
+      const effectiveMode = chatMode === 'logo-studio' ? 'logo-apply' : (chatMode || 'background-studio');
+      handleGenerateError(err, { conversationHistory, mode: effectiveMode, format: chatMode === 'ad-create' ? adFormat : undefined });
     }
   };
 
   const postGenSuggestions = chatMode === 'blur-plates' ?
   POST_GENERATION_SUGGESTIONS_BLUR :
+  chatMode === 'logo-studio' ?
+  POST_GENERATION_SUGGESTIONS_LOGO :
   chatMode === 'ad-create' ?
   POST_GENERATION_SUGGESTIONS_AD :
   chatMode === 'free-create' ?
@@ -2842,7 +2892,7 @@ export const CreateSceneModal = ({
                         <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
                       <p className="text-xs text-muted-foreground animate-pulse">
-                        {LOADING_PHRASES[loadingPhraseIndex]}
+                        {loadingPhrases[loadingPhraseIndex]}
                       </p>
                     </div>
                   </div>
