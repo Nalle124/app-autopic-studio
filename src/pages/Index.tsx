@@ -906,8 +906,8 @@ function IndexContent() {
             {!isAdmin && (
               <div className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm rounded-[10px] flex flex-col items-center justify-center text-center px-6">
                 <div className="bg-card border border-border rounded-2xl p-8 max-w-md shadow-lg space-y-4">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-primary" />
+                  <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
+                    <img src="/favicon.png" alt="" className="w-6 h-6 object-contain dark:invert" />
                   </div>
                   <h3 className="text-xl font-semibold text-foreground">Kommer snart</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
