@@ -40,7 +40,7 @@ type ChatMessage =
 {role: 'system';text: string;} |
 {role: 'user';text: string;image?: string;} |
 {role: 'assistant';text: string;} |
-{role: 'assistant-options';text: string;options: Array<{label: string;value: string;}>;} |
+{role: 'assistant-options';text: string;options: Array<{label: string;value: string;}>;stepIndex?: number;} |
 {role: 'assistant-image';imageUrl: string;suggestedName: string;description: string;photoroomPrompt: string;} |
 {role: 'assistant-loading';} |
 {role: 'assistant-error';text: string;retryData?: {conversationHistory: Array<{role: string;content: any;}>;mode: string;format?: string;};} |
@@ -183,10 +183,10 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   {
     question: 'Vilken årstid?',
     options: [
-    { label: 'Sommar', value: 'summer season with green trees and vegetation' },
-    { label: 'Höst', value: 'autumn season with golden and orange leaves' },
-    { label: 'Vinter', value: 'winter season with snow on the ground' },
-    { label: 'Vår', value: 'spring season with blooming flowers and fresh green' }],
+    { label: 'Sommar', value: 'summer season' },
+    { label: 'Höst', value: 'autumn season with warm golden tones' },
+    { label: 'Vinter', value: 'winter season with snow' },
+    { label: 'Vår', value: 'spring season with fresh green' }],
     allowCustom: true
   },
   {
@@ -507,6 +507,7 @@ export const CreateSceneModal = ({
   const [guidedCategory, setGuidedCategory] = useState<string | null>(null);
   const [guidedStepIndex, setGuidedStepIndex] = useState(0);
   const [guidedSelections, setGuidedSelections] = useState<string[]>([]);
+  const [guidedSelectionLabels, setGuidedSelectionLabels] = useState<string[]>([]);
   const [awaitingGuidedCustomInput, setAwaitingGuidedCustomInput] = useState(false);
   const [guidedComplete, setGuidedComplete] = useState(false);
 
@@ -534,6 +535,7 @@ export const CreateSceneModal = ({
     guidedCategory: string | null;
     guidedStepIndex: number;
     guidedSelections: string[];
+    guidedSelectionLabels: string[];
     referenceImage: string | null;
     hasGeneratedImage: boolean;
   } | null>(null);
@@ -653,6 +655,7 @@ export const CreateSceneModal = ({
     setGuidedCategory(null);
     setGuidedStepIndex(0);
     setGuidedSelections([]);
+    setGuidedSelectionLabels([]);
     setAwaitingGuidedCustomInput(false);
     setGuidedComplete(false);
     setPreviewImage(null);
@@ -801,6 +804,7 @@ export const CreateSceneModal = ({
     setGuidedCategory(null);
     setGuidedStepIndex(0);
     setGuidedSelections([]);
+    setGuidedSelectionLabels([]);
     setAwaitingGuidedCustomInput(false);
     setGuidedComplete(false);
     setPreviewImage(null);
@@ -823,6 +827,7 @@ export const CreateSceneModal = ({
     setGuidedCategory(savedChat.guidedCategory);
     setGuidedStepIndex(savedChat.guidedStepIndex);
     setGuidedSelections(savedChat.guidedSelections);
+    setGuidedSelectionLabels(savedChat.guidedSelectionLabels || []);
     setReferenceImage(savedChat.referenceImage);
     setHasGeneratedImage(savedChat.hasGeneratedImage);
     setSavedChat(null);
@@ -849,6 +854,7 @@ export const CreateSceneModal = ({
     setGuidedCategory(value);
     setGuidedStepIndex(0);
     setGuidedSelections([]);
+    setGuidedSelectionLabels([]);
     setAwaitingGuidedCustomInput(false);
 
     // Show reference images for background mode categories
@@ -870,6 +876,7 @@ export const CreateSceneModal = ({
       newMessages.push({
         role: 'assistant-options',
         text: `${firstStep.question}`,
+        stepIndex: 0,
         options: [
         ...firstStep.options,
         ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])]
@@ -893,29 +900,67 @@ export const CreateSceneModal = ({
       return;
     }
 
-    const currentStep = flow[guidedStepIndex];
-    const optionLabel = currentStep.options.find((o) => o.value === value)?.label || value;
+    // Find which step this option belongs to
+    let targetStepIndex = guidedStepIndex; // default: current step
+    for (let si = 0; si < flow.length; si++) {
+      if (flow[si].options.some((o) => o.value === value)) {
+        targetStepIndex = si;
+        break;
+      }
+    }
 
-    const newSelections = [...guidedSelections, value];
+    const step = flow[targetStepIndex];
+    const optionLabel = step.options.find((o) => o.value === value)?.label || value;
+
+    // Update selections at this step index
+    const newSelections = [...guidedSelections];
+    const newLabels = [...guidedSelectionLabels];
+    newSelections[targetStepIndex] = value;
+    newLabels[targetStepIndex] = optionLabel;
     setGuidedSelections(newSelections);
+    setGuidedSelectionLabels(newLabels);
 
-    const nextStepIndex = guidedStepIndex + 1;
+    // If this was a re-selection of a previously answered step, just update state (don't advance)
+    if (targetStepIndex < guidedStepIndex) {
+      // Update the summary card if it exists
+      if (guidedComplete) {
+        const categoryLabel = activeCategories.find((c) => c.value === guidedCategory)?.label || guidedCategory;
+        setMessages((prev) => prev.map((m) => {
+          if (m.role === 'assistant-summary') {
+            return {
+              ...m,
+              selections: newSelections.filter(Boolean),
+              selectionLabels: newLabels.filter(Boolean),
+              category: categoryLabel
+            };
+          }
+          return m;
+        }));
+      }
+      return;
+    }
+
+    // Advance to next step
+    const nextStepIndex = targetStepIndex + 1;
 
     if (nextStepIndex < flow.length) {
       setGuidedStepIndex(nextStepIndex);
       const nextStep = flow[nextStepIndex];
-      setMessages((prev) => [
-      ...prev,
-      { role: 'user', text: optionLabel },
-      {
-        role: 'assistant-options',
-        text: nextStep.question,
-        options: [
-        ...nextStep.options,
-        ...(nextStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])]
-
-      }]
-      );
+      // Only add the next step's options if not already in messages
+      const alreadyHasNextStep = messages.some((m) => m.role === 'assistant-options' && (m as any).stepIndex === nextStepIndex);
+      if (!alreadyHasNextStep) {
+        setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant-options',
+          text: nextStep.question,
+          stepIndex: nextStepIndex,
+          options: [
+          ...nextStep.options,
+          ...(nextStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])]
+        }]
+        );
+      }
     } else {
       const categoryLabel = activeCategories.find((c) => c.value === guidedCategory)?.label || guidedCategory;
       setGuidedComplete(true);
@@ -924,31 +969,31 @@ export const CreateSceneModal = ({
       if (chatMode === 'ad-create') {
         setMessages((prev) => [
         ...prev,
-        { role: 'user', text: optionLabel },
         {
           role: 'assistant-options',
           text: 'Välj format:',
           options: [
           { label: 'Liggande (3:2)', value: '__format_landscape__' },
           { label: 'Stående (2:3)', value: '__format_portrait__' }]
-
         }]
         );
-        setGuidedSelections(newSelections);
         return;
       }
 
-      const selLabels = newSelections.map((s) => PROMPT_LABEL_MAP[s] || s);
-      setMessages((prev) => [
-      ...prev,
-      { role: 'user', text: optionLabel },
-      {
-        role: 'assistant-summary',
-        category: categoryLabel,
-        selections: newSelections,
-        selectionLabels: selLabels
-      }]
-      );
+      const selLabels = newLabels.filter(Boolean);
+      // Only add summary if not already present
+      const alreadyHasSummary = messages.some((m) => m.role === 'assistant-summary');
+      if (!alreadyHasSummary) {
+        setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant-summary',
+          category: categoryLabel,
+          selections: newSelections.filter(Boolean),
+          selectionLabels: selLabels
+        }]
+        );
+      }
     }
   };
 
@@ -1048,7 +1093,7 @@ export const CreateSceneModal = ({
     const inspirationNote = referenceImage
       ? ' IMPORTANT: The attached image is ONLY a style/mood reference for inspiration. Do NOT reproduce or copy it. Create a completely NEW and ORIGINAL scene that captures a similar mood, lighting style, or atmosphere, but with a different composition, angle, and details.'
       : '';
-    const combinedPrompt = `${categoryLabel} ${modeLabel}: ${guidedSelections.join('. ')}${extraDetails ? `. ${extraDetails}` : ''}.${inspirationNote}`;
+    const combinedPrompt = `${categoryLabel} ${modeLabel}: ${guidedSelections.filter(Boolean).join('. ')}${extraDetails ? `. ${extraDetails}` : ''}.${inspirationNote}`;
 
     // Build the prompt silently - include reference image if one is set
     const silentUserMsg: ChatMessage = referenceImage ?
@@ -1168,6 +1213,7 @@ export const CreateSceneModal = ({
         {
           role: 'assistant-options',
           text: firstStep.question,
+          stepIndex: 0,
           options: [
             ...firstStep.options,
             ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])
@@ -1224,15 +1270,14 @@ export const CreateSceneModal = ({
       setAdFormat(selectedFormat);
       const formatLabel = selectedFormat === 'portrait' ? 'Stående (2:3)' : 'Liggande (3:2)';
       const categoryLabel = activeCategories.find((c) => c.value === guidedCategory)?.label || guidedCategory;
-      const selLabels = guidedSelections.map((s) => PROMPT_LABEL_MAP[s] || s);
+      const selLabels = guidedSelectionLabels.filter(Boolean).length > 0 ? guidedSelectionLabels.filter(Boolean) : guidedSelections.map((s) => PROMPT_LABEL_MAP[s] || s);
       setGuidedComplete(true);
       setMessages((prev) => [
       ...prev,
-      { role: 'user', text: formatLabel },
       {
         role: 'assistant-summary',
         category: categoryLabel,
-        selections: guidedSelections,
+        selections: guidedSelections.filter(Boolean),
         selectionLabels: selLabels,
         format: selectedFormat === 'portrait' ? 'Stående' : 'Liggande'
       }]
@@ -1465,8 +1510,12 @@ export const CreateSceneModal = ({
       const flow = activeFlows[guidedCategory];
       if (flow) {
         const customText = prompt.trim();
-        const newSelections = [...guidedSelections, customText];
+        const newSelections = [...guidedSelections];
+        const newLabels = [...guidedSelectionLabels];
+        newSelections[guidedStepIndex] = customText;
+        newLabels[guidedStepIndex] = customText;
         setGuidedSelections(newSelections);
+        setGuidedSelectionLabels(newLabels);
         setAwaitingGuidedCustomInput(false);
 
         const nextStepIndex = guidedStepIndex + 1;
@@ -1480,6 +1529,7 @@ export const CreateSceneModal = ({
           {
             role: 'assistant-options',
             text: nextStep.question,
+            stepIndex: nextStepIndex,
             options: [
             ...nextStep.options,
             ...(nextStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])]
@@ -1488,7 +1538,7 @@ export const CreateSceneModal = ({
           );
         } else {
           const categoryLabel = activeCategories.find((c) => c.value === guidedCategory)?.label || guidedCategory;
-          const selLabels = newSelections.map((s) => PROMPT_LABEL_MAP[s] || s);
+          const selLabels = newLabels.filter(Boolean);
           setGuidedComplete(true);
           setMessages((prev) => [
           ...prev,
@@ -1496,7 +1546,7 @@ export const CreateSceneModal = ({
           {
             role: 'assistant-summary',
             category: categoryLabel,
-            selections: newSelections,
+            selections: newSelections.filter(Boolean),
             selectionLabels: selLabels
           }]
           );
@@ -2303,6 +2353,7 @@ export const CreateSceneModal = ({
                               {
                                 role: 'assistant-options',
                                 text: firstStep.question,
+                                stepIndex: 0,
                                 options: [
                                   ...firstStep.options,
                                   ...(firstStep.allowCustom ? [{ label: 'Skriv eget...', value: '__custom__' }] : [])
@@ -2350,7 +2401,11 @@ export const CreateSceneModal = ({
 
         // ─── Summary card ─────────────────────────────
         if (msg.role === 'assistant-summary') {
-          const labels = msg.selectionLabels || msg.selections.map((s) => PROMPT_LABEL_MAP[s] || s);
+          // Read dynamically from current state so re-selections are reflected
+          const dynamicLabels = guidedSelectionLabels.filter(Boolean).length > 0
+            ? guidedSelectionLabels.filter(Boolean)
+            : guidedSelections.filter(Boolean).map((s) => PROMPT_LABEL_MAP[s] || s);
+          const dynamicCategory = activeCategories.find((c) => c.value === guidedCategory)?.label || msg.category;
           return (
             <div key={i} className="space-y-3">
                   <div className="flex gap-2.5 items-start">
@@ -2358,8 +2413,8 @@ export const CreateSceneModal = ({
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
                       <p className="text-sm font-medium text-foreground">Jag har en bild av vad du söker.</p>
                       <div className="flex flex-wrap gap-1.5">
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">{msg.category}</span>
-                        {labels.map((label, idx) =>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">{dynamicCategory}</span>
+                        {dynamicLabels.map((label, idx) =>
                     <span key={idx} className="text-xs px-2.5 py-1 rounded-full bg-background/80 text-foreground border border-border/30">{label}</span>
                     )}
                         {msg.format &&
@@ -2600,6 +2655,10 @@ export const CreateSceneModal = ({
             );
           }
 
+          // Determine if this options message has a stepIndex for highlight tracking
+          const msgStepIndex = (msg as any).stepIndex as number | undefined;
+          const selectedValueForStep = msgStepIndex !== undefined ? guidedSelections[msgStepIndex] : undefined;
+
           return (
             <div key={i} className="space-y-3">
                   {msg.text && (
@@ -2611,16 +2670,22 @@ export const CreateSceneModal = ({
                   </div>
                   )}
                   <div className="flex flex-wrap gap-1.5 pl-9">
-                    {msg.options.map((opt, idx) =>
+                    {msg.options.map((opt, idx) => {
+                      const isSelected = selectedValueForStep === opt.value;
+                      return (
                 <button
                   key={idx}
                   onClick={() => handleOptionClick(opt.value)}
                   disabled={isGenerating}
-                  className="text-[13px] px-3.5 py-2 rounded-full border border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40">
-
+                  className={`text-[13px] px-3.5 py-2 rounded-full border transition-colors disabled:opacity-40 ${
+                    isSelected
+                      ? 'bg-primary/10 border-primary/40 text-primary font-medium'
+                      : 'border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}>
                         {opt.label}
                       </button>
-                )}
+                      );
+                    })}
                   </div>
                 </div>);
 
