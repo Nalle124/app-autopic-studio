@@ -457,9 +457,8 @@ function IndexContent() {
             
             console.log(`[ProcessImage] Original: ${fileToSend.name} (${(fileToSend.size / 1024 / 1024).toFixed(2)}MB, type: ${fileToSend.type})`);
             
-            // On mobile: always compress to JPEG to avoid memory issues
-            // On desktop: only compress if > 5MB
-            const shouldCompress = isMobileDevice || fileToSend.size > 5 * 1024 * 1024;
+            // Always compress to JPEG before uploading to keep file size manageable
+            const shouldCompress = true;
             
             if (shouldCompress) {
               console.log(`[ProcessImage] Compressing (mobile: ${isMobileDevice}, size: ${(fileToSend.size / 1024 / 1024).toFixed(2)}MB)...`);
@@ -481,7 +480,7 @@ function IndexContent() {
                 
                 const canvas = document.createElement('canvas');
                 // Mobile: aggressive limit (2048px) to stay well within iOS 16MP limit
-                const maxDim = isMobileDevice ? 2048 : 4096;
+                const maxDim = isMobileDevice ? 2048 : 3500;
                 const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
                 canvas.width = Math.round(img.width * scale);
                 canvas.height = Math.round(img.height * scale);
@@ -489,9 +488,9 @@ function IndexContent() {
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                  // Use JPEG on mobile for smaller memory footprint, PNG on desktop for quality
-                  const format = isMobileDevice ? 'image/jpeg' : 'image/png';
-                  const quality = isMobileDevice ? 0.85 : 1.0;
+                  // Always use JPEG for uploads - PNG photos are 5-10x larger and cause timeouts
+                  const format = 'image/jpeg';
+                  const quality = isMobileDevice ? 0.85 : 0.92;
                   const blob = await new Promise<Blob>((resolve, reject) => {
                     canvas.toBlob(b => {
                       if (b) resolve(b);
@@ -499,8 +498,7 @@ function IndexContent() {
                     }, format, quality);
                   });
                   console.log(`[ProcessImage] Compressed: ${(blob.size / 1024 / 1024).toFixed(2)}MB (${format})`);
-                  const ext = isMobileDevice ? '.jpg' : '.png';
-                  const fileName = fileToSend.name.replace(/\.[^/.]+$/, '') + ext;
+                  const fileName = fileToSend.name.replace(/\.[^/.]+$/, '') + '.jpg';
                   formData.append('image', blob, fileName);
                 } else {
                   console.warn('[ProcessImage] No canvas context, sending original');
