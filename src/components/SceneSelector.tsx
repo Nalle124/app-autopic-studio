@@ -170,7 +170,7 @@ export const SceneSelector = ({
   const { user } = useAuth();
   
   // Free users only have access to popular category
-  const hasFullAccess = isSubscribed;
+  const hasFullAccess = true; // Temporarily unlocked for all users
 
   useEffect(() => {
     loadScenes();
