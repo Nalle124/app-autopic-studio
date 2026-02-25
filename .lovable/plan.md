@@ -1,75 +1,55 @@
 
 
-## Plan: Ångra val i guidade flöden + UX-genomgång av AI Studio
+## Plan: AI Studio "Kommer snart"-lås + Lås upp bakgrundsgalleriet
 
-### Problem
-1. **Klick på redan-besvarad fråga skickar ett nytt (svagt) meddelande** istolat for att uppdatera valet. Om användaren klickar "Sommar" efter att ha valt "Höst", skapas ett nytt user-meddelande med prompt-texten ("Summer season with green trees and vegetation") istället för att byta ut det tidigare valet.
-2. **Årstidsprompt-värden är för specifika** (t.ex. "summer season with green trees and vegetation") -- om de skickas som fristående meddelande blir det ett svagt prompt.
-3. **Inga visuella indikationer** på vilka val som redan gjorts, och ingen möjlighet att ändra.
+### Vad görs
 
-### Lösning: "Editable guided selections"
+**1. AI Studio "Kommer snart"-overlay (Index.tsx + Demo.tsx)**
 
-**Kärnidé**: Istället för att varje guided option-klick lägger till ett user-meddelande och gör steget "permanent", ska alla val hållas i `guidedSelections`-arrayen som en ändningsbar state. Options-knapparna förblir interaktiva (inte disabled) ända tills användaren klickar "Skapa bakgrund". Valt alternativ visas med en svag highlight.
+När `activeTab === 'ai-studio'` och användaren INTE är admin, renderas en overlay ovanpå AI Studio-chatten (som fortfarande syns i bakgrunden). Overlayn innehåller:
+- Halvtransparent bakgrund med blur
+- "Kommer snart"-rubrik
+- Beskrivning: "Här kommer du kunna skapa egna bakgrundsmiljöer, blurra regplåtar, skapa annonsmaterial och redigera fritt med AI."
+- Admin-användare (`isAdmin`) ser chatten som vanligt utan overlay
 
-#### Tekniska ändringar i `CreateSceneModal.tsx`:
+**2. Ändra "Nyhet"-texten till "Kommer snart" (Index.tsx + Demo.tsx)**
 
-**1. Lägg till `guidedSelectionLabels` state**
-- Ny state `guidedSelectionLabels: string[]` som trackar svenska etiketter parallellt med `guidedSelections`.
+Byter ut `<span>Nyhet:</span>` mot `<span>Kommer snart:</span>` i AI-notice-bandet. Texten uppdateras till att beskriva vad som är på gång istället för att presentera det som redan tillgängligt.
 
-**2. Refaktorera `handleGuidedOptionSelect`**
-- Istället för att pusha user-meddelanden för varje steg, uppdatera bara `guidedSelections[stepIndex]` och `guidedSelectionLabels[stepIndex]`.
-- Om användaren klickar ett alternativ i ett *redan besvarat steg* (t.ex. steg 1 "Vilken årstid?" när vi redan är på steg 2), uppdatera `guidedSelections[thatStepIndex]` och trunkera allt efter (om steget ändras, kan efterföljande val bli irrelevanta -- men i de flesta fall behåll dem).
-- Flytta fram `guidedStepIndex` bara om steget var det nuvarande.
+**3. Lås upp hela bakgrundsgalleriet (SceneSelector.tsx)**
 
-**3. Ändra rendering av `assistant-options`**
-- Varje options-knapp som redan valts (dvs. dess `value` finns i `guidedSelections` för det stegets index) får en svag highlight-stil: `bg-primary/10 border-primary/30 text-primary`.
-- Knapparna förblir klickbara (inte disabled) så länge `guidedComplete` är false eller summary-kortet visas men generering inte startats.
-- Behöver koppla varje `assistant-options`-meddelande till dess steg-index. Enklast via en ny fält i `ChatMessage`: `stepIndex?: number`.
+Ändrar `hasFullAccess` från `isSubscribed` till `true` (eller tar bort lås-logiken tillfälligt). Detta gör att alla kategorier (Enkla Studios, Mörka Studios, Premium, etc.) är tillgängliga för alla användare. Lås-ikonerna försvinner från kategorinamnen.
 
-**4. Uppdatera `assistant-options` ChatMessage-typ**
-- Lägg till optional `stepIndex?: number` på `assistant-options`-meddelanden.
-- Sätt detta när meddelandet skapas i `handleGuidedOptionSelect` och `handleCategorySelect`.
+**4. Demo-sidan: AI Studio-val triggar "Kommer snart" istället för signup-modal (Demo.tsx)**
 
-**5. Uppdatera summary-kortet dynamiskt**
-- Summary-kortet ska alltid reflektera den senaste `guidedSelections`/`guidedSelectionLabels`, inte de som sparades vid skapande. Rendera det baserat på current state istället för `msg.selections`.
+I demo-navets `onValueChange`, när `v === 'ai-studio'`, visas ett liknande "Kommer snart"-meddelande/toast istället för att bara öppna signup-modalen.
 
-**6. Ta bort user-meddelanden för guided-steg**
-- Guided-val ska inte längre generera `{ role: 'user', text: optionLabel }`-meddelanden. Istället visas valen inline som highlighted chips i options-raderna.
-- Sammanfattningskortet visar alla val.
+### Tekniska detaljer
 
-**7. Simplifiering av prompt-värden för årstider**
-- Ändra årstidernas `value` till kortare, mer generella prompts:
-  - "Sommar" -> `"summer season"` (inte "with green trees and vegetation")
-  - "Höst" -> `"autumn season with warm golden tones"`
-  - "Vinter" -> `"winter season with snow"`
-  - "Vår" -> `"spring season with fresh green"`
+**Index.tsx** (rad ~884):
+- Wrappa `CreateSceneModal`-sektionen med en conditional: om `!isAdmin`, rendera en absolut-positionerad overlay `div` ovanpå med `z-20`, `bg-background/80 backdrop-blur-sm`, centrerad text.
+- Chatten renderas fortfarande undertill (synlig men inte interaktiv).
 
-### UX-brister identifierade i andra flöden
+**Index.tsx** (rad ~972-979):
+- Ändra "Nyhet:" → "Kommer snart:" och uppdatera beskrivningstexten.
 
-**A. Ad-create guided flow** -- Samma problem: val kan inte ändras efter klick. Samma lösning appliceras.
+**Demo.tsx** (rad ~624, ~860-869):
+- Samma "Kommer snart"-hantering för AI Studio-valet.
+- Uppdatera notice-texten.
 
-**B. Showroom / Premium / Studio flows** -- Samma mönster, samma fix.
+**SceneSelector.tsx** (rad 173):
+- Ändra `const hasFullAccess = isSubscribed;` till `const hasFullAccess = true;`
+- Detta är en enkel one-liner att ändra tillbaka när låsningen ska återställas.
 
-**C. "Redigera fritt" -- saknar "ångra" på snabbval.** Om man klickar ett snabbval-kort och det skickas, kan man inte ångra. Men detta är en "send"-action, inte en guided-selection, så det är rimligt att det inte kan ångras.
+### Enkel att ta bort
 
-**D. Blur/Logo flow -- bilder kan inte avmarkeras efter "Nästa".** När man klickat "Nästa" efter bildval kan man inte gå tillbaka och ändra bilderna. Kan förbättras men är sekundärt.
+Alla ändringar är isolerade:
+- Ta bort overlay-diven i Index.tsx/Demo.tsx
+- Ändra tillbaka `hasFullAccess = true` → `hasFullAccess = isSubscribed` i SceneSelector.tsx
+- Byt "Kommer snart" → tillbaka till "Nyhet" eller ta bort helt
 
-**E. Inspiration-bild kan inte bytas.** Efter att man valt en inspirationsbild och gått vidare till steg 1, kan man inte byta inspiration. Lösningen ovan löser detta indirekt genom att alla steg förblir interaktiva.
-
-**F. Referensbild i "Skapa annons" kan inte bytas.** Om man hoppar över referensbild och sedan ångrar sig, finns inget sätt att gå tillbaka. Sekundär prioritet.
-
-### Implementationsordning
-
-1. Lägg till `stepIndex` i `assistant-options` meddelandetypen
-2. Refaktorera `handleGuidedOptionSelect` till att mutera state istället för att pusha meddelanden
-3. Uppdatera rendering: highlight valt alternativ, håll knappar klickbara
-4. Gör summary-kortet dynamiskt baserat på current `guidedSelections`
-5. Simplify årstids-prompts
-6. Applicera samma logik i `AD_GUIDED_FLOWS`
-7. Testa alla flöden: bakgrund (alla 5 kategorier), annonser (alla 4 typer)
-
-### Påverkan
-- Filen `src/components/CreateSceneModal.tsx` -- primär och enda fil som ändras
-- Ingen backend-ändring behövs
-- Ingen databasändring behövs
+### Filer som ändras
+- `src/pages/Index.tsx` — overlay + text
+- `src/pages/Demo.tsx` — overlay + text
+- `src/components/SceneSelector.tsx` — lås upp galleriet
 
