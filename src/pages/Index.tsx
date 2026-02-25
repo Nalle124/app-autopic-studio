@@ -391,98 +391,127 @@ function IndexContent() {
       for (const image of uploadedImages) {
         try {
           const formData = new FormData();
+          const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          console.log(`[ProcessImage] Start: ${image.file?.name}, mobile: ${isMobileDevice}, size: ${(image.file?.size / 1024 / 1024).toFixed(2)}MB, type: ${image.file?.type}`);
 
           // CRITICAL: Use original file if no edits, or croppedUrl if edited
-          // This ensures we send the correct image for processing
           if (image.croppedUrl) {
-            console.log(`Processing edited image: ${image.file.name}`);
-            const response = await fetch(image.croppedUrl);
-            let blob = await response.blob();
+            console.log(`[ProcessImage] Has croppedUrl, fetching edited image...`);
+            let blob: Blob;
+            try {
+              const response = await fetch(image.croppedUrl);
+              blob = await response.blob();
+              console.log(`[ProcessImage] Edited blob fetched: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+            } catch (fetchErr: any) {
+              console.error('[ProcessImage] Failed to fetch croppedUrl:', fetchErr);
+              throw new Error('Kunde inte hämta redigerad bild');
+            }
 
-            // Always convert to JPEG and compress edited images
-            console.log(`Converting edited image to JPEG: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+            // Try to compress edited images, but always have fallback
             try {
               const img = new Image();
-              img.src = image.croppedUrl;
-              await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = () => reject(new Error('Kunde inte ladda redigerad bild'));
+              const imgLoadPromise = new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = (e) => reject(new Error(`Bildladdning misslyckades (edited)`));
               });
+              img.src = image.croppedUrl;
+              await imgLoadPromise;
+              
               const canvas = document.createElement('canvas');
-              const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-              const maxDim = isMobileDevice ? 3000 : 4096;
+              const maxDim = isMobileDevice ? 2048 : 4096;
               const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
               canvas.width = Math.round(img.width * scale);
               canvas.height = Math.round(img.height * scale);
+              console.log(`[ProcessImage] Edit canvas: ${canvas.width}x${canvas.height}`);
               const ctx = canvas.getContext('2d');
               if (ctx) {
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                blob = await new Promise<Blob>((resolve, reject) => {
+                const compressedBlob = await new Promise<Blob>((resolve, reject) => {
                   canvas.toBlob(b => {
                     if (b) resolve(b);
                     else reject(new Error('Canvas toBlob misslyckades'));
                   }, 'image/jpeg', 0.9);
                 });
-                console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+                blob = compressedBlob;
+                console.log(`[ProcessImage] Edit compressed: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
               }
             } catch (compressError: any) {
-              console.warn('Edit compression failed, using original blob:', compressError.message);
+              console.warn('[ProcessImage] Edit compression failed, using original blob:', compressError.message);
             }
-            const fileName = image.file.name.replace(/\.[^/.]+$/, '') + '_edited.jpg';
+            const fileName = (image.file?.name || 'image').replace(/\.[^/.]+$/, '') + '_edited.jpg';
             formData.append('image', blob, fileName);
           } else {
             // For draft images restored from cloud, the file object is empty (size 0)
-            // In that case, fetch the actual image from the cloud URL
             let fileToSend = image.file;
             if (image.file.size === 0 && image.preview?.startsWith('http')) {
-              console.log(`Fetching draft image from cloud: ${image.file.name}`);
-              const cloudResponse = await fetch(image.preview);
-              const cloudBlob = await cloudResponse.blob();
-              fileToSend = new File([cloudBlob], image.file.name, { type: cloudBlob.type || 'image/jpeg' });
+              console.log(`[ProcessImage] Fetching draft from cloud: ${image.file.name}`);
+              try {
+                const cloudResponse = await fetch(image.preview);
+                const cloudBlob = await cloudResponse.blob();
+                fileToSend = new File([cloudBlob], image.file.name, { type: cloudBlob.type || 'image/jpeg' });
+              } catch (draftErr: any) {
+                console.error('[ProcessImage] Draft fetch failed:', draftErr);
+                throw new Error('Kunde inte hämta bilden från molnet');
+              }
             }
             
-            // Compress original images too if they're over 5MB
-            console.log(`Processing original image: ${fileToSend.name} (${(fileToSend.size / 1024 / 1024).toFixed(2)}MB)`);
-            if (fileToSend.size > 5 * 1024 * 1024) {
-              console.log('Original image is large, compressing...');
+            console.log(`[ProcessImage] Original: ${fileToSend.name} (${(fileToSend.size / 1024 / 1024).toFixed(2)}MB, type: ${fileToSend.type})`);
+            
+            // On mobile: always compress to JPEG to avoid memory issues
+            // On desktop: only compress if > 5MB
+            const shouldCompress = isMobileDevice || fileToSend.size > 5 * 1024 * 1024;
+            
+            if (shouldCompress) {
+              console.log(`[ProcessImage] Compressing (mobile: ${isMobileDevice}, size: ${(fileToSend.size / 1024 / 1024).toFixed(2)}MB)...`);
               try {
                 const imgUrl = URL.createObjectURL(fileToSend);
                 const img = new Image();
-                img.src = imgUrl;
-                await new Promise((resolve, reject) => { 
-                  img.onload = resolve; 
-                  img.onerror = () => reject(new Error('Kunde inte ladda bilden för komprimering'));
+                const imgLoadPromise = new Promise<void>((resolve, reject) => {
+                  img.onload = () => {
+                    URL.revokeObjectURL(imgUrl);
+                    resolve();
+                  };
+                  img.onerror = () => {
+                    URL.revokeObjectURL(imgUrl);
+                    reject(new Error(`Bildladdning misslyckades (${fileToSend.type || 'okänd typ'})`));
+                  };
                 });
-                URL.revokeObjectURL(imgUrl);
+                img.src = imgUrl;
+                await imgLoadPromise;
+                
                 const canvas = document.createElement('canvas');
-                // Mobile Safari has a ~16MP canvas limit - cap at 3000px to be safe
-                const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                const maxDim = isMobileDevice ? 3000 : 4096;
+                // Mobile: aggressive limit (2048px) to stay well within iOS 16MP limit
+                const maxDim = isMobileDevice ? 2048 : 4096;
                 const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
                 canvas.width = Math.round(img.width * scale);
                 canvas.height = Math.round(img.height * scale);
-                console.log(`Canvas size: ${canvas.width}x${canvas.height} (mobile: ${isMobileDevice})`);
+                console.log(`[ProcessImage] Canvas: ${canvas.width}x${canvas.height} (orig: ${img.width}x${img.height})`);
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                  // Send PNG (lossless) to PhotoRoom for best AI input quality
+                  // Use JPEG on mobile for smaller memory footprint, PNG on desktop for quality
+                  const format = isMobileDevice ? 'image/jpeg' : 'image/png';
+                  const quality = isMobileDevice ? 0.85 : 1.0;
                   const blob = await new Promise<Blob>((resolve, reject) => {
                     canvas.toBlob(b => {
                       if (b) resolve(b);
-                      else reject(new Error('Canvas toBlob misslyckades - möjligt minnesproblem'));
-                    }, 'image/png', 1.0);
+                      else reject(new Error('Canvas-komprimering misslyckades (minnesbrist)'));
+                    }, format, quality);
                   });
-                  console.log(`Compressed to: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
-                  const fileName = fileToSend.name.replace(/\.[^/.]+$/, '') + '.jpg';
+                  console.log(`[ProcessImage] Compressed: ${(blob.size / 1024 / 1024).toFixed(2)}MB (${format})`);
+                  const ext = isMobileDevice ? '.jpg' : '.png';
+                  const fileName = fileToSend.name.replace(/\.[^/.]+$/, '') + ext;
                   formData.append('image', blob, fileName);
                 } else {
+                  console.warn('[ProcessImage] No canvas context, sending original');
                   formData.append('image', fileToSend);
                 }
               } catch (compressError: any) {
-                console.warn('Compression failed, sending original:', compressError.message);
+                console.warn('[ProcessImage] Compression failed, sending original:', compressError.message);
                 formData.append('image', fileToSend);
               }
             } else {
+              console.log(`[ProcessImage] Sending original (no compression needed)`);
               formData.append('image', fileToSend);
             }
           }
@@ -492,7 +521,6 @@ function IndexContent() {
           formData.append('userId', user.id);
           formData.append('orientation', aspectRatio);
           formData.append('relight', relightEnabled ? 'true' : 'false');
-          // Send original dimensions for dynamic output sizing (prevents upscaling)
           if (image.originalWidth) formData.append('originalWidth', image.originalWidth.toString());
           if (image.originalHeight) formData.append('originalHeight', image.originalHeight.toString());
           if (projectId) {
@@ -505,50 +533,58 @@ function IndexContent() {
           try {
             // Get current session for auth header
             const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session?.access_token) {
+              console.error('[ProcessImage] No valid session/token available');
+              throw new Error('Din session har gått ut. Ladda om sidan och logga in igen.');
+            }
+            
+            console.log(`[ProcessImage] Sending to edge function...`);
             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${session?.access_token}`
+                'Authorization': `Bearer ${session.access_token}`
               },
               body: formData,
               signal: controller.signal
             });
           clearTimeout(timeoutId);
             
+            console.log(`[ProcessImage] Response status: ${response.status}`);
+            
             // Handle insufficient credits (402) - stop processing more images
             if (response.status === 402) {
               const result = await response.json();
               toast.error(result.error === 'insufficient_credits' ? 'Dina credits är slut' : 'Betalning krävs');
               triggerPaywall(isSubscribed ? 'subscriber-limit' : 'limit');
-              // Mark remaining images as pending again
               setUploadedImages(prev => prev.map(img => 
                 img.status === 'processing' ? { ...img, status: 'pending' } : img
               ));
-              break; // Stop processing more images
+              break;
             }
             
             if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
+              let errorDetail = `HTTP ${response.status}`;
+              try {
+                const errBody = await response.json();
+                errorDetail = errBody.error || errorDetail;
+              } catch { /* ignore parse error */ }
+              throw new Error(errorDetail);
             }
             const result = await response.json();
             if (result.success) {
               successCount++;
-              // Add to loading state to show shimmer while image loads
               setLoadingImages(prev => new Set([...prev, image.id]));
-              // Clean up draft from cloud after successful generation
               if ((image as any)._draftId) {
                 deleteDraft((image as any)._draftId).catch(console.error);
               }
-              // CRITICAL: Update the image with finalUrl but keep it visible in uploads
-              // The image stays in uploads section with status badge showing "Klar"
               setUploadedImages(prev => prev.map(img => img.id === image.id ? {
                 ...img,
                 status: 'completed',
                 finalUrl: result.finalUrl,
                 sceneId: selectedScene.id,
-                _draftId: undefined, // Clear draft reference
+                _draftId: undefined,
                 _storagePath: undefined,
-                // Keep isOriginal true so it stays visible in uploads
                 carAdjustments: {
                   brightness: 0,
                   contrast: 0,
@@ -565,13 +601,19 @@ function IndexContent() {
             if (fetchError.name === 'AbortError') {
               throw new Error('Timeout: AI-bearbetning tog för lång tid (90s)');
             }
+            // Network errors on mobile often have unhelpful messages
+            if (fetchError.message === 'Failed to fetch' || fetchError.message === 'Load failed') {
+              throw new Error('Nätverksfel: Kontrollera din internetanslutning och försök igen.');
+            }
             throw fetchError;
           }
         } catch (error: any) {
           errorCount++;
           const errorMsg = error?.message || 'Okänt fel';
-          console.error('Error processing image:', image.file?.name, errorMsg, error);
-          toast.error(`Fel vid "${image.file?.name || 'bild'}": ${errorMsg}`, { duration: 8000 });
+          console.error('[ProcessImage] ERROR:', image.file?.name, errorMsg, error);
+          // Show user-friendly error without technical details
+          const displayMsg = errorMsg.length > 100 ? errorMsg.substring(0, 100) + '...' : errorMsg;
+          toast.error(`Bilden "${image.file?.name || 'bild'}" misslyckades: ${displayMsg}`, { duration: 8000 });
           // Keep isOriginal true so the image remains visible in uploads
           setUploadedImages(prev => prev.map(img => img.id === image.id ? {
             ...img,
