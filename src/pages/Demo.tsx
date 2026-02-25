@@ -50,6 +50,7 @@ const DemoContent = () => {
     }
   }, [user, loading, navigate]);
   
+  const [demoTab, setDemoTab] = useState<'demo' | 'ai-studio'>('demo');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [selectedScene, setSelectedScene] = useState<SceneMetadata | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -619,10 +620,14 @@ const DemoContent = () => {
             <div className="flex items-center gap-3">
               {/* Demo nav dropdown - matches main app */}
               <Select 
-                value="demo" 
+                value={demoTab} 
                 onValueChange={(v) => {
                   if (v === 'ai-studio') {
-                    toast.info('Kommer snart – Här kommer du kunna skapa egna bakgrunder, kampanjbilder och redigera fritt med AI.');
+                    setDemoTab('ai-studio');
+                    return;
+                  }
+                  if (v === 'demo') {
+                    setDemoTab('demo');
                     return;
                   }
                   if (v === 'galleri') setShowSignupModal(true);
@@ -649,6 +654,26 @@ const DemoContent = () => {
         </div>
       </header>
 
+      {demoTab === 'ai-studio' ? (
+        <section className="fixed inset-x-0 top-16 bottom-0 z-10 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 flex justify-center">
+          <div className="w-full max-w-2xl h-full relative flex flex-col items-center justify-center">
+            {/* Placeholder chat background */}
+            <div className="absolute inset-0 rounded-[10px] bg-card border border-border opacity-40" />
+            {/* "Kommer snart" overlay */}
+            <div className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm rounded-[10px] flex flex-col items-center justify-center text-center px-6">
+              <div className="bg-card border border-border rounded-2xl p-8 max-w-md shadow-lg space-y-4">
+                <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground">Kommer snart</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Här kommer du kunna skapa egna bakgrundsmiljöer, blurra regplåtar, skapa annonsmaterial som "inkommande bil", och redigera fritt med AI.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* Step 1: Upload */}
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-[10px]">
@@ -1179,6 +1204,7 @@ const DemoContent = () => {
           </div>
         </section>
       </main>
+      )}
 
       {/* Preview Modal */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
