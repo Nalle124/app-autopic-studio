@@ -6,7 +6,28 @@ const ALLOWED_ORIGINS = [
 
 export function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  
+  // Log origin for debugging live vs preview issues
+  console.log(`[CORS] Request origin: "${origin}"`);
+  
+  // Check exact match first
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    console.log(`[CORS] Exact match: ${origin}`);
+    return buildHeaders(origin);
+  }
+  
+  // Allow any *.lovable.app or *.lovableproject.com subdomain (covers custom subdomains, PWA origins)
+  if (origin.endsWith(".lovable.app") || origin.endsWith(".lovableproject.com")) {
+    console.log(`[CORS] Wildcard match: ${origin}`);
+    return buildHeaders(origin);
+  }
+  
+  // Fallback for unknown origins - log warning
+  console.warn(`[CORS] Unknown origin blocked: "${origin}", falling back to ${ALLOWED_ORIGINS[0]}`);
+  return buildHeaders(ALLOWED_ORIGINS[0]);
+}
+
+function buildHeaders(allowedOrigin: string) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
