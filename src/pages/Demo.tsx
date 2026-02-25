@@ -621,7 +621,11 @@ const DemoContent = () => {
               <Select 
                 value="demo" 
                 onValueChange={(v) => {
-                  if (v === 'ai-studio' || v === 'galleri') setShowSignupModal(true);
+                  if (v === 'ai-studio') {
+                    toast.info('Kommer snart – Här kommer du kunna skapa egna bakgrunder, kampanjbilder och redigera fritt med AI.');
+                    return;
+                  }
+                  if (v === 'galleri') setShowSignupModal(true);
                 }}
               >
                 <SelectTrigger className="w-[120px] bg-background/80 backdrop-blur-sm h-9 text-sm">
@@ -863,7 +867,7 @@ const DemoContent = () => {
         <div className="flex items-center gap-3 px-4 py-3 rounded-[10px] border border-border/40 bg-muted/30">
           <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert flex-shrink-0 opacity-60" />
           <p className="text-sm sm:text-base text-muted-foreground">
-            <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
+            <span className="font-medium text-foreground/70">Kommer snart:</span>{' '}
             Skapa egna bakgrunder, kampanjbilder och redigera fritt med AI – via <span className="font-medium">AI Studio</span> i menyn.
           </p>
         </div>

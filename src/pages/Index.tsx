@@ -884,7 +884,7 @@ function IndexContent() {
         {activeTab === 'ai-studio' ? (
           /* AI Studio – inline chat, fills remaining viewport below header */
           <section className="fixed inset-x-0 top-16 bottom-0 z-10 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 flex justify-center">
-            <div className="w-full max-w-2xl h-full">
+            <div className="w-full max-w-2xl h-full relative">
             <CreateSceneModal
               open={true}
               onOpenChange={() => {}}
@@ -902,6 +902,20 @@ function IndexContent() {
               initialImage={aiModalInitialImage}
               inline
             />
+            {/* "Kommer snart" overlay – hidden for admins */}
+            {!isAdmin && (
+              <div className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm rounded-[10px] flex flex-col items-center justify-center text-center px-6">
+                <div className="bg-card border border-border rounded-2xl p-8 max-w-md shadow-lg space-y-4">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground">Kommer snart</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Här kommer du kunna skapa egna bakgrundsmiljöer, blurra regplåtar, skapa annonsmaterial som "inkommande bil", och redigera fritt med AI.
+                  </p>
+                </div>
+              </div>
+            )}
             </div>
           </section>
         ) : activeTab === 'history' ? <section className="space-y-6">
@@ -973,7 +987,7 @@ function IndexContent() {
             <div className="flex items-center gap-3 px-4 py-3 rounded-[10px] border border-border/40 bg-muted/30">
               <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert flex-shrink-0 opacity-60" />
               <p className="text-sm sm:text-base text-muted-foreground">
-                <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
+                <span className="font-medium text-foreground/70">Kommer snart:</span>{' '}
                 Skapa egna bakgrunder, kampanjbilder och redigera fritt med AI – via <span className="font-medium">AI Studio</span> i menyn.
               </p>
             </div>
