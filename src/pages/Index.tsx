@@ -1689,7 +1689,7 @@ function IndexContent() {
                     }
                     setActiveTab('ai-studio');
                   }}>
-                        <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert" />
+                        <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
                         <span className="hidden sm:inline ml-1">AI</span>
                       </Button>
                     </div>
