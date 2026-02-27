@@ -355,8 +355,8 @@ const ProfileContent = () => {
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Coins className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
@@ -376,8 +376,8 @@ const ProfileContent = () => {
         {/* Theme Settings */}
         <Card className="p-5 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center gap-4 mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-border">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Palette className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Palette className="w-5 h-5 text-primary" />
             </div>
             <div className="min-w-0">
               <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
@@ -451,11 +451,11 @@ const ProfileContent = () => {
         {/* Customer Info */}
         <Card className="p-5 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center gap-4 mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-border">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               {isCompany ? (
-                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <Building2 className="w-5 h-5 text-primary" />
               ) : (
-                <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <User className="w-5 h-5 text-primary" />
               )}
             </div>
             <div>
@@ -562,8 +562,8 @@ const ProfileContent = () => {
         {/* Logo Settings - Single field with optional second */}
         <Card className="p-4 sm:p-6">
           <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-border">
-            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Upload className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Upload className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-foreground font-heading">

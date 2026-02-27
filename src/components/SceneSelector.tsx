@@ -95,11 +95,12 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
 
 // Popular scene IDs
 const POPULAR_SCENE_IDS = [
-  'hostgata',
+  'netgrey-light',
+  'vit-rundad-studio',
+  'lightroom-studio',
   'kullerstengata',
   'vit-kakel',
   'outdoor-park',
-  'bla-sammet-draperi',
   'anthracite-studio'
 ];
 

@@ -2258,7 +2258,7 @@ export const CreateSceneModal = ({
                       </div>
                       <div className="flex-1 py-3 pr-3">
                         <div>
-                          <p className="text-sm font-semibold text-foreground">Skapa annons</p>
+                          <p className="text-sm font-semibold text-foreground">Annonsmaterial</p>
                           <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
                         </div>
                       </div>
@@ -2277,10 +2277,7 @@ export const CreateSceneModal = ({
                       <button
                         onClick={() => selectMode('blur-plates')}
                         className="flex items-center gap-2.5 p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group">
-                        <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
-                          <svg className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" opacity="0.5" /><path d="M3 9h18M3 15h18M9 3v18M15 3v18" opacity="0.3" /></svg>
-                        </div>
-                         <div className="min-w-0">
+                        <div className="min-w-0">
                           <p className="text-sm font-medium text-foreground leading-tight">Blurra regskyltar</p>
                           <p className="text-[11px] sm:text-xs text-muted-foreground">Dölj skyltar</p>
                         </div>
@@ -2290,9 +2287,6 @@ export const CreateSceneModal = ({
                       <button
                         onClick={() => selectMode('logo-studio')}
                         className="flex items-center gap-2.5 p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group">
-                        <div className="w-8 h-8 rounded-lg bg-muted/60 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
-                          <ImageIcon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-foreground leading-tight">Applicera logo</p>
                           <p className="text-[11px] sm:text-xs text-muted-foreground">Lägg logo på bilder</p>
@@ -3044,7 +3038,7 @@ export const CreateSceneModal = ({
         return null;
       })}
           {/* Standalone action buttons - rendered after all messages for blur/logo flows */}
-           {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle && blurStyle !== 'logo-overlay' && (
+           {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle && blurStyle !== 'logo-overlay' && !isGenerating && (
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
@@ -3088,7 +3082,7 @@ export const CreateSceneModal = ({
               </button>
             </div>
           )}
-          {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle === 'logo-overlay' && selectedLogoUrl && (
+          {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle === 'logo-overlay' && selectedLogoUrl && !isGenerating && (
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
@@ -3103,7 +3097,7 @@ export const CreateSceneModal = ({
               </div>
             </div>
           )}
-          {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset && (
+          {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset && !isGenerating && (
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
