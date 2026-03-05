@@ -1978,6 +1978,13 @@ export const CreateSceneModal = ({
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
 
         if (error) {
+          const is402 = error?.message?.includes('non-2xx') || error?.context?.status === 402;
+          if (is402) {
+            setIsGenerating(false);
+            refetchCredits();
+            triggerPaywall('subscriber-limit');
+            return;
+          }
           setMessages((prev) => [...prev, { role: 'assistant-error', text: `Kunde inte bearbeta bild ${idx + 1}. Försök igen.` }]);
           continue;
         }
@@ -1990,10 +1997,17 @@ export const CreateSceneModal = ({
             description: 'Registreringsskyltar har dolts',
             scenePrompt: ''
           }]);
+          refetchCredits();
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Blur error:', err);
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+        if (err?.message?.includes('402') || err?.message?.includes('non-2xx')) {
+          setIsGenerating(false);
+          refetchCredits();
+          triggerPaywall('subscriber-limit');
+          return;
+        }
         setMessages((prev) => [...prev, { role: 'assistant-error', text: `Fel vid bearbetning av bild ${idx + 1}. Försök igen.` }]);
       }
     }
