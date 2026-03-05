@@ -294,6 +294,7 @@ const POST_GENERATION_SUGGESTIONS_FREE = [
 
 
 const FREE_QUICK_ACTIONS = [
+{ label: 'Fixa insidebilder', prompt: '__fix_interior__' },
 { label: 'Ta bort bakgrund helt', prompt: 'Remove the background completely, leave only the car on a transparent/white background' },
 { label: 'Ändra vinkel, behåll bilen', prompt: 'Change the camera angle slightly but keep the car exactly as it is' },
 { label: 'Mer cinematisk', prompt: 'Make the image more cinematic with dramatic lighting' },
@@ -472,9 +473,9 @@ const POST_GENERATION_SUGGESTIONS_AD = [
 
 
 const BLUR_PLATE_PROMPT_MAP: Record<string, string> = {
-  'full-blur': 'Find all license plates in this image and blur/pixelate them so the text is completely unreadable. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT add any logos, watermarks, or text anywhere else on the image. Only blur the license plate area(s). Keep everything else pixel-perfect identical.',
-  'dark-inlay': 'Find all license plates in this image and cover them with a solid dark/black rectangle that completely hides the plate text. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT add any logos, watermarks, or text anywhere else on the image. Only cover the license plate area(s). The cover should look clean, using dark grey/black. Keep everything else pixel-perfect identical.',
-  'logo-overlay': 'Find all license plates in this image and cover them with the provided logo, centered and scaled to fit each plate. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT place the logo anywhere else on the image - ONLY on the license plate(s). Keep everything else pixel-perfect identical.'
+  'full-blur': 'Find ALL license plates in this image (front and rear) and blur/pixelate them so ALL text and numbers are completely unreadable. The ENTIRE plate surface must be covered — not just the text area, but the full rectangular plate including borders and frame. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT add any logos, watermarks, or text anywhere else on the image. Only blur the license plate area(s). Keep everything else pixel-perfect identical. Apply the EXACT same blur style and intensity to all plates found.',
+  'dark-inlay': 'Find ALL license plates in this image (front and rear) and cover them with a solid dark/black rectangle that completely hides the ENTIRE plate — including all text, borders, and frame. The cover must extend over the full rectangular plate surface. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT add any logos, watermarks, or text anywhere else on the image. Only cover the license plate area(s). The cover should look clean, using dark grey/black. Keep everything else pixel-perfect identical. Apply the EXACT same cover style to all plates found.',
+  'logo-overlay': 'Find ALL license plates in this image (front and rear) and cover them with the provided logo, centered and scaled to fit the ENTIRE plate surface including borders and frame. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT place the logo anywhere else on the image - ONLY on the license plate(s). Keep everything else pixel-perfect identical. Apply the EXACT same logo placement style to all plates found.'
 };
 
 const BLUR_STYLE_OPTIONS = [
@@ -803,12 +804,8 @@ export const CreateSceneModal = ({
         if (url) allImages.push({ url, id: img.id });
       });
       setMessages([
-      { role: 'assistant', text: 'Välj bilder vars registreringsskyltar ska döljas. Du kan även ladda upp nya.' },
-      ...(allImages.length > 0 ? [
-      { role: 'assistant-image-grid' as const, text: 'Välj bilder att bearbeta:', images: allImages }] :
-      [
-      { role: 'assistant' as const, text: 'Ladda upp bilder nedan för att komma igång.' }])]
-
+      { role: 'assistant', text: 'Välj bilder vars registreringsskyltar ska döljas, eller ladda upp egna.' },
+      { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder att bearbeta:' : 'Ladda upp bilder för att komma igång:', images: allImages }]
       );
     } else if (mode === 'logo-studio') {
       const allImages: Array<{url: string;id: string;}> = [];
@@ -821,12 +818,8 @@ export const CreateSceneModal = ({
         if (url && !allImages.find((a) => a.id === img.id)) allImages.push({ url, id: img.id });
       });
       setMessages([
-      { role: 'assistant', text: 'Välj vilka bilder du vill lägga logo på. Du kan även ladda upp nya.' },
-      ...(allImages.length > 0 ? [
-      { role: 'assistant-image-grid' as const, text: 'Välj bilder:', images: allImages }] :
-      [
-      { role: 'assistant' as const, text: 'Inga bilder tillgängliga. Generera bilder i projektvyn först.' }])]
-
+      { role: 'assistant', text: 'Välj vilka bilder du vill lägga logo på, eller ladda upp egna.' },
+      { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder:' : 'Ladda upp bilder för att komma igång:', images: allImages }]
       );
     } else {
       setMessages([
@@ -1166,6 +1159,19 @@ export const CreateSceneModal = ({
 
   // ─── Option click dispatcher ────────────────────────────────
   const handleOptionClick = (value: string) => {
+    // Handle fix interior options (free-create)
+    if (value === '__fix_interior_light__' || value === '__fix_interior_dark__') {
+      const bgType = value === '__fix_interior_light__' ? 'light neutral white/grey' : 'dark neutral black/charcoal';
+      const label = value === '__fix_interior_light__' ? 'Ljus bakgrund' : 'Mörk bakgrund';
+      const interiorPrompt = `Look at this car image carefully. The car has open doors, an open trunk, or windows through which the background is visible. KEEP THE CAR EXACTLY AS IT IS — same position, angle, color, reflections, and all details. ONLY change what is visible THROUGH the windows, open doors, or trunk opening. Replace whatever is seen through those openings with a clean, ${bgType} background. Do NOT move, resize, crop, or alter the car or its surroundings in any way. The output MUST have the EXACT same dimensions and framing as the input.`;
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: label }
+      ]);
+      handleSuggestionSend(interiorPrompt, label);
+      return;
+    }
+
     // Handle blur style selection
     if (value.startsWith('__blur_style_')) {
       const style = value.replace('__blur_style_', '').replace('__', '');
@@ -2240,29 +2246,29 @@ export const CreateSceneModal = ({
                       </button>
                     </div>
 
-                    {/* Skapa annons - full width */}
-                    <button
-                      onClick={() => selectMode('ad-create')}
-                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
+                    {/* Annonsmaterial - coming soon */}
+                    <div
+                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
                       <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
                         <img
                           src="/mode-previews/ad-sasongsrea.png"
                           alt=""
                           loading="lazy"
-                          className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 group-hover:-rotate-1 transition-transform ml-1.5 mt-1.5" />
+                          className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 ml-1.5 mt-1.5" />
                         <img
                           src="/mode-previews/ad-import-guide.png"
                           alt=""
                           loading="lazy"
-                          className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 group-hover:rotate-3 transition-transform mr-1 mb-1" />
+                          className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 mr-1 mb-1" />
                       </div>
                       <div className="flex-1 py-3 pr-3">
-                        <div>
+                        <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground">Annonsmaterial</p>
-                          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Kommer snart</span>
                         </div>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
                       </div>
-                    </button>
+                    </div>
 
                     {/* Separator */}
                     <div className="flex items-center gap-3 pt-1">
@@ -2349,7 +2355,25 @@ export const CreateSceneModal = ({
                         {FREE_QUICK_ACTIONS.map((action, idx) =>
                   <button
                     key={idx}
-                    onClick={() => handleSuggestionSend(action.prompt, action.label)}
+                    onClick={() => {
+                      if (action.prompt === '__fix_interior__') {
+                        // Show light/dark background choice
+                        setMessages((prev) => [
+                          ...prev,
+                          { role: 'user', text: 'Fixa insidebilder' },
+                          {
+                            role: 'assistant-options' as const,
+                            text: 'Vilken bakgrundsfärg ska synas genom rutorna?',
+                            options: [
+                              { label: 'Ljus bakgrund', value: '__fix_interior_light__' },
+                              { label: 'Mörk bakgrund', value: '__fix_interior_dark__' }
+                            ]
+                          }
+                        ]);
+                        return;
+                      }
+                      handleSuggestionSend(action.prompt, action.label);
+                    }}
                     className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
 
                             {action.label}

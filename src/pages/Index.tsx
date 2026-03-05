@@ -970,20 +970,6 @@ function IndexContent() {
               initialImage={aiModalInitialImage}
               inline
             />
-            {/* "Kommer snart" overlay – hidden for admins */}
-            {!isAdmin && (
-              <div className="absolute inset-0 z-20 bg-background/80 backdrop-blur-sm rounded-[10px] flex flex-col items-center justify-center text-center px-6">
-                <div className="bg-card border border-border rounded-2xl p-8 max-w-md shadow-lg space-y-4">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
-                    <img src="/favicon.png" alt="" className="w-6 h-6 object-contain dark:invert" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground">Kommer snart</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Här kommer du kunna skapa egna bakgrundsmiljöer, blurra regplåtar, skapa annonsmaterial som "inkommande bil", och redigera fritt med AI.
-                  </p>
-                </div>
-              </div>
-            )}
             </div>
           </section>
         ) : activeTab === 'history' ? <section className="space-y-6">
@@ -1055,8 +1041,8 @@ function IndexContent() {
             <div className="flex items-center gap-3 px-4 py-3 rounded-[10px] border border-border/40 bg-muted/30">
               <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert flex-shrink-0 opacity-60" />
               <p className="text-sm sm:text-base text-muted-foreground">
-                <span className="font-medium text-foreground/70">Kommer snart:</span>{' '}
-                Skapa egna bakgrunder, kampanjbilder och redigera fritt med AI – via <span className="font-medium">AI Studio</span> i menyn.
+                <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
+                Skapa egna bakgrunder, blurra regskyltar och redigera fritt med AI – via <span className="font-medium">AI Studio</span> i menyn.
               </p>
             </div>
 

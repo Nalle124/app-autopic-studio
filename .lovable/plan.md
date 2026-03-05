@@ -1,55 +1,31 @@
 
 
-## Plan: AI Studio "Kommer snart"-lås + Lås upp bakgrundsgalleriet
+## Plan: AI Studio Lansering
 
-### Vad görs
+### Status: Lanserad (Annonsmaterial undantaget)
 
-**1. AI Studio "Kommer snart"-overlay (Index.tsx + Demo.tsx)**
+**Vad har gjorts:**
 
-När `activeTab === 'ai-studio'` och användaren INTE är admin, renderas en overlay ovanpå AI Studio-chatten (som fortfarande syns i bakgrunden). Overlayn innehåller:
-- Halvtransparent bakgrund med blur
-- "Kommer snart"-rubrik
-- Beskrivning: "Här kommer du kunna skapa egna bakgrundsmiljöer, blurra regplåtar, skapa annonsmaterial och redigera fritt med AI."
-- Admin-användare (`isAdmin`) ser chatten som vanligt utan overlay
+1. **AI Studio lanserad** – "Kommer snart"-overlayen borttagen för inloggade användare. Alla kan nu använda AI Studio.
 
-**2. Ändra "Nyhet"-texten till "Kommer snart" (Index.tsx + Demo.tsx)**
+2. **Annonsmaterial blockerat** – Visas som "Kommer snart" i menyn men kan inte klickas. Ska lanseras separat.
 
-Byter ut `<span>Nyhet:</span>` mot `<span>Kommer snart:</span>` i AI-notice-bandet. Texten uppdateras till att beskriva vad som är på gång istället för att presentera det som redan tillgängligt.
+3. **Blurra regskyltar & Applicera logo** – Uppladdning av egna bilder fungerar nu direkt i första meddelandet (upload-knapp i bildgridet), oavsett om det finns projektbilder eller ej.
 
-**3. Lås upp hela bakgrundsgalleriet (SceneSelector.tsx)**
+4. **Fixa insidebilder (Redigera fritt)** – Nytt snabbval som maskar det som syns genom fönster/öppna dörrar till neutral bakgrund. Användaren väljer ljus eller mörk bakgrund innan generering.
 
-Ändrar `hasFullAccess` från `isSubscribed` till `true` (eller tar bort lås-logiken tillfälligt). Detta gör att alla kategorier (Enkla Studios, Mörka Studios, Premium, etc.) är tillgängliga för alla användare. Lås-ikonerna försvinner från kategorinamnen.
+5. **Förbättrade blur-prompter** – Master-prompterna för regskyltsblurring uppdaterade för att täcka HELA plåten (inkl. ram) och säkerställa identiskt resultat i batch.
 
-**4. Demo-sidan: AI Studio-val triggar "Kommer snart" istället för signup-modal (Demo.tsx)**
+6. **Notice-text uppdaterad** – "Kommer snart:" → "Nyhet:" med uppdaterad beskrivning.
 
-I demo-navets `onValueChange`, när `v === 'ai-studio'`, visas ett liknande "Kommer snart"-meddelande/toast istället för att bara öppna signup-modalen.
+### Nästa steg
 
-### Tekniska detaljer
+- Testa alla flöden end-to-end (bakgrund, redigera fritt, blur, logo)
+- Finjustera design och UX baserat på feedback
+- Färdigställ Annonsmaterial-flödet
+- Verifiera att credits dras korrekt vid varje generering
 
-**Index.tsx** (rad ~884):
-- Wrappa `CreateSceneModal`-sektionen med en conditional: om `!isAdmin`, rendera en absolut-positionerad overlay `div` ovanpå med `z-20`, `bg-background/80 backdrop-blur-sm`, centrerad text.
-- Chatten renderas fortfarande undertill (synlig men inte interaktiv).
-
-**Index.tsx** (rad ~972-979):
-- Ändra "Nyhet:" → "Kommer snart:" och uppdatera beskrivningstexten.
-
-**Demo.tsx** (rad ~624, ~860-869):
-- Samma "Kommer snart"-hantering för AI Studio-valet.
-- Uppdatera notice-texten.
-
-**SceneSelector.tsx** (rad 173):
-- Ändra `const hasFullAccess = isSubscribed;` till `const hasFullAccess = true;`
-- Detta är en enkel one-liner att ändra tillbaka när låsningen ska återställas.
-
-### Enkel att ta bort
-
-Alla ändringar är isolerade:
-- Ta bort overlay-diven i Index.tsx/Demo.tsx
-- Ändra tillbaka `hasFullAccess = true` → `hasFullAccess = isSubscribed` i SceneSelector.tsx
-- Byt "Kommer snart" → tillbaka till "Nyhet" eller ta bort helt
-
-### Filer som ändras
-- `src/pages/Index.tsx` — overlay + text
-- `src/pages/Demo.tsx` — overlay + text
-- `src/components/SceneSelector.tsx` — lås upp galleriet
-
+### Filer som ändrats
+- `src/pages/Index.tsx` – overlay borttagen, notice uppdaterad
+- `src/pages/Demo.tsx` – notice uppdaterad
+- `src/components/CreateSceneModal.tsx` – annonsmaterial blockerat, upload i blur/logo, fixa insidebilder, förbättrade prompter
