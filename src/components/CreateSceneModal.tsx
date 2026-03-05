@@ -2749,9 +2749,11 @@ export const CreateSceneModal = ({
                     <button
                       key={img.id}
                       onClick={() => {
-                        setSelectedBlurImages((prev) =>
-                        isSelected ? prev.filter((u) => u !== img.url) : [...prev, img.url]
-                        );
+                        setSelectedBlurImages((prev) => {
+                          const next = isSelected ? prev.filter((u) => u !== img.url) : [...prev, img.url];
+                          if (next.length > 0) setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                          return next;
+                        });
                       }}
                       className={`relative rounded-xl overflow-hidden border-2 transition-colors aspect-[3/2] ${
                       isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border/40 hover:border-primary/40'}`
