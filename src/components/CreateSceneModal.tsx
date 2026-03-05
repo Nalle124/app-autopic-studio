@@ -55,48 +55,66 @@ type ChatMessage =
 {role: 'assistant-status';text: string;} |
 {role: 'mode-select';};
 
-const LOADING_PHRASES_LIBRARY = [
-  'Analyserar din beskrivning...',
-  'Bygger upp scenen...',
-  'Fixar belysningen...',
-  'Lägger till detaljer...',
-  'Finjusterar perspektivet...',
-  'Nästan klar...',
-  'Skapar ljussättningen...',
-  'Placerar skuggorna...',
-  'Arbetar med kompositionen...',
-  'Finslipar detaljerna...',
-  'Justerar färgtemperaturen...',
-  'Renderar texturer...',
-  'Optimerar kontraster...',
-  'Balanserar tonerna...',
-  'Förbereder slutresultatet...',
-  'Lägger sista handen...',
-  'Mixar bakgrundselementen...',
-  'Beräknar ljusriktningar...',
-  'Skapar djupskärpa...',
-  'Anpassar atmosfären...',
-  'Jobbar med reflektionerna...',
-  'Skapar realistiska ytor...',
-  'Bearbetar perspektivet...',
-  'Finjusterar skärpan...',
-  'Komponerar bilden...',
-  'Slår ihop lagren...',
-  'Polerar resultatet...',
-  'Testar ljusbalansen...',
-  'Bygger stämningen...',
-  'Arbetar med horisonten...',
-  'Finslipar övergångarna...',
-  'Lägger till realism...',
-  'Räknar ut skuggvinklar...',
-  'Skapar materialkänsla...',
-  'Justerar vitbalansen...',
-];
+// Mode-specific loading phrases
+const LOADING_PHRASES: Record<string, string[]> = {
+  'background-studio': [
+    'Bygger upp scenen...',
+    'Skapar ljussättningen...',
+    'Placerar skuggorna...',
+    'Renderar texturer...',
+    'Anpassar atmosfären...',
+    'Skapar realistiska ytor...',
+    'Beräknar ljusriktningar...',
+    'Bygger stämningen...',
+    'Finjusterar perspektivet...',
+    'Arbetar med horisonten...',
+  ],
+  'blur-plates': [
+    'Letar efter skyltar...',
+    'Analyserar bilden...',
+    'Maskerar registreringsskyltar...',
+    'Bearbetar pixlarna...',
+    'Kontrollerar resultat...',
+    'Nästan klar...',
+  ],
+  'logo-studio': [
+    'Analyserar bilden...',
+    'Placerar logotypen...',
+    'Anpassar storlek...',
+    'Justerar transparens...',
+    'Kontrollerar placering...',
+    'Nästan klar...',
+  ],
+  'fix-interior': [
+    'Analyserar insidan...',
+    'Identifierar bakgrund genom fönster...',
+    'Maskerar bilens detaljer...',
+    'Ersätter bakgrunden...',
+    'Finjusterar kanterna...',
+    'Nästan klar...',
+  ],
+  'free-create': [
+    'Analyserar din beskrivning...',
+    'Skapar bilden...',
+    'Arbetar med detaljerna...',
+    'Finjusterar resultatet...',
+    'Lägger sista handen...',
+    'Nästan klar...',
+  ],
+  'ad-create': [
+    'Skapar annonsmaterial...',
+    'Arbetar med typografin...',
+    'Placerar designelement...',
+    'Justerar layout...',
+    'Finjusterar kontraster...',
+    'Nästan klar...',
+  ],
+};
 
-// Shuffle and pick 6 random phrases for each generation session
-const getRandomLoadingPhrases = (): string[] => {
-  const shuffled = [...LOADING_PHRASES_LIBRARY].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 6);
+// Get loading phrases for the current mode
+const getLoadingPhrasesForMode = (mode: ChatMode | null): string[] => {
+  const phrases = LOADING_PHRASES[mode || 'background-studio'] || LOADING_PHRASES['free-create'];
+  return [...phrases];
 };
 
 
@@ -167,7 +185,6 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/dyr-utsikt.png', label: 'Utsikt' },
   { url: '/scenes/chateau-allee.png', label: 'Allé' },
   { url: '/scenes/dramatisk-sol-lada.png', label: 'Dramatisk sol' },
-  { url: '/scenes/art-deco.png', label: 'Art deco' },
   { url: '/scenes/utanfor-universitet.png', label: 'Universitetet' },
   { url: '/scenes/bergtopp.png', label: 'Bergtopp' }]
 };
@@ -543,7 +560,7 @@ export const CreateSceneModal = ({
   const [isSaving, setIsSaving] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'mode-select' }]);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
-  const [loadingPhrases, setLoadingPhrases] = useState<string[]>(getRandomLoadingPhrases);
+  const [loadingPhrases, setLoadingPhrases] = useState<string[]>(getLoadingPhrasesForMode(null));
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [hasGeneratedImage, setHasGeneratedImage] = useState(false);
@@ -733,11 +750,12 @@ export const CreateSceneModal = ({
   useEffect(() => {
     if (!isGenerating) return;
     setLoadingPhraseIndex(0);
-    setLoadingPhrases(getRandomLoadingPhrases());
+    setLoadingPhrases(getLoadingPhrasesForMode(chatMode));
     const interval = setInterval(() => {
-      setLoadingPhraseIndex((prev) =>
-      prev >= 5 ? prev : prev + 1
-      );
+      setLoadingPhraseIndex((prev) => {
+        const phrases = getLoadingPhrasesForMode(chatMode);
+        return prev >= phrases.length - 1 ? prev : prev + 1;
+      });
     }, 2200);
     return () => clearInterval(interval);
   }, [isGenerating]);
@@ -1064,7 +1082,7 @@ export const CreateSceneModal = ({
   };
 
   // ─── Timeout-wrapped edge function call ─────────────────────
-  const AI_TIMEOUT_MS = 60_000; // 60 seconds max wait
+  const AI_TIMEOUT_MS = 90_000; // 90 seconds max wait
 
   const invokeWithTimeout = async (body: Record<string, unknown>) => {
     const controller = new AbortController();
@@ -2374,7 +2392,7 @@ export const CreateSceneModal = ({
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
           return (
-            <div key={i} className="flex-1 flex flex-col min-h-[200px]">
+            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-2 sm:pt-0">
                   <div className="flex gap-2.5 items-start mb-5">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
@@ -2731,9 +2749,11 @@ export const CreateSceneModal = ({
                     <button
                       key={img.id}
                       onClick={() => {
-                        setSelectedBlurImages((prev) =>
-                        isSelected ? prev.filter((u) => u !== img.url) : [...prev, img.url]
-                        );
+                        setSelectedBlurImages((prev) => {
+                          const next = isSelected ? prev.filter((u) => u !== img.url) : [...prev, img.url];
+                          if (next.length > 0) setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                          return next;
+                        });
                       }}
                       className={`relative rounded-xl overflow-hidden border-2 transition-colors aspect-[3/2] ${
                       isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border/40 hover:border-primary/40'}`
@@ -3104,12 +3124,17 @@ export const CreateSceneModal = ({
                 ) : (
                 <button
                   onClick={() => {
-                    // Generic retry: go back to menu for the current mode
-                    setMessages((prev) => prev.filter((m) => m.role !== 'assistant-error'));
+                    // Generic retry: remove error and re-trigger appropriate batch handler
+                    setMessages((prev) => prev.filter((m) => m !== msg));
                     if (chatMode === 'blur-plates' && selectedBlurImages.length > 0 && blurStyle) {
                       handleBlurGenerate();
                     } else if (chatMode === 'logo-studio' && selectedBlurImages.length > 0 && selectedLogoUrl && selectedLogoPreset) {
                       handleApplyLogo();
+                    } else if (chatMode === 'fix-interior' && selectedBlurImages.length > 0) {
+                      // Re-run interior fix — detect bg type from previous messages
+                      const hadDark = messages.some((m) => m.role === 'user' && (m as any).text === 'Mörk bakgrund');
+                      const bgType = hadDark ? 'dark neutral black/charcoal' : 'light neutral white/grey';
+                      handleFixInteriorBatch(bgType);
                     }
                   }}
                   disabled={isGenerating}
