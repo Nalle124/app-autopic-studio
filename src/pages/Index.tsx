@@ -67,23 +67,23 @@ const AiNoticeDropdown = () => {
       {expanded && (
         <div className="px-4 pb-3 pt-0.5 space-y-1.5 border-t border-border/20">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
             <span>Skapa egna bakgrunder med AI</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
             <span>Blurra regskyltar automatiskt</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
             <span>Redigera fritt med AI-prompt</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
             <span>Maskera interiörbilder</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
             <span>Applicera logo på bilder</span>
           </div>
           <p className="text-[11px] text-muted-foreground/60 pt-1">
