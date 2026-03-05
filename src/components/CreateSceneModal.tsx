@@ -3080,6 +3080,41 @@ export const CreateSceneModal = ({
             );
           }
 
+          // Detect interior color picker options
+          const isInteriorColorPicker = msg.options.some((o: any) => o.value.startsWith('__fix_interior_batch_'));
+          if (isInteriorColorPicker) {
+            const colorMap: Record<string, string> = {
+              '__fix_interior_batch_light__': 'bg-white border-border',
+              '__fix_interior_batch_dark__': 'bg-zinc-900',
+              '__fix_interior_batch_grey__': 'bg-zinc-400',
+              '__fix_interior_batch_custom__': 'bg-gradient-to-br from-blue-200 via-amber-200 to-green-200',
+            };
+            return (
+              <div key={i} className="space-y-3">
+                {msg.text && (
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-4 gap-2 pl-9 max-w-[280px]">
+                  {msg.options.map((opt: any, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleOptionClick(opt.value)}
+                      disabled={isGenerating}
+                      className="group/color flex flex-col items-center gap-1.5 disabled:opacity-40">
+                      <div className={`w-12 h-12 rounded-xl ${colorMap[opt.value] || 'bg-muted'} border border-border/50 shadow-sm transition-all group-hover/color:scale-110 group-hover/color:shadow-md`} />
+                      <span className="text-[10px] font-medium text-muted-foreground">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={i} className="space-y-3">
                   {msg.text && (
@@ -3791,40 +3826,6 @@ export const CreateSceneModal = ({
 
     </>;
 
-          // Detect interior color picker options
-          const isInteriorColorPicker = msg.options.some((o: any) => o.value.startsWith('__fix_interior_batch_'));
-          if (isInteriorColorPicker) {
-            const colorMap: Record<string, string> = {
-              '__fix_interior_batch_light__': 'bg-white border-border',
-              '__fix_interior_batch_dark__': 'bg-zinc-900',
-              '__fix_interior_batch_grey__': 'bg-zinc-400',
-              '__fix_interior_batch_custom__': 'bg-gradient-to-br from-blue-200 via-amber-200 to-green-200',
-            };
-            return (
-              <div key={i} className="space-y-3">
-                {msg.text && (
-                  <div className="flex gap-2.5 items-start">
-                    <AutopicAvatar />
-                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="grid grid-cols-4 gap-2 pl-9 max-w-[280px]">
-                  {msg.options.map((opt: any, idx: number) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleOptionClick(opt.value)}
-                      disabled={isGenerating}
-                      className="group/color flex flex-col items-center gap-1.5 disabled:opacity-40">
-                      <div className={`w-12 h-12 rounded-xl ${colorMap[opt.value] || 'bg-muted'} border border-border/50 shadow-sm transition-all group-hover/color:scale-110 group-hover/color:shadow-md`} />
-                      <span className="text-[10px] font-medium text-muted-foreground">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          }
 
   // Overlay editor content (replaces chat when active)
   const overlayContent = overlayEditor ? (
