@@ -2185,9 +2185,14 @@ export const CreateSceneModal = ({
               </button>
           }
               <button
+            onClick={handleNewInMode}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-0.5">
+                <Plus className="w-3 h-3" />
+                Ny
+              </button>
+              <button
             onClick={handleNewChat}
             className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-1">
-
                 <Menu className="w-3 h-3" />
                 Meny
               </button>
