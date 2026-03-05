@@ -529,13 +529,13 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[1, 2, 3].map((i) => (
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="overflow-hidden border-border">
             <ImageSkeleton aspectRatio="gallery" />
-            <div className="p-4 space-y-2">
-              <div className="h-6 w-32 bg-muted rounded animate-image-shimmer bg-gradient-to-r from-transparent via-foreground/10 to-transparent bg-[length:200%_100%]" />
-              <div className="h-4 w-24 bg-muted rounded animate-image-shimmer bg-gradient-to-r from-transparent via-foreground/10 to-transparent bg-[length:200%_100%]" />
+            <div className="p-3 space-y-1.5">
+              <div className="h-5 w-24 bg-muted rounded animate-image-shimmer bg-gradient-to-r from-transparent via-foreground/10 to-transparent bg-[length:200%_100%]" />
+              <div className="h-3.5 w-16 bg-muted rounded animate-image-shimmer bg-gradient-to-r from-transparent via-foreground/10 to-transparent bg-[length:200%_100%]" />
             </div>
           </Card>
         ))}

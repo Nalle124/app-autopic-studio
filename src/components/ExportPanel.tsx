@@ -36,10 +36,10 @@ export const ExportPanel = ({
         {/* Header */}
         <div>
           <h3 className="text-lg font-bold text-foreground mb-0.5">
-            Placera på bakgrund
+            Starta komposition
           </h3>
           <p className="text-xs text-foreground/70">
-            Välj inställningar och starta kompositionen
+            Skär ut bilen och placerar den på vald bakgrund
           </p>
         </div>
 

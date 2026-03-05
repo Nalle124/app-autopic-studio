@@ -325,9 +325,10 @@ const ProfileContent = () => {
                 else if (v === 'history') navigate('/?tab=gallery');
               }}>
                 <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
-                  <SelectValue placeholder="Profil" />
+                  <SelectValue placeholder="Meny" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-[60]">
+                  <SelectItem value="profile" className="hidden">Meny</SelectItem>
                   <SelectItem value="new">Projekt</SelectItem>
                   <SelectItem value="ai-studio">AI Studio</SelectItem>
                   <SelectItem value="history">Galleri</SelectItem>

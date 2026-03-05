@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ChevronDown, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
@@ -46,6 +46,55 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
+import { Check as CheckIcon } from 'lucide-react';
+
+const AiNoticeDropdown = () => {
+  const [expanded, setExpanded] = useState(false);
+  
+  return (
+    <button
+      onClick={() => setExpanded(!expanded)}
+      className="w-full text-left rounded-[10px] border border-border/30 bg-card/60 backdrop-blur-md shadow-sm overflow-hidden transition-all hover:border-border/50"
+    >
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert flex-shrink-0 opacity-50" />
+        <p className="text-xs sm:text-sm text-muted-foreground flex-1">
+          <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
+          AI-funktioner lanserade
+        </p>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground/50 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </div>
+      {expanded && (
+        <div className="px-4 pb-3 pt-0.5 space-y-1.5 border-t border-border/20">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Skapa egna bakgrunder med AI</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Blurra regskyltar automatiskt</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Redigera fritt med AI-prompt</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Maskera interiörbilder</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Applicera logo på bilder</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground/60 pt-1">
+            Öppna via <span className="font-medium">AI Studio</span> i menyn.
+          </p>
+        </div>
+      )}
+    </button>
+  );
+};
+
 function IndexContent() {
   const navigate = useNavigate();
   const location = window.location;
@@ -1039,22 +1088,18 @@ function IndexContent() {
           }} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={!isSubscribed && !isAdmin} />
             </section>
 
-            {/* AI Notice - Discrete, non-clickable */}
-            <div className="flex items-center gap-3 px-4 py-3 rounded-[10px] border border-border/40 bg-muted/30">
-              <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert flex-shrink-0 opacity-60" />
-              <p className="text-sm sm:text-base text-muted-foreground">
-                <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
-                Skapa egna bakgrunder, blurra regskyltar och redigera fritt med AI – via <span className="font-medium">AI Studio</span> i menyn.
-              </p>
-            </div>
+            {/* AI Notice - Glasig expandable dropdown */}
+            <AiNoticeDropdown />
 
             {/* Explore Scenes - Always visible */}
             {uploadedImages.length === 0 && (
               <section id="explore-scenes-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
                 <div className="flex items-center gap-3">
-                  <h2 className="font-sans font-medium text-lg text-foreground">Utforska bakgrunder</h2>
+                  <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
                 </div>
-                <SceneSelector key={sceneSelectorKey} selectedSceneId={null} onSceneSelect={() => {}} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
+                <SceneSelector key={sceneSelectorKey} selectedSceneId={null} onSceneSelect={(scene) => {
+                  toast('Börja med att ladda upp bilder att redigera', { description: 'Ladda upp bilder i steg 1 ovan för att komma igång.' });
+                }} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
                 
                 {/* Scroll to top button for scene gallery */}
                 <ScrollToTopButton threshold={300} />
@@ -1084,7 +1129,7 @@ function IndexContent() {
 
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
             {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="dark:bg-card border border-foreground/20 dark:border-border rounded-[10px] p-6 space-y-6">
-                <h2 className="font-sans font-medium text-lg text-foreground mb-4">Placera på bakgrund</h2>
+                <h2 className="font-sans font-medium text-lg text-foreground mb-4">Starta komposition</h2>
                 
                 <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
               </section>}
