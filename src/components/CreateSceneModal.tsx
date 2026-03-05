@@ -43,7 +43,7 @@ type ChatMessage =
 {role: 'user';text: string;image?: string;} |
 {role: 'assistant';text: string;} |
 {role: 'assistant-options';text: string;options: Array<{label: string;value: string;}>;stepIndex?: number;} |
-{role: 'assistant-image';imageUrl: string;suggestedName: string;description: string;photoroomPrompt: string;} |
+{role: 'assistant-image';imageUrl: string;suggestedName: string;description: string;scenePrompt: string;} |
 {role: 'assistant-loading';} |
 {role: 'assistant-error';text: string;retryData?: {conversationHistory: Array<{role: string;content: any;}>;mode: string;format?: string;};} |
 {role: 'assistant-references';text: string;references: Array<{url: string;label: string;}>;} |
@@ -1574,7 +1574,7 @@ export const CreateSceneModal = ({
       imageUrl: data.imageUrl,
       suggestedName: data.suggestedName,
       description: data.description,
-      photoroomPrompt: data.photoroomPrompt
+      scenePrompt: data.photoroomPrompt
     }]
     );
     // Refetch credits after successful generation to update UI counter
@@ -1722,7 +1722,7 @@ export const CreateSceneModal = ({
         prompt: messages.filter((m) => m.role === 'user').map((m) => (m as any).text).join(' | '),
         thumbnail_url: imageMsg.imageUrl,
         full_res_url: imageMsg.imageUrl,
-        ai_prompt: imageMsg.photoroomPrompt
+        ai_prompt: imageMsg.scenePrompt
       }).
       select().
       single();
@@ -1941,7 +1941,7 @@ export const CreateSceneModal = ({
             imageUrl: data.imageUrl,
             suggestedName: `blurrad`,
             description: 'Registreringsskyltar har dolts',
-            photoroomPrompt: ''
+            scenePrompt: ''
           }]);
         }
       } catch (err) {
@@ -2032,7 +2032,7 @@ export const CreateSceneModal = ({
             imageUrl: data.imageUrl,
             suggestedName: `fixad-inside`,
             description: 'Insidebild fixad med neutral bakgrund',
-            photoroomPrompt: ''
+            scenePrompt: ''
           }]);
         }
       } catch (err) {
@@ -2187,7 +2187,7 @@ export const CreateSceneModal = ({
             imageUrl: data.imageUrl,
             suggestedName: `logo`,
             description: 'Logo applicerad på bilden',
-            photoroomPrompt: ''
+            scenePrompt: ''
           }]);
         }
 
@@ -3695,7 +3695,7 @@ export const CreateSceneModal = ({
             imageUrl: dataUrl,
             suggestedName: name.replace(/\s+/g, '-').toLowerCase(),
             description: 'Exporterad annons',
-            photoroomPrompt: ''
+            scenePrompt: ''
           }
         ]);
         setOverlayEditor(null);
