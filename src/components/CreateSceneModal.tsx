@@ -1904,11 +1904,20 @@ export const CreateSceneModal = ({
           reader.readAsDataURL(blob);
         });
 
+        // Get original image dimensions for aspect ratio preservation
+        const imgDims = await new Promise<{w: number; h: number}>((resolve) => {
+          const img = new window.Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => resolve({ w: 1, h: 1 });
+          img.src = base64;
+        });
+        const dimNote = ` The input image is ${imgDims.w}x${imgDims.h} pixels. Output MUST be the EXACT same dimensions (${imgDims.w}x${imgDims.h}).`;
+
         const conversationHistory = [
         {
           role: 'user',
           content: [
-          { type: 'text', text: blurPrompt },
+          { type: 'text', text: blurPrompt + dimNote },
           { type: 'image_url', image_url: { url: base64 } },
           ...(isLogoOverlay && logoDataForBlur ? [{ type: 'image_url', image_url: { url: logoDataForBlur } }] : [])
           ]
@@ -1986,11 +1995,20 @@ export const CreateSceneModal = ({
           reader.readAsDataURL(blob);
         });
 
+        // Get original image dimensions for aspect ratio preservation
+        const imgDims = await new Promise<{w: number; h: number}>((resolve) => {
+          const img = new window.Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => resolve({ w: 1, h: 1 });
+          img.src = base64;
+        });
+        const dimNote = ` The input image is ${imgDims.w}x${imgDims.h} pixels. Output MUST be the EXACT same dimensions (${imgDims.w}x${imgDims.h}).`;
+
         const conversationHistory = [
           {
             role: 'user',
             content: [
-              { type: 'text', text: interiorPrompt },
+              { type: 'text', text: interiorPrompt + dimNote },
               { type: 'image_url', image_url: { url: base64 } }
             ]
           }
