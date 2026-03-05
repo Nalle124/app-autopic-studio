@@ -553,7 +553,11 @@ export const CreateSceneModal = ({
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
   const { triggerPaywall, refetchCredits } = useDemo();
-  const [chatMode, setChatMode] = useState<ChatMode | null>(null);
+  const [chatMode, setChatModeInternal] = useState<ChatMode | null>(null);
+  const setChatMode = useCallback((mode: ChatMode | null) => {
+    setChatModeInternal(mode);
+    onChatModeChange?.(mode);
+  }, [onChatModeChange]);
   const [prompt, setPrompt] = useState('');
   const [customName, setCustomName] = useState('');
   const [showNameField, setShowNameField] = useState(false);
