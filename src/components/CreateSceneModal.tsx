@@ -820,6 +820,20 @@ export const CreateSceneModal = ({
       { role: 'assistant', text: 'Välj vilka bilder du vill lägga logo på, eller ladda upp egna.' },
       { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder:' : 'Ladda upp bilder för att komma igång:', images: allImages }]
       );
+    } else if (mode === 'fix-interior') {
+      const allImages: Array<{url: string;id: string;}> = [];
+      propUploadedImages.forEach((img) => {
+        const url = img.croppedUrl || img.preview;
+        if (url) allImages.push({ url, id: img.id });
+      });
+      propCompletedImages.forEach((img) => {
+        const url = img.finalUrl || img.croppedUrl || img.preview;
+        if (url) allImages.push({ url, id: img.id });
+      });
+      setMessages([
+        { role: 'assistant', text: 'Välj bilder där du vill fixa det som syns genom rutorna eller öppna dörrar, eller ladda upp egna.' },
+        { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder att bearbeta:' : 'Ladda upp bilder för att komma igång:', images: allImages }
+      ]);
     } else {
       setMessages([
       {
