@@ -122,7 +122,7 @@ const getLoadingPhrasesForMode = (mode: ChatMode | null): string[] => {
 // Each category has follow-up questions that accumulate into a final prompt
 type GuidedStep = {
   question: string;
-  options: Array<{label: string;value: string;}>;
+  options: Array<{label: string;value: string;thumbnail?: string;}>;
   allowCustom?: boolean;
 };
 
