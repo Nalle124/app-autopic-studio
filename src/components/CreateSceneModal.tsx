@@ -2236,8 +2236,7 @@ export const CreateSceneModal = ({
       } catch (err) {
         console.error('Logo apply error:', err);
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
-        const retryPayload = { conversationHistory, mode: 'logo-apply' };
-        setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid applicering. Försök igen.', retryData: retryPayload }]);
+        setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid applicering. Försök igen.' }]);
         if (idx < selectedBlurImages.length - 1) {
           setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
         }
