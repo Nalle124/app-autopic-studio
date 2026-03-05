@@ -2057,6 +2057,9 @@ export const CreateSceneModal = ({
     if (!selectedLogoUrl || selectedBlurImages.length === 0 || !user || !selectedLogoPreset) return;
     setIsGenerating(true);
 
+    // Show loading state in chat
+    setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
+
     const presetMap: Record<string, string> = {
       '__logo_preset_br_small__': 'small logo in the bottom-right corner',
       '__logo_preset_bl_small__': 'small logo in the bottom-left corner',
@@ -2070,7 +2073,27 @@ export const CreateSceneModal = ({
     // Convert logo to PNG if it's SVG (AI gateway doesn't support SVG)
     const logoDataUrl = await convertSvgToPng(selectedLogoUrl);
 
-    for (const imageUrl of selectedBlurImages) {
+    const total = selectedBlurImages.length;
+
+    for (let idx = 0; idx < selectedBlurImages.length; idx++) {
+      const imageUrl = selectedBlurImages[idx];
+
+      // Update loading status for batch
+      if (total > 1) {
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => !(m.role === 'assistant-status' && (m as any).text?.includes('av ' + total)));
+          const loadingIdx = filtered.findIndex((m) => m.role === 'assistant-loading');
+          if (loadingIdx >= 0) {
+            return [
+              ...filtered.slice(0, loadingIdx),
+              { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` },
+              ...filtered.slice(loadingIdx)
+            ];
+          }
+          return [...filtered, { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` }];
+        });
+      }
+
       try {
         const response = await fetch(imageUrl);
         const blob = await response.blob();
@@ -2080,11 +2103,20 @@ export const CreateSceneModal = ({
           reader.readAsDataURL(blob);
         });
 
+        // Get original image dimensions for aspect ratio preservation
+        const imgDims = await new Promise<{w: number; h: number}>((resolve) => {
+          const img = new window.Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => resolve({ w: 1, h: 1 });
+          img.src = base64;
+        });
+        const aspectDesc = imgDims.w > imgDims.h ? 'landscape (wider than tall)' : imgDims.h > imgDims.w ? 'portrait (taller than wide)' : 'square';
+
         const conversationHistory = [
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. CRITICAL RULES: 1) Output the EXACT same image dimensions, aspect ratio, and orientation as the input photo — if the input is portrait (taller than wide), the output MUST be portrait. If landscape (wider than tall), the output MUST be landscape. The output resolution and pixel dimensions must match the input EXACTLY. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) The output image MUST have the EXACT same width-to-height ratio as the input. 6) Do NOT make the image square — preserve the original shape.` },
+              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The input image is ${aspectDesc} with dimensions ${imgDims.w}x${imgDims.h}. CRITICAL RULES: 1) Output the EXACT same image dimensions, aspect ratio (${imgDims.w}:${imgDims.h}), and orientation as the input photo. If the input is ${aspectDesc}, the output MUST be ${aspectDesc} with the same proportions. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) Do NOT change the aspect ratio or make the image square — preserve the EXACT original shape and proportions.` },
               { type: 'image_url', image_url: { url: base64 } },
               { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
@@ -2096,8 +2128,13 @@ export const CreateSceneModal = ({
           mode: 'logo-apply'
         });
 
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+
         if (error) {
           setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.' }]);
+          if (idx < selectedBlurImages.length - 1) {
+            setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
+          }
           continue;
         }
 
@@ -2110,10 +2147,18 @@ export const CreateSceneModal = ({
             photoroomPrompt: ''
           }]);
         }
+
+        // Re-add loading for next image
+        if (idx < selectedBlurImages.length - 1) {
+          setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
+        }
       } catch (err) {
         console.error('Logo apply error:', err);
-        // No loading bubble to clean up - button handles loading state
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
         setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid applicering. Försök igen.' }]);
+        if (idx < selectedBlurImages.length - 1) {
+          setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
+        }
       }
     }
 
