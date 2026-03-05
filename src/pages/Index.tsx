@@ -1039,22 +1039,18 @@ function IndexContent() {
           }} animatingImages={animatingImages} relightEnabled={relightEnabled} onRelightChange={setRelightEnabled} availableCredits={credits} showExampleImages={!isSubscribed && !isAdmin} />
             </section>
 
-            {/* AI Notice - Discrete, non-clickable */}
-            <div className="flex items-center gap-3 px-4 py-3 rounded-[10px] border border-border/40 bg-muted/30">
-              <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert flex-shrink-0 opacity-60" />
-              <p className="text-sm sm:text-base text-muted-foreground">
-                <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
-                Skapa egna bakgrunder, blurra regskyltar och redigera fritt med AI – via <span className="font-medium">AI Studio</span> i menyn.
-              </p>
-            </div>
+            {/* AI Notice - Glasig expandable dropdown */}
+            <AiNoticeDropdown />
 
             {/* Explore Scenes - Always visible */}
             {uploadedImages.length === 0 && (
               <section id="explore-scenes-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
                 <div className="flex items-center gap-3">
-                  <h2 className="font-sans font-medium text-lg text-foreground">Utforska bakgrunder</h2>
+                  <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
                 </div>
-                <SceneSelector key={sceneSelectorKey} selectedSceneId={null} onSceneSelect={() => {}} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
+                <SceneSelector key={sceneSelectorKey} selectedSceneId={null} onSceneSelect={(scene) => {
+                  toast('Börja med att ladda upp bilder att redigera', { description: 'Ladda upp bilder i steg 1 ovan för att komma igång.' });
+                }} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
                 
                 {/* Scroll to top button for scene gallery */}
                 <ScrollToTopButton threshold={300} />

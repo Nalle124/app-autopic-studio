@@ -2531,7 +2531,7 @@ export const CreateSceneModal = ({
                       </button>
                     </div>
 
-                    {/* Fixa insidebilder - own menu item */}
+                     {/* Maskera interiörbilder - own menu item */}
                     <button
                       onClick={() => selectMode('fix-interior')}
                       className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
@@ -2543,8 +2543,8 @@ export const CreateSceneModal = ({
                           className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 py-3 pr-3">
-                        <p className="text-sm font-semibold text-foreground">Fixa insidebilder</p>
-                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Maskera bakgrund genom rutor & dörrar</p>
+                        <p className="text-sm font-semibold text-foreground">Maskera interiörbilder</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Ändra bakgrund genom rutor och dörrar</p>
                       </div>
                     </button>
 
@@ -2574,12 +2574,11 @@ export const CreateSceneModal = ({
                       <button
                         onClick={() => selectMode('logo-studio')}
                         className="flex flex-col rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group overflow-hidden">
-                        <div className="w-full h-16 overflow-hidden bg-muted/40 flex items-center justify-center">
-                          <div className="relative w-full h-full flex items-center justify-center">
-                            <div className="w-10 h-6 bg-muted-foreground/10 rounded" />
-                            <div className="absolute top-1.5 right-2 w-5 h-3 bg-primary/30 rounded-sm flex items-center justify-center">
-                              <ImageIcon className="w-2.5 h-2.5 text-primary" />
-                            </div>
+                        <div className="w-full h-16 overflow-hidden relative">
+                          <img src="/mode-previews/logo-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
+                          {/* Cursor indicator */}
+                          <div className="absolute bottom-1.5 right-3 w-4 h-4 text-white drop-shadow-lg">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M4 0l16 12.279-6.951 1.17 4.325 8.817-3.596 1.734-4.35-8.879-5.428 4.702z"/></svg>
                           </div>
                         </div>
                         <div className="p-2.5 pt-2">
