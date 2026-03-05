@@ -47,7 +47,6 @@ import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
 import { Check as CheckIcon } from 'lucide-react';
-import { Check as CheckIcon } from 'lucide-react';
 
 const AiNoticeDropdown = () => {
   const [expanded, setExpanded] = useStateReact(false);
