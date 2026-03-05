@@ -868,8 +868,19 @@ export const CreateSceneModal = ({
   };
 
   const handleNewChat = () => {
-    // Full reset - start fresh
+    // Full reset - go back to mode select menu
     resetAll();
+  };
+
+  const handleNewInMode = () => {
+    // Reset but stay in the same mode
+    const currentMode = chatMode;
+    if (!currentMode) {
+      resetAll();
+      return;
+    }
+    resetAll();
+    setTimeout(() => selectMode(currentMode), 0);
   };
 
   const handleReturnToChat = () => {
