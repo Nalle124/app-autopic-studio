@@ -142,10 +142,10 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/vit-rundad-studio.png', label: 'Rundad' },
   { url: '/scenes/varmt-ljus-studio.png', label: 'Varm studio' },
   { url: '/scenes/betong-takspots.png', label: 'Takspots' },
-  { url: '/scenes/nordisk-dagsljus.jpg', label: 'Nordisk dagsljus' },
   { url: '/scenes/ljus-tra-underlight.png', label: 'Trä underljus' },
   { url: '/scenes/dagsljus-gardiner.png', label: 'Gardiner' },
-  { url: '/scenes/granet-studio.png', label: 'Granit' }],
+  { url: '/scenes/clean-wood-studio.png', label: 'Trä showroom' },
+  { url: '/scenes/betong-takljus.png', label: 'Betong takljus' }],
 
   'studio-dark': [
   { url: '/scenes/dark-studio.png', label: 'Mörk studio' },
@@ -197,28 +197,28 @@ const GUIDED_FLOWS: Record<string, Array<{question: string; options: GuidedOptio
   {
     question: 'Hur ska scenen vara uppbyggd?',
     options: [
-    { label: 'Öppen yta', value: 'open studio space, car centered with clean empty surroundings and seamless background', thumbnail: '/scenes/vit-rundad-studio.png' },
-    { label: 'Hörn med väggar', value: 'corner studio setup with two walls meeting, creating depth and dimension', thumbnail: '/scenes/betong-takspots.png' },
-    { label: 'Rak vägg bakom', value: 'single flat wall behind the car, clean and minimal backdrop', thumbnail: '/scenes/white-studio.png' },
+    { label: 'Öppen yta', value: 'open studio space, car centered with clean empty surroundings and seamless background', thumbnail: '/textures/comp-open.jpg' },
+    { label: 'Hörn med väggar', value: 'corner studio setup with two walls meeting, creating depth and dimension', thumbnail: '/textures/comp-corner.jpg' },
+    { label: 'Rak vägg bakom', value: 'single flat wall behind the car, clean and minimal backdrop', thumbnail: '/textures/comp-wall.jpg' },
     { label: 'Cyklorama (rundad)', value: 'seamless curved cyclorama studio with no visible edges or corners', thumbnail: '/scenes/vit-rundad-studio.png' }],
     allowCustom: true
   },
   {
     question: 'Vilken känsla vill du ha?',
     options: [
-    { label: 'Ljust & fräscht', value: 'bright airy lighting, fresh modern feel, like a professional photo shoot', thumbnail: '/scenes/nordisk-dagsljus.jpg' },
-    { label: 'Varmt & inbjudande', value: 'warm golden tones, cozy inviting atmosphere, soft shadows', thumbnail: '/scenes/varmt-ljus-studio.png' },
-    { label: 'Rent & kliniskt', value: 'neutral even lighting, clinical clean look, no mood lighting', thumbnail: '/scenes/netgrey-light.png' },
-    { label: 'Systemkamera-look', value: 'shallow depth of field, professional DSLR photography look with slight bokeh', thumbnail: '/scenes/dagsljus-gardiner.png' }],
+    { label: 'Ljust & fräscht', value: 'bright airy lighting, fresh modern feel, like a professional photo shoot', thumbnail: '/textures/mood-bright.jpg' },
+    { label: 'Varmt & inbjudande', value: 'warm golden tones, cozy inviting atmosphere, soft shadows', thumbnail: '/textures/mood-warm.jpg' },
+    { label: 'Rent & kliniskt', value: 'neutral even lighting, clinical clean look, no mood lighting', thumbnail: '/textures/mood-clinical.jpg' },
+    { label: 'Systemkamera-look', value: 'shallow depth of field, professional DSLR photography look with slight bokeh', thumbnail: '/textures/mood-dslr.jpg' }],
     allowCustom: true
   },
   {
     question: 'Golvmaterial?',
     options: [
-    { label: 'Betong', value: 'polished concrete floor with subtle texture', thumbnail: '/scenes/betong-takljus.png' },
-    { label: 'Kakel', value: 'clean white or light tile floor, reflective surface', thumbnail: '/scenes/new-grey.png' },
-    { label: 'Trä', value: 'warm wood floor, natural grain, Scandinavian feel', thumbnail: '/scenes/ljus-tra-underlight.png' },
-    { label: 'Epoxy / blankt', value: 'glossy epoxy floor with mirror-like reflections', thumbnail: '/scenes/granet-studio.png' }],
+    { label: 'Betong', value: 'polished concrete floor with subtle texture', thumbnail: '/textures/betong-golv.jpg' },
+    { label: 'Kakel', value: 'clean white or light tile floor, reflective surface', thumbnail: '/textures/kakel-golv.jpg' },
+    { label: 'Trä', value: 'warm wood floor, natural grain, Scandinavian feel', thumbnail: '/textures/tra-golv.jpg' },
+    { label: 'Epoxy / blankt', value: 'glossy epoxy floor with mirror-like reflections', thumbnail: '/textures/epoxy-golv.jpg' }],
     allowCustom: true
   }],
 
@@ -255,20 +255,20 @@ const GUIDED_FLOWS: Record<string, Array<{question: string; options: GuidedOptio
   {
     question: 'Vilken tid och väder?',
     options: [
-    { label: 'Solig sommardag', value: 'bright sunny summer day, blue sky, warm natural light', thumbnail: '/scenes/svenskt-industriomrade-sommar.png' },
-    { label: 'Gyllene timmen', value: 'golden hour sunset lighting, warm dramatic sky, long shadows', thumbnail: '/scenes/dusk-plaza.png' },
-    { label: 'Grå höstdag', value: 'overcast autumn day, moody clouds, warm leaf tones on ground', thumbnail: '/scenes/hostgata.png' },
-    { label: 'Vinterljus', value: 'crisp winter light, possibly snow, cold blue tones, clear sky', thumbnail: '/scenes/slattebraten-vintersken.png' },
-    { label: 'Kvällsljus i stad', value: 'evening city atmosphere with ambient street lights and warm glow', thumbnail: '/scenes/klassisk-innergard-kvall.png' }],
+    { label: 'Solig sommardag', value: 'bright sunny summer day, blue sky, warm natural light', thumbnail: '/textures/weather-sunny.jpg' },
+    { label: 'Gyllene timmen', value: 'golden hour sunset lighting, warm dramatic sky, long shadows', thumbnail: '/textures/weather-golden.jpg' },
+    { label: 'Grå höstdag', value: 'overcast autumn day, moody clouds, warm leaf tones on ground', thumbnail: '/textures/weather-overcast.jpg' },
+    { label: 'Vinterljus', value: 'crisp winter light, possibly snow, cold blue tones, clear sky', thumbnail: '/textures/weather-winter.jpg' },
+    { label: 'Kvällsljus i stad', value: 'evening city atmosphere with ambient street lights and warm glow', thumbnail: '/textures/weather-evening.jpg' }],
     allowCustom: true
   },
   {
     question: 'Underlag?',
     options: [
-    { label: 'Asfalt', value: 'asphalt road or parking surface, smooth dark tarmac', thumbnail: '/scenes/dusk-plaza.png' },
-    { label: 'Grus', value: 'gravel driveway, natural stone aggregate', thumbnail: '/scenes/garageuppfart-grus.png' },
-    { label: 'Kullersten', value: 'cobblestone or brick paving, European character', thumbnail: '/scenes/kullerstengata.png' },
-    { label: 'Gräs / natur', value: 'grass or natural ground, parklike setting', thumbnail: '/scenes/skara-park.png' }],
+    { label: 'Asfalt', value: 'asphalt road or parking surface, smooth dark tarmac', thumbnail: '/textures/asfalt.jpg' },
+    { label: 'Grus', value: 'gravel driveway, natural stone aggregate', thumbnail: '/textures/grus.jpg' },
+    { label: 'Kullersten', value: 'cobblestone or brick paving, European character', thumbnail: '/textures/kullersten.jpg' },
+    { label: 'Gräs / natur', value: 'grass or natural ground, parklike setting', thumbnail: '/textures/gras.jpg' }],
     allowCustom: true
   }],
 
