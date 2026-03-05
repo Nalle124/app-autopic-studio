@@ -43,7 +43,7 @@ type ChatMessage =
 {role: 'user';text: string;image?: string;} |
 {role: 'assistant';text: string;} |
 {role: 'assistant-options';text: string;options: Array<{label: string;value: string;}>;stepIndex?: number;} |
-{role: 'assistant-image';imageUrl: string;suggestedName: string;description: string;photoroomPrompt: string;} |
+{role: 'assistant-image';imageUrl: string;suggestedName: string;description: string;scenePrompt: string;} |
 {role: 'assistant-loading';} |
 {role: 'assistant-error';text: string;retryData?: {conversationHistory: Array<{role: string;content: any;}>;mode: string;format?: string;};} |
 {role: 'assistant-references';text: string;references: Array<{url: string;label: string;}>;} |
@@ -175,103 +175,81 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
 const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   'studio': [
   {
-    question: 'Vilken ljussättning?',
+    question: 'Hur ska scenen vara uppbyggd?',
     options: [
-    { label: 'Ljus & luftig', value: 'bright and airy with soft diffused lighting' },
-    { label: 'Varm & mysig', value: 'warm golden lighting with cozy atmosphere' },
-    { label: 'Neutral & ren', value: 'neutral even lighting, clean and minimal' }],
+    { label: 'Öppen yta', value: 'open studio space, car centered with clean empty surroundings and seamless background' },
+    { label: 'Hörn med väggar', value: 'corner studio setup with two walls meeting, creating depth and dimension' },
+    { label: 'Rak vägg bakom', value: 'single flat wall behind the car, clean and minimal backdrop' },
+    { label: 'Cyklorama (rundad)', value: 'seamless curved cyclorama studio with no visible edges or corners' }],
     allowCustom: true
   },
   {
-    question: 'Vilket golv?',
+    question: 'Vilken känsla vill du ha?',
     options: [
-    { label: 'Polerad betong', value: 'polished concrete floor' },
-    { label: 'Vitt epoxigolv', value: 'white epoxy floor' },
-    { label: 'Trägolv', value: 'wood plank floor' }],
-    allowCustom: true
-  },
-  {
-    question: 'Bakvägg?',
-    options: [
-    { label: 'Sömlös cyklorama', value: 'seamless cyclorama wall' },
-    { label: 'Ljusgrå vägg', value: 'light grey painted wall' },
-    { label: 'Ingen synlig', value: 'no visible back wall, infinite background' }],
+    { label: 'Ljust & fräscht', value: 'bright airy lighting, fresh modern feel, like a professional photo shoot' },
+    { label: 'Varmt & inbjudande', value: 'warm golden tones, cozy inviting atmosphere, soft shadows' },
+    { label: 'Rent & kliniskt', value: 'neutral even lighting, clinical clean look, no mood lighting' },
+    { label: 'Systemkamera-look', value: 'shallow depth of field, professional DSLR photography look with slight bokeh' }],
     allowCustom: true
   }],
 
   'studio-dark': [
   {
-    question: 'Vilken känsla?',
+    question: 'Hur ska scenen vara uppbyggd?',
     options: [
-    { label: 'Mörk & dramatisk', value: 'dark and moody with dramatic directional lighting' },
-    { label: 'Spotlight & kontrast', value: 'single spotlight with high contrast and dark surroundings' },
-    { label: 'Dämpad & elegant', value: 'subtle muted dark tones with elegant atmosphere' }],
+    { label: 'Öppen mörk yta', value: 'open dark studio, car isolated with dramatic lighting from above' },
+    { label: 'Hörn med skuggor', value: 'dark corner setup with shadows creating depth and mystery' },
+    { label: 'Spotlight-fokus', value: 'single spotlight on the car, everything else falls into darkness' },
+    { label: 'Draperi bakom', value: 'dark fabric curtain backdrop with moody lighting' }],
     allowCustom: true
   },
   {
-    question: 'Vilket golv?',
+    question: 'Vilken stämning?',
     options: [
-    { label: 'Mörk betong', value: 'dark polished concrete floor' },
-    { label: 'Mörk sten', value: 'dark stone floor' },
-    { label: 'Svart epoxy', value: 'black glossy epoxy floor with reflections' }],
-    allowCustom: true
-  },
-  {
-    question: 'Bakgrund?',
-    options: [
-    { label: 'Mörk vägg', value: 'dark charcoal wall' },
-    { label: 'Svart cyklorama', value: 'black seamless cyclorama' },
-    { label: 'Draperi', value: 'dark fabric curtain backdrop' }],
+    { label: 'Dramatisk & kraftfull', value: 'high contrast dramatic lighting, powerful atmosphere, deep blacks' },
+    { label: 'Elegant & dämpad', value: 'subtle sophisticated dark tones, elegant muted lighting' },
+    { label: 'Neonaccenter', value: 'dark atmosphere with subtle colored accent lights, modern edge' },
+    { label: 'Nattstudio', value: 'late night studio vibe, cool blue-tinted shadows, editorial feel' }],
     allowCustom: true
   }],
 
   'outdoor': [
   {
-    question: 'Vilken miljö?',
+    question: 'Hur ska bilden vara komponerad?',
     options: [
-    { label: 'Stadsgata', value: 'city street with buildings' },
-    { label: 'Hamn / kust', value: 'harbor or coastal area' },
-    { label: 'Natur / skog', value: 'nature or forest road' },
-    { label: 'Parkering', value: 'parking area or plaza' },
-    { label: 'Uppfart / villa', value: 'driveway by a nice house' }],
+    { label: 'Öppen vy', value: 'wide open outdoor view with expansive background and sky visible' },
+    { label: 'Gatuvy med djup', value: 'street view with perspective depth, buildings or trees fading into background' },
+    { label: 'Parkerad vid byggnad', value: 'car parked alongside a building or wall, urban feel' },
+    { label: 'Naturomgiven', value: 'surrounded by nature, trees or landscape framing the car' }],
     allowCustom: true
   },
   {
-    question: 'Vilken årstid?',
+    question: 'Vilken tid och känsla?',
     options: [
-    { label: 'Sommar', value: 'summer season' },
-    { label: 'Höst', value: 'autumn season with warm golden tones' },
-    { label: 'Vinter', value: 'winter season with snow' },
-    { label: 'Vår', value: 'spring season with fresh green' }],
-    allowCustom: true
-  },
-  {
-    question: 'Vilken tid & väder?',
-    options: [
-    { label: 'Soligt dagsljus', value: 'sunny day with blue sky and bright natural light' },
-    { label: 'Molnigt & mjukt', value: 'overcast sky with soft diffused light' },
-    { label: 'Skymning', value: 'dusk with dramatic sunset sky and warm colors' },
-    { label: 'Kvällsljus', value: 'evening with city lights and ambient warm glow' },
-    { label: 'Morgondimma', value: 'morning mist with soft ethereal light' }],
+    { label: 'Solig sommardag', value: 'bright sunny summer day, blue sky, warm natural light' },
+    { label: 'Gyllene timmen', value: 'golden hour sunset lighting, warm dramatic sky, long shadows' },
+    { label: 'Grå höstdag', value: 'overcast autumn day, moody clouds, warm leaf tones on ground' },
+    { label: 'Vinterljus', value: 'crisp winter light, possibly snow, cold blue tones, clear sky' },
+    { label: 'Kvällsljus i stad', value: 'evening city atmosphere with ambient street lights and warm glow' }],
     allowCustom: true
   }],
 
   'showroom': [
   {
-    question: 'Vilken typ?',
+    question: 'Vilken typ av rum?',
     options: [
-    { label: 'Modern med glas', value: 'modern showroom with glass walls and polished floor' },
-    { label: 'Klassisk bilhall', value: 'classic car dealership hall with large windows' },
-    { label: 'Lyxig garage', value: 'luxury private garage with premium finishes' },
-    { label: 'Minimalistisk', value: 'minimalist white showroom space' }],
+    { label: 'Modern glasvägg', value: 'modern showroom with glass walls, natural light flooding in, polished floor' },
+    { label: 'Klassisk bilhall', value: 'classic car dealership hall with large windows and spacious feeling' },
+    { label: 'Privat lyxgarage', value: 'luxury private garage with premium finishes, intimate setting' },
+    { label: 'Minimalistisk yta', value: 'minimalist white showroom, clean lines, open space' }],
     allowCustom: true
   },
   {
-    question: 'Ljuskänsla?',
+    question: 'Vilken ljuskänsla?',
     options: [
-    { label: 'Premium spotlights', value: 'premium spotlight lighting from above' },
-    { label: 'Dagsljus genom fönster', value: 'natural daylight through large windows' },
-    { label: 'Stämningsfullt', value: 'atmospheric ambient lighting with warm tones' }],
+    { label: 'Spotlights ovanifrån', value: 'premium focused spotlights from above, highlighting the car, professional gallery feel' },
+    { label: 'Stort dagsljus', value: 'abundant natural daylight through large windows, airy showroom' },
+    { label: 'Stämningsfull kväll', value: 'warm atmospheric evening lighting, inviting ambient glow' }],
     allowCustom: true
   }],
 
@@ -279,18 +257,18 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   {
     question: 'Vilken miljö?',
     options: [
-    { label: 'Lyxig villa', value: 'luxury modern villa driveway with premium architecture' },
-    { label: 'Fjälllandskap', value: 'scenic mountain lodge with dramatic landscape' },
-    { label: 'Innergård kvällsljus', value: 'elegant courtyard at dusk with ambient lighting' },
-    { label: 'Havsutsikt', value: 'ocean view terrace with premium surroundings' }],
+    { label: 'Lyxig villa', value: 'luxury modern villa driveway with premium architecture and landscaping' },
+    { label: 'Fjäll & natur', value: 'scenic mountain lodge with dramatic landscape and pristine nature' },
+    { label: 'Elegant innergård', value: 'elegant courtyard at dusk with ambient warm lighting and classic architecture' },
+    { label: 'Havsutsikt', value: 'ocean view terrace or coastal road with premium surroundings' }],
     allowCustom: true
   },
   {
-    question: 'Vilken känsla?',
+    question: 'Vilken känsla ska bilderna utstråla?',
     options: [
-    { label: 'Exklusiv & lyxig', value: 'exclusive luxury atmosphere with premium materials' },
-    { label: 'Elegant & tidlös', value: 'elegant timeless classic feel' },
-    { label: 'Modern & minimalistisk', value: 'modern minimalist premium design' }],
+    { label: 'Exklusiv & lyxig', value: 'exclusive luxury atmosphere, premium materials, aspirational feel' },
+    { label: 'Tidlöst elegant', value: 'timeless elegant classic feel, refined and sophisticated' },
+    { label: 'Äventyr & frihet', value: 'sense of adventure and freedom, open roads, dramatic scenery' }],
     allowCustom: true
   }]
 };
@@ -1574,7 +1552,7 @@ export const CreateSceneModal = ({
       imageUrl: data.imageUrl,
       suggestedName: data.suggestedName,
       description: data.description,
-      photoroomPrompt: data.photoroomPrompt
+      scenePrompt: data.photoroomPrompt
     }]
     );
     // Refetch credits after successful generation to update UI counter
@@ -1722,7 +1700,7 @@ export const CreateSceneModal = ({
         prompt: messages.filter((m) => m.role === 'user').map((m) => (m as any).text).join(' | '),
         thumbnail_url: imageMsg.imageUrl,
         full_res_url: imageMsg.imageUrl,
-        ai_prompt: imageMsg.photoroomPrompt
+        ai_prompt: imageMsg.scenePrompt
       }).
       select().
       single();
@@ -1756,7 +1734,7 @@ export const CreateSceneModal = ({
           fade: Number(inserted.reflection_fade)
         },
         aiPrompt: inserted.ai_prompt || undefined,
-        photoroomShadowMode: inserted.photoroom_shadow_mode as SceneMetadata['photoroomShadowMode'] || 'ai.soft',
+        shadowMode: inserted.photoroom_shadow_mode as SceneMetadata['shadowMode'] || 'ai.soft',
         referenceScale: Number(inserted.reference_scale),
         compositeMode: false
       };
@@ -1941,7 +1919,7 @@ export const CreateSceneModal = ({
             imageUrl: data.imageUrl,
             suggestedName: `blurrad`,
             description: 'Registreringsskyltar har dolts',
-            photoroomPrompt: ''
+            scenePrompt: ''
           }]);
         }
       } catch (err) {
@@ -2032,7 +2010,7 @@ export const CreateSceneModal = ({
             imageUrl: data.imageUrl,
             suggestedName: `fixad-inside`,
             description: 'Insidebild fixad med neutral bakgrund',
-            photoroomPrompt: ''
+            scenePrompt: ''
           }]);
         }
       } catch (err) {
@@ -2187,7 +2165,7 @@ export const CreateSceneModal = ({
             imageUrl: data.imageUrl,
             suggestedName: `logo`,
             description: 'Logo applicerad på bilden',
-            photoroomPrompt: ''
+            scenePrompt: ''
           }]);
         }
 
@@ -3695,7 +3673,7 @@ export const CreateSceneModal = ({
             imageUrl: dataUrl,
             suggestedName: name.replace(/\s+/g, '-').toLowerCase(),
             description: 'Exporterad annons',
-            photoroomPrompt: ''
+            scenePrompt: ''
           }
         ]);
         setOverlayEditor(null);

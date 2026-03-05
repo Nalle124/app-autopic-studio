@@ -21,13 +21,13 @@ interface SceneMetadata {
     fade: number;
   };
   aiPrompt?: string;
-  photoroomShadowMode?: string;
+  shadowMode?: string;
   referenceScale?: number;
   compositeMode?: boolean;
 }
 
-// Fixed seed for consistent results across generations (PhotoRoom recommended)
-const PHOTOROOM_SEED = 117879368;
+// Fixed seed for consistent results across generations
+const PROCESSING_SEED = 117879368;
 
 // Helper function to compress image if too large
 async function compressImageIfNeeded(
@@ -221,7 +221,7 @@ serve(async (req) => {
     }
 
     console.log(`Processing image for scene: ${scene.name}`);
-    console.log(`Shadow mode: ${scene.photoroomShadowMode || 'none'}`);
+    console.log(`Shadow mode: ${scene.shadowMode || 'none'}`);
     console.log(`AI Prompt: ${scene.aiPrompt || 'default'}`);
     console.log(`Orientation: ${orientation}`);
     console.log(`Relight enabled: ${relightEnabled}`);
@@ -321,7 +321,7 @@ serve(async (req) => {
       photoroomFormData.append('background.guidance.scale', referenceScale.toString());
       console.log('Reference scale:', referenceScale);
       
-      photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
+      photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
       
       const basePrompt = scene.aiPrompt ||
         `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
@@ -337,7 +337,7 @@ serve(async (req) => {
       console.log('Using prompt:', prompt);
     }
     
-    const shadowMode = scene.photoroomShadowMode || 'none';
+    const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
       photoroomFormData.append('shadow.mode', shadowMode);
       console.log('Adding PhotoRoom shadow:', shadowMode);
@@ -397,7 +397,7 @@ serve(async (req) => {
     
     console.log('Photoroom request prepared:');
     console.log('- Reference URL:', resolvedBackgroundUrl.substring(0, 100));
-    console.log('- Seed:', PHOTOROOM_SEED);
+    console.log('- Seed:', PROCESSING_SEED);
     console.log('- Shadow mode:', shadowMode);
     console.log('- Padding:', paddingValue);
     console.log('- Orientation:', orientation);
