@@ -1756,7 +1756,7 @@ export const CreateSceneModal = ({
           fade: Number(inserted.reflection_fade)
         },
         aiPrompt: inserted.ai_prompt || undefined,
-        photoroomShadowMode: inserted.photoroom_shadow_mode as SceneMetadata['photoroomShadowMode'] || 'ai.soft',
+        shadowMode: inserted.photoroom_shadow_mode as SceneMetadata['shadowMode'] || 'ai.soft',
         referenceScale: Number(inserted.reference_scale),
         compositeMode: false
       };
