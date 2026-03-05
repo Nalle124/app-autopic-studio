@@ -1239,11 +1239,31 @@ export const CreateSceneModal = ({
     }
 
     // Handle fix-interior batch processing
-    if (value === '__fix_interior_batch_light__' || value === '__fix_interior_batch_dark__') {
-      const bgType = value === '__fix_interior_batch_light__' ? 'light neutral white/grey' : 'dark neutral black/charcoal';
-      const label = value === '__fix_interior_batch_light__' ? 'Ljus bakgrund' : 'Mörk bakgrund';
+    if (value === '__fix_interior_batch_light__' || value === '__fix_interior_batch_dark__' || value === '__fix_interior_batch_grey__') {
+      const bgTypeMap: Record<string, string> = {
+        '__fix_interior_batch_light__': 'clean white',
+        '__fix_interior_batch_dark__': 'dark neutral black/charcoal',
+        '__fix_interior_batch_grey__': 'neutral medium grey',
+      };
+      const labelMap: Record<string, string> = {
+        '__fix_interior_batch_light__': 'Vit',
+        '__fix_interior_batch_dark__': 'Mörk',
+        '__fix_interior_batch_grey__': 'Grå',
+      };
+      const bgType = bgTypeMap[value] || 'light neutral white/grey';
+      const label = labelMap[value] || 'Vit';
       setMessages((prev) => [...prev, { role: 'user', text: label }]);
       handleFixInteriorBatch(bgType);
+      return;
+    }
+    if (value === '__fix_interior_batch_custom__') {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: 'Eget' },
+        { role: 'assistant', text: 'Beskriv vilken bakgrundsfärg du vill ha genom rutorna (t.ex. "ljusblå", "beige", "mörkgrön"):' }
+      ]);
+      setAwaitingGuidedCustomInput(true);
+      // When custom input is submitted, it will call handleFixInteriorBatch with the text
       return;
     }
 
@@ -1631,6 +1651,16 @@ export const CreateSceneModal = ({
 
   const handleGenerate = async () => {
     if (!prompt.trim() || !user) return;
+
+    // Handle custom interior color input
+    if (awaitingGuidedCustomInput && chatMode === 'fix-interior') {
+      const customColor = prompt.trim();
+      setAwaitingGuidedCustomInput(false);
+      setPrompt('');
+      setMessages((prev) => [...prev, { role: 'user', text: customColor }]);
+      handleFixInteriorBatch(customColor);
+      return;
+    }
 
     // If awaiting guided custom input, save it as the answer for current step
     if (awaitingGuidedCustomInput && guidedCategory && guidedCategory !== 'custom' && guidedCategory !== 'custom-ad') {
@@ -2191,7 +2221,8 @@ export const CreateSceneModal = ({
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
 
         if (error) {
-          setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.' }]);
+          const retryPayload = { conversationHistory, mode: 'logo-apply' };
+          setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.', retryData: retryPayload }]);
           if (idx < selectedBlurImages.length - 1) {
             setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
           }
@@ -2413,14 +2444,7 @@ export const CreateSceneModal = ({
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
           return (
-            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-16 sm:pt-0">
-                  <div className="flex gap-2.5 items-start mb-5">
-                    <AutopicAvatar />
-                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                      <p className="text-sm sm:text-base text-foreground leading-relaxed">Vad vill du skapa?</p>
-                    </div>
-                  </div>
-
+            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-20 sm:pt-0">
                   <div className="w-full max-w-md sm:max-w-lg mx-auto space-y-4">
                     {/* Main features: 2-column grid */}
                     <div className="grid grid-cols-2 gap-2.5">
@@ -2622,7 +2646,8 @@ export const CreateSceneModal = ({
                     <button
                       key={idx}
                       onClick={() => {
-                        setPrompt(action.prompt + ' ');
+                        // Set the Swedish label as prompt and show helper text
+                        setPrompt(action.label + ' ');
                       }}
                       className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
                               {action.label}
@@ -2841,8 +2866,10 @@ export const CreateSceneModal = ({
                         role: 'assistant-options',
                         text: 'Vilken bakgrundsfärg ska synas genom rutorna?',
                         options: [
-                          { label: 'Ljus bakgrund', value: '__fix_interior_batch_light__' },
-                          { label: 'Mörk bakgrund', value: '__fix_interior_batch_dark__' }
+                          { label: 'Vit', value: '__fix_interior_batch_light__' },
+                          { label: 'Mörk', value: '__fix_interior_batch_dark__' },
+                          { label: 'Grå', value: '__fix_interior_batch_grey__' },
+                          { label: 'Eget', value: '__fix_interior_batch_custom__' }
                         ]
                       }
                     ]);
@@ -3058,6 +3085,41 @@ export const CreateSceneModal = ({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            );
+          }
+
+          // Detect interior color picker options
+          const isInteriorColorPicker = msg.options.some((o: any) => o.value.startsWith('__fix_interior_batch_'));
+          if (isInteriorColorPicker) {
+            const colorMap: Record<string, string> = {
+              '__fix_interior_batch_light__': 'bg-white border-border',
+              '__fix_interior_batch_dark__': 'bg-zinc-900',
+              '__fix_interior_batch_grey__': 'bg-zinc-400',
+              '__fix_interior_batch_custom__': 'bg-gradient-to-br from-blue-200 via-amber-200 to-green-200',
+            };
+            return (
+              <div key={i} className="space-y-3">
+                {msg.text && (
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-4 gap-2 pl-9 max-w-[280px]">
+                  {msg.options.map((opt: any, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleOptionClick(opt.value)}
+                      disabled={isGenerating}
+                      className="group/color flex flex-col items-center gap-1.5 disabled:opacity-40">
+                      <div className={`w-12 h-12 rounded-xl ${colorMap[opt.value] || 'bg-muted'} border border-border/50 shadow-sm transition-all group-hover/color:scale-110 group-hover/color:shadow-md`} />
+                      <span className="text-[10px] font-medium text-muted-foreground">{opt.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             );
