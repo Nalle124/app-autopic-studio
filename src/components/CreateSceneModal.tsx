@@ -1921,6 +1921,88 @@ export const CreateSceneModal = ({
     setIsGenerating(false);
   };
 
+  // ─── Fix interior batch generation ─────────────────────────
+  const handleFixInteriorBatch = async (bgType: string) => {
+    if (selectedBlurImages.length === 0 || !user) return;
+    setIsGenerating(true);
+
+    const interiorPrompt = `Look at this car image carefully. The car has open doors, an open trunk, or windows through which the background is visible. KEEP THE CAR EXACTLY AS IT IS — same position, angle, color, reflections, and all details. ONLY change what is visible THROUGH the windows, open doors, or trunk opening. Replace whatever is seen through those openings with a clean, ${bgType} background. Do NOT move, resize, crop, or alter the car or its surroundings in any way. The output MUST have the EXACT same dimensions and framing as the input.`;
+
+    const total = selectedBlurImages.length;
+
+    for (let idx = 0; idx < selectedBlurImages.length; idx++) {
+      const imageUrl = selectedBlurImages[idx];
+
+      setMessages((prev) => [
+        ...prev.filter((m) => m.role !== 'assistant-loading'),
+        { role: 'assistant-loading' }
+      ]);
+      if (total > 1) {
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => !(m.role === 'assistant-status' && (m as any).text?.includes('av ' + total)));
+          const loadingIdx = filtered.findIndex((m) => m.role === 'assistant-loading');
+          if (loadingIdx >= 0) {
+            return [
+              ...filtered.slice(0, loadingIdx),
+              { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` },
+              ...filtered.slice(loadingIdx)
+            ];
+          }
+          return [...filtered, { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` }];
+        });
+      }
+
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(blob);
+        });
+
+        const conversationHistory = [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: interiorPrompt },
+              { type: 'image_url', image_url: { url: base64 } }
+            ]
+          }
+        ];
+
+        const { data, error } = await invokeWithTimeout({
+          conversationHistory,
+          mode: 'free-create'
+        });
+
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+
+        if (error) {
+          setMessages((prev) => [...prev, { role: 'assistant-error', text: `Kunde inte bearbeta bild ${idx + 1}. Försök igen.` }]);
+          continue;
+        }
+
+        if (data?.imageUrl) {
+          setMessages((prev) => [...prev, {
+            role: 'assistant-image',
+            imageUrl: data.imageUrl,
+            suggestedName: `fixad-inside-${Date.now()}`,
+            description: 'Insidebild fixad med neutral bakgrund',
+            photoroomPrompt: ''
+          }]);
+        }
+      } catch (err) {
+        console.error('Fix interior error:', err);
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+        setMessages((prev) => [...prev, { role: 'assistant-error', text: `Fel vid bearbetning av bild ${idx + 1}. Försök igen.` }]);
+      }
+    }
+
+    setSelectedBlurImages([]);
+    setIsGenerating(false);
+  };
+
   // ─── Logo file upload (shared by logo-studio and blur-plates logo-overlay) ──
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
