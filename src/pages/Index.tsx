@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
+import { Eye, Download, Scissors, Sliders, X, History, Plus, Share2, Check, ChevronLeft, ChevronRight, ChevronDown, ImageIcon, RefreshCw, User, Focus, Info, Undo2, Sparkles, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
 import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 import {
   Popover,
