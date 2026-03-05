@@ -1196,6 +1196,15 @@ export const CreateSceneModal = ({
       return;
     }
 
+    // Handle fix-interior batch processing
+    if (value === '__fix_interior_batch_light__' || value === '__fix_interior_batch_dark__') {
+      const bgType = value === '__fix_interior_batch_light__' ? 'light neutral white/grey' : 'dark neutral black/charcoal';
+      const label = value === '__fix_interior_batch_light__' ? 'Ljus bakgrund' : 'Mörk bakgrund';
+      setMessages((prev) => [...prev, { role: 'user', text: label }]);
+      handleFixInteriorBatch(bgType);
+      return;
+    }
+
     // Handle blur style selection
     if (value.startsWith('__blur_style_')) {
       const style = value.replace('__blur_style_', '').replace('__', '');
