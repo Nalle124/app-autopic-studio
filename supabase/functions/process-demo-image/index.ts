@@ -22,7 +22,7 @@ interface SceneMetadata {
     fade: number;
   };
   aiPrompt?: string;
-  photoroomShadowMode?: string;
+  shadowMode?: string;
   referenceScale?: number;
 }
 
@@ -267,7 +267,7 @@ serve(async (req) => {
         'off-center car, car on right side, car on left side, asymmetric placement, cropped car'
     );
     
-    const shadowMode = scene.photoroomShadowMode || 'none';
+    const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
       photoroomFormData.append('shadow.mode', shadowMode);
     }

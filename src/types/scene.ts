@@ -23,7 +23,7 @@ export interface SceneMetadata {
   };
   aiPrompt?: string; // Optional AI prompt for specific scene requirements
   category?: string; // Category for organizing scenes
-  photoroomShadowMode?: 'none' | 'ai.soft' | 'ai.hard' | 'ai.floating'; // PhotoRoom AI shadow type
+  shadowMode?: 'none' | 'ai.soft' | 'ai.hard' | 'ai.floating'; // AI shadow type
   referenceScale?: number; // How closely to match reference image (0.0-1.0, default 1.0)
   compositeMode?: boolean; // When true, uses reference image directly as background (no AI generation)
 }

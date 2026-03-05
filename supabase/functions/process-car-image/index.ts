@@ -21,13 +21,13 @@ interface SceneMetadata {
     fade: number;
   };
   aiPrompt?: string;
-  photoroomShadowMode?: string;
+  shadowMode?: string;
   referenceScale?: number;
   compositeMode?: boolean;
 }
 
-// Fixed seed for consistent results across generations (PhotoRoom recommended)
-const PHOTOROOM_SEED = 117879368;
+// Fixed seed for consistent results across generations
+const PROCESSING_SEED = 117879368;
 
 // Helper function to compress image if too large
 async function compressImageIfNeeded(
@@ -221,7 +221,7 @@ serve(async (req) => {
     }
 
     console.log(`Processing image for scene: ${scene.name}`);
-    console.log(`Shadow mode: ${scene.photoroomShadowMode || 'none'}`);
+    console.log(`Shadow mode: ${scene.shadowMode || 'none'}`);
     console.log(`AI Prompt: ${scene.aiPrompt || 'default'}`);
     console.log(`Orientation: ${orientation}`);
     console.log(`Relight enabled: ${relightEnabled}`);
@@ -337,7 +337,7 @@ serve(async (req) => {
       console.log('Using prompt:', prompt);
     }
     
-    const shadowMode = scene.photoroomShadowMode || 'none';
+    const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
       photoroomFormData.append('shadow.mode', shadowMode);
       console.log('Adding PhotoRoom shadow:', shadowMode);
