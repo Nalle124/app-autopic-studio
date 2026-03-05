@@ -120,8 +120,9 @@ function IndexContent() {
     return 'new';
   });
   const [aiModalInitialImage, setAiModalInitialImage] = useState<string | null>(null);
-   const isMobile = useIsMobile();
-   const [aiChatMode, setAiChatMode] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+  const [aiChatMode, setAiChatMode] = useState<string | null>(null);
+  const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
   const [relightEnabled, setRelightEnabled] = useState(false);
   const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());
   const [animatingImages, setAnimatingImages] = useState<Set<string>>(new Set());
