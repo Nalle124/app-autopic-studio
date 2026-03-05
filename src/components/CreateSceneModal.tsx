@@ -185,7 +185,6 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/dyr-utsikt.png', label: 'Utsikt' },
   { url: '/scenes/chateau-allee.png', label: 'Allé' },
   { url: '/scenes/dramatisk-sol-lada.png', label: 'Dramatisk sol' },
-  { url: '/scenes/art-deco.png', label: 'Art deco' },
   { url: '/scenes/utanfor-universitet.png', label: 'Universitetet' },
   { url: '/scenes/bergtopp.png', label: 'Bergtopp' }]
 };
