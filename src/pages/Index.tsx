@@ -54,39 +54,35 @@ const AiNoticeDropdown = () => {
   return (
     <button
       onClick={() => setExpanded(!expanded)}
-      className="w-full text-left rounded-[10px] border border-border/30 bg-card/60 backdrop-blur-md shadow-sm overflow-hidden transition-all hover:border-border/50"
+      className="w-full text-left rounded-[10px] border border-border/30 bg-gradient-to-r from-card/80 via-card/60 to-accent-blue/5 dark:from-card/80 dark:via-card/60 dark:to-accent-blue/10 backdrop-blur-md shadow-sm overflow-hidden transition-all hover:border-border/50"
     >
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert flex-shrink-0 opacity-50" />
-        <p className="text-xs sm:text-sm text-muted-foreground flex-1">
-          <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
+      <div className="flex items-center gap-3 px-5 py-3">
+        <img src="/favicon.png" alt="" className="w-6 h-6 object-contain dark:invert flex-shrink-0 opacity-60" />
+        <p className="text-sm sm:text-base text-muted-foreground flex-1">
+          <span className="font-semibold text-foreground/80">Nyhet:</span>{' '}
           AI-funktioner lanserade
         </p>
-        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground/50 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-muted-foreground/50 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </div>
       {expanded && (
-        <div className="px-4 pb-3 pt-0.5 space-y-1.5 border-t border-border/20">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        <div className="px-5 pb-4 pt-1 space-y-3 border-t border-border/20">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Check className="w-4 h-4 text-primary flex-shrink-0" />
             <span>Skapa egna bakgrunder med AI</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Check className="w-4 h-4 text-primary flex-shrink-0" />
             <span>Blurra regskyltar automatiskt</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-            <span>Redigera fritt med AI-prompt</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Check className="w-4 h-4 text-primary flex-shrink-0" />
             <span>Maskera interiörbilder</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Check className="w-4 h-4 text-primary flex-shrink-0" />
             <span>Applicera logo på bilder</span>
           </div>
-          <p className="text-[11px] text-muted-foreground/60 pt-1">
+          <p className="text-xs text-muted-foreground/60 pt-1">
             Öppna via <span className="font-medium">AI Studio</span> i menyn.
           </p>
         </div>
@@ -1129,7 +1125,7 @@ function IndexContent() {
 
             {/* Step 3: Generation - show after scene is selected OR when there are completed/processing images */}
             {(selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing')) && <section id="export-section" className="dark:bg-card border border-foreground/20 dark:border-border rounded-[10px] p-6 space-y-6">
-                <h2 className="font-sans font-medium text-lg text-foreground mb-4">Starta komposition</h2>
+                <h2 className="font-sans font-medium text-lg text-foreground mb-4">Placera på bakgrund</h2>
                 
                 <ExportPanel onExport={handleExport} isProcessing={isProcessing} onCancel={() => setIsProcessing(false)} />
               </section>}

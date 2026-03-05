@@ -2575,11 +2575,7 @@ export const CreateSceneModal = ({
                         onClick={() => selectMode('logo-studio')}
                         className="flex flex-col rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group overflow-hidden">
                         <div className="w-full h-16 overflow-hidden relative">
-                          <img src="/mode-previews/logo-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
-                          {/* Cursor indicator */}
-                          <div className="absolute bottom-1.5 right-3 w-4 h-4 text-white drop-shadow-lg">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M4 0l16 12.279-6.951 1.17 4.325 8.817-3.596 1.734-4.35-8.879-5.428 4.702z"/></svg>
-                          </div>
+                          <img src="/mode-previews/logo-apply-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
                         </div>
                         <div className="p-2.5 pt-2">
                           <p className="text-sm font-medium text-foreground leading-tight">Applicera logo</p>
