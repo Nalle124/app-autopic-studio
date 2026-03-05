@@ -34,7 +34,7 @@ interface CreateSceneModalProps {
   inline?: boolean;
 }
 
-type ChatMode = 'background-studio' | 'free-create' | 'ad-create' | 'blur-plates' | 'logo-studio';
+type ChatMode = 'background-studio' | 'free-create' | 'ad-create' | 'blur-plates' | 'logo-studio' | 'fix-interior';
 
 type ChatMessage =
 {role: 'system';text: string;} |
@@ -294,7 +294,6 @@ const POST_GENERATION_SUGGESTIONS_FREE = [
 
 
 const FREE_QUICK_ACTIONS = [
-{ label: 'Fixa insidebilder', prompt: '__fix_interior__' },
 { label: 'Ta bort bakgrund helt', prompt: 'Remove the background completely, leave only the car on a transparent/white background' },
 { label: 'Ändra vinkel, behåll bilen', prompt: 'Change the camera angle slightly but keep the car exactly as it is' },
 { label: 'Mer cinematisk', prompt: 'Make the image more cinematic with dramatic lighting' },
@@ -821,6 +820,20 @@ export const CreateSceneModal = ({
       { role: 'assistant', text: 'Välj vilka bilder du vill lägga logo på, eller ladda upp egna.' },
       { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder:' : 'Ladda upp bilder för att komma igång:', images: allImages }]
       );
+    } else if (mode === 'fix-interior') {
+      const allImages: Array<{url: string;id: string;}> = [];
+      propUploadedImages.forEach((img) => {
+        const url = img.croppedUrl || img.preview;
+        if (url) allImages.push({ url, id: img.id });
+      });
+      propCompletedImages.forEach((img) => {
+        const url = img.finalUrl || img.croppedUrl || img.preview;
+        if (url) allImages.push({ url, id: img.id });
+      });
+      setMessages([
+        { role: 'assistant', text: 'Välj bilder där du vill fixa det som syns genom rutorna eller öppna dörrar, eller ladda upp egna.' },
+        { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder att bearbeta:' : 'Ladda upp bilder för att komma igång:', images: allImages }
+      ]);
     } else {
       setMessages([
       {
@@ -855,8 +868,19 @@ export const CreateSceneModal = ({
   };
 
   const handleNewChat = () => {
-    // Full reset - start fresh
+    // Full reset - go back to mode select menu
     resetAll();
+  };
+
+  const handleNewInMode = () => {
+    // Reset but stay in the same mode
+    const currentMode = chatMode;
+    if (!currentMode) {
+      resetAll();
+      return;
+    }
+    resetAll();
+    setTimeout(() => selectMode(currentMode), 0);
   };
 
   const handleReturnToChat = () => {
@@ -1169,6 +1193,15 @@ export const CreateSceneModal = ({
         { role: 'user', text: label }
       ]);
       handleSuggestionSend(interiorPrompt, label);
+      return;
+    }
+
+    // Handle fix-interior batch processing
+    if (value === '__fix_interior_batch_light__' || value === '__fix_interior_batch_dark__') {
+      const bgType = value === '__fix_interior_batch_light__' ? 'light neutral white/grey' : 'dark neutral black/charcoal';
+      const label = value === '__fix_interior_batch_light__' ? 'Ljus bakgrund' : 'Mörk bakgrund';
+      setMessages((prev) => [...prev, { role: 'user', text: label }]);
+      handleFixInteriorBatch(bgType);
       return;
     }
 
@@ -1888,6 +1921,88 @@ export const CreateSceneModal = ({
     setIsGenerating(false);
   };
 
+  // ─── Fix interior batch generation ─────────────────────────
+  const handleFixInteriorBatch = async (bgType: string) => {
+    if (selectedBlurImages.length === 0 || !user) return;
+    setIsGenerating(true);
+
+    const interiorPrompt = `Look at this car image carefully. The car has open doors, an open trunk, or windows through which the background is visible. KEEP THE CAR EXACTLY AS IT IS — same position, angle, color, reflections, and all details. ONLY change what is visible THROUGH the windows, open doors, or trunk opening. Replace whatever is seen through those openings with a clean, ${bgType} background. Do NOT move, resize, crop, or alter the car or its surroundings in any way. The output MUST have the EXACT same dimensions and framing as the input.`;
+
+    const total = selectedBlurImages.length;
+
+    for (let idx = 0; idx < selectedBlurImages.length; idx++) {
+      const imageUrl = selectedBlurImages[idx];
+
+      setMessages((prev) => [
+        ...prev.filter((m) => m.role !== 'assistant-loading'),
+        { role: 'assistant-loading' }
+      ]);
+      if (total > 1) {
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => !(m.role === 'assistant-status' && (m as any).text?.includes('av ' + total)));
+          const loadingIdx = filtered.findIndex((m) => m.role === 'assistant-loading');
+          if (loadingIdx >= 0) {
+            return [
+              ...filtered.slice(0, loadingIdx),
+              { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` },
+              ...filtered.slice(loadingIdx)
+            ];
+          }
+          return [...filtered, { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` }];
+        });
+      }
+
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(blob);
+        });
+
+        const conversationHistory = [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: interiorPrompt },
+              { type: 'image_url', image_url: { url: base64 } }
+            ]
+          }
+        ];
+
+        const { data, error } = await invokeWithTimeout({
+          conversationHistory,
+          mode: 'free-create'
+        });
+
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+
+        if (error) {
+          setMessages((prev) => [...prev, { role: 'assistant-error', text: `Kunde inte bearbeta bild ${idx + 1}. Försök igen.` }]);
+          continue;
+        }
+
+        if (data?.imageUrl) {
+          setMessages((prev) => [...prev, {
+            role: 'assistant-image',
+            imageUrl: data.imageUrl,
+            suggestedName: `fixad-inside-${Date.now()}`,
+            description: 'Insidebild fixad med neutral bakgrund',
+            photoroomPrompt: ''
+          }]);
+        }
+      } catch (err) {
+        console.error('Fix interior error:', err);
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+        setMessages((prev) => [...prev, { role: 'assistant-error', text: `Fel vid bearbetning av bild ${idx + 1}. Försök igen.` }]);
+      }
+    }
+
+    setSelectedBlurImages([]);
+    setIsGenerating(false);
+  };
+
   // ─── Logo file upload (shared by logo-studio and blur-plates logo-overlay) ──
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2008,7 +2123,7 @@ export const CreateSceneModal = ({
 
   const handleRegenerate = () => {
     // For blur-plates and logo-studio, restart the same mode fresh
-    if (chatMode === 'blur-plates' || chatMode === 'logo-studio') {
+    if (chatMode === 'blur-plates' || chatMode === 'logo-studio' || chatMode === 'fix-interior') {
       const mode = chatMode;
       resetAll();
       // Re-enter the same mode
@@ -2161,9 +2276,14 @@ export const CreateSceneModal = ({
               </button>
           }
               <button
+            onClick={handleNewInMode}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-0.5">
+                <Plus className="w-3 h-3" />
+                Ny
+              </button>
+              <button
             onClick={handleNewChat}
             className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-1">
-
                 <Menu className="w-3 h-3" />
                 Meny
               </button>
@@ -2230,7 +2350,7 @@ export const CreateSceneModal = ({
                         className="group relative flex flex-col rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.02] active:scale-[0.98]">
                         <div className="relative w-full aspect-[4/3] overflow-hidden rounded-t-2xl bg-muted/50">
                           <img
-                            src="/mode-previews/porsche-transport.jpg"
+                            src="/mode-previews/redigera-fritt-preview.jpg"
                             alt=""
                             loading="lazy"
                             className="absolute inset-0 w-full h-full object-cover" />
@@ -2270,6 +2390,22 @@ export const CreateSceneModal = ({
                       </div>
                     </div>
 
+                    {/* Fixa insidebilder - own menu item */}
+                    <button
+                      onClick={() => selectMode('fix-interior')}
+                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
+                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
+                        <img
+                          src="/mode-previews/fix-interior-preview.jpg"
+                          alt=""
+                          loading="lazy"
+                          className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 py-3 pr-3">
+                        <p className="text-sm font-semibold text-foreground">Fixa insidebilder</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Maskera bakgrund genom rutor & dörrar</p>
+                      </div>
+                    </button>
                     {/* Separator */}
                     <div className="flex items-center gap-3 pt-1">
                       <div className="flex-1 h-px bg-border/50" />
@@ -2356,22 +2492,6 @@ export const CreateSceneModal = ({
                   <button
                     key={idx}
                     onClick={() => {
-                      if (action.prompt === '__fix_interior__') {
-                        // Show light/dark background choice
-                        setMessages((prev) => [
-                          ...prev,
-                          { role: 'user', text: 'Fixa insidebilder' },
-                          {
-                            role: 'assistant-options' as const,
-                            text: 'Vilken bakgrundsfärg ska synas genom rutorna?',
-                            options: [
-                              { label: 'Ljus bakgrund', value: '__fix_interior_light__' },
-                              { label: 'Mörk bakgrund', value: '__fix_interior_dark__' }
-                            ]
-                          }
-                        ]);
-                        return;
-                      }
                       handleSuggestionSend(action.prompt, action.label);
                     }}
                     className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
@@ -2569,6 +2689,29 @@ export const CreateSceneModal = ({
                         role: 'assistant-options',
                         text: 'Välj hur skylten ska döljas:',
                         options: BLUR_STYLE_OPTIONS.map((s) => ({ label: s.label, value: `__blur_style_${s.value}__` }))
+                      }
+                    ]);
+                  }}
+                  variant="outline"
+                  className="w-full rounded-full h-10">
+                        Nästa
+                      </Button>
+                    </div>
+              }
+                  {selectedBlurImages.length > 0 && chatMode === 'fix-interior' && !blurStyle &&
+              <div className="pl-9">
+                      <Button
+                  onClick={() => {
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: 'assistant-status', text: `${selectedBlurImages.length} bild(er) valda` },
+                      {
+                        role: 'assistant-options',
+                        text: 'Vilken bakgrundsfärg ska synas genom rutorna?',
+                        options: [
+                          { label: 'Ljus bakgrund', value: '__fix_interior_batch_light__' },
+                          { label: 'Mörk bakgrund', value: '__fix_interior_batch_dark__' }
+                        ]
                       }
                     ]);
                   }}
