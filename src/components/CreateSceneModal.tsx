@@ -55,48 +55,66 @@ type ChatMessage =
 {role: 'assistant-status';text: string;} |
 {role: 'mode-select';};
 
-const LOADING_PHRASES_LIBRARY = [
-  'Analyserar din beskrivning...',
-  'Bygger upp scenen...',
-  'Fixar belysningen...',
-  'Lägger till detaljer...',
-  'Finjusterar perspektivet...',
-  'Nästan klar...',
-  'Skapar ljussättningen...',
-  'Placerar skuggorna...',
-  'Arbetar med kompositionen...',
-  'Finslipar detaljerna...',
-  'Justerar färgtemperaturen...',
-  'Renderar texturer...',
-  'Optimerar kontraster...',
-  'Balanserar tonerna...',
-  'Förbereder slutresultatet...',
-  'Lägger sista handen...',
-  'Mixar bakgrundselementen...',
-  'Beräknar ljusriktningar...',
-  'Skapar djupskärpa...',
-  'Anpassar atmosfären...',
-  'Jobbar med reflektionerna...',
-  'Skapar realistiska ytor...',
-  'Bearbetar perspektivet...',
-  'Finjusterar skärpan...',
-  'Komponerar bilden...',
-  'Slår ihop lagren...',
-  'Polerar resultatet...',
-  'Testar ljusbalansen...',
-  'Bygger stämningen...',
-  'Arbetar med horisonten...',
-  'Finslipar övergångarna...',
-  'Lägger till realism...',
-  'Räknar ut skuggvinklar...',
-  'Skapar materialkänsla...',
-  'Justerar vitbalansen...',
-];
+// Mode-specific loading phrases
+const LOADING_PHRASES: Record<string, string[]> = {
+  'background-studio': [
+    'Bygger upp scenen...',
+    'Skapar ljussättningen...',
+    'Placerar skuggorna...',
+    'Renderar texturer...',
+    'Anpassar atmosfären...',
+    'Skapar realistiska ytor...',
+    'Beräknar ljusriktningar...',
+    'Bygger stämningen...',
+    'Finjusterar perspektivet...',
+    'Arbetar med horisonten...',
+  ],
+  'blur-plates': [
+    'Letar efter skyltar...',
+    'Analyserar bilden...',
+    'Maskerar registreringsskyltar...',
+    'Bearbetar pixlarna...',
+    'Kontrollerar resultat...',
+    'Nästan klar...',
+  ],
+  'logo-studio': [
+    'Analyserar bilden...',
+    'Placerar logotypen...',
+    'Anpassar storlek...',
+    'Justerar transparens...',
+    'Kontrollerar placering...',
+    'Nästan klar...',
+  ],
+  'fix-interior': [
+    'Analyserar insidan...',
+    'Identifierar bakgrund genom fönster...',
+    'Maskerar bilens detaljer...',
+    'Ersätter bakgrunden...',
+    'Finjusterar kanterna...',
+    'Nästan klar...',
+  ],
+  'free-create': [
+    'Analyserar din beskrivning...',
+    'Skapar bilden...',
+    'Arbetar med detaljerna...',
+    'Finjusterar resultatet...',
+    'Lägger sista handen...',
+    'Nästan klar...',
+  ],
+  'ad-create': [
+    'Skapar annonsmaterial...',
+    'Arbetar med typografin...',
+    'Placerar designelement...',
+    'Justerar layout...',
+    'Finjusterar kontraster...',
+    'Nästan klar...',
+  ],
+};
 
-// Shuffle and pick 6 random phrases for each generation session
-const getRandomLoadingPhrases = (): string[] => {
-  const shuffled = [...LOADING_PHRASES_LIBRARY].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 6);
+// Get loading phrases for the current mode
+const getLoadingPhrasesForMode = (mode: ChatMode | null): string[] => {
+  const phrases = LOADING_PHRASES[mode || 'background-studio'] || LOADING_PHRASES['free-create'];
+  return [...phrases];
 };
 
 
