@@ -33,6 +33,7 @@ interface CreateSceneModalProps {
   completedImages?: UploadedImage[];
   initialImage?: string | null;
   inline?: boolean;
+  onChatModeChange?: (mode: ChatMode | null) => void;
 }
 
 type ChatMode = 'background-studio' | 'free-create' | 'ad-create' | 'blur-plates' | 'logo-studio' | 'fix-interior';
@@ -547,7 +548,8 @@ export const CreateSceneModal = ({
   uploadedImages: propUploadedImages = [],
   completedImages: propCompletedImages = [],
   initialImage,
-  inline = false
+  inline = false,
+  onChatModeChange
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
   const { triggerPaywall, refetchCredits } = useDemo();
