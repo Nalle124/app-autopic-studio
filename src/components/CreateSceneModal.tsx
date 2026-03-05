@@ -2991,6 +2991,67 @@ export const CreateSceneModal = ({
           const msgStepIndex = (msg as any).stepIndex as number | undefined;
           const selectedValueForStep = msgStepIndex !== undefined ? guidedSelections[msgStepIndex] : undefined;
 
+          // Check if any option has a thumbnail for visual grid rendering
+          const hasVisualThumbnails = msg.options.some((o: any) => o.thumbnail);
+
+          if (hasVisualThumbnails) {
+            return (
+              <div key={i} className="space-y-3">
+                {msg.text && (
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pl-9">
+                  {msg.options.map((opt: any, idx: number) => {
+                    if (opt.value === '__custom__') {
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleOptionClick(opt.value)}
+                          disabled={isGenerating}
+                          className="rounded-xl border-2 border-dashed border-border/40 hover:border-primary/50 transition-all disabled:opacity-40 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground aspect-[4/3]">
+                          <Plus className="w-4 h-4" />
+                          <span className="text-[10px] font-medium">{opt.label}</span>
+                        </button>
+                      );
+                    }
+                    const isSelected = selectedValueForStep === opt.value;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleOptionClick(opt.value)}
+                        disabled={isGenerating}
+                        className={`group/opt relative rounded-xl overflow-hidden border-2 transition-all disabled:opacity-40 ${
+                          isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border/40 hover:border-primary/50'
+                        }`}>
+                        <div className="aspect-[4/3] relative">
+                          {opt.thumbnail ? (
+                            <img src={opt.thumbnail} alt={opt.label} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full bg-muted/40" />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+                          <p className="absolute bottom-1 left-1.5 right-1.5 text-white text-[10px] sm:text-[11px] font-medium truncate drop-shadow-md leading-tight">
+                            {opt.label}
+                          </p>
+                          {isSelected && (
+                            <div className="absolute top-1 right-1">
+                              <Check className="w-4 h-4 text-white bg-primary rounded-full p-0.5" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={i} className="space-y-3">
                   {msg.text && (
@@ -3002,7 +3063,7 @@ export const CreateSceneModal = ({
                   </div>
                   )}
                   <div className="flex flex-wrap gap-1.5 pl-9">
-                    {msg.options.map((opt, idx) => {
+                    {msg.options.map((opt: any, idx: number) => {
                       const isSelected = selectedValueForStep === opt.value;
                       return (
                 <button
