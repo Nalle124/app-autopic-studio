@@ -786,10 +786,10 @@ export const CreateSceneModal = ({
     setChatMode(mode);
     if (mode === 'background-studio') {
       setMessages([
-      { role: 'assistant', text: 'Låt oss skapa en ny bakgrund!' },
+      { role: 'assistant', text: 'Låt oss skapa en ny bakgrund! Välj kategori nedan, eller beskriv fritt i text och med egen referensbild i chatten.' },
       {
         role: 'assistant-category-grid',
-        text: 'Vilken typ passar bäst?',
+        text: 'Använd inspiration från någon av dessa:',
         categories: [
         { label: 'Ljus studio', value: 'studio', thumbnail: '/scenes/white-studio.png' },
         { label: 'Mörk studio', value: 'studio-dark', thumbnail: '/scenes/dark-studio.png' },
@@ -2586,8 +2586,8 @@ export const CreateSceneModal = ({
 
         // ─── Reference images ─────────────────────────
         if (msg.role === 'assistant-references') {
-          const visibleRefs = expandedReferences ? msg.references : msg.references.slice(0, 4);
-          const hasMore = msg.references.length > 4;
+          const visibleRefs = expandedReferences ? msg.references : msg.references.slice(0, 6);
+          const hasMore = msg.references.length > 6;
           return (
             <div key={i} className="space-y-2">
                   <div className="flex gap-2.5 items-start">
