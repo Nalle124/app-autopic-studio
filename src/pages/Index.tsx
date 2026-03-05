@@ -120,8 +120,8 @@ function IndexContent() {
     return 'new';
   });
   const [aiModalInitialImage, setAiModalInitialImage] = useState<string | null>(null);
-  const isMobile = useIsMobile();
-  const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
+   const isMobile = useIsMobile();
+   const [aiChatMode, setAiChatMode] = useState<string | null>(null);
   const [relightEnabled, setRelightEnabled] = useState(false);
   const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());
   const [animatingImages, setAnimatingImages] = useState<Set<string>>(new Set());
@@ -874,7 +874,7 @@ function IndexContent() {
     <>
     <div className="min-h-screen">
       {/* Header */}
-      <header className={`border-b border-border/30 bg-card/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10 transition-transform duration-300 ${isMobile && activeTab === 'ai-studio' ? '-translate-y-full' : 'translate-y-0'}`} style={{ top: 0, marginTop: 0 }}>
+      <header className={`border-b border-border/30 bg-card/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10 transition-transform duration-300 ${isMobile && activeTab === 'ai-studio' && aiChatMode !== null ? '-translate-y-full' : 'translate-y-0'}`} style={{ top: 0, marginTop: 0 }}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => setActiveTab('new')} className="hover:opacity-80 transition-opacity">
             <img src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} alt="AutoPic" className="h-6 w-auto" />
@@ -948,10 +948,10 @@ function IndexContent() {
       </header>
 
       {/* Main Content - add margin-top for fixed header */}
-      <main className={`container mx-auto px-4 py-8 max-w-7xl ${isMobile && activeTab === 'ai-studio' ? 'mt-0' : 'mt-16'}`}>
+      <main className={`container mx-auto px-4 py-8 max-w-7xl ${isMobile && activeTab === 'ai-studio' && aiChatMode !== null ? 'mt-0' : 'mt-16'}`}>
         {activeTab === 'ai-studio' ? (
           /* AI Studio – inline chat, fills remaining viewport below header */
-          <section className={`fixed inset-x-0 bottom-0 z-10 px-3 pb-3 sm:px-4 sm:pb-4 sm:pt-3 flex justify-center ${isMobile ? 'top-0 pt-1' : 'top-16 pt-2'}`}>
+          <section className={`fixed inset-x-0 bottom-0 z-10 px-3 pb-3 sm:px-4 sm:pb-4 sm:pt-3 flex justify-center ${isMobile && aiChatMode !== null ? 'top-0 pt-1' : isMobile ? 'top-14 pt-1' : 'top-16 pt-2'}`}>
             <div className="w-full max-w-2xl h-full relative">
             <CreateSceneModal
               open={true}
@@ -969,6 +969,8 @@ function IndexContent() {
               completedImages={uploadedImages.filter(img => img.status === 'completed')}
               initialImage={aiModalInitialImage}
               inline
+              onChatModeChange={setAiChatMode}
+            />
             />
             </div>
           </section>
