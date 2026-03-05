@@ -425,7 +425,7 @@ CRITICAL: ZERO text in the image. The application handles all text as a separate
             messages: messagesForAttempt,
             modalities: ["image", "text"],
           }),
-          signal: AbortSignal.timeout(50_000), // 50s timeout per attempt
+          signal: AbortSignal.timeout(80_000), // 80s timeout per attempt
         }
       );
 
