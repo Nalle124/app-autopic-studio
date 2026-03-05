@@ -756,7 +756,6 @@ export const CreateSceneModal = ({
         const phrases = getLoadingPhrasesForMode(chatMode);
         return prev >= phrases.length - 1 ? prev : prev + 1;
       });
-      );
     }, 2200);
     return () => clearInterval(interval);
   }, [isGenerating]);
