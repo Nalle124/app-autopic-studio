@@ -752,8 +752,10 @@ export const CreateSceneModal = ({
     setLoadingPhraseIndex(0);
     setLoadingPhrases(getLoadingPhrasesForMode(chatMode));
     const interval = setInterval(() => {
-      setLoadingPhraseIndex((prev) =>
-      prev >= 5 ? prev : prev + 1
+      setLoadingPhraseIndex((prev) => {
+        const phrases = getLoadingPhrasesForMode(chatMode);
+        return prev >= phrases.length - 1 ? prev : prev + 1;
+      });
       );
     }, 2200);
     return () => clearInterval(interval);
