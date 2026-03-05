@@ -2623,6 +2623,29 @@ export const CreateSceneModal = ({
                       </Button>
                     </div>
               }
+                  {selectedBlurImages.length > 0 && chatMode === 'fix-interior' && !blurStyle &&
+              <div className="pl-9">
+                      <Button
+                  onClick={() => {
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: 'assistant-status', text: `${selectedBlurImages.length} bild(er) valda` },
+                      {
+                        role: 'assistant-options',
+                        text: 'Vilken bakgrundsfärg ska synas genom rutorna?',
+                        options: [
+                          { label: 'Ljus bakgrund', value: '__fix_interior_batch_light__' },
+                          { label: 'Mörk bakgrund', value: '__fix_interior_batch_dark__' }
+                        ]
+                      }
+                    ]);
+                  }}
+                  variant="outline"
+                  className="w-full rounded-full h-10">
+                        Nästa
+                      </Button>
+                    </div>
+              }
                   {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && !selectedLogoUrl &&
               <div className="pl-9 space-y-3">
                       <Button
