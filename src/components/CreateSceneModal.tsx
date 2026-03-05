@@ -2612,20 +2612,24 @@ export const CreateSceneModal = ({
                           </div>
                     }
                       </div>
-                      <p className="text-xs font-medium text-muted-foreground">Snabbval:</p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {FREE_QUICK_ACTIONS.map((action, idx) =>
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      handleSuggestionSend(action.prompt, action.label);
-                    }}
-                    className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
-
-                            {action.label}
-                          </button>
-                  )}
-                      </div>
+                      <details className="group/inspo">
+                        <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1.5">
+                          <ChevronDown className="w-3.5 h-3.5 transition-transform group-open/inspo:rotate-180" />
+                          Få inspiration
+                        </summary>
+                        <div className="grid grid-cols-2 gap-1.5 mt-2">
+                          {FREE_QUICK_ACTIONS.map((action, idx) =>
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setPrompt(action.prompt + ' ');
+                      }}
+                      className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
+                              {action.label}
+                            </button>
+                    )}
+                        </div>
+                      </details>
                     </div>
               }
                 </div>);
