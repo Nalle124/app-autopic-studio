@@ -561,7 +561,7 @@ export const CreateSceneModal = ({
   const [isSaving, setIsSaving] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'mode-select' }]);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
-  const [loadingPhrases, setLoadingPhrases] = useState<string[]>(getRandomLoadingPhrases);
+  const [loadingPhrases, setLoadingPhrases] = useState<string[]>(getLoadingPhrasesForMode(null));
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [hasGeneratedImage, setHasGeneratedImage] = useState(false);
@@ -751,7 +751,7 @@ export const CreateSceneModal = ({
   useEffect(() => {
     if (!isGenerating) return;
     setLoadingPhraseIndex(0);
-    setLoadingPhrases(getRandomLoadingPhrases());
+    setLoadingPhrases(getLoadingPhrasesForMode(chatMode));
     const interval = setInterval(() => {
       setLoadingPhraseIndex((prev) =>
       prev >= 5 ? prev : prev + 1
