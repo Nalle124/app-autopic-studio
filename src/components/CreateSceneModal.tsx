@@ -2240,29 +2240,29 @@ export const CreateSceneModal = ({
                       </button>
                     </div>
 
-                    {/* Skapa annons - full width */}
-                    <button
-                      onClick={() => selectMode('ad-create')}
-                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
+                    {/* Annonsmaterial - coming soon */}
+                    <div
+                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
                       <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
                         <img
                           src="/mode-previews/ad-sasongsrea.png"
                           alt=""
                           loading="lazy"
-                          className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 group-hover:-rotate-1 transition-transform ml-1.5 mt-1.5" />
+                          className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 ml-1.5 mt-1.5" />
                         <img
                           src="/mode-previews/ad-import-guide.png"
                           alt=""
                           loading="lazy"
-                          className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 group-hover:rotate-3 transition-transform mr-1 mb-1" />
+                          className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 mr-1 mb-1" />
                       </div>
                       <div className="flex-1 py-3 pr-3">
-                        <div>
+                        <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground">Annonsmaterial</p>
-                          <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Kommer snart</span>
                         </div>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
                       </div>
-                    </button>
+                    </div>
 
                     {/* Separator */}
                     <div className="flex items-center gap-3 pt-1">
