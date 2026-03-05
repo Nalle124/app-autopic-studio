@@ -1239,11 +1239,31 @@ export const CreateSceneModal = ({
     }
 
     // Handle fix-interior batch processing
-    if (value === '__fix_interior_batch_light__' || value === '__fix_interior_batch_dark__') {
-      const bgType = value === '__fix_interior_batch_light__' ? 'light neutral white/grey' : 'dark neutral black/charcoal';
-      const label = value === '__fix_interior_batch_light__' ? 'Ljus bakgrund' : 'Mörk bakgrund';
+    if (value === '__fix_interior_batch_light__' || value === '__fix_interior_batch_dark__' || value === '__fix_interior_batch_grey__') {
+      const bgTypeMap: Record<string, string> = {
+        '__fix_interior_batch_light__': 'clean white',
+        '__fix_interior_batch_dark__': 'dark neutral black/charcoal',
+        '__fix_interior_batch_grey__': 'neutral medium grey',
+      };
+      const labelMap: Record<string, string> = {
+        '__fix_interior_batch_light__': 'Vit',
+        '__fix_interior_batch_dark__': 'Mörk',
+        '__fix_interior_batch_grey__': 'Grå',
+      };
+      const bgType = bgTypeMap[value] || 'light neutral white/grey';
+      const label = labelMap[value] || 'Vit';
       setMessages((prev) => [...prev, { role: 'user', text: label }]);
       handleFixInteriorBatch(bgType);
+      return;
+    }
+    if (value === '__fix_interior_batch_custom__') {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: 'Eget' },
+        { role: 'assistant', text: 'Beskriv vilken bakgrundsfärg du vill ha genom rutorna (t.ex. "ljusblå", "beige", "mörkgrön"):' }
+      ]);
+      setAwaitingGuidedCustomInput(true);
+      // When custom input is submitted, it will call handleFixInteriorBatch with the text
       return;
     }
 
@@ -2191,7 +2211,8 @@ export const CreateSceneModal = ({
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
 
         if (error) {
-          setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.' }]);
+          const retryPayload = { conversationHistory, mode: 'logo-apply' };
+          setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.', retryData: retryPayload }]);
           if (idx < selectedBlurImages.length - 1) {
             setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
           }
@@ -2215,7 +2236,8 @@ export const CreateSceneModal = ({
       } catch (err) {
         console.error('Logo apply error:', err);
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
-        setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid applicering. Försök igen.' }]);
+        const retryPayload = { conversationHistory, mode: 'logo-apply' };
+        setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid applicering. Försök igen.', retryData: retryPayload }]);
         if (idx < selectedBlurImages.length - 1) {
           setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
         }
@@ -2413,14 +2435,7 @@ export const CreateSceneModal = ({
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
           return (
-            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-16 sm:pt-0">
-                  <div className="flex gap-2.5 items-start mb-5">
-                    <AutopicAvatar />
-                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
-                      <p className="text-sm sm:text-base text-foreground leading-relaxed">Vad vill du skapa?</p>
-                    </div>
-                  </div>
-
+            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-20 sm:pt-0">
                   <div className="w-full max-w-md sm:max-w-lg mx-auto space-y-4">
                     {/* Main features: 2-column grid */}
                     <div className="grid grid-cols-2 gap-2.5">
@@ -2622,7 +2637,8 @@ export const CreateSceneModal = ({
                     <button
                       key={idx}
                       onClick={() => {
-                        setPrompt(action.prompt + ' ');
+                        // Set the Swedish label as prompt and show helper text
+                        setPrompt(action.label + ' ');
                       }}
                       className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
                               {action.label}
@@ -2841,8 +2857,10 @@ export const CreateSceneModal = ({
                         role: 'assistant-options',
                         text: 'Vilken bakgrundsfärg ska synas genom rutorna?',
                         options: [
-                          { label: 'Ljus bakgrund', value: '__fix_interior_batch_light__' },
-                          { label: 'Mörk bakgrund', value: '__fix_interior_batch_dark__' }
+                          { label: 'Vit', value: '__fix_interior_batch_light__' },
+                          { label: 'Mörk', value: '__fix_interior_batch_dark__' },
+                          { label: 'Grå', value: '__fix_interior_batch_grey__' },
+                          { label: 'Eget', value: '__fix_interior_batch_custom__' }
                         ]
                       }
                     ]);
