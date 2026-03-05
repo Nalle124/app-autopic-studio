@@ -803,12 +803,8 @@ export const CreateSceneModal = ({
         if (url) allImages.push({ url, id: img.id });
       });
       setMessages([
-      { role: 'assistant', text: 'Välj bilder vars registreringsskyltar ska döljas. Du kan även ladda upp nya.' },
-      ...(allImages.length > 0 ? [
-      { role: 'assistant-image-grid' as const, text: 'Välj bilder att bearbeta:', images: allImages }] :
-      [
-      { role: 'assistant' as const, text: 'Ladda upp bilder nedan för att komma igång.' }])]
-
+      { role: 'assistant', text: 'Välj bilder vars registreringsskyltar ska döljas, eller ladda upp egna.' },
+      { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder att bearbeta:' : 'Ladda upp bilder för att komma igång:', images: allImages }]
       );
     } else if (mode === 'logo-studio') {
       const allImages: Array<{url: string;id: string;}> = [];
@@ -821,12 +817,8 @@ export const CreateSceneModal = ({
         if (url && !allImages.find((a) => a.id === img.id)) allImages.push({ url, id: img.id });
       });
       setMessages([
-      { role: 'assistant', text: 'Välj vilka bilder du vill lägga logo på. Du kan även ladda upp nya.' },
-      ...(allImages.length > 0 ? [
-      { role: 'assistant-image-grid' as const, text: 'Välj bilder:', images: allImages }] :
-      [
-      { role: 'assistant' as const, text: 'Inga bilder tillgängliga. Generera bilder i projektvyn först.' }])]
-
+      { role: 'assistant', text: 'Välj vilka bilder du vill lägga logo på, eller ladda upp egna.' },
+      { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder:' : 'Ladda upp bilder för att komma igång:', images: allImages }]
       );
     } else {
       setMessages([
