@@ -328,6 +328,7 @@ const ProfileContent = () => {
                   <SelectValue placeholder="Meny" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-[60]">
+                  <SelectItem value="profile" className="hidden">Meny</SelectItem>
                   <SelectItem value="new">Projekt</SelectItem>
                   <SelectItem value="ai-studio">AI Studio</SelectItem>
                   <SelectItem value="history">Galleri</SelectItem>
