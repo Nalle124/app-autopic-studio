@@ -2032,7 +2032,7 @@ export const CreateSceneModal = ({
 
   const handleRegenerate = () => {
     // For blur-plates and logo-studio, restart the same mode fresh
-    if (chatMode === 'blur-plates' || chatMode === 'logo-studio') {
+    if (chatMode === 'blur-plates' || chatMode === 'logo-studio' || chatMode === 'fix-interior') {
       const mode = chatMode;
       resetAll();
       // Re-enter the same mode
