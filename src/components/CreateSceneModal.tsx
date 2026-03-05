@@ -2413,7 +2413,7 @@ export const CreateSceneModal = ({
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
           return (
-            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-14 sm:pt-0">
+            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-16 sm:pt-0">
                   <div className="flex gap-2.5 items-start mb-5">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
@@ -2490,38 +2490,14 @@ export const CreateSceneModal = ({
                       </div>
                     </button>
 
-                    {/* Annonsmaterial - coming soon */}
-                    <div
-                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
-                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
-                        <img
-                          src="/mode-previews/ad-sasongsrea.png"
-                          alt=""
-                          loading="lazy"
-                          className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 ml-1.5 mt-1.5" />
-                        <img
-                          src="/mode-previews/ad-import-guide.png"
-                          alt=""
-                          loading="lazy"
-                          className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 mr-1 mb-1" />
-                      </div>
-                      <div className="flex-1 py-3 pr-3">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-foreground">Annonsmaterial</p>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Kommer snart</span>
-                        </div>
-                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
-                      </div>
-                    </div>
-
-                    {/* Separator */}
+                    {/* Separator for tools */}
                     <div className="flex items-center gap-3 pt-1">
                       <div className="flex-1 h-px bg-border/50" />
                       <span className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">Verktyg</span>
                       <div className="flex-1 h-px bg-border/50" />
                     </div>
 
-                    {/* Tools: compact row with visual previews */}
+                    {/* Tools: compact row */}
                     <div className="grid grid-cols-2 gap-2">
                       {/* Blurra regskyltar */}
                       <button
@@ -2553,6 +2529,37 @@ export const CreateSceneModal = ({
                           <p className="text-[11px] sm:text-xs text-muted-foreground">Lägg logo på bilder</p>
                         </div>
                       </button>
+                    </div>
+
+                    {/* Separator for ads */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="flex-1 h-px bg-border/50" />
+                      <span className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">Annonser</span>
+                      <div className="flex-1 h-px bg-border/50" />
+                    </div>
+
+                    {/* Annonsmaterial - coming soon */}
+                    <div
+                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
+                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
+                        <img
+                          src="/mode-previews/ad-sasongsrea.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 ml-1.5 mt-1.5" />
+                        <img
+                          src="/mode-previews/ad-import-guide.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 mr-1 mb-1" />
+                      </div>
+                      <div className="flex-1 py-3 pr-3">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">Annonsmaterial</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Kommer snart</span>
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
+                      </div>
                     </div>
                   </div>
                 </div>);
