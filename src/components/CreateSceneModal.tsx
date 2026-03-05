@@ -122,7 +122,7 @@ const getLoadingPhrasesForMode = (mode: ChatMode | null): string[] => {
 // Each category has follow-up questions that accumulate into a final prompt
 type GuidedStep = {
   question: string;
-  options: Array<{label: string;value: string;}>;
+  options: Array<{label: string;value: string;thumbnail?: string;}>;
   allowCustom?: boolean;
 };
 
@@ -189,24 +189,36 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/bergtopp.png', label: 'Bergtopp' }]
 };
 
-const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
+// Extended guided step with optional thumbnail for visual selection
+type GuidedOption = {label: string; value: string; thumbnail?: string;};
+
+const GUIDED_FLOWS: Record<string, Array<{question: string; options: GuidedOption[]; allowCustom?: boolean;}>> = {
   'studio': [
   {
     question: 'Hur ska scenen vara uppbyggd?',
     options: [
-    { label: 'Öppen yta', value: 'open studio space, car centered with clean empty surroundings and seamless background' },
-    { label: 'Hörn med väggar', value: 'corner studio setup with two walls meeting, creating depth and dimension' },
-    { label: 'Rak vägg bakom', value: 'single flat wall behind the car, clean and minimal backdrop' },
-    { label: 'Cyklorama (rundad)', value: 'seamless curved cyclorama studio with no visible edges or corners' }],
+    { label: 'Öppen yta', value: 'open studio space, car centered with clean empty surroundings and seamless background', thumbnail: '/scenes/vit-rundad-studio.png' },
+    { label: 'Hörn med väggar', value: 'corner studio setup with two walls meeting, creating depth and dimension', thumbnail: '/scenes/betong-takspots.png' },
+    { label: 'Rak vägg bakom', value: 'single flat wall behind the car, clean and minimal backdrop', thumbnail: '/scenes/white-studio.png' },
+    { label: 'Cyklorama (rundad)', value: 'seamless curved cyclorama studio with no visible edges or corners', thumbnail: '/scenes/vit-rundad-studio.png' }],
     allowCustom: true
   },
   {
     question: 'Vilken känsla vill du ha?',
     options: [
-    { label: 'Ljust & fräscht', value: 'bright airy lighting, fresh modern feel, like a professional photo shoot' },
-    { label: 'Varmt & inbjudande', value: 'warm golden tones, cozy inviting atmosphere, soft shadows' },
-    { label: 'Rent & kliniskt', value: 'neutral even lighting, clinical clean look, no mood lighting' },
-    { label: 'Systemkamera-look', value: 'shallow depth of field, professional DSLR photography look with slight bokeh' }],
+    { label: 'Ljust & fräscht', value: 'bright airy lighting, fresh modern feel, like a professional photo shoot', thumbnail: '/scenes/nordisk-dagsljus.jpg' },
+    { label: 'Varmt & inbjudande', value: 'warm golden tones, cozy inviting atmosphere, soft shadows', thumbnail: '/scenes/varmt-ljus-studio.png' },
+    { label: 'Rent & kliniskt', value: 'neutral even lighting, clinical clean look, no mood lighting', thumbnail: '/scenes/netgrey-light.png' },
+    { label: 'Systemkamera-look', value: 'shallow depth of field, professional DSLR photography look with slight bokeh', thumbnail: '/scenes/dagsljus-gardiner.png' }],
+    allowCustom: true
+  },
+  {
+    question: 'Golvmaterial?',
+    options: [
+    { label: 'Betong', value: 'polished concrete floor with subtle texture', thumbnail: '/scenes/betong-takljus.png' },
+    { label: 'Kakel', value: 'clean white or light tile floor, reflective surface', thumbnail: '/scenes/new-grey.png' },
+    { label: 'Trä', value: 'warm wood floor, natural grain, Scandinavian feel', thumbnail: '/scenes/ljus-tra-underlight.png' },
+    { label: 'Epoxy / blankt', value: 'glossy epoxy floor with mirror-like reflections', thumbnail: '/scenes/granet-studio.png' }],
     allowCustom: true
   }],
 
@@ -214,19 +226,19 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   {
     question: 'Hur ska scenen vara uppbyggd?',
     options: [
-    { label: 'Öppen mörk yta', value: 'open dark studio, car isolated with dramatic lighting from above' },
-    { label: 'Hörn med skuggor', value: 'dark corner setup with shadows creating depth and mystery' },
-    { label: 'Spotlight-fokus', value: 'single spotlight on the car, everything else falls into darkness' },
-    { label: 'Draperi bakom', value: 'dark fabric curtain backdrop with moody lighting' }],
+    { label: 'Öppen mörk yta', value: 'open dark studio, car isolated with dramatic lighting from above', thumbnail: '/scenes/dark-studio.png' },
+    { label: 'Hörn med skuggor', value: 'dark corner setup with shadows creating depth and mystery', thumbnail: '/scenes/betong-skuggor.png' },
+    { label: 'Spotlight-fokus', value: 'single spotlight on the car, everything else falls into darkness', thumbnail: '/scenes/brun-spotlight-studio.png' },
+    { label: 'Draperi bakom', value: 'dark fabric curtain backdrop with moody lighting', thumbnail: '/scenes/mork-draperi-spotlight.png' }],
     allowCustom: true
   },
   {
     question: 'Vilken stämning?',
     options: [
-    { label: 'Dramatisk & kraftfull', value: 'high contrast dramatic lighting, powerful atmosphere, deep blacks' },
-    { label: 'Elegant & dämpad', value: 'subtle sophisticated dark tones, elegant muted lighting' },
-    { label: 'Neonaccenter', value: 'dark atmosphere with subtle colored accent lights, modern edge' },
-    { label: 'Nattstudio', value: 'late night studio vibe, cool blue-tinted shadows, editorial feel' }],
+    { label: 'Dramatisk & kraftfull', value: 'high contrast dramatic lighting, powerful atmosphere, deep blacks', thumbnail: '/scenes/svart-platvagg.png' },
+    { label: 'Elegant & dämpad', value: 'subtle sophisticated dark tones, elegant muted lighting', thumbnail: '/scenes/mork-studio.png' },
+    { label: 'Neonaccenter', value: 'dark atmosphere with subtle colored accent lights, modern edge', thumbnail: '/scenes/midnight-garage.png' },
+    { label: 'Nattstudio', value: 'late night studio vibe, cool blue-tinted shadows, editorial feel', thumbnail: '/scenes/metallvagg-studio.png' }],
     allowCustom: true
   }],
 
@@ -234,20 +246,29 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   {
     question: 'Hur ska bilden vara komponerad?',
     options: [
-    { label: 'Öppen vy', value: 'wide open outdoor view with expansive background and sky visible' },
-    { label: 'Gatuvy med djup', value: 'street view with perspective depth, buildings or trees fading into background' },
-    { label: 'Parkerad vid byggnad', value: 'car parked alongside a building or wall, urban feel' },
-    { label: 'Naturomgiven', value: 'surrounded by nature, trees or landscape framing the car' }],
+    { label: 'Öppen vy', value: 'wide open outdoor view with expansive background and sky visible', thumbnail: '/scenes/grusplan-svensk-gard.png' },
+    { label: 'Gatuvy med djup', value: 'street view with perspective depth, buildings or trees fading into background', thumbnail: '/scenes/kullerstengata.png' },
+    { label: 'Parkerad vid byggnad', value: 'car parked alongside a building or wall, urban feel', thumbnail: '/scenes/europa-gammal-gata.png' },
+    { label: 'Naturomgiven', value: 'surrounded by nature, trees or landscape framing the car', thumbnail: '/scenes/skara-park.png' }],
     allowCustom: true
   },
   {
-    question: 'Vilken tid och känsla?',
+    question: 'Vilken tid och väder?',
     options: [
-    { label: 'Solig sommardag', value: 'bright sunny summer day, blue sky, warm natural light' },
-    { label: 'Gyllene timmen', value: 'golden hour sunset lighting, warm dramatic sky, long shadows' },
-    { label: 'Grå höstdag', value: 'overcast autumn day, moody clouds, warm leaf tones on ground' },
-    { label: 'Vinterljus', value: 'crisp winter light, possibly snow, cold blue tones, clear sky' },
-    { label: 'Kvällsljus i stad', value: 'evening city atmosphere with ambient street lights and warm glow' }],
+    { label: 'Solig sommardag', value: 'bright sunny summer day, blue sky, warm natural light', thumbnail: '/scenes/svenskt-industriomrade-sommar.png' },
+    { label: 'Gyllene timmen', value: 'golden hour sunset lighting, warm dramatic sky, long shadows', thumbnail: '/scenes/dusk-plaza.png' },
+    { label: 'Grå höstdag', value: 'overcast autumn day, moody clouds, warm leaf tones on ground', thumbnail: '/scenes/hostgata.png' },
+    { label: 'Vinterljus', value: 'crisp winter light, possibly snow, cold blue tones, clear sky', thumbnail: '/scenes/slattebraten-vintersken.png' },
+    { label: 'Kvällsljus i stad', value: 'evening city atmosphere with ambient street lights and warm glow', thumbnail: '/scenes/klassisk-innergard-kvall.png' }],
+    allowCustom: true
+  },
+  {
+    question: 'Underlag?',
+    options: [
+    { label: 'Asfalt', value: 'asphalt road or parking surface, smooth dark tarmac', thumbnail: '/scenes/dusk-plaza.png' },
+    { label: 'Grus', value: 'gravel driveway, natural stone aggregate', thumbnail: '/scenes/garageuppfart-grus.png' },
+    { label: 'Kullersten', value: 'cobblestone or brick paving, European character', thumbnail: '/scenes/kullerstengata.png' },
+    { label: 'Gräs / natur', value: 'grass or natural ground, parklike setting', thumbnail: '/scenes/skara-park.png' }],
     allowCustom: true
   }],
 
@@ -255,18 +276,18 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   {
     question: 'Vilken typ av rum?',
     options: [
-    { label: 'Modern glasvägg', value: 'modern showroom with glass walls, natural light flooding in, polished floor' },
-    { label: 'Klassisk bilhall', value: 'classic car dealership hall with large windows and spacious feeling' },
-    { label: 'Privat lyxgarage', value: 'luxury private garage with premium finishes, intimate setting' },
-    { label: 'Minimalistisk yta', value: 'minimalist white showroom, clean lines, open space' }],
+    { label: 'Modern glasvägg', value: 'modern showroom with glass walls, natural light flooding in, polished floor', thumbnail: '/scenes/glas-walls.png' },
+    { label: 'Klassisk bilhall', value: 'classic car dealership hall with large windows and spacious feeling', thumbnail: '/scenes/nordic-showroom.png' },
+    { label: 'Privat lyxgarage', value: 'luxury private garage with premium finishes, intimate setting', thumbnail: '/scenes/nordisk-soluppgang-garage.png' },
+    { label: 'Minimalistisk yta', value: 'minimalist white showroom, clean lines, open space', thumbnail: '/scenes/warszawa-showroom.png' }],
     allowCustom: true
   },
   {
     question: 'Vilken ljuskänsla?',
     options: [
-    { label: 'Spotlights ovanifrån', value: 'premium focused spotlights from above, highlighting the car, professional gallery feel' },
-    { label: 'Stort dagsljus', value: 'abundant natural daylight through large windows, airy showroom' },
-    { label: 'Stämningsfull kväll', value: 'warm atmospheric evening lighting, inviting ambient glow' }],
+    { label: 'Spotlights ovanifrån', value: 'premium focused spotlights from above, highlighting the car, professional gallery feel', thumbnail: '/scenes/betong-takljus.png' },
+    { label: 'Stort dagsljus', value: 'abundant natural daylight through large windows, airy showroom', thumbnail: '/scenes/studio-naturfonstret.png' },
+    { label: 'Stämningsfull kväll', value: 'warm atmospheric evening lighting, inviting ambient glow', thumbnail: '/scenes/klassisk-innergard-kvall.png' }],
     allowCustom: true
   }],
 
@@ -274,18 +295,18 @@ const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
   {
     question: 'Vilken miljö?',
     options: [
-    { label: 'Lyxig villa', value: 'luxury modern villa driveway with premium architecture and landscaping' },
-    { label: 'Fjäll & natur', value: 'scenic mountain lodge with dramatic landscape and pristine nature' },
-    { label: 'Elegant innergård', value: 'elegant courtyard at dusk with ambient warm lighting and classic architecture' },
-    { label: 'Havsutsikt', value: 'ocean view terrace or coastal road with premium surroundings' }],
+    { label: 'Lyxig villa', value: 'luxury modern villa driveway with premium architecture and landscaping', thumbnail: '/scenes/dyr-utsikt.png' },
+    { label: 'Fjäll & natur', value: 'scenic mountain lodge with dramatic landscape and pristine nature', thumbnail: '/scenes/lyxigt-fjallhus.png' },
+    { label: 'Elegant innergård', value: 'elegant courtyard at dusk with ambient warm lighting and classic architecture', thumbnail: '/scenes/klassisk-innergard-kvall.png' },
+    { label: 'Havsutsikt', value: 'ocean view terrace or coastal road with premium surroundings', thumbnail: '/scenes/bergtopp.png' }],
     allowCustom: true
   },
   {
     question: 'Vilken känsla ska bilderna utstråla?',
     options: [
-    { label: 'Exklusiv & lyxig', value: 'exclusive luxury atmosphere, premium materials, aspirational feel' },
-    { label: 'Tidlöst elegant', value: 'timeless elegant classic feel, refined and sophisticated' },
-    { label: 'Äventyr & frihet', value: 'sense of adventure and freedom, open roads, dramatic scenery' }],
+    { label: 'Exklusiv & lyxig', value: 'exclusive luxury atmosphere, premium materials, aspirational feel', thumbnail: '/scenes/chateau-allee.png' },
+    { label: 'Tidlöst elegant', value: 'timeless elegant classic feel, refined and sophisticated', thumbnail: '/scenes/utanfor-universitet.png' },
+    { label: 'Äventyr & frihet', value: 'sense of adventure and freedom, open roads, dramatic scenery', thumbnail: '/scenes/dramatisk-sol-lada.png' }],
     allowCustom: true
   }]
 };
@@ -2155,7 +2176,7 @@ export const CreateSceneModal = ({
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The input image is ${aspectDesc} with dimensions ${imgDims.w}x${imgDims.h}. CRITICAL RULES: 1) Output the EXACT same image dimensions, aspect ratio (${imgDims.w}:${imgDims.h}), and orientation as the input photo. If the input is ${aspectDesc}, the output MUST be ${aspectDesc} with the same proportions. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) Do NOT change the aspect ratio or make the image square — preserve the EXACT original shape and proportions.` },
+              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The input image is ${imgDims.w}x${imgDims.h} pixels (${aspectDesc}). Output MUST be EXACTLY ${imgDims.w}x${imgDims.h} pixels. CRITICAL RULES: 1) Output the EXACT same image dimensions (${imgDims.w}x${imgDims.h}), aspect ratio, and orientation as the input photo. If the input is ${aspectDesc}, the output MUST be ${aspectDesc} with the same proportions. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. The output MUST be ${imgDims.w} pixels wide and ${imgDims.h} pixels tall. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) Do NOT change the aspect ratio or make the image square — preserve the EXACT original shape (${imgDims.w}x${imgDims.h}).` },
               { type: 'image_url', image_url: { url: base64 } },
               { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
@@ -2392,7 +2413,7 @@ export const CreateSceneModal = ({
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
           return (
-            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-2 sm:pt-0">
+            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-14 sm:pt-0">
                   <div className="flex gap-2.5 items-start mb-5">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
@@ -2970,6 +2991,67 @@ export const CreateSceneModal = ({
           const msgStepIndex = (msg as any).stepIndex as number | undefined;
           const selectedValueForStep = msgStepIndex !== undefined ? guidedSelections[msgStepIndex] : undefined;
 
+          // Check if any option has a thumbnail for visual grid rendering
+          const hasVisualThumbnails = msg.options.some((o: any) => o.thumbnail);
+
+          if (hasVisualThumbnails) {
+            return (
+              <div key={i} className="space-y-3">
+                {msg.text && (
+                  <div className="flex gap-2.5 items-start">
+                    <AutopicAvatar />
+                    <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
+                      <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pl-9">
+                  {msg.options.map((opt: any, idx: number) => {
+                    if (opt.value === '__custom__') {
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleOptionClick(opt.value)}
+                          disabled={isGenerating}
+                          className="rounded-xl border-2 border-dashed border-border/40 hover:border-primary/50 transition-all disabled:opacity-40 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground aspect-[4/3]">
+                          <Plus className="w-4 h-4" />
+                          <span className="text-[10px] font-medium">{opt.label}</span>
+                        </button>
+                      );
+                    }
+                    const isSelected = selectedValueForStep === opt.value;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleOptionClick(opt.value)}
+                        disabled={isGenerating}
+                        className={`group/opt relative rounded-xl overflow-hidden border-2 transition-all disabled:opacity-40 ${
+                          isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border/40 hover:border-primary/50'
+                        }`}>
+                        <div className="aspect-[4/3] relative">
+                          {opt.thumbnail ? (
+                            <img src={opt.thumbnail} alt={opt.label} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full bg-muted/40" />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+                          <p className="absolute bottom-1 left-1.5 right-1.5 text-white text-[10px] sm:text-[11px] font-medium truncate drop-shadow-md leading-tight">
+                            {opt.label}
+                          </p>
+                          {isSelected && (
+                            <div className="absolute top-1 right-1">
+                              <Check className="w-4 h-4 text-white bg-primary rounded-full p-0.5" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={i} className="space-y-3">
                   {msg.text && (
@@ -2981,7 +3063,7 @@ export const CreateSceneModal = ({
                   </div>
                   )}
                   <div className="flex flex-wrap gap-1.5 pl-9">
-                    {msg.options.map((opt, idx) => {
+                    {msg.options.map((opt: any, idx: number) => {
                       const isSelected = selectedValueForStep === opt.value;
                       return (
                 <button
