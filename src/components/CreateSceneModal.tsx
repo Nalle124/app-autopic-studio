@@ -2259,7 +2259,7 @@ export const CreateSceneModal = ({
                         className="group relative flex flex-col rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.02] active:scale-[0.98]">
                         <div className="relative w-full aspect-[4/3] overflow-hidden rounded-t-2xl bg-muted/50">
                           <img
-                            src="/mode-previews/porsche-transport.jpg"
+                            src="/mode-previews/redigera-fritt-preview.jpg"
                             alt=""
                             loading="lazy"
                             className="absolute inset-0 w-full h-full object-cover" />
@@ -2299,6 +2299,22 @@ export const CreateSceneModal = ({
                       </div>
                     </div>
 
+                    {/* Fixa insidebilder - own menu item */}
+                    <button
+                      onClick={() => selectMode('fix-interior')}
+                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
+                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
+                        <img
+                          src="/mode-previews/fix-interior-preview.jpg"
+                          alt=""
+                          loading="lazy"
+                          className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 py-3 pr-3">
+                        <p className="text-sm font-semibold text-foreground">Fixa insidebilder</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Maskera bakgrund genom rutor & dörrar</p>
+                      </div>
+                    </button>
                     {/* Separator */}
                     <div className="flex items-center gap-3 pt-1">
                       <div className="flex-1 h-px bg-border/50" />
