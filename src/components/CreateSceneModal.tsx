@@ -1082,7 +1082,7 @@ export const CreateSceneModal = ({
   };
 
   // ─── Timeout-wrapped edge function call ─────────────────────
-  const AI_TIMEOUT_MS = 60_000; // 60 seconds max wait
+  const AI_TIMEOUT_MS = 90_000; // 90 seconds max wait
 
   const invokeWithTimeout = async (body: Record<string, unknown>) => {
     const controller = new AbortController();
@@ -2392,7 +2392,7 @@ export const CreateSceneModal = ({
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
           return (
-            <div key={i} className="flex-1 flex flex-col min-h-[200px]">
+            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-2 sm:pt-0">
                   <div className="flex gap-2.5 items-start mb-5">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
