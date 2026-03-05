@@ -27,7 +27,7 @@ interface SceneMetadata {
 }
 
 // Fixed seed for consistent results
-const PHOTOROOM_SEED = 117879368;
+const PROCESSING_SEED = 117879368;
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -247,7 +247,7 @@ serve(async (req) => {
     
     const referenceScale = scene.referenceScale ?? 1.0;
     photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-    photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
+    photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
     
     const basePrompt = scene.aiPrompt ||
       `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +

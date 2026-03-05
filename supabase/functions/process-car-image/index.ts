@@ -321,7 +321,7 @@ serve(async (req) => {
       photoroomFormData.append('background.guidance.scale', referenceScale.toString());
       console.log('Reference scale:', referenceScale);
       
-      photoroomFormData.append('background.seed', PHOTOROOM_SEED.toString());
+      photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
       
       const basePrompt = scene.aiPrompt ||
         `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
@@ -397,7 +397,7 @@ serve(async (req) => {
     
     console.log('Photoroom request prepared:');
     console.log('- Reference URL:', resolvedBackgroundUrl.substring(0, 100));
-    console.log('- Seed:', PHOTOROOM_SEED);
+    console.log('- Seed:', PROCESSING_SEED);
     console.log('- Shadow mode:', shadowMode);
     console.log('- Padding:', paddingValue);
     console.log('- Orientation:', orientation);
