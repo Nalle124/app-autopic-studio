@@ -2492,22 +2492,6 @@ export const CreateSceneModal = ({
                   <button
                     key={idx}
                     onClick={() => {
-                      if (action.prompt === '__fix_interior__') {
-                        // Show light/dark background choice
-                        setMessages((prev) => [
-                          ...prev,
-                          { role: 'user', text: 'Fixa insidebilder' },
-                          {
-                            role: 'assistant-options' as const,
-                            text: 'Vilken bakgrundsfärg ska synas genom rutorna?',
-                            options: [
-                              { label: 'Ljus bakgrund', value: '__fix_interior_light__' },
-                              { label: 'Mörk bakgrund', value: '__fix_interior_dark__' }
-                            ]
-                          }
-                        ]);
-                        return;
-                      }
                       handleSuggestionSend(action.prompt, action.label);
                     }}
                     className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
