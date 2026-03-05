@@ -500,7 +500,7 @@ NEVER use emojis. Respond ONLY with valid JSON in this exact format:
 Generate:
 1. A creative, modern Swedish name for the scene (2-4 words). AVOID generic names like "Min bakgrund", "Studio", "Bakgrund", "Ny scen". Use sharp, brand-worthy names with attitude or symbolic meaning. Mix Swedish and English freely. Examples: "Carbon Studio", "Frost & Stål", "Asphalt Edge", "Slate Room", "Neon Minimal", "Cement Lounge", "Dimgrå Rak", "Chalk Surface". Think design studio, not poetry.
 2. A short Swedish description (1 sentence)
-3. A PhotoRoom-compatible AI prompt in English that describes how to place a car in this scene with matching lighting
+3. An AI prompt in English that describes how to place a car in this scene with matching lighting
 
 NEVER use emojis. Respond ONLY with valid JSON in this exact format:
 {"name": "...", "description": "...", "photoroomPrompt": "Place the vehicle centered on the ground in ... Professional automotive photography with realistic lighting matching the environment."}`;
