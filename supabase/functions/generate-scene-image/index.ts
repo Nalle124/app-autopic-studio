@@ -63,8 +63,13 @@ SCENE TYPES (adapt based on user request):
 - Showroom: Polished floors, architectural elements, premium lighting
 - Seasonal: Autumn leaves, winter snow, spring blooms — always with driveable ground surface, Scandinavian vegetation
 
-ITERATIVE EDITING:
-When the user asks to modify a previous image (e.g. "make it brighter", "change the floor"), you MUST use the provided reference image as the base and generate a NEW image that is clearly a modified version of that same scene. Do NOT create a completely different scene. Keep ALL unchanged elements (location, mood, architecture, surfaces) and ONLY change what the user specifically asked to change.
+CRITICAL — ITERATIVE EDITING & CONTEXT PRESERVATION:
+When the user asks to modify a previous image (e.g. "make it brighter", "change the floor", "make it more Swedish"):
+1. You MUST use the provided reference image as the BASE and generate a NEW image that is clearly a modified version of that SAME scene.
+2. Do NOT create a completely different scene. The result must be recognizably the same place/environment with ONLY the requested modification applied.
+3. Keep ALL unchanged elements: same location type, same architecture, same camera angle, same general composition, same mood (unless the user asked to change the mood).
+4. If the user says "make it more Swedish", keep the SAME type of scene (e.g. villa driveway stays a villa driveway) but adjust details like vegetation, architecture style, road surface to feel more Scandinavian.
+5. NEVER interpret a refinement request as permission to change the entire scene concept.
 
 When a reference image is provided, use it as inspiration for style, mood, colors, and lighting — but always maintain the correct perspective and empty scene rules.
 
@@ -166,7 +171,7 @@ const BACKGROUND_PROMPT_SUFFIX = `
 5. Photorealistic photograph — NOT CGI, illustration, painting, or 3D render
 6. The scene should have a NORDIC/EUROPEAN aesthetic by default — Swedish or Scandinavian feel in architecture, vegetation, and light quality
 This image is a BACKGROUND for automotive photo compositing. A car will be digitally placed on the ground surface.
-IMPORTANT: When modifying a previous image, use the provided reference image as the BASE. Keep ALL unchanged elements (location, mood, architecture) and ONLY change what the user specifically asked to change. The result must be recognizably the same scene with the requested modification applied.`;
+IMPORTANT ITERATION RULE: If there is a reference image from a previous generation in this conversation, you MUST treat it as the BASE scene. Generate a modified version of that SAME scene — same location type, same general composition, same architecture. ONLY change what the user explicitly asked to change. Do NOT create a completely different scene. The result must be clearly recognizable as a refinement of the previous image.`;
 
 // AD_PROMPT_SUFFIX is now dynamically generated based on format (see serve handler)
 
