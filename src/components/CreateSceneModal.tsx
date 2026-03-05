@@ -1252,7 +1252,7 @@ export const CreateSceneModal = ({
       };
       const bgType = bgTypeMap[value] || 'light neutral white/grey';
       const label = labelMap[value] || 'Vit';
-      setMessages((prev) => [...prev, { role: 'user', text: label }]);
+      setMessages((prev) => [...prev, { role: 'assistant-status', text: `✓ ${label} bakgrund vald` }]);
       handleFixInteriorBatch(bgType);
       return;
     }
@@ -2069,6 +2069,14 @@ export const CreateSceneModal = ({
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
 
         if (error) {
+          // Check for 402 (insufficient credits) — trigger paywall
+          const is402 = error?.message?.includes('non-2xx') || error?.context?.status === 402;
+          if (is402) {
+            setIsGenerating(false);
+            refetchCredits();
+            triggerPaywall('subscriber-limit');
+            return;
+          }
           setMessages((prev) => [...prev, { role: 'assistant-error', text: `Kunde inte bearbeta bild ${idx + 1}. Försök igen.` }]);
           continue;
         }
@@ -2081,10 +2089,19 @@ export const CreateSceneModal = ({
             description: 'Insidebild fixad med neutral bakgrund',
             scenePrompt: ''
           }]);
+          // Refetch credits after successful generation
+          refetchCredits();
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Fix interior error:', err);
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+        // Check for 402 in catch as well
+        if (err?.message?.includes('402') || err?.message?.includes('non-2xx')) {
+          setIsGenerating(false);
+          refetchCredits();
+          triggerPaywall('subscriber-limit');
+          return;
+        }
         setMessages((prev) => [...prev, { role: 'assistant-error', text: `Fel vid bearbetning av bild ${idx + 1}. Försök igen.` }]);
       }
     }
@@ -2444,7 +2461,7 @@ export const CreateSceneModal = ({
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
           return (
-            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-20 sm:pt-0">
+            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-4 sm:pt-0">
                   <div className="w-full max-w-md sm:max-w-lg mx-auto space-y-4">
                     {/* Main features: 2-column grid */}
                     <div className="grid grid-cols-2 gap-2.5">
