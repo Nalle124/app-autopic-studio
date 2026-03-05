@@ -3122,12 +3122,17 @@ export const CreateSceneModal = ({
                 ) : (
                 <button
                   onClick={() => {
-                    // Generic retry: go back to menu for the current mode
-                    setMessages((prev) => prev.filter((m) => m.role !== 'assistant-error'));
+                    // Generic retry: remove error and re-trigger appropriate batch handler
+                    setMessages((prev) => prev.filter((m) => m !== msg));
                     if (chatMode === 'blur-plates' && selectedBlurImages.length > 0 && blurStyle) {
                       handleBlurGenerate();
                     } else if (chatMode === 'logo-studio' && selectedBlurImages.length > 0 && selectedLogoUrl && selectedLogoPreset) {
                       handleApplyLogo();
+                    } else if (chatMode === 'fix-interior' && selectedBlurImages.length > 0) {
+                      // Re-run interior fix — detect bg type from previous messages
+                      const hadDark = messages.some((m) => m.role === 'user' && (m as any).text === 'Mörk bakgrund');
+                      const bgType = hadDark ? 'dark neutral black/charcoal' : 'light neutral white/grey';
+                      handleFixInteriorBatch(bgType);
                     }
                   }}
                   disabled={isGenerating}
