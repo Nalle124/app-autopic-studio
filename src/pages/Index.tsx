@@ -49,7 +49,7 @@ import holographicBg from '@/assets/holographic-bg.jpg';
 import { Check as CheckIcon } from 'lucide-react';
 
 const AiNoticeDropdown = () => {
-  const [expanded, setExpanded] = useStateReact(false);
+  const [expanded, setExpanded] = useState(false);
   
   return (
     <button
