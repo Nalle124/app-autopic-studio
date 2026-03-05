@@ -1787,7 +1787,7 @@ export const CreateSceneModal = ({
 
       setMessages((prev) => [
       ...prev,
-      { role: 'assistant', text: `"${galleryName}" har sparats i ditt projektgalleri!` }]
+      { role: 'assistant', text: 'Bilden har sparats i ditt projektgalleri!' }]
       );
     } catch (err) {
       console.error('Save to gallery error:', err);
@@ -1905,7 +1905,7 @@ export const CreateSceneModal = ({
           setMessages((prev) => [...prev, {
             role: 'assistant-image',
             imageUrl: data.imageUrl,
-            suggestedName: `blurrad-${Date.now()}`,
+            suggestedName: `blurrad`,
             description: 'Registreringsskyltar har dolts',
             photoroomPrompt: ''
           }]);
@@ -1987,7 +1987,7 @@ export const CreateSceneModal = ({
           setMessages((prev) => [...prev, {
             role: 'assistant-image',
             imageUrl: data.imageUrl,
-            suggestedName: `fixad-inside-${Date.now()}`,
+            suggestedName: `fixad-inside`,
             description: 'Insidebild fixad med neutral bakgrund',
             photoroomPrompt: ''
           }]);
@@ -2105,7 +2105,7 @@ export const CreateSceneModal = ({
           setMessages((prev) => [...prev, {
             role: 'assistant-image',
             imageUrl: data.imageUrl,
-            suggestedName: `logo-${Date.now()}`,
+            suggestedName: `logo`,
             description: 'Logo applicerad på bilden',
             photoroomPrompt: ''
           }]);
@@ -3416,7 +3416,7 @@ export const CreateSceneModal = ({
         {previewImage &&
     <div className="absolute inset-0 z-50 bg-background flex flex-col rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
-              <p className="text-sm font-medium text-foreground truncate">{previewImage.name}</p>
+              <p className="text-sm font-medium text-foreground truncate">Förhandsgranskning</p>
               <div className="flex items-center gap-1">
                 <button
             onClick={() => handleDownloadImage(previewImage.imageUrl, previewImage.name || 'ai-generated')}
