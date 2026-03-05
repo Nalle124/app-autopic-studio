@@ -2366,6 +2366,23 @@ export const CreateSceneModal = ({
                       </button>
                     </div>
 
+                    {/* Fixa insidebilder - own menu item */}
+                    <button
+                      onClick={() => selectMode('fix-interior')}
+                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
+                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
+                        <img
+                          src="/mode-previews/fix-interior-preview.jpg"
+                          alt=""
+                          loading="lazy"
+                          className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 py-3 pr-3">
+                        <p className="text-sm font-semibold text-foreground">Fixa insidebilder</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Maskera bakgrund genom rutor & dörrar</p>
+                      </div>
+                    </button>
+
                     {/* Annonsmaterial - coming soon */}
                     <div
                       className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
@@ -2390,22 +2407,6 @@ export const CreateSceneModal = ({
                       </div>
                     </div>
 
-                    {/* Fixa insidebilder - own menu item */}
-                    <button
-                      onClick={() => selectMode('fix-interior')}
-                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
-                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
-                        <img
-                          src="/mode-previews/fix-interior-preview.jpg"
-                          alt=""
-                          loading="lazy"
-                          className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 py-3 pr-3">
-                        <p className="text-sm font-semibold text-foreground">Fixa insidebilder</p>
-                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Maskera bakgrund genom rutor & dörrar</p>
-                      </div>
-                    </button>
                     {/* Separator */}
                     <div className="flex items-center gap-3 pt-1">
                       <div className="flex-1 h-px bg-border/50" />
@@ -2413,23 +2414,34 @@ export const CreateSceneModal = ({
                       <div className="flex-1 h-px bg-border/50" />
                     </div>
 
-                    {/* Tools: compact row */}
+                    {/* Tools: compact row with visual previews */}
                     <div className="grid grid-cols-2 gap-2">
                       {/* Blurra regskyltar */}
                       <button
                         onClick={() => selectMode('blur-plates')}
-                        className="flex items-center gap-2.5 p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group">
-                        <div className="min-w-0">
+                        className="flex flex-col rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group overflow-hidden">
+                        <div className="w-full h-16 overflow-hidden">
+                          <img src="/mode-previews/blur-plates-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="p-2.5 pt-2">
                           <p className="text-sm font-medium text-foreground leading-tight">Blurra regskyltar</p>
-                          <p className="text-[11px] sm:text-xs text-muted-foreground">Dölj skyltar</p>
+                          <p className="text-[11px] sm:text-xs text-muted-foreground">Dölj skyltar automatiskt</p>
                         </div>
                       </button>
 
                       {/* Applicera logo */}
                       <button
                         onClick={() => selectMode('logo-studio')}
-                        className="flex items-center gap-2.5 p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group">
-                        <div className="min-w-0">
+                        className="flex flex-col rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group overflow-hidden">
+                        <div className="w-full h-16 overflow-hidden bg-muted/40 flex items-center justify-center">
+                          <div className="relative w-full h-full flex items-center justify-center">
+                            <div className="w-10 h-6 bg-muted-foreground/10 rounded" />
+                            <div className="absolute top-1.5 right-2 w-5 h-3 bg-primary/30 rounded-sm flex items-center justify-center">
+                              <ImageIcon className="w-2.5 h-2.5 text-primary" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-2.5 pt-2">
                           <p className="text-sm font-medium text-foreground leading-tight">Applicera logo</p>
                           <p className="text-[11px] sm:text-xs text-muted-foreground">Lägg logo på bilder</p>
                         </div>
