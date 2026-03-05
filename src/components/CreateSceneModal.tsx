@@ -2431,7 +2431,8 @@ export const CreateSceneModal = ({
   // ─── Render ────────────────────────────────────────────────
   const chatContent =
   <>
-        {/* Header */}
+        {/* Header - only show when in an active mode, not in menu */}
+        {chatMode && (
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/50 flex-shrink-0">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -2440,7 +2441,7 @@ export const CreateSceneModal = ({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {savedChat && !chatMode &&
+            {savedChat &&
         <button
           onClick={handleReturnToChat}
           className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
@@ -2448,16 +2449,6 @@ export const CreateSceneModal = ({
               <ArrowLeft className="w-4 h-4" />
             </button>
         }
-            {chatMode &&
-        <>
-              {savedChat &&
-          <button
-            onClick={handleReturnToChat}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title="Återgå till pågående chatt">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-          }
               <button
             onClick={handleNewInMode}
             className="flex items-center gap-1.5 px-3 h-8 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border/50 mr-0.5">
@@ -2470,18 +2461,16 @@ export const CreateSceneModal = ({
                 <Menu className="w-3 h-3" />
                 Meny
               </button>
-            </>
-        }
             {!inline &&
         <button
           onClick={handleClose}
           className="w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-
                 <X className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
         }
           </div>
         </div>
+        )}
 
         {/* Chat area */}
         <div ref={chatAreaRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 py-4 space-y-4 sm:space-y-6 bg-background/50">
