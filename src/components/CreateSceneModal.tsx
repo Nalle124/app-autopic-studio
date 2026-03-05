@@ -1787,7 +1787,7 @@ export const CreateSceneModal = ({
 
       setMessages((prev) => [
       ...prev,
-      { role: 'assistant', text: `"${galleryName}" har sparats i ditt projektgalleri!` }]
+      { role: 'assistant', text: 'Bilden har sparats i ditt projektgalleri!' }]
       );
     } catch (err) {
       console.error('Save to gallery error:', err);
@@ -1905,7 +1905,7 @@ export const CreateSceneModal = ({
           setMessages((prev) => [...prev, {
             role: 'assistant-image',
             imageUrl: data.imageUrl,
-            suggestedName: `blurrad-${Date.now()}`,
+            suggestedName: `blurrad`,
             description: 'Registreringsskyltar har dolts',
             photoroomPrompt: ''
           }]);
@@ -1987,7 +1987,7 @@ export const CreateSceneModal = ({
           setMessages((prev) => [...prev, {
             role: 'assistant-image',
             imageUrl: data.imageUrl,
-            suggestedName: `fixad-inside-${Date.now()}`,
+            suggestedName: `fixad-inside`,
             description: 'Insidebild fixad med neutral bakgrund',
             photoroomPrompt: ''
           }]);
@@ -2057,6 +2057,9 @@ export const CreateSceneModal = ({
     if (!selectedLogoUrl || selectedBlurImages.length === 0 || !user || !selectedLogoPreset) return;
     setIsGenerating(true);
 
+    // Show loading state in chat
+    setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
+
     const presetMap: Record<string, string> = {
       '__logo_preset_br_small__': 'small logo in the bottom-right corner',
       '__logo_preset_bl_small__': 'small logo in the bottom-left corner',
@@ -2070,7 +2073,27 @@ export const CreateSceneModal = ({
     // Convert logo to PNG if it's SVG (AI gateway doesn't support SVG)
     const logoDataUrl = await convertSvgToPng(selectedLogoUrl);
 
-    for (const imageUrl of selectedBlurImages) {
+    const total = selectedBlurImages.length;
+
+    for (let idx = 0; idx < selectedBlurImages.length; idx++) {
+      const imageUrl = selectedBlurImages[idx];
+
+      // Update loading status for batch
+      if (total > 1) {
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => !(m.role === 'assistant-status' && (m as any).text?.includes('av ' + total)));
+          const loadingIdx = filtered.findIndex((m) => m.role === 'assistant-loading');
+          if (loadingIdx >= 0) {
+            return [
+              ...filtered.slice(0, loadingIdx),
+              { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` },
+              ...filtered.slice(loadingIdx)
+            ];
+          }
+          return [...filtered, { role: 'assistant-status' as const, text: `Bearbetar ${idx + 1} av ${total}...` }];
+        });
+      }
+
       try {
         const response = await fetch(imageUrl);
         const blob = await response.blob();
@@ -2080,11 +2103,20 @@ export const CreateSceneModal = ({
           reader.readAsDataURL(blob);
         });
 
+        // Get original image dimensions for aspect ratio preservation
+        const imgDims = await new Promise<{w: number; h: number}>((resolve) => {
+          const img = new window.Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => resolve({ w: 1, h: 1 });
+          img.src = base64;
+        });
+        const aspectDesc = imgDims.w > imgDims.h ? 'landscape (wider than tall)' : imgDims.h > imgDims.w ? 'portrait (taller than wide)' : 'square';
+
         const conversationHistory = [
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. CRITICAL RULES: 1) Output the EXACT same image dimensions, aspect ratio, and orientation as the input photo — if the input is portrait (taller than wide), the output MUST be portrait. If landscape (wider than tall), the output MUST be landscape. The output resolution and pixel dimensions must match the input EXACTLY. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) The output image MUST have the EXACT same width-to-height ratio as the input. 6) Do NOT make the image square — preserve the original shape.` },
+              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The input image is ${aspectDesc} with dimensions ${imgDims.w}x${imgDims.h}. CRITICAL RULES: 1) Output the EXACT same image dimensions, aspect ratio (${imgDims.w}:${imgDims.h}), and orientation as the input photo. If the input is ${aspectDesc}, the output MUST be ${aspectDesc} with the same proportions. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) Do NOT change the aspect ratio or make the image square — preserve the EXACT original shape and proportions.` },
               { type: 'image_url', image_url: { url: base64 } },
               { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
@@ -2096,8 +2128,13 @@ export const CreateSceneModal = ({
           mode: 'logo-apply'
         });
 
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+
         if (error) {
           setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.' }]);
+          if (idx < selectedBlurImages.length - 1) {
+            setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
+          }
           continue;
         }
 
@@ -2105,15 +2142,23 @@ export const CreateSceneModal = ({
           setMessages((prev) => [...prev, {
             role: 'assistant-image',
             imageUrl: data.imageUrl,
-            suggestedName: `logo-${Date.now()}`,
+            suggestedName: `logo`,
             description: 'Logo applicerad på bilden',
             photoroomPrompt: ''
           }]);
         }
+
+        // Re-add loading for next image
+        if (idx < selectedBlurImages.length - 1) {
+          setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
+        }
       } catch (err) {
         console.error('Logo apply error:', err);
-        // No loading bubble to clean up - button handles loading state
+        setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
         setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Fel vid applicering. Försök igen.' }]);
+        if (idx < selectedBlurImages.length - 1) {
+          setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
+        }
       }
     }
 
@@ -2366,6 +2411,23 @@ export const CreateSceneModal = ({
                       </button>
                     </div>
 
+                    {/* Fixa insidebilder - own menu item */}
+                    <button
+                      onClick={() => selectMode('fix-interior')}
+                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
+                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
+                        <img
+                          src="/mode-previews/fix-interior-preview.jpg"
+                          alt=""
+                          loading="lazy"
+                          className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 py-3 pr-3">
+                        <p className="text-sm font-semibold text-foreground">Fixa insidebilder</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Maskera bakgrund genom rutor & dörrar</p>
+                      </div>
+                    </button>
+
                     {/* Annonsmaterial - coming soon */}
                     <div
                       className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
@@ -2390,22 +2452,6 @@ export const CreateSceneModal = ({
                       </div>
                     </div>
 
-                    {/* Fixa insidebilder - own menu item */}
-                    <button
-                      onClick={() => selectMode('fix-interior')}
-                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.01] active:scale-[0.99]">
-                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
-                        <img
-                          src="/mode-previews/fix-interior-preview.jpg"
-                          alt=""
-                          loading="lazy"
-                          className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 py-3 pr-3">
-                        <p className="text-sm font-semibold text-foreground">Fixa insidebilder</p>
-                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Maskera bakgrund genom rutor & dörrar</p>
-                      </div>
-                    </button>
                     {/* Separator */}
                     <div className="flex items-center gap-3 pt-1">
                       <div className="flex-1 h-px bg-border/50" />
@@ -2413,23 +2459,34 @@ export const CreateSceneModal = ({
                       <div className="flex-1 h-px bg-border/50" />
                     </div>
 
-                    {/* Tools: compact row */}
+                    {/* Tools: compact row with visual previews */}
                     <div className="grid grid-cols-2 gap-2">
                       {/* Blurra regskyltar */}
                       <button
                         onClick={() => selectMode('blur-plates')}
-                        className="flex items-center gap-2.5 p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group">
-                        <div className="min-w-0">
+                        className="flex flex-col rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group overflow-hidden">
+                        <div className="w-full h-16 overflow-hidden">
+                          <img src="/mode-previews/blur-plates-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="p-2.5 pt-2">
                           <p className="text-sm font-medium text-foreground leading-tight">Blurra regskyltar</p>
-                          <p className="text-[11px] sm:text-xs text-muted-foreground">Dölj skyltar</p>
+                          <p className="text-[11px] sm:text-xs text-muted-foreground">Dölj skyltar automatiskt</p>
                         </div>
                       </button>
 
                       {/* Applicera logo */}
                       <button
                         onClick={() => selectMode('logo-studio')}
-                        className="flex items-center gap-2.5 p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group">
-                        <div className="min-w-0">
+                        className="flex flex-col rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group overflow-hidden">
+                        <div className="w-full h-16 overflow-hidden bg-muted/40 flex items-center justify-center">
+                          <div className="relative w-full h-full flex items-center justify-center">
+                            <div className="w-10 h-6 bg-muted-foreground/10 rounded" />
+                            <div className="absolute top-1.5 right-2 w-5 h-3 bg-primary/30 rounded-sm flex items-center justify-center">
+                              <ImageIcon className="w-2.5 h-2.5 text-primary" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-2.5 pt-2">
                           <p className="text-sm font-medium text-foreground leading-tight">Applicera logo</p>
                           <p className="text-[11px] sm:text-xs text-muted-foreground">Lägg logo på bilder</p>
                         </div>
@@ -3416,7 +3473,7 @@ export const CreateSceneModal = ({
         {previewImage &&
     <div className="absolute inset-0 z-50 bg-background flex flex-col rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
-              <p className="text-sm font-medium text-foreground truncate">{previewImage.name}</p>
+              <p className="text-sm font-medium text-foreground truncate">Förhandsgranskning</p>
               <div className="flex items-center gap-1">
                 <button
             onClick={() => handleDownloadImage(previewImage.imageUrl, previewImage.name || 'ai-generated')}
