@@ -1159,6 +1159,19 @@ export const CreateSceneModal = ({
 
   // ─── Option click dispatcher ────────────────────────────────
   const handleOptionClick = (value: string) => {
+    // Handle fix interior options (free-create)
+    if (value === '__fix_interior_light__' || value === '__fix_interior_dark__') {
+      const bgType = value === '__fix_interior_light__' ? 'light neutral white/grey' : 'dark neutral black/charcoal';
+      const label = value === '__fix_interior_light__' ? 'Ljus bakgrund' : 'Mörk bakgrund';
+      const interiorPrompt = `Look at this car image carefully. The car has open doors, an open trunk, or windows through which the background is visible. KEEP THE CAR EXACTLY AS IT IS — same position, angle, color, reflections, and all details. ONLY change what is visible THROUGH the windows, open doors, or trunk opening. Replace whatever is seen through those openings with a clean, ${bgType} background. Do NOT move, resize, crop, or alter the car or its surroundings in any way. The output MUST have the EXACT same dimensions and framing as the input.`;
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: label }
+      ]);
+      handleSuggestionSend(interiorPrompt, label);
+      return;
+    }
+
     // Handle blur style selection
     if (value.startsWith('__blur_style_')) {
       const style = value.replace('__blur_style_', '').replace('__', '');
