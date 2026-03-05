@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useDemo } from '@/contexts/DemoContext';
 import {
   Dialog,
@@ -121,13 +122,21 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/white-studio.png', label: 'Vit studio' },
   { url: '/scenes/vit-rundad-studio.png', label: 'Rundad' },
   { url: '/scenes/varmt-ljus-studio.png', label: 'Varm studio' },
-  { url: '/scenes/betong-takspots.png', label: 'Takspots' }],
+  { url: '/scenes/betong-takspots.png', label: 'Takspots' },
+  { url: '/scenes/nordisk-dagsljus.jpg', label: 'Nordisk dagsljus' },
+  { url: '/scenes/ljus-tra-underlight.png', label: 'Trä underljus' },
+  { url: '/scenes/dagsljus-gardiner.png', label: 'Gardiner' },
+  { url: '/scenes/granet-studio.png', label: 'Granit' }],
 
   'studio-dark': [
   { url: '/scenes/dark-studio.png', label: 'Mörk studio' },
   { url: '/scenes/brun-spotlight-studio.png', label: 'Spotlight' },
   { url: '/scenes/mork-draperi-spotlight.png', label: 'Draperi' },
-  { url: '/scenes/svart-platvagg.png', label: 'Svart vägg' }],
+  { url: '/scenes/svart-platvagg.png', label: 'Svart vägg' },
+  { url: '/scenes/midnight-garage.png', label: 'Midnight garage' },
+  { url: '/scenes/mork-studio.png', label: 'Mörk minimal' },
+  { url: '/scenes/metallvagg-studio.png', label: 'Metallvägg' },
+  { url: '/scenes/betong-skuggor.png', label: 'Betongskuggor' }],
 
   'outdoor': [
   { url: '/scenes/hostgata.png', label: 'Höstgata' },
@@ -137,19 +146,29 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/chateau-allee.png', label: 'Allé' },
   { url: '/scenes/slattebraten-vintersken.png', label: 'Vinter' },
   { url: '/scenes/svenskt-industriomrade-sommar.png', label: 'Sommar' },
-  { url: '/scenes/dusk-plaza.png', label: 'Skymning' }],
+  { url: '/scenes/dusk-plaza.png', label: 'Skymning' },
+  { url: '/scenes/europa-gammal-gata.png', label: 'Europeisk gata' },
+  { url: '/scenes/grusplan-svensk-gard.png', label: 'Svensk gård' }],
 
   'showroom': [
   { url: '/scenes/nordic-showroom.png', label: 'Nordisk' },
   { url: '/scenes/warszawa-showroom.png', label: 'Klassisk' },
   { url: '/scenes/midnight-garage.png', label: 'Garage' },
-  { url: '/scenes/glas-walls.png', label: 'Glasväggar' }],
+  { url: '/scenes/glas-walls.png', label: 'Glasväggar' },
+  { url: '/scenes/nordisk-soluppgang-garage.png', label: 'Soluppgång' },
+  { url: '/scenes/clean-wood-studio.png', label: 'Trä showroom' },
+  { url: '/scenes/studio-naturfonstret.png', label: 'Naturfönster' },
+  { url: '/scenes/betong-takljus.png', label: 'Betong takljus' }],
 
   'premium': [
   { url: '/scenes/lyxigt-fjallhus.png', label: 'Fjällhus' },
   { url: '/scenes/klassisk-innergard-kvall.png', label: 'Innergård' },
   { url: '/scenes/dyr-utsikt.png', label: 'Utsikt' },
-  { url: '/scenes/chateau-allee.png', label: 'Allé' }]
+  { url: '/scenes/chateau-allee.png', label: 'Allé' },
+  { url: '/scenes/dramatisk-sol-lada.png', label: 'Dramatisk sol' },
+  { url: '/scenes/art-deco.png', label: 'Art deco' },
+  { url: '/scenes/utanfor-universitet.png', label: 'Universitetet' },
+  { url: '/scenes/bergtopp.png', label: 'Bergtopp' }]
 };
 
 const GUIDED_FLOWS: Record<string, GuidedStep[]> = {
@@ -767,10 +786,10 @@ export const CreateSceneModal = ({
     setChatMode(mode);
     if (mode === 'background-studio') {
       setMessages([
-      { role: 'assistant', text: 'Låt oss skapa en ny bakgrund!' },
+      { role: 'assistant', text: 'Låt oss skapa en ny bakgrund! Välj kategori nedan, eller beskriv fritt i text och med egen referensbild i chatten.' },
       {
         role: 'assistant-category-grid',
-        text: 'Vilken typ passar bäst?',
+        text: 'Använd inspiration från någon av dessa:',
         categories: [
         { label: 'Ljus studio', value: 'studio', thumbnail: '/scenes/white-studio.png' },
         { label: 'Mörk studio', value: 'studio-dark', thumbnail: '/scenes/dark-studio.png' },
@@ -2283,6 +2302,8 @@ export const CreateSceneModal = ({
   POST_GENERATION_SUGGESTIONS_LOGO :
   chatMode === 'ad-create' ?
   POST_GENERATION_SUGGESTIONS_AD :
+  chatMode === 'fix-interior' ?
+  [] :
   chatMode === 'free-create' ?
   POST_GENERATION_SUGGESTIONS_FREE :
   POST_GENERATION_SUGGESTIONS_BG;
@@ -2565,8 +2586,8 @@ export const CreateSceneModal = ({
 
         // ─── Reference images ─────────────────────────
         if (msg.role === 'assistant-references') {
-          const visibleRefs = expandedReferences ? msg.references : msg.references.slice(0, 4);
-          const hasMore = msg.references.length > 4;
+          const visibleRefs = expandedReferences ? msg.references : msg.references.slice(0, 6);
+          const hasMore = msg.references.length > 6;
           return (
             <div key={i} className="space-y-2">
                   <div className="flex gap-2.5 items-start">
@@ -3054,7 +3075,9 @@ export const CreateSceneModal = ({
                         {msg.text.split('__MINA_SCENER_LINK__')[1]}
                       </p> :
 
-                <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">{msg.text}</p>
+                <div className="text-sm sm:text-base text-foreground leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
                 }
                   </div>
                 </div>);
