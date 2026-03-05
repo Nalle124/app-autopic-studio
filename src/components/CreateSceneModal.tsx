@@ -142,10 +142,10 @@ const CATEGORY_REFERENCES: Record<string, Array<{url: string;label: string;}>> =
   { url: '/scenes/vit-rundad-studio.png', label: 'Rundad' },
   { url: '/scenes/varmt-ljus-studio.png', label: 'Varm studio' },
   { url: '/scenes/betong-takspots.png', label: 'Takspots' },
-  { url: '/scenes/nordisk-dagsljus.jpg', label: 'Nordisk dagsljus' },
   { url: '/scenes/ljus-tra-underlight.png', label: 'Trä underljus' },
   { url: '/scenes/dagsljus-gardiner.png', label: 'Gardiner' },
-  { url: '/scenes/granet-studio.png', label: 'Granit' }],
+  { url: '/scenes/clean-wood-studio.png', label: 'Trä showroom' },
+  { url: '/scenes/betong-takljus.png', label: 'Betong takljus' }],
 
   'studio-dark': [
   { url: '/scenes/dark-studio.png', label: 'Mörk studio' },
@@ -197,28 +197,28 @@ const GUIDED_FLOWS: Record<string, Array<{question: string; options: GuidedOptio
   {
     question: 'Hur ska scenen vara uppbyggd?',
     options: [
-    { label: 'Öppen yta', value: 'open studio space, car centered with clean empty surroundings and seamless background', thumbnail: '/scenes/vit-rundad-studio.png' },
-    { label: 'Hörn med väggar', value: 'corner studio setup with two walls meeting, creating depth and dimension', thumbnail: '/scenes/betong-takspots.png' },
-    { label: 'Rak vägg bakom', value: 'single flat wall behind the car, clean and minimal backdrop', thumbnail: '/scenes/white-studio.png' },
+    { label: 'Öppen yta', value: 'open studio space, car centered with clean empty surroundings and seamless background', thumbnail: '/textures/comp-open.jpg' },
+    { label: 'Hörn med väggar', value: 'corner studio setup with two walls meeting, creating depth and dimension', thumbnail: '/textures/comp-corner.jpg' },
+    { label: 'Rak vägg bakom', value: 'single flat wall behind the car, clean and minimal backdrop', thumbnail: '/textures/comp-wall.jpg' },
     { label: 'Cyklorama (rundad)', value: 'seamless curved cyclorama studio with no visible edges or corners', thumbnail: '/scenes/vit-rundad-studio.png' }],
     allowCustom: true
   },
   {
     question: 'Vilken känsla vill du ha?',
     options: [
-    { label: 'Ljust & fräscht', value: 'bright airy lighting, fresh modern feel, like a professional photo shoot', thumbnail: '/scenes/nordisk-dagsljus.jpg' },
-    { label: 'Varmt & inbjudande', value: 'warm golden tones, cozy inviting atmosphere, soft shadows', thumbnail: '/scenes/varmt-ljus-studio.png' },
-    { label: 'Rent & kliniskt', value: 'neutral even lighting, clinical clean look, no mood lighting', thumbnail: '/scenes/netgrey-light.png' },
-    { label: 'Systemkamera-look', value: 'shallow depth of field, professional DSLR photography look with slight bokeh', thumbnail: '/scenes/dagsljus-gardiner.png' }],
+    { label: 'Ljust & fräscht', value: 'bright airy lighting, fresh modern feel, like a professional photo shoot', thumbnail: '/textures/mood-bright.jpg' },
+    { label: 'Varmt & inbjudande', value: 'warm golden tones, cozy inviting atmosphere, soft shadows', thumbnail: '/textures/mood-warm.jpg' },
+    { label: 'Rent & kliniskt', value: 'neutral even lighting, clinical clean look, no mood lighting', thumbnail: '/textures/mood-clinical.jpg' },
+    { label: 'Systemkamera-look', value: 'shallow depth of field, professional DSLR photography look with slight bokeh', thumbnail: '/textures/mood-dslr.jpg' }],
     allowCustom: true
   },
   {
     question: 'Golvmaterial?',
     options: [
-    { label: 'Betong', value: 'polished concrete floor with subtle texture', thumbnail: '/scenes/betong-takljus.png' },
-    { label: 'Kakel', value: 'clean white or light tile floor, reflective surface', thumbnail: '/scenes/new-grey.png' },
-    { label: 'Trä', value: 'warm wood floor, natural grain, Scandinavian feel', thumbnail: '/scenes/ljus-tra-underlight.png' },
-    { label: 'Epoxy / blankt', value: 'glossy epoxy floor with mirror-like reflections', thumbnail: '/scenes/granet-studio.png' }],
+    { label: 'Betong', value: 'polished concrete floor with subtle texture', thumbnail: '/textures/betong-golv.jpg' },
+    { label: 'Kakel', value: 'clean white or light tile floor, reflective surface', thumbnail: '/textures/kakel-golv.jpg' },
+    { label: 'Trä', value: 'warm wood floor, natural grain, Scandinavian feel', thumbnail: '/textures/tra-golv.jpg' },
+    { label: 'Epoxy / blankt', value: 'glossy epoxy floor with mirror-like reflections', thumbnail: '/textures/epoxy-golv.jpg' }],
     allowCustom: true
   }],
 
@@ -255,20 +255,20 @@ const GUIDED_FLOWS: Record<string, Array<{question: string; options: GuidedOptio
   {
     question: 'Vilken tid och väder?',
     options: [
-    { label: 'Solig sommardag', value: 'bright sunny summer day, blue sky, warm natural light', thumbnail: '/scenes/svenskt-industriomrade-sommar.png' },
-    { label: 'Gyllene timmen', value: 'golden hour sunset lighting, warm dramatic sky, long shadows', thumbnail: '/scenes/dusk-plaza.png' },
-    { label: 'Grå höstdag', value: 'overcast autumn day, moody clouds, warm leaf tones on ground', thumbnail: '/scenes/hostgata.png' },
-    { label: 'Vinterljus', value: 'crisp winter light, possibly snow, cold blue tones, clear sky', thumbnail: '/scenes/slattebraten-vintersken.png' },
-    { label: 'Kvällsljus i stad', value: 'evening city atmosphere with ambient street lights and warm glow', thumbnail: '/scenes/klassisk-innergard-kvall.png' }],
+    { label: 'Solig sommardag', value: 'bright sunny summer day, blue sky, warm natural light', thumbnail: '/textures/weather-sunny.jpg' },
+    { label: 'Gyllene timmen', value: 'golden hour sunset lighting, warm dramatic sky, long shadows', thumbnail: '/textures/weather-golden.jpg' },
+    { label: 'Grå höstdag', value: 'overcast autumn day, moody clouds, warm leaf tones on ground', thumbnail: '/textures/weather-overcast.jpg' },
+    { label: 'Vinterljus', value: 'crisp winter light, possibly snow, cold blue tones, clear sky', thumbnail: '/textures/weather-winter.jpg' },
+    { label: 'Kvällsljus i stad', value: 'evening city atmosphere with ambient street lights and warm glow', thumbnail: '/textures/weather-evening.jpg' }],
     allowCustom: true
   },
   {
     question: 'Underlag?',
     options: [
-    { label: 'Asfalt', value: 'asphalt road or parking surface, smooth dark tarmac', thumbnail: '/scenes/dusk-plaza.png' },
-    { label: 'Grus', value: 'gravel driveway, natural stone aggregate', thumbnail: '/scenes/garageuppfart-grus.png' },
-    { label: 'Kullersten', value: 'cobblestone or brick paving, European character', thumbnail: '/scenes/kullerstengata.png' },
-    { label: 'Gräs / natur', value: 'grass or natural ground, parklike setting', thumbnail: '/scenes/skara-park.png' }],
+    { label: 'Asfalt', value: 'asphalt road or parking surface, smooth dark tarmac', thumbnail: '/textures/asfalt.jpg' },
+    { label: 'Grus', value: 'gravel driveway, natural stone aggregate', thumbnail: '/textures/grus.jpg' },
+    { label: 'Kullersten', value: 'cobblestone or brick paving, European character', thumbnail: '/textures/kullersten.jpg' },
+    { label: 'Gräs / natur', value: 'grass or natural ground, parklike setting', thumbnail: '/textures/gras.jpg' }],
     allowCustom: true
   }],
 
@@ -2413,7 +2413,7 @@ export const CreateSceneModal = ({
         // ─── Mode select cards ────────────────────────
         if (msg.role === 'mode-select') {
           return (
-            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-14 sm:pt-0">
+            <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-16 sm:pt-0">
                   <div className="flex gap-2.5 items-start mb-5">
                     <AutopicAvatar />
                     <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5 max-w-[85%]">
@@ -2490,38 +2490,14 @@ export const CreateSceneModal = ({
                       </div>
                     </button>
 
-                    {/* Annonsmaterial - coming soon */}
-                    <div
-                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
-                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
-                        <img
-                          src="/mode-previews/ad-sasongsrea.png"
-                          alt=""
-                          loading="lazy"
-                          className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 ml-1.5 mt-1.5" />
-                        <img
-                          src="/mode-previews/ad-import-guide.png"
-                          alt=""
-                          loading="lazy"
-                          className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 mr-1 mb-1" />
-                      </div>
-                      <div className="flex-1 py-3 pr-3">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-foreground">Annonsmaterial</p>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Kommer snart</span>
-                        </div>
-                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
-                      </div>
-                    </div>
-
-                    {/* Separator */}
+                    {/* Separator for tools */}
                     <div className="flex items-center gap-3 pt-1">
                       <div className="flex-1 h-px bg-border/50" />
                       <span className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">Verktyg</span>
                       <div className="flex-1 h-px bg-border/50" />
                     </div>
 
-                    {/* Tools: compact row with visual previews */}
+                    {/* Tools: compact row */}
                     <div className="grid grid-cols-2 gap-2">
                       {/* Blurra regskyltar */}
                       <button
@@ -2553,6 +2529,37 @@ export const CreateSceneModal = ({
                           <p className="text-[11px] sm:text-xs text-muted-foreground">Lägg logo på bilder</p>
                         </div>
                       </button>
+                    </div>
+
+                    {/* Separator for ads */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="flex-1 h-px bg-border/50" />
+                      <span className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider">Annonser</span>
+                      <div className="flex-1 h-px bg-border/50" />
+                    </div>
+
+                    {/* Annonsmaterial - coming soon */}
+                    <div
+                      className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
+                      <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
+                        <img
+                          src="/mode-previews/ad-sasongsrea.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 ml-1.5 mt-1.5" />
+                        <img
+                          src="/mode-previews/ad-import-guide.png"
+                          alt=""
+                          loading="lazy"
+                          className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 mr-1 mb-1" />
+                      </div>
+                      <div className="flex-1 py-3 pr-3">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">Annonsmaterial</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Kommer snart</span>
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">Marknadsföring & kreativt material</p>
+                      </div>
                     </div>
                   </div>
                 </div>);
@@ -2605,20 +2612,24 @@ export const CreateSceneModal = ({
                           </div>
                     }
                       </div>
-                      <p className="text-xs font-medium text-muted-foreground">Snabbval:</p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {FREE_QUICK_ACTIONS.map((action, idx) =>
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      handleSuggestionSend(action.prompt, action.label);
-                    }}
-                    className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
-
-                            {action.label}
-                          </button>
-                  )}
-                      </div>
+                      <details className="group/inspo">
+                        <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1.5">
+                          <ChevronDown className="w-3.5 h-3.5 transition-transform group-open/inspo:rotate-180" />
+                          Få inspiration
+                        </summary>
+                        <div className="grid grid-cols-2 gap-1.5 mt-2">
+                          {FREE_QUICK_ACTIONS.map((action, idx) =>
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setPrompt(action.prompt + ' ');
+                      }}
+                      className="text-[13px] px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 text-foreground hover:bg-muted hover:border-primary/30 transition-colors text-left leading-snug">
+                              {action.label}
+                            </button>
+                    )}
+                        </div>
+                      </details>
                     </div>
               }
                 </div>);
