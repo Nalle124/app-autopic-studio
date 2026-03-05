@@ -46,6 +46,56 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import holographicBg from '@/assets/holographic-bg.jpg';
+import { useState as useStateReact } from 'react';
+import { Check as CheckIcon } from 'lucide-react';
+
+const AiNoticeDropdown = () => {
+  const [expanded, setExpanded] = useStateReact(false);
+  
+  return (
+    <button
+      onClick={() => setExpanded(!expanded)}
+      className="w-full text-left rounded-[10px] border border-border/30 bg-card/60 backdrop-blur-md shadow-sm overflow-hidden transition-all hover:border-border/50"
+    >
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert flex-shrink-0 opacity-50" />
+        <p className="text-xs sm:text-sm text-muted-foreground flex-1">
+          <span className="font-medium text-foreground/70">Nyhet:</span>{' '}
+          AI-funktioner lanserade
+        </p>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground/50 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </div>
+      {expanded && (
+        <div className="px-4 pb-3 pt-0.5 space-y-1.5 border-t border-border/20">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Skapa egna bakgrunder med AI</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Blurra regskyltar automatiskt</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Redigera fritt med AI-prompt</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Maskera interiörbilder</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <CheckIcon className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+            <span>Applicera logo på bilder</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground/60 pt-1">
+            Öppna via <span className="font-medium">AI Studio</span> i menyn.
+          </p>
+        </div>
+      )}
+    </button>
+  );
+};
+
 function IndexContent() {
   const navigate = useNavigate();
   const location = window.location;
