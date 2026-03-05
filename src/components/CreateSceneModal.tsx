@@ -1652,6 +1652,16 @@ export const CreateSceneModal = ({
   const handleGenerate = async () => {
     if (!prompt.trim() || !user) return;
 
+    // Handle custom interior color input
+    if (awaitingGuidedCustomInput && chatMode === 'fix-interior') {
+      const customColor = prompt.trim();
+      setAwaitingGuidedCustomInput(false);
+      setPrompt('');
+      setMessages((prev) => [...prev, { role: 'user', text: customColor }]);
+      handleFixInteriorBatch(customColor);
+      return;
+    }
+
     // If awaiting guided custom input, save it as the answer for current step
     if (awaitingGuidedCustomInput && guidedCategory && guidedCategory !== 'custom' && guidedCategory !== 'custom-ad') {
       const flow = activeFlows[guidedCategory];
