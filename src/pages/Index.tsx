@@ -971,7 +971,6 @@ function IndexContent() {
               inline
               onChatModeChange={setAiChatMode}
             />
-            />
             </div>
           </section>
         ) : activeTab === 'history' ? <section className="space-y-6">
