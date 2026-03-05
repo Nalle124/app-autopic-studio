@@ -408,7 +408,7 @@ CRITICAL: ZERO text in the image. The application handles all text as a separate
                 ? `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, COMPLETELY EMPTY scene with absolutely no cars, no people, no vehicles. Eye-level camera angle at ~1.2m height. Flat ground surface in lower 40%. Realistic photo style. Generate the image now.`
                 : isAdMode
                   ? `Generate a professional automotive marketing advertisement image: ${latestPromptText}. Include any specified text/headlines prominently with bold readable typography. All text must be spelled correctly. MUST be ${isPortrait ? 'portrait 2:3 ratio' : 'landscape 3:2 ratio'}. Photorealistic professional marketing design. Generate the image now.`
-                  : `Generate a photorealistic image: ${latestPromptText}. MUST be landscape 3:2 ratio. Realistic photo style. Generate the image now.`
+                  : `Generate a photorealistic image: ${latestPromptText}. If editing an existing image, preserve the EXACT same dimensions and aspect ratio. If creating new, use landscape 3:2 ratio. Realistic photo style. Generate the image now.`
             },
           ];
 
