@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useDemo } from '@/contexts/DemoContext';
 import {
   Dialog,
@@ -2283,6 +2284,8 @@ export const CreateSceneModal = ({
   POST_GENERATION_SUGGESTIONS_LOGO :
   chatMode === 'ad-create' ?
   POST_GENERATION_SUGGESTIONS_AD :
+  chatMode === 'fix-interior' ?
+  [] :
   chatMode === 'free-create' ?
   POST_GENERATION_SUGGESTIONS_FREE :
   POST_GENERATION_SUGGESTIONS_BG;
@@ -3054,7 +3057,9 @@ export const CreateSceneModal = ({
                         {msg.text.split('__MINA_SCENER_LINK__')[1]}
                       </p> :
 
-                <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line">{msg.text}</p>
+                <div className="text-sm sm:text-base text-foreground leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
                 }
                   </div>
                 </div>);
