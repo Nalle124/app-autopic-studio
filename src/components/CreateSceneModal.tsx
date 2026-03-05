@@ -294,6 +294,7 @@ const POST_GENERATION_SUGGESTIONS_FREE = [
 
 
 const FREE_QUICK_ACTIONS = [
+{ label: 'Fixa insidebilder', prompt: '__fix_interior__' },
 { label: 'Ta bort bakgrund helt', prompt: 'Remove the background completely, leave only the car on a transparent/white background' },
 { label: 'Ändra vinkel, behåll bilen', prompt: 'Change the camera angle slightly but keep the car exactly as it is' },
 { label: 'Mer cinematisk', prompt: 'Make the image more cinematic with dramatic lighting' },
