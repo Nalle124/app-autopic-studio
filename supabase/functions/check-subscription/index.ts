@@ -177,16 +177,14 @@ serve(async (req) => {
       const periodKey = `${subscription.id}:${periodEnd || 'current'}`;
 
       if (creditsPerMonth > 0) {
-        // Time-based idempotency: check if ANY renewal exists for this subscription
-        // within the last 28 days (subscriptions are monthly, so this is safe)
-        const twentyEightDaysAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString();
-        
+        // Period-based idempotency: check if a renewal already exists for THIS specific
+        // Stripe billing period using the periodKey (sub_id:period_end)
         const { data: existingResetRows } = await supabaseClient
           .from('credit_transactions')
           .select('id')
           .eq('user_id', user.id)
           .eq('transaction_type', 'subscription_renewal')
-          .gte('created_at', twentyEightDaysAgo)
+          .eq('description', periodKey)
           .limit(1);
 
         const existingReset = existingResetRows && existingResetRows.length > 0 ? existingResetRows[0] : null;
@@ -239,12 +237,12 @@ serve(async (req) => {
               amount: creditsPerMonth,
               balance_after: newBalance,
               transaction_type: 'subscription_renewal',
-              description: periodKey,  // Still logged for debugging, but NOT used for idempotency
+              description: periodKey,  // Used for period-based idempotency
             });
 
           logStep('Monthly credits reset', { creditsPerMonth, newBalance, periodKey });
         } else if (existingReset) {
-          logStep('Skipping reset - renewal already exists within last 28 days');
+          logStep('Skipping reset - renewal already exists for this period', { periodKey });
         } else if (isNewSubscription) {
           logStep('Skipping reset - new subscription just created by verify-payment');
         }
