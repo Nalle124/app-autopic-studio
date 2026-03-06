@@ -49,7 +49,7 @@ type ChatMessage =
 {role: 'assistant-references';text: string;references: Array<{url: string;label: string;}>;} |
 {role: 'assistant-summary';category: string;selections: string[];format?: string;selectionLabels?: string[];} |
 {role: 'assistant-image-grid';text: string;images: Array<{url: string;id: string;}>;} |
-{role: 'assistant-category-grid';text: string;categories: Array<{label: string;value: string;thumbnail: string;}>;} |
+{role: 'assistant-category-grid';text: string;categories: Array<{label: string;value: string;thumbnail: string;thumbnail2?: string;}>;} |
 {role: 'assistant-ad-overlay';backgroundUrl: string;templateId: string;userTexts: Record<string, string>;} |
 {role: 'assistant-logo-presets';text: string;} |
 {role: 'assistant-status';text: string;} |
@@ -755,6 +755,9 @@ export const CreateSceneModal = ({
     setOverlayEditor(null);
     setSelectedAdTemplateId(null);
     setAdUserTexts({});
+    setSelectedLogoUrl(null);
+    setSelectedLogoPreset(null);
+    setExpandedReferences(false);
   };
 
   // Auto-scroll: scroll to bottom for new messages, but scroll to top for mode-select (menu)
@@ -814,11 +817,11 @@ export const CreateSceneModal = ({
         role: 'assistant-category-grid',
         text: 'Använd inspiration från någon av dessa:',
         categories: [
-        { label: 'Ljus studio', value: 'studio', thumbnail: '/scenes/white-studio.png' },
-        { label: 'Mörk studio', value: 'studio-dark', thumbnail: '/scenes/dark-studio.png' },
-        { label: 'Utomhus', value: 'outdoor', thumbnail: '/scenes/hostgata.png' },
-        { label: 'Showroom', value: 'showroom', thumbnail: '/scenes/nordic-showroom.png' },
-        { label: 'Premium', value: 'premium', thumbnail: '/scenes/lyxigt-fjallhus.png' },
+        { label: 'Ljus studio', value: 'studio', thumbnail: '/scenes/white-studio.png', thumbnail2: '/scenes/vit-rundad-studio.png' },
+        { label: 'Mörk studio', value: 'studio-dark', thumbnail: '/scenes/dark-studio.png', thumbnail2: '/scenes/brun-spotlight-studio.png' },
+        { label: 'Utomhus', value: 'outdoor', thumbnail: '/scenes/hostgata.png', thumbnail2: '/scenes/kullerstengata.png' },
+        { label: 'Showroom', value: 'showroom', thumbnail: '/scenes/nordic-showroom.png', thumbnail2: '/scenes/glas-walls.png' },
+        { label: 'Premium', value: 'premium', thumbnail: '/scenes/lyxigt-fjallhus.png', thumbnail2: '/scenes/klassisk-innergard-kvall.png' },
         { label: 'Beskriv fritt', value: 'custom', thumbnail: '' }]
       }]
       );
@@ -858,6 +861,9 @@ export const CreateSceneModal = ({
         const url = img.croppedUrl || img.preview;
         if (url && !allImages.find((a) => a.id === img.id)) allImages.push({ url, id: img.id });
       });
+      // Reset logo state for fresh flow
+      setSelectedLogoUrl(null);
+      setSelectedLogoPreset(null);
       setMessages([
       { role: 'assistant', text: 'Välj vilka bilder du vill lägga logo på, eller ladda upp egna.' },
       { role: 'assistant-image-grid' as const, text: allImages.length > 0 ? 'Välj bilder:' : 'Ladda upp bilder för att komma igång:', images: allImages }]
@@ -2237,17 +2243,25 @@ export const CreateSceneModal = ({
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The logo must be SMALL — approximately 8-12% of the image width, like a subtle professional watermark. Do NOT make the logo large or prominent.
+              { type: 'text', text: `You are given TWO images:
+1. The FIRST image is the ORIGINAL PHOTOGRAPH — this is the main image that must be preserved EXACTLY.
+2. The SECOND image is a LOGO that must be placed as an overlay on the photograph.
+
+Place the logo as a ${placementDesc} on the photograph.
+
+LOGO SIZING: The logo must be SMALL — approximately 8-12% of the image width, like a subtle professional watermark. Do NOT make the logo large or prominent.
 
 ABSOLUTE REQUIREMENTS — DIMENSIONAL INTEGRITY:
-- Input: ${imgDims.w}x${imgDims.h} pixels (${aspectDesc})
+- The input photograph is ${imgDims.w}x${imgDims.h} pixels (${aspectDesc})
 - Output MUST be EXACTLY ${imgDims.w}x${imgDims.h} pixels
-- Do NOT crop, resize, zoom, stretch, pad, or reframe the image AT ALL
-- Every single pixel of the original photo must remain in the exact same position
+- Do NOT crop, resize, zoom, stretch, pad, or reframe the photograph AT ALL
+- Every single pixel of the original photograph must remain in the exact same position
 - The ONLY change allowed is adding the small logo overlay
-- The logo should be semi-transparent (watermark-style), clean, professional
-- Do NOT cover the car with the logo — place it in the specified corner/position on the background area
-- Output dimensions: ${imgDims.w}x${imgDims.h} — this is non-negotiable` },
+- The logo should be clean and professional, placed in the specified position
+- Do NOT cover the car/main subject with the logo — place it on the background area
+- Output dimensions: ${imgDims.w}x${imgDims.h} — this is non-negotiable
+
+CRITICAL: The first image is the photo to keep intact. The second image is the logo to overlay.` },
               { type: 'image_url', image_url: { url: base64 } },
               { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
@@ -2987,9 +3001,17 @@ ABSOLUTE REQUIREMENTS — DIMENSIONAL INTEGRITY:
                   disabled={isGenerating}
                   className="group/cat relative rounded-xl overflow-hidden border-2 border-border/40 hover:border-primary/50 transition-all disabled:opacity-40">
 
-                        <div className="aspect-[3/2] relative">
+                        <div className="aspect-[3/2] relative overflow-hidden">
                           {cat.thumbnail ? (
-                            <img src={cat.thumbnail} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
+                            cat.thumbnail2 ? (
+                              /* Split view: show 2 images side by side */
+                              <div className="w-full h-full flex">
+                                <img src={cat.thumbnail} alt={cat.label} className="w-1/2 h-full object-cover" loading="lazy" />
+                                <img src={cat.thumbnail2} alt={cat.label} className="w-1/2 h-full object-cover" loading="lazy" />
+                              </div>
+                            ) : (
+                              <img src={cat.thumbnail} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
+                            )
                           ) : (
                             <div className="w-full h-full bg-muted/60 flex flex-col items-center justify-center gap-1 text-muted-foreground">
                               <Plus className="w-5 h-5" />
