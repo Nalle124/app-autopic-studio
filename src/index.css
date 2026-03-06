@@ -640,3 +640,45 @@
     }
   }
 }
+
+/* Spinning border loading animation for action buttons */
+@keyframes spin-border {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.btn-processing {
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.btn-processing::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    transparent 60%,
+    hsl(var(--primary)) 80%,
+    hsl(var(--primary-glow, var(--primary))) 100%
+  );
+  animation: spin-border 1.2s linear infinite;
+  z-index: 0;
+}
+
+.btn-processing::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  background: hsl(var(--muted));
+  z-index: 1;
+}
+
+.btn-processing > * {
+  position: relative;
+  z-index: 2;
+}
