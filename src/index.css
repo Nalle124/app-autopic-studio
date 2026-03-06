@@ -12,6 +12,9 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  /* Hide native details marker across all browsers */
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::marker { display: none; content: ''; }
 }
 
 @layer base {
