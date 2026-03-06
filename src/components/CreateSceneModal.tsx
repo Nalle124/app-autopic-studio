@@ -2859,10 +2859,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                       generateFromGuidedSelections(extra || undefined);
                     }}
                     disabled={isGenerating}
-                    className="w-full rounded-full h-10">
-
-                        {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                        {chatMode === 'ad-create' ? 'Skapa annons' : 'Skapa bakgrund'}
+                    className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                        <span>{chatMode === 'ad-create' ? (isGenerating ? 'Skapar...' : 'Skapa annons') : (isGenerating ? 'Skapar...' : 'Skapa bakgrund')}</span>
                       </Button>
                       <p className="text-[11px] text-muted-foreground text-center">Lägg till detaljer i textfältet innan du genererar</p>
                     </div>
