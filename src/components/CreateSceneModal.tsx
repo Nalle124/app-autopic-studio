@@ -606,6 +606,7 @@ export const CreateSceneModal = ({
   const [adFormat, setAdFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [selectedBlurImages, setSelectedBlurImages] = useState<string[]>([]);
   const [blurStyle, setBlurStyle] = useState<string | null>(null);
+  const [interiorBgType, setInteriorBgType] = useState<string | null>(null);
   const blurFileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
