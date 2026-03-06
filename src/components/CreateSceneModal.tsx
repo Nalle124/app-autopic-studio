@@ -2206,6 +2206,11 @@ export const CreateSceneModal = ({
   // ─── Logo studio: apply logo to images via AI ──────────────
   const handleApplyLogo = async () => {
     if (!selectedLogoUrl || selectedBlurImages.length === 0 || !user || !selectedLogoPreset) return;
+    // Credit check before generating
+    if (!canGenerate) {
+      triggerPaywall('subscriber-limit');
+      return;
+    }
     setIsGenerating(true);
 
     // Show loading state in chat
