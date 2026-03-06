@@ -1259,8 +1259,8 @@ export const CreateSceneModal = ({
       };
       const bgType = bgTypeMap[value] || 'light neutral white/grey';
       const label = labelMap[value] || 'Vit';
+      setInteriorBgType(bgType);
       setMessages((prev) => [...prev, { role: 'assistant-status', text: `✓ ${label} bakgrund vald` }]);
-      handleFixInteriorBatch(bgType);
       return;
     }
     if (value === '__fix_interior_batch_custom__') {
