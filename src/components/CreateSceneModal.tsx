@@ -568,7 +568,7 @@ export const CreateSceneModal = ({
   onChatModeChange
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
-  const { triggerPaywall, refetchCredits } = useDemo();
+  const { triggerPaywall, refetchCredits, credits, canGenerate, creditsLoading } = useDemo();
   const [chatMode, setChatModeInternal] = useState<ChatMode | null>(null);
   const setChatMode = useCallback((mode: ChatMode | null) => {
     setChatModeInternal(mode);
