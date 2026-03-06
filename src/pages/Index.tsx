@@ -1119,7 +1119,7 @@ function IndexContent() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
+                <SceneSelector key={sceneSelectorKey} defaultCategory={sceneSelectorDefaultCategory} selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
                 
                 {/* Scroll to top button for scene gallery */}
                 <ScrollToTopButton threshold={300} />
