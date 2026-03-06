@@ -3343,6 +3343,13 @@ ABSOLUTE REQUIREMENTS — DIMENSIONAL INTEGRITY:
 
         // ─── Loading ──────────────────────────────────
         if (msg.role === 'assistant-loading') {
+          // Hide chat loading bubble when batch action buttons are visible (they show their own loading)
+          const isBatchWithButton = (
+            (chatMode === 'blur-plates' && blurStyle && selectedBlurImages.length > 0) ||
+            (chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset && selectedBlurImages.length > 0) ||
+            (chatMode === 'fix-interior' && selectedBlurImages.length > 0)
+          );
+          if (isBatchWithButton) return null;
           return (
             <div key={i} className="flex gap-2.5 items-start">
                   <AutopicAvatar />
