@@ -3001,9 +3001,17 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                   disabled={isGenerating}
                   className="group/cat relative rounded-xl overflow-hidden border-2 border-border/40 hover:border-primary/50 transition-all disabled:opacity-40">
 
-                        <div className="aspect-[3/2] relative">
+                        <div className="aspect-[3/2] relative overflow-hidden">
                           {cat.thumbnail ? (
-                            <img src={cat.thumbnail} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
+                            cat.thumbnail2 ? (
+                              /* Split view: show 2 images side by side */
+                              <div className="w-full h-full flex">
+                                <img src={cat.thumbnail} alt={cat.label} className="w-1/2 h-full object-cover" loading="lazy" />
+                                <img src={cat.thumbnail2} alt={cat.label} className="w-1/2 h-full object-cover" loading="lazy" />
+                              </div>
+                            ) : (
+                              <img src={cat.thumbnail} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
+                            )
                           ) : (
                             <div className="w-full h-full bg-muted/60 flex flex-col items-center justify-center gap-1 text-muted-foreground">
                               <Plus className="w-5 h-5" />
