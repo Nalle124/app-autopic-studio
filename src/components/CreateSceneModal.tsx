@@ -606,6 +606,7 @@ export const CreateSceneModal = ({
   const [adFormat, setAdFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [selectedBlurImages, setSelectedBlurImages] = useState<string[]>([]);
   const [blurStyle, setBlurStyle] = useState<string | null>(null);
+  const [interiorBgType, setInteriorBgType] = useState<string | null>(null);
   const blurFileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -752,6 +753,7 @@ export const CreateSceneModal = ({
     setAdFormat('landscape');
     setSelectedBlurImages([]);
     setBlurStyle(null);
+    setInteriorBgType(null);
     setOverlayEditor(null);
     setSelectedAdTemplateId(null);
     setAdUserTexts({});
@@ -911,6 +913,7 @@ export const CreateSceneModal = ({
     setPreviewPrompt('');
     setSelectedBlurImages([]);
     setBlurStyle(null);
+    setInteriorBgType(null);
     // Select the new mode (reuses selectMode logic)
     selectMode(mode);
   };
@@ -1258,8 +1261,8 @@ export const CreateSceneModal = ({
       };
       const bgType = bgTypeMap[value] || 'light neutral white/grey';
       const label = labelMap[value] || 'Vit';
+      setInteriorBgType(bgType);
       setMessages((prev) => [...prev, { role: 'assistant-status', text: `✓ ${label} bakgrund vald` }]);
-      handleFixInteriorBatch(bgType);
       return;
     }
     if (value === '__fix_interior_batch_custom__') {
@@ -1664,7 +1667,7 @@ export const CreateSceneModal = ({
       setAwaitingGuidedCustomInput(false);
       setPrompt('');
       setMessages((prev) => [...prev, { role: 'user', text: customColor }]);
-      handleFixInteriorBatch(customColor);
+      setInteriorBgType(customColor);
       return;
     }
 
@@ -2599,7 +2602,7 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                         onClick={() => selectMode('logo-studio')}
                         className="flex flex-col rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group overflow-hidden">
                         <div className="w-full h-16 overflow-hidden relative">
-                          <img src="/mode-previews/logo-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
+                          <img src="/mode-previews/logo-apply-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
                         </div>
                         <div className="p-2.5 pt-2">
                           <p className="text-sm font-medium text-foreground leading-tight">Applicera logo</p>
@@ -2689,8 +2692,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                           </div>
                     }
                       </div>
-                      <details className="group/inspo">
-                        <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1.5">
+                      <details className="group/inspo [&>summary]:list-none [&>summary::-webkit-details-marker]:hidden">
+                        <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1.5">
                           <ChevronDown className="w-3.5 h-3.5 transition-transform group-open/inspo:rotate-180" />
                           Få inspiration
                         </summary>
@@ -3348,9 +3351,9 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                       handleApplyLogo();
                     } else if (chatMode === 'fix-interior' && selectedBlurImages.length > 0) {
                       // Re-run interior fix — detect bg type from previous messages
-                      const hadDark = messages.some((m) => m.role === 'user' && (m as any).text === 'Mörk bakgrund');
-                      const bgType = hadDark ? 'dark neutral black/charcoal' : 'light neutral white/grey';
-                      handleFixInteriorBatch(bgType);
+                      if (interiorBgType) {
+                        handleFixInteriorBatch(interiorBgType);
+                      }
                     }
                   }}
                   disabled={isGenerating}
@@ -3605,6 +3608,21 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                   className="w-full rounded-full h-10">
                   {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
                   {isGenerating ? 'Applicerar...' : 'Applicera logo'}
+                </Button>
+              </div>
+            </div>
+          )}
+          {selectedBlurImages.length > 0 && chatMode === 'fix-interior' && interiorBgType && (
+            <div className="flex gap-2.5 items-start">
+              <AutopicAvatar />
+              <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
+                <p className="text-sm text-foreground">{isGenerating ? 'Bearbetar...' : 'Redo att bearbeta.'}</p>
+                <Button
+                  onClick={() => handleFixInteriorBatch(interiorBgType)}
+                  disabled={isGenerating}
+                  className="w-full rounded-full h-10">
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
                 </Button>
               </div>
             </div>
