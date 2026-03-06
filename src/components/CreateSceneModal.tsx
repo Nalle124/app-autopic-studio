@@ -49,7 +49,7 @@ type ChatMessage =
 {role: 'assistant-references';text: string;references: Array<{url: string;label: string;}>;} |
 {role: 'assistant-summary';category: string;selections: string[];format?: string;selectionLabels?: string[];} |
 {role: 'assistant-image-grid';text: string;images: Array<{url: string;id: string;}>;} |
-{role: 'assistant-category-grid';text: string;categories: Array<{label: string;value: string;thumbnail: string;}>;} |
+{role: 'assistant-category-grid';text: string;categories: Array<{label: string;value: string;thumbnail: string;thumbnail2?: string;}>;} |
 {role: 'assistant-ad-overlay';backgroundUrl: string;templateId: string;userTexts: Record<string, string>;} |
 {role: 'assistant-logo-presets';text: string;} |
 {role: 'assistant-status';text: string;} |
