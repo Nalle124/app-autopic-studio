@@ -3572,9 +3572,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                 <Button
                   onClick={handleBlurGenerate}
                   disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                  <span>{isGenerating ? 'Bearbetar...' : 'Bearbeta'}</span>
                 </Button>
               </div>
             </div>
@@ -3616,9 +3615,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                 <Button
                   onClick={handleBlurGenerate}
                   disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                  <span>{isGenerating ? 'Bearbetar...' : 'Bearbeta'}</span>
                 </Button>
               </div>
             </div>
@@ -3631,9 +3629,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                 <Button
                   onClick={handleApplyLogo}
                   disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  {isGenerating ? 'Applicerar...' : 'Applicera logo'}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                  <span>{isGenerating ? 'Applicerar...' : 'Applicera logo'}</span>
                 </Button>
               </div>
             </div>
@@ -3646,9 +3643,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                 <Button
                   onClick={() => handleFixInteriorBatch(interiorBgType)}
                   disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                  <span>{isGenerating ? 'Bearbetar...' : 'Bearbeta'}</span>
                 </Button>
               </div>
             </div>
