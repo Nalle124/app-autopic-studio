@@ -1665,7 +1665,7 @@ export const CreateSceneModal = ({
       setAwaitingGuidedCustomInput(false);
       setPrompt('');
       setMessages((prev) => [...prev, { role: 'user', text: customColor }]);
-      handleFixInteriorBatch(customColor);
+      setInteriorBgType(customColor);
       return;
     }
 
