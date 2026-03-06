@@ -237,12 +237,12 @@ serve(async (req) => {
               amount: creditsPerMonth,
               balance_after: newBalance,
               transaction_type: 'subscription_renewal',
-              description: periodKey,  // Still logged for debugging, but NOT used for idempotency
+              description: periodKey,  // Used for period-based idempotency
             });
 
           logStep('Monthly credits reset', { creditsPerMonth, newBalance, periodKey });
         } else if (existingReset) {
-          logStep('Skipping reset - renewal already exists within last 28 days');
+          logStep('Skipping reset - renewal already exists for this period', { periodKey });
         } else if (isNewSubscription) {
           logStep('Skipping reset - new subscription just created by verify-payment');
         }
