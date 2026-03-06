@@ -755,6 +755,9 @@ export const CreateSceneModal = ({
     setOverlayEditor(null);
     setSelectedAdTemplateId(null);
     setAdUserTexts({});
+    setSelectedLogoUrl(null);
+    setSelectedLogoPreset(null);
+    setExpandedReferences(false);
   };
 
   // Auto-scroll: scroll to bottom for new messages, but scroll to top for mode-select (menu)
