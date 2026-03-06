@@ -309,8 +309,7 @@ export const ImageUploader = ({
       {uploadedImages.length > 0 && <div id="uploaded-images" className="space-y-5 sm:space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-3">
             <div className="flex-1 min-w-0 space-y-4 sm:space-y-2">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <ImageIcon className="w-5 h-5" />
+              <h3 className="text-lg font-semibold text-foreground">
                 <span className="truncate">Uppladdade bilder ({uploadedImages.filter(img => img.isOriginal !== false).length})</span>
               </h3>
               {onRegistrationNumberChange && <div className="relative w-full sm:max-w-[180px]">

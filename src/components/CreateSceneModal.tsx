@@ -2599,7 +2599,7 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                         onClick={() => selectMode('logo-studio')}
                         className="flex flex-col rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all text-left group overflow-hidden">
                         <div className="w-full h-16 overflow-hidden relative">
-                          <img src="/mode-previews/logo-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
+                          <img src="/mode-previews/logo-apply-preview.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
                         </div>
                         <div className="p-2.5 pt-2">
                           <p className="text-sm font-medium text-foreground leading-tight">Applicera logo</p>
@@ -2689,8 +2689,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                           </div>
                     }
                       </div>
-                      <details className="group/inspo">
-                        <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1.5">
+                      <details className="group/inspo [&>summary]:list-none [&>summary::-webkit-details-marker]:hidden">
+                        <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1.5">
                           <ChevronDown className="w-3.5 h-3.5 transition-transform group-open/inspo:rotate-180" />
                           Få inspiration
                         </summary>
