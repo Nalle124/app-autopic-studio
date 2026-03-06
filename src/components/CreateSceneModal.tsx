@@ -1984,9 +1984,13 @@ export const CreateSceneModal = ({
           img.onerror = () => resolve({ w: 1, h: 1 });
           img.src = base64;
         });
-        const dimNote = ` The input image is ${imgDims.w}x${imgDims.h} pixels. Output MUST be the EXACT same dimensions (${imgDims.w}x${imgDims.h}).`;
+        const dimNote = ` CRITICAL DIMENSION RULE: The input image is ${imgDims.w}x${imgDims.h} pixels. Output MUST be EXACTLY ${imgDims.w}x${imgDims.h} pixels. Do NOT change the resolution, aspect ratio, or crop the image in any way.`;
 
         const conversationHistory = [
+        {
+          role: 'system',
+          content: `You are an image editing assistant. You MUST preserve the exact input image dimensions (${imgDims.w}x${imgDims.h}). Never change resolution, aspect ratio, or crop.`
+        },
         {
           role: 'user',
           content: [
