@@ -210,6 +210,9 @@ export const SceneSelector = ({
     e.stopPropagation();
     const realId = sceneId.replace('user-', '');
     
+    // Optimistic removal — instant UI update
+    setUserScenes(prev => prev.filter(s => s.id !== sceneId));
+
     try {
       const { error } = await supabase
         .from('user_scenes')
@@ -218,14 +221,13 @@ export const SceneSelector = ({
 
       if (error) {
         console.error('Delete error:', error);
+        // Revert on failure
+        loadUserScenes();
         toast.error('Kunde inte ta bort scenen.');
-        return;
       }
-
-      setUserScenes(prev => prev.filter(s => s.id !== sceneId));
-      toast.success('Scenen har tagits bort.');
     } catch (err) {
       console.error('Delete error:', err);
+      loadUserScenes();
       toast.error('Kunde inte ta bort scenen.');
     }
   };
