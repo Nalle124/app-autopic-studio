@@ -202,6 +202,7 @@ function IndexContent() {
     }
   };
   const [sceneSelectorKey, setSceneSelectorKey] = useState(0);
+  const [sceneSelectorDefaultCategory, setSceneSelectorDefaultCategory] = useState('popular');
   // Unauthenticated users are redirected to /auth in the Index wrapper
 
   // Load draft images from cloud on mount (cross-device persistence)
@@ -1006,6 +1007,7 @@ function IndexContent() {
               onNavigateToMyScenes={() => {
                 setAiModalInitialImage(null);
                 setActiveTab('new');
+                setSceneSelectorDefaultCategory('my-scenes');
                 setSceneSelectorKey(prev => prev + 1);
                 setTimeout(() => {
                   document.getElementById('explore-scenes-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1093,7 +1095,7 @@ function IndexContent() {
                 <div className="flex items-center gap-3">
                   <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
                 </div>
-                <SceneSelector key={sceneSelectorKey} selectedSceneId={null} onSceneSelect={(scene) => {
+                <SceneSelector key={sceneSelectorKey} defaultCategory={sceneSelectorDefaultCategory} selectedSceneId={null} onSceneSelect={(scene) => {
                   toast('Börja med att ladda upp bilder att redigera', { description: 'Ladda upp bilder i steg 1 ovan för att komma igång.' });
                 }} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
                 
@@ -1117,7 +1119,7 @@ function IndexContent() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <SceneSelector selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
+                <SceneSelector key={sceneSelectorKey} defaultCategory={sceneSelectorDefaultCategory} selectedSceneId={selectedScene?.id || null} onSceneSelect={handleSceneSelect} orientation={aspectRatio} onOrientationChange={setAspectRatio} />
                 
                 {/* Scroll to top button for scene gallery */}
                 <ScrollToTopButton threshold={300} />
