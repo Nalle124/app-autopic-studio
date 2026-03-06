@@ -1940,6 +1940,7 @@ export const CreateSceneModal = ({
       : (BLUR_PLATE_PROMPT_MAP[blurStyle] || BLUR_PLATE_PROMPT_MAP['full-blur']);
 
     const total = selectedBlurImages.length;
+    let hadError = false;
 
     for (let idx = 0; idx < selectedBlurImages.length; idx++) {
       const imageUrl = selectedBlurImages[idx];
@@ -2011,6 +2012,7 @@ export const CreateSceneModal = ({
             return;
           }
           setMessages((prev) => [...prev, { role: 'assistant-error', text: `Kunde inte bearbeta bild ${idx + 1}. Försök igen.` }]);
+          hadError = true;
           continue;
         }
 
@@ -2034,10 +2036,13 @@ export const CreateSceneModal = ({
           return;
         }
         setMessages((prev) => [...prev, { role: 'assistant-error', text: `Fel vid bearbetning av bild ${idx + 1}. Försök igen.` }]);
+        hadError = true;
       }
     }
 
-    setSelectedBlurImages([]);
+    if (!hadError) {
+      setSelectedBlurImages([]);
+    }
     setIsGenerating(false);
   };
 
