@@ -159,7 +159,9 @@ export const ImageUploader = ({
         duration: 5000
       });
     }
-    setLocalImages(prev => [...prev, ...newImages]);
+    if (!propUploadedImages) {
+      setLocalImages(prev => [...prev, ...newImages]);
+    }
     onImagesUploaded(newImages);
     toast.success(`${filesToProcess.length} bilder uppladdade`);
 
@@ -255,9 +257,11 @@ export const ImageUploader = ({
         originalWidth: dimensions.width,
         originalHeight: dimensions.height
       };
-      setLocalImages(prev => [...prev, newImage]);
+      if (!propUploadedImages) {
+        setLocalImages(prev => [...prev, newImage]);
+      }
       onImagesUploaded([newImage]);
-      toast.success('Exempelbild vald');
+      // Success indicated by UI state change - no toast needed
     } catch (error) {
       console.error('Error loading example image:', error);
       toast.error('Kunde inte ladda exempelbilden');

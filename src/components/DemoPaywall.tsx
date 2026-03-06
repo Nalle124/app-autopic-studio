@@ -438,11 +438,7 @@ export const DemoPaywall = () => {
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-white/80">
                                   <Check className="w-3.5 h-3.5 text-white/70" />
-                                  <span>Brand kit</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-white/80">
-                                  <Check className="w-3.5 h-3.5 text-white/70" />
-                                  <span>Support</span>
+                                  <span>Alla funktioner</span>
                                 </div>
                               </div>
                             </div>
@@ -545,11 +541,7 @@ export const DemoPaywall = () => {
                                 </div>
                                 <div className={`flex items-center gap-2 text-sm ${isPremiumStyle ? 'text-white/80' : 'text-muted-foreground'}`}>
                                   <Check className={`w-3.5 h-3.5 ${isPremiumStyle ? 'text-white/70' : 'text-primary/70'}`} />
-                                  <span>Brand kit</span>
-                                </div>
-                                <div className={`flex items-center gap-2 text-sm ${isPremiumStyle ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                  <Check className={`w-3.5 h-3.5 ${isPremiumStyle ? 'text-white/70' : 'text-primary/70'}`} />
-                                  <span>Support</span>
+                                  <span>Alla funktioner</span>
                                 </div>
                               </div>
                               <Button

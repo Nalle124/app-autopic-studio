@@ -177,7 +177,7 @@ const Auth = () => {
       setShowEmailVerification(true);
       setResendCooldown(60);
       
-      toast.success('Verifieringskod skickad!');
+      // UI handles state indication - no toast needed
     } catch (error: any) {
       toast.error(error.message || 'Kunde inte skicka verifieringskod');
     } finally {
@@ -254,7 +254,7 @@ const Auth = () => {
       await sendVerificationCode(pendingSignupData.email, pendingSignupData.fullName);
       setResendCooldown(60);
       setVerificationCode('');
-      toast.success('Ny kod skickad!');
+      // UI handles state indication - no toast needed
     } catch (error: any) {
       toast.error(error.message || 'Kunde inte skicka ny kod');
     } finally {

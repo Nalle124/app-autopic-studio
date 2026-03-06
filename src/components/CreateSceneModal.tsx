@@ -568,7 +568,7 @@ export const CreateSceneModal = ({
   onChatModeChange
 }: CreateSceneModalProps) => {
   const { user } = useAuth();
-  const { triggerPaywall, refetchCredits } = useDemo();
+  const { triggerPaywall, refetchCredits, credits, canGenerate, creditsLoading } = useDemo();
   const [chatMode, setChatModeInternal] = useState<ChatMode | null>(null);
   const setChatMode = useCallback((mode: ChatMode | null) => {
     setChatModeInternal(mode);
@@ -1134,6 +1134,11 @@ export const CreateSceneModal = ({
 
   const generateFromGuidedSelections = async (extraDetails?: string) => {
     if (!user || !guidedCategory) return;
+    // Credit check before generating
+    if (!canGenerate) {
+      triggerPaywall('subscriber-limit');
+      return;
+    }
 
     const categoryLabel = activeCategories.find((c) => c.value === guidedCategory)?.label || guidedCategory;
 
@@ -1661,6 +1666,12 @@ export const CreateSceneModal = ({
   const handleGenerate = async () => {
     if (!prompt.trim() || !user) return;
 
+    // Credit check before generating
+    if (!canGenerate) {
+      triggerPaywall('subscriber-limit');
+      return;
+    }
+
     // Handle custom interior color input
     if (awaitingGuidedCustomInput && chatMode === 'fix-interior') {
       const customColor = prompt.trim();
@@ -1914,6 +1925,11 @@ export const CreateSceneModal = ({
   // ─── Blur plates batch generation ──────────────────────────
   const handleBlurGenerate = async () => {
     if (selectedBlurImages.length === 0 || !user || !blurStyle) return;
+    // Credit check before generating
+    if (!canGenerate) {
+      triggerPaywall('subscriber-limit');
+      return;
+    }
     setIsGenerating(true);
     
     // For logo-overlay with custom logo, build a special prompt
@@ -2028,6 +2044,11 @@ export const CreateSceneModal = ({
   // ─── Fix interior batch generation ─────────────────────────
   const handleFixInteriorBatch = async (bgType: string) => {
     if (selectedBlurImages.length === 0 || !user) return;
+    // Credit check before generating
+    if (!canGenerate) {
+      triggerPaywall('subscriber-limit');
+      return;
+    }
     setIsGenerating(true);
 
     const interiorPrompt = `Look at this car image carefully. This is a photo of a car where the background is visible — either through windows, open doors, open trunk/boot, or because the car is only partially in frame. YOUR TASK: Replace ALL visible background (everything that is NOT the car itself or its interior) with a clean, ${bgType} background. This includes: background visible through windows, behind open doors, through the trunk opening, and any background visible around the car. KEEP THE CAR AND ITS INTERIOR EXACTLY AS THEY ARE — same position, angle, color, reflections, dashboard, seats, steering wheel, and all details. Do NOT alter any part of the vehicle itself. Do NOT move, resize, crop, or reframe the image in any way. The output MUST have the EXACT same dimensions and framing as the input.`;
@@ -2185,6 +2206,11 @@ export const CreateSceneModal = ({
   // ─── Logo studio: apply logo to images via AI ──────────────
   const handleApplyLogo = async () => {
     if (!selectedLogoUrl || selectedBlurImages.length === 0 || !user || !selectedLogoPreset) return;
+    // Credit check before generating
+    if (!canGenerate) {
+      triggerPaywall('subscriber-limit');
+      return;
+    }
     setIsGenerating(true);
 
     // Show loading state in chat
@@ -2833,10 +2859,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                       generateFromGuidedSelections(extra || undefined);
                     }}
                     disabled={isGenerating}
-                    className="w-full rounded-full h-10">
-
-                        {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                        {chatMode === 'ad-create' ? 'Skapa annons' : 'Skapa bakgrund'}
+                    className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                        <span>{chatMode === 'ad-create' ? (isGenerating ? 'Skapar...' : 'Skapa annons') : (isGenerating ? 'Skapar...' : 'Skapa bakgrund')}</span>
                       </Button>
                       <p className="text-[11px] text-muted-foreground text-center">Lägg till detaljer i textfältet innan du genererar</p>
                     </div>
@@ -3546,9 +3570,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                 <Button
                   onClick={handleBlurGenerate}
                   disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                  <span>{isGenerating ? 'Bearbetar...' : 'Bearbeta'}</span>
                 </Button>
               </div>
             </div>
@@ -3590,9 +3613,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                 <Button
                   onClick={handleBlurGenerate}
                   disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                  <span>{isGenerating ? 'Bearbetar...' : 'Bearbeta'}</span>
                 </Button>
               </div>
             </div>
@@ -3605,9 +3627,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                 <Button
                   onClick={handleApplyLogo}
                   disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  {isGenerating ? 'Applicerar...' : 'Applicera logo'}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                  <span>{isGenerating ? 'Applicerar...' : 'Applicera logo'}</span>
                 </Button>
               </div>
             </div>
@@ -3620,9 +3641,8 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                 <Button
                   onClick={() => handleFixInteriorBatch(interiorBgType)}
                   disabled={isGenerating}
-                  className="w-full rounded-full h-10">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}>
+                  <span>{isGenerating ? 'Bearbetar...' : 'Bearbeta'}</span>
                 </Button>
               </div>
             </div>
