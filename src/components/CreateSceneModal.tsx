@@ -3610,6 +3610,21 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
               </div>
             </div>
           )}
+          {selectedBlurImages.length > 0 && chatMode === 'fix-interior' && interiorBgType && (
+            <div className="flex gap-2.5 items-start">
+              <AutopicAvatar />
+              <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
+                <p className="text-sm text-foreground">{isGenerating ? 'Bearbetar...' : 'Redo att bearbeta.'}</p>
+                <Button
+                  onClick={() => handleFixInteriorBatch(interiorBgType)}
+                  disabled={isGenerating}
+                  className="w-full rounded-full h-10">
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
+                </Button>
+              </div>
+            </div>
+          )}
           <div ref={chatEndRef} />
         </div>
 
