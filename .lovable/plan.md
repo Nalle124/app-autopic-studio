@@ -1,30 +1,46 @@
 
 
-## Plan: AI Studio Lansering
+## Analysis
 
-### Status: Lanserad (Annonsmaterial undantaget)
+**Would credits fix themselves without changes?** No. Here's why:
 
-**Vad har gjorts:**
+The current code (line 182-190) checks for any `subscription_renewal` transaction created within the last 28 days. The previous renewal was created ~28 days ago (Feb 6). Depending on exact timing, the 28-day window may or may not still catch it. But even if it eventually "expires" out of the window, credits would only reset the next time `check-subscription` runs AND the old renewal falls outside 28 days. This is fragile and timing-dependent -- it could work hours or days late, or not at all if billing cycles are slightly shorter than 28 days.
 
-1. **AI Studio lanserad** – "Kommer snart"-overlayen borttagen för inloggade användare. Alla kan nu använda AI Studio.
+**The real problem:** The system uses a time-based rolling window instead of checking the actual Stripe billing period. It should use `periodKey` (which contains the subscription ID + current_period_end) to determine if THIS specific period has already been processed.
 
-2. **Annonsmaterial blockerat** – Visas som "Kommer snart" i menyn men kan inte klickas. Ska lanseras separat.
+## Plan
 
-3. **Blurra regskyltar & Applicera logo** – Uppladdning av egna bilder fungerar nu direkt i första meddelandet (upload-knapp i bildgridet), oavsett om det finns projektbilder eller ej.
+### 1. Fix idempotency in `check-subscription/index.ts`
 
-4. **Fixa insidebilder (egen meny-funktion)** – Flyttat från Redigera fritt till en egen funktion i menyn med mockup-bild. Stöder batch-bearbetning: välj flera bilder → välj ljus/mörk bakgrund → alla bearbetas sekventiellt.
+Replace lines 180-190 (the 28-day rolling window check) with a `periodKey`-based check:
 
-5. **Förbättrade blur-prompter** – Master-prompterna för regskyltsblurring uppdaterade för att täcka HELA plåten (inkl. ram) och säkerställa identiskt resultat i batch.
+```typescript
+// BEFORE (broken):
+const twentyEightDaysAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString();
+const { data: existingResetRows } = await supabaseClient
+  .from('credit_transactions')
+  .select('id')
+  .eq('user_id', user.id)
+  .eq('transaction_type', 'subscription_renewal')
+  .gte('created_at', twentyEightDaysAgo)
+  .limit(1);
 
-6. **Notice-text uppdaterad** – "Kommer snart:" → "Nyhet:" med uppdaterad beskrivning.
+// AFTER (correct):
+const { data: existingResetRows } = await supabaseClient
+  .from('credit_transactions')
+  .select('id')
+  .eq('user_id', user.id)
+  .eq('transaction_type', 'subscription_renewal')
+  .like('description', `%${periodKey}%`)
+  .limit(1);
+```
 
-7. **Ny/Meny-knappar** – Separata knappar: "Ny" (startar om i samma läge) och "Meny" (går tillbaka till huvudmenyn).
+This ties the idempotency check to the actual Stripe billing period. Each period has a unique `current_period_end` timestamp, so a new period = new `periodKey` = credits get reset. No more timing issues.
 
-8. **Redigera fritt** – Uppdaterad mockup-bild som visar vinkeländring istället för bildtransport.
+### 2. Manually fix credits for the two affected users
 
-### Nästa steg
+Use the database insert tool to:
+- Find user IDs for erik@bilnet.se and robert@almevik.se from profiles
+- UPDATE `user_credits` to 800 and 100 respectively
+- INSERT `subscription_renewal` transactions with the current periodKey so they don't get double-reset
 
-- Testa alla flöden end-to-end (bakgrund, redigera fritt, fixa insidebilder, blur, logo)
-- Finjustera design och UX baserat på feedback
-- Färdigställ Annonsmaterial-flödet
-- Verifiera att credits dras korrekt vid varje generering
