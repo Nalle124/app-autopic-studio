@@ -1054,7 +1054,7 @@ function IndexContent() {
             toast.error('Kunde inte använda bilden');
           }
         }} />
-          </section> : <div className={`space-y-8 ${selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing') ? 'pb-[70vh]' : 'pb-16'}`}>
+          </section> : <div className={`space-y-8 ${selectedScene || uploadedImages.some(img => img.status === 'completed' || img.status === 'processing') ? 'pb-[50vh]' : 'pb-16'}`}>
             {/* Step 1: Upload */}
             <section id="upload-section" className="bg-card border border-border rounded-[10px] p-6 space-y-4">
               <h2 className="font-sans font-medium text-lg mb-4">Ladda upp bilder</h2>

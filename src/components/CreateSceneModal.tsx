@@ -2237,7 +2237,17 @@ export const CreateSceneModal = ({
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The input image is ${imgDims.w}x${imgDims.h} pixels (${aspectDesc}). Output MUST be EXACTLY ${imgDims.w}x${imgDims.h} pixels. CRITICAL RULES: 1) Output the EXACT same image dimensions (${imgDims.w}x${imgDims.h}), aspect ratio, and orientation as the input photo. If the input is ${aspectDesc}, the output MUST be ${aspectDesc} with the same proportions. 2) Do NOT crop, resize, zoom, stretch, or change the framing in any way. The output MUST be ${imgDims.w} pixels wide and ${imgDims.h} pixels tall. 3) The logo should be semi-transparent (watermark-style), professional, and NOT cover the car. 4) Keep everything about the original image pixel-perfect identical, only add the logo overlay. 5) Do NOT change the aspect ratio or make the image square — preserve the EXACT original shape (${imgDims.w}x${imgDims.h}).` },
+              { type: 'text', text: `Place this logo as a ${placementDesc} on this car photo. The logo must be SMALL — approximately 8-12% of the image width, like a subtle professional watermark. Do NOT make the logo large or prominent.
+
+ABSOLUTE REQUIREMENTS — DIMENSIONAL INTEGRITY:
+- Input: ${imgDims.w}x${imgDims.h} pixels (${aspectDesc})
+- Output MUST be EXACTLY ${imgDims.w}x${imgDims.h} pixels
+- Do NOT crop, resize, zoom, stretch, pad, or reframe the image AT ALL
+- Every single pixel of the original photo must remain in the exact same position
+- The ONLY change allowed is adding the small logo overlay
+- The logo should be semi-transparent (watermark-style), clean, professional
+- Do NOT cover the car with the logo — place it in the specified corner/position on the background area
+- Output dimensions: ${imgDims.w}x${imgDims.h} — this is non-negotiable` },
               { type: 'image_url', image_url: { url: base64 } },
               { type: 'image_url', image_url: { url: logoDataUrl } }
             ]
@@ -2692,8 +2702,8 @@ export const CreateSceneModal = ({
 
         // ─── Reference images ─────────────────────────
         if (msg.role === 'assistant-references') {
-          const visibleRefs = expandedReferences ? msg.references : msg.references.slice(0, 6);
-          const hasMore = msg.references.length > 6;
+          const visibleRefs = expandedReferences ? msg.references : msg.references.slice(0, 10);
+          const hasMore = msg.references.length > 10;
           return (
             <div key={i} className="space-y-2">
                   <div className="flex gap-2.5 items-start">
@@ -3333,6 +3343,13 @@ export const CreateSceneModal = ({
 
         // ─── Loading ──────────────────────────────────
         if (msg.role === 'assistant-loading') {
+          // Hide chat loading bubble when batch action buttons are visible (they show their own loading)
+          const isBatchWithButton = (
+            (chatMode === 'blur-plates' && blurStyle && selectedBlurImages.length > 0) ||
+            (chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset && selectedBlurImages.length > 0) ||
+            (chatMode === 'fix-interior' && selectedBlurImages.length > 0)
+          );
+          if (isBatchWithButton) return null;
           return (
             <div key={i} className="flex gap-2.5 items-start">
                   <AutopicAvatar />
@@ -3496,17 +3513,17 @@ export const CreateSceneModal = ({
         return null;
       })}
           {/* Standalone action buttons - rendered after all messages for blur/logo flows */}
-           {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle && blurStyle !== 'logo-overlay' && !isGenerating && (
+           {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle && blurStyle !== 'logo-overlay' && (
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                <p className="text-sm text-foreground">Redo att applicera.</p>
+                <p className="text-sm text-foreground">{isGenerating ? 'Bearbetar...' : 'Redo att applicera.'}</p>
                 <Button
                   onClick={handleBlurGenerate}
                   disabled={isGenerating}
                   className="w-full rounded-full h-10">
                   {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  Bearbeta
+                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
                 </Button>
               </div>
             </div>
@@ -3540,32 +3557,32 @@ export const CreateSceneModal = ({
               </button>
             </div>
           )}
-          {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle === 'logo-overlay' && selectedLogoUrl && !isGenerating && (
+          {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && blurStyle === 'logo-overlay' && selectedLogoUrl && (
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                <p className="text-sm text-foreground">Redo att applicera.</p>
+                <p className="text-sm text-foreground">{isGenerating ? 'Bearbetar...' : 'Redo att applicera.'}</p>
                 <Button
                   onClick={handleBlurGenerate}
                   disabled={isGenerating}
                   className="w-full rounded-full h-10">
                   {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  Bearbeta
+                  {isGenerating ? 'Bearbetar...' : 'Bearbeta'}
                 </Button>
               </div>
             </div>
           )}
-          {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset && !isGenerating && (
+          {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && selectedLogoUrl && selectedLogoPreset && (
             <div className="flex gap-2.5 items-start">
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
-                <p className="text-sm text-foreground">Redo att applicera.</p>
+                <p className="text-sm text-foreground">{isGenerating ? 'Applicerar logo...' : 'Redo att applicera.'}</p>
                 <Button
                   onClick={handleApplyLogo}
                   disabled={isGenerating}
                   className="w-full rounded-full h-10">
                   {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
-                  Applicera logo
+                  {isGenerating ? 'Applicerar...' : 'Applicera logo'}
                 </Button>
               </div>
             </div>
