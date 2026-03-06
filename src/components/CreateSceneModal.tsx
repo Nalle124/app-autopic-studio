@@ -3351,9 +3351,9 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
                       handleApplyLogo();
                     } else if (chatMode === 'fix-interior' && selectedBlurImages.length > 0) {
                       // Re-run interior fix — detect bg type from previous messages
-                      const hadDark = messages.some((m) => m.role === 'user' && (m as any).text === 'Mörk bakgrund');
-                      const bgType = hadDark ? 'dark neutral black/charcoal' : 'light neutral white/grey';
-                      handleFixInteriorBatch(bgType);
+                      if (interiorBgType) {
+                        handleFixInteriorBatch(interiorBgType);
+                      }
                     }
                   }}
                   disabled={isGenerating}
