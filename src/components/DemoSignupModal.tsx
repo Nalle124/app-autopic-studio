@@ -105,7 +105,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         setShowEmailVerification(true);
         setResendCooldown(60);
         
-        toast.success('Verifieringskod skickad!');
+        // UI handles state indication - no toast needed
       }
     } catch (error: any) {
       console.error('Auth error:', error);
