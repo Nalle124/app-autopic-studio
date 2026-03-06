@@ -1134,6 +1134,11 @@ export const CreateSceneModal = ({
 
   const generateFromGuidedSelections = async (extraDetails?: string) => {
     if (!user || !guidedCategory) return;
+    // Credit check before generating
+    if (!canGenerate) {
+      triggerPaywall('subscriber-limit');
+      return;
+    }
 
     const categoryLabel = activeCategories.find((c) => c.value === guidedCategory)?.label || guidedCategory;
 
