@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -29,6 +30,36 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  useEffect(() => {
+    // Dismiss splash screen after React has mounted
+    const splash = document.getElementById('splash-screen');
+    if (splash) {
+      // Small delay to let initial render settle
+      const timer = setTimeout(() => {
+        splash.style.opacity = '0';
+        splash.style.visibility = 'hidden';
+        setTimeout(() => splash.remove(), 400);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Preload AI Studio menu images
+  useEffect(() => {
+    const preloadImages = [
+      '/mode-previews/redigera-fritt-preview.jpg',
+      '/mode-previews/logo-apply-preview.jpg',
+      '/mode-previews/blur-plates-preview.jpg',
+      '/mode-previews/fix-interior-preview.jpg',
+      '/mode-previews/logo-preview.jpg',
+      '/mode-previews/ad-sasongsrea.png',
+    ];
+    preloadImages.forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
