@@ -753,6 +753,7 @@ export const CreateSceneModal = ({
     setAdFormat('landscape');
     setSelectedBlurImages([]);
     setBlurStyle(null);
+    setInteriorBgType(null);
     setOverlayEditor(null);
     setSelectedAdTemplateId(null);
     setAdUserTexts({});
@@ -912,6 +913,7 @@ export const CreateSceneModal = ({
     setPreviewPrompt('');
     setSelectedBlurImages([]);
     setBlurStyle(null);
+    setInteriorBgType(null);
     // Select the new mode (reuses selectMode logic)
     selectMode(mode);
   };
