@@ -257,7 +257,7 @@ export const ImageUploader = ({
       };
       setLocalImages(prev => [...prev, newImage]);
       onImagesUploaded([newImage]);
-      toast.success('Exempelbild vald');
+      // Success indicated by UI state change - no toast needed
     } catch (error) {
       console.error('Error loading example image:', error);
       toast.error('Kunde inte ladda exempelbilden');
