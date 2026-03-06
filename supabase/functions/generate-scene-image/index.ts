@@ -404,18 +404,25 @@ CRITICAL: ZERO text in the image. The application handles all text as a separate
     for (let attempt = 0; attempt < 2; attempt++) {
       const messagesForAttempt = attempt === 0 
         ? aiMessages 
-        : [
-            { 
-              role: "user", 
-              content: isLogoApplyMode
-                ? `Apply the logo onto the photo as instructed. CRITICAL: Preserve the EXACT original image dimensions and aspect ratio. Do NOT make it square. Do NOT crop or resize. Only add the logo overlay. Generate the image now.`
-                : isBackgroundMode
-                ? `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, COMPLETELY EMPTY scene with absolutely no cars, no people, no vehicles. Eye-level camera angle at ~1.2m height. Flat ground surface in lower 40%. Realistic photo style. Generate the image now.`
-                : isAdMode
-                  ? `Generate a professional automotive marketing advertisement image: ${latestPromptText}. Include any specified text/headlines prominently with bold readable typography. All text must be spelled correctly. MUST be ${isPortrait ? 'portrait 2:3 ratio' : 'landscape 3:2 ratio'}. Photorealistic professional marketing design. Generate the image now.`
-                  : `Generate a photorealistic image: ${latestPromptText}. If editing an existing image, preserve the EXACT same dimensions and aspect ratio. If creating new, use landscape 3:2 ratio. Realistic photo style. Generate the image now.`
-            },
-          ];
+        : isLogoApplyMode
+          ? [
+              ...aiMessages,
+              {
+                role: "user",
+                content:
+                  "RETRY: Generate the edited image now using the SAME two input images already provided above (first image = original photo, second image = logo). Do NOT create a new scene. Preserve exact framing and dimensions. ONLY overlay the logo as instructed.",
+              },
+            ]
+          : [
+              { 
+                role: "user", 
+                content: isBackgroundMode
+                  ? `Generate a professional automotive photography background image: ${latestPromptText}. MUST be landscape 3:2 ratio, COMPLETELY EMPTY scene with absolutely no cars, no people, no vehicles. Eye-level camera angle at ~1.2m height. Flat ground surface in lower 40%. Realistic photo style. Generate the image now.`
+                  : isAdMode
+                    ? `Generate a professional automotive marketing advertisement image: ${latestPromptText}. Include any specified text/headlines prominently with bold readable typography. All text must be spelled correctly. MUST be ${isPortrait ? 'portrait 2:3 ratio' : 'landscape 3:2 ratio'}. Photorealistic professional marketing design. Generate the image now.`
+                    : `Generate a photorealistic image: ${latestPromptText}. If editing an existing image, preserve the EXACT same dimensions and aspect ratio. If creating new, use landscape 3:2 ratio. Realistic photo style. Generate the image now.`
+              },
+            ];
 
       const imageResponse = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
