@@ -8,13 +8,18 @@ const logStep = (step: string, details?: any) => {
   console.log(`[VERIFY-PAYMENT] ${step}${detailsStr}`);
 };
 
-// Product to credits mapping - REAL product IDs
+// Product to credits mapping - includes both old and new product IDs
 const PRODUCT_CREDITS: Record<string, number> = {
   "prod_TYcMOi23KMqOh6": 100, // Start subscription (399 kr)
   "prod_TYcNnx01K8TR0F": 300, // Pro subscription (699 kr)
-  "prod_TYcO3bE3Ec2Amv": 600, // Business subscription (1299 kr)
-  "prod_TvOxn4SrvfgY12": 800, // Scale subscription (1499 kr)
-  "prod_TYcOcv9ORqRLYH": 30,  // One-time credit pack (69 kr)
+  "prod_TYcO3bE3Ec2Amv": 600, // Business v1 subscription (1299 kr) - old
+  "prod_TvOxn4SrvfgY12": 800, // Scale v1 subscription (1499 kr) - old
+  "prod_U8XXaqL2BD1ieM": 600, // Business v2 subscription (1499 kr) - new
+  "prod_U8XYydmVeSHax8": 800, // Scale v2 subscription (1999 kr) - new
+  "prod_TYcOcv9ORqRLYH": 30,  // One-time credit pack v1 (69 kr) - old
+  "prod_U8XYUvF2J6hOoM": 30,  // Credit Pack 30 (129 kr)
+  "prod_U8XZgWHtPFaYh8": 100, // Credit Pack 100 (399 kr)
+  "prod_U8Xa3v2gKKVlNz": 300, // Credit Pack 300 (899 kr)
 };
 
 serve(async (req) => {

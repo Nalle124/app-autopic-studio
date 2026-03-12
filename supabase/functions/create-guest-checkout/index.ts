@@ -9,13 +9,18 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-GUEST-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Valid price IDs mapped to plan names for validation
+// Valid price IDs mapped to plan names for validation (old + new)
 const VALID_PRICE_IDS: Record<string, string> = {
   "price_1SbV8AR5EFc7nWvhDcyFNiMe": "start",
   "price_1SbV94R5EFc7nWvhHlWgPKsp": "pro",
-  "price_1SbV9KR5EFc7nWvhAvP0jDbX": "business",
-  "price_1SbV9dR5EFc7nWvhOwgnPGX0": "creditPack",
-  "price_1SxY9GR5EFc7nWvhCAxK4pEr": "scale",
+  "price_1SbV9KR5EFc7nWvhAvP0jDbX": "business_v1",
+  "price_1SbV9dR5EFc7nWvhOwgnPGX0": "creditPack_v1",
+  "price_1SxY9GR5EFc7nWvhCAxK4pEr": "scale_v1",
+  "price_1TAGStR5EFc7nWvhW1YYQZQe": "business",
+  "price_1TAGTYR5EFc7nWvhppU1NUin": "scale",
+  "price_1TAGUMR5EFc7nWvh3TjjWNlH": "creditPack30",
+  "price_1TAGUyR5EFc7nWvhqvjU2wrV": "creditPack100",
+  "price_1TAGWRR5EFc7nWvhkemhzZsB": "creditPack300",
 };
 
 serve(async (req) => {
