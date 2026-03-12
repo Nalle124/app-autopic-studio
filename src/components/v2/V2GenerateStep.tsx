@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Loader2, Zap, Mail } from 'lucide-react';
+import { Loader2, Zap, Mail, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { V2Image, V2LogoConfig } from '@/pages/AutopicV2';
 
@@ -9,8 +10,10 @@ interface Props {
   images: V2Image[];
   logoConfig: V2LogoConfig;
   sceneId: string;
+  projectName: string;
   credits: number;
-  onComplete: (resultUrls: string[]) => void;
+  onImagesUpdate: (images: V2Image[]) => void;
+  onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
 }
 
@@ -18,18 +21,21 @@ export const V2GenerateStep = ({
   images,
   logoConfig,
   sceneId,
+  projectName,
   credits,
+  onImagesUpdate,
   onComplete,
   onRefetchCredits,
 }: Props) => {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
 
   const totalImages = images.length;
-  const creditsNeeded = totalImages;
-  const canGenerate = credits >= creditsNeeded;
+  const canGenerate = credits >= totalImages;
 
+  // Classify images in background, then process
   const handleGenerate = async () => {
     if (!canGenerate) {
       toast.error('Otillräckliga krediter');
@@ -38,20 +44,71 @@ export const V2GenerateStep = ({
 
     setProcessing(true);
     setProgress(0);
+    setCurrentImageIndex(0);
 
     try {
-      // Placeholder: in production this would call process-car-image for each
-      const results: string[] = [];
+      // Step 1: Classify images silently
+      toast.info('Analyserar bilder...');
+      const imageData = await Promise.all(
+        images.map(async (img) => {
+          const arrayBuffer = await img.file.arrayBuffer();
+          const base64 = btoa(
+            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+          );
+          return {
+            id: img.id,
+            base64: `data:${img.file.type};base64,${base64}`,
+          };
+        })
+      );
 
-      for (let i = 0; i < images.length; i++) {
-        setProgress(Math.round(((i + 1) / images.length) * 100));
-        // Simulate processing delay for now
-        await new Promise(r => setTimeout(r, 500));
-        results.push(images[i].previewUrl); // Placeholder
+      const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', {
+        body: { images: imageData },
+      });
+
+      if (classError) throw classError;
+
+      const classifications: Record<string, 'interior' | 'exterior' | 'detail'> = classData.classifications;
+      const classifiedImages = images.map(img => ({
+        ...img,
+        classification: classifications[img.id] || 'exterior',
+      }));
+      onImagesUpdate(classifiedImages);
+
+      const extCount = classifiedImages.filter(i => i.classification === 'exterior').length;
+      const intCount = classifiedImages.filter(i => i.classification === 'interior').length;
+      const detCount = classifiedImages.filter(i => i.classification === 'detail').length;
+      toast.success(`${extCount} exteriör, ${intCount} interiör, ${detCount} detalj`);
+
+      // Step 2: Process each image
+      const resultImages: V2Image[] = [];
+      for (let i = 0; i < classifiedImages.length; i++) {
+        const img = classifiedImages[i];
+        setCurrentImageIndex(i + 1);
+        setProgress(Math.round(((i + 0.5) / classifiedImages.length) * 100));
+
+        try {
+          // For now, use the preview URL as placeholder result
+          // In production: call process-car-image for exterior, AI masking for interior
+          await new Promise(r => setTimeout(r, 800)); // Simulate processing
+          resultImages.push({
+            ...img,
+            processedUrl: img.previewUrl, // placeholder
+            status: 'done',
+          });
+        } catch (err: any) {
+          resultImages.push({
+            ...img,
+            status: 'error',
+            error: err.message,
+          });
+        }
+
+        setProgress(Math.round(((i + 1) / classifiedImages.length) * 100));
       }
 
       await onRefetchCredits();
-      onComplete(results);
+      onComplete(resultImages);
       toast.success('Alla bilder genererade!');
     } catch (err: any) {
       console.error('Generation error:', err);
@@ -61,35 +118,34 @@ export const V2GenerateStep = ({
     }
   };
 
+  const extCount = images.filter(i => i.classification === 'exterior').length;
+  const intCount = images.filter(i => i.classification === 'interior').length;
+
   return (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="text-center space-y-2">
         <h2 className="text-xl font-bold text-foreground">Generera</h2>
         <p className="text-sm text-muted-foreground">
-          {totalImages} bilder redo att bearbetas. Det kostar {creditsNeeded} krediter.
+          {totalImages} bilder redo att bearbetas.
         </p>
       </div>
 
       {/* Summary */}
       <div className="rounded-card border border-border p-4 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Bilder</span>
+          <span className="text-muted-foreground">Antal bilder</span>
           <span className="text-foreground font-medium">{totalImages}</span>
         </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Interiör / Exteriör / Detalj</span>
-          <span className="text-foreground font-medium">
-            {images.filter(i => i.classification === 'interior').length} / {images.filter(i => i.classification === 'exterior').length} / {images.filter(i => i.classification === 'detail').length}
-          </span>
-        </div>
+        {projectName && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Projekt</span>
+            <span className="text-foreground font-medium">{projectName}</span>
+          </div>
+        )}
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Logo</span>
-          <span className="text-foreground font-medium capitalize">{logoConfig.applyTo === 'none' ? 'Ingen' : logoConfig.applyTo}</span>
-        </div>
-        <div className="flex justify-between text-sm border-t border-border pt-2">
-          <span className="text-muted-foreground">Kostnad</span>
-          <span className={`font-medium ${canGenerate ? 'text-foreground' : 'text-destructive'}`}>
-            {creditsNeeded} krediter ({credits} tillgängliga)
+          <span className="text-foreground font-medium capitalize">
+            {logoConfig.applyTo === 'none' ? 'Ingen' : logoConfig.applyTo === 'all' ? 'Alla' : logoConfig.applyTo === 'first' ? 'Första bilden' : logoConfig.applyTo}
           </span>
         </div>
       </div>
@@ -127,26 +183,36 @@ export const V2GenerateStep = ({
 
       {/* Progress */}
       {processing && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Progress value={progress} className="h-2" />
           <p className="text-xs text-center text-muted-foreground">
-            Bearbetar... {progress}%
+            Bearbetar bild {currentImageIndex} av {totalImages}... {progress}%
           </p>
+          {/* Live preview of current processing image */}
+          {currentImageIndex > 0 && currentImageIndex <= images.length && (
+            <div className="flex justify-center">
+              <div className="relative w-48 aspect-[4/3] rounded-lg overflow-hidden bg-muted">
+                <img
+                  src={images[currentImageIndex - 1]?.previewUrl}
+                  alt=""
+                  className="w-full h-full object-cover animate-pulse"
+                />
+                <div className="absolute inset-0 bg-primary/10 animate-pulse" />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Generate button */}
+      {/* Generate button — same style as standard flow */}
       <Button
-        className="w-full"
+        className="w-full btn-processing-ready"
         size="lg"
         onClick={handleGenerate}
         disabled={processing || !canGenerate}
       >
         {processing ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Bearbetar...
-          </>
+          <span className="btn-processing">Bearbetar...</span>
         ) : (
           <>
             <Zap className="h-4 w-4 mr-2" />
@@ -157,7 +223,7 @@ export const V2GenerateStep = ({
 
       {!canGenerate && (
         <p className="text-xs text-center text-destructive">
-          Du behöver {creditsNeeded - credits} fler krediter
+          Du behöver fler krediter
         </p>
       )}
     </div>

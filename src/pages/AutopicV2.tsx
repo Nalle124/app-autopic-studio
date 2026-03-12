@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { V2CameraGuide } from '@/components/v2/V2CameraGuide';
 import { V2ImageUploader } from '@/components/v2/V2ImageUploader';
-import { V2ClassificationStep } from '@/components/v2/V2ClassificationStep';
-import { V2CropPreview } from '@/components/v2/V2CropPreview';
+import { V2SceneSelector } from '@/components/v2/V2SceneSelector';
 import { V2LogoPresets } from '@/components/v2/V2LogoPresets';
 import { V2GenerateStep } from '@/components/v2/V2GenerateStep';
 import { V2ResultGallery } from '@/components/v2/V2ResultGallery';
@@ -29,10 +28,9 @@ export interface V2LogoConfig {
 }
 
 const STEPS = [
-  { label: 'Kameratips', key: 'guide' },
+  { label: 'Fototips', key: 'guide' },
   { label: 'Ladda upp', key: 'upload' },
-  { label: 'Klassificering', key: 'classify' },
-  { label: 'Beskärning', key: 'crop' },
+  { label: 'Bakgrund', key: 'scene' },
   { label: 'Logo', key: 'logo' },
   { label: 'Generera', key: 'generate' },
 ] as const;
@@ -42,36 +40,28 @@ const AutopicV2 = () => {
   const { credits, refetch: refetchCredits } = useUserCredits();
   const [currentStep, setCurrentStep] = useState(0);
   const [images, setImages] = useState<V2Image[]>([]);
+  const [projectName, setProjectName] = useState('');
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'first' });
-  const [selectedSceneId, setSelectedSceneId] = useState<string>('white-studio');
-  const [results, setResults] = useState<string[]>([]);
+  const [selectedSceneId, setSelectedSceneId] = useState<string>('');
+  const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
 
   const handleImagesUploaded = useCallback((newImages: V2Image[]) => {
     setImages(newImages);
   }, []);
 
-  const handleClassificationDone = useCallback((classified: V2Image[]) => {
-    setImages(classified);
-  }, []);
-
-  const handleCropDone = useCallback((cropped: V2Image[]) => {
-    setImages(cropped);
-  }, []);
-
-  const handleGenerationComplete = useCallback((resultUrls: string[]) => {
-    setResults(resultUrls);
+  const handleGenerationComplete = useCallback((resultImages: V2Image[]) => {
+    setResults(resultImages);
     setShowResults(true);
   }, []);
 
   const canGoNext = () => {
     switch (currentStep) {
-      case 0: return true; // guide — always
+      case 0: return true;
       case 1: return images.length > 0;
-      case 2: return images.every(i => i.classification);
-      case 3: return true; // crop is optional
-      case 4: return true; // logo is optional
-      case 5: return false; // generate is the final action
+      case 2: return !!selectedSceneId;
+      case 3: return true; // logo is optional
+      case 4: return false; // generate is the final action
       default: return false;
     }
   };
@@ -86,6 +76,7 @@ const AutopicV2 = () => {
             setResults([]);
             setShowResults(false);
             setCurrentStep(0);
+            setProjectName('');
           }}
         />
       </div>
@@ -128,23 +119,30 @@ const AutopicV2 = () => {
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
         {currentStep === 0 && <V2CameraGuide />}
         {currentStep === 1 && (
-          <V2ImageUploader images={images} onImagesChange={handleImagesUploaded} />
+          <V2ImageUploader
+            images={images}
+            onImagesChange={handleImagesUploaded}
+            projectName={projectName}
+            onProjectNameChange={setProjectName}
+          />
         )}
         {currentStep === 2 && (
-          <V2ClassificationStep images={images} onClassified={handleClassificationDone} />
+          <V2SceneSelector
+            selectedSceneId={selectedSceneId}
+            onSelect={setSelectedSceneId}
+          />
         )}
         {currentStep === 3 && (
-          <V2CropPreview images={images} onCropDone={handleCropDone} />
-        )}
-        {currentStep === 4 && (
           <V2LogoPresets config={logoConfig} onConfigChange={setLogoConfig} />
         )}
-        {currentStep === 5 && (
+        {currentStep === 4 && (
           <V2GenerateStep
             images={images}
             logoConfig={logoConfig}
             sceneId={selectedSceneId}
+            projectName={projectName}
             credits={credits}
+            onImagesUpdate={setImages}
             onComplete={handleGenerationComplete}
             onRefetchCredits={refetchCredits}
           />
