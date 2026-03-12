@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Zap, Mail, Sun, Palette } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Mail, Sun, Palette, Plus, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { V2Image, V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
@@ -14,31 +15,25 @@ interface Props {
   sceneId: string;
   projectName: string;
   credits: number;
+  outputFormat: 'landscape' | 'portrait' | 'square';
   onImagesUpdate: (images: V2Image[]) => void;
   onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
 }
 
+// --- helpers ---
+
 async function fetchScene(sceneId: string) {
-  const { data } = await supabase
-    .from('scenes')
-    .select('*')
-    .eq('id', sceneId)
-    .single();
+  const { data } = await supabase.from('scenes').select('*').eq('id', sceneId).single();
   return data;
 }
 
-async function fetchUserLogo(userId: string): Promise<{ light: string | null; dark: string | null }> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('logo_light, logo_dark')
-    .eq('id', userId)
-    .single();
+async function fetchUserLogo(userId: string) {
+  const { data } = await supabase.from('profiles').select('logo_light, logo_dark').eq('id', userId).single();
   return { light: data?.logo_light || null, dark: data?.logo_dark || null };
 }
 
-// Auto-crop: AI detects car, returns normalized crop region, we apply via canvas preserving original ratio
-async function autoCropImage(imageUrl: string): Promise<string> {
+async function autoCropImage(imageUrl: string, targetAspect: number): Promise<string> {
   const { data, error } = await supabase.functions.invoke('auto-crop-image', {
     body: { imageUrl, paddingPercent: 0.08 },
   });
@@ -46,19 +41,44 @@ async function autoCropImage(imageUrl: string): Promise<string> {
     console.warn('Auto-crop failed, returning original:', error || data?.error);
     return imageUrl;
   }
-  return applyCropRegion(imageUrl, data.crop);
+  return applyCropRegion(imageUrl, data.crop, targetAspect);
 }
 
-function applyCropRegion(imageUrl: string, crop: { left: number; top: number; width: number; height: number }): Promise<string> {
+function applyCropRegion(imageUrl: string, crop: { left: number; top: number; width: number; height: number }, targetAspect: number): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
-        const srcX = Math.round(crop.left * img.naturalWidth);
-        const srcY = Math.round(crop.top * img.naturalHeight);
-        const srcW = Math.round(crop.width * img.naturalWidth);
-        const srcH = Math.round(crop.height * img.naturalHeight);
+        // Compute car region in pixels
+        let srcX = Math.round(crop.left * img.naturalWidth);
+        let srcY = Math.round(crop.top * img.naturalHeight);
+        let srcW = Math.round(crop.width * img.naturalWidth);
+        let srcH = Math.round(crop.height * img.naturalHeight);
+
+        // Enforce target aspect ratio by expanding the crop region
+        const currentAspect = srcW / srcH;
+        if (currentAspect < targetAspect) {
+          // Need wider — expand horizontally
+          const newW = Math.round(srcH * targetAspect);
+          const diff = newW - srcW;
+          srcX = Math.max(0, srcX - Math.round(diff / 2));
+          srcW = newW;
+          if (srcX + srcW > img.naturalWidth) {
+            srcX = Math.max(0, img.naturalWidth - srcW);
+            srcW = Math.min(srcW, img.naturalWidth);
+          }
+        } else if (currentAspect > targetAspect) {
+          // Need taller — expand vertically
+          const newH = Math.round(srcW / targetAspect);
+          const diff = newH - srcH;
+          srcY = Math.max(0, srcY - Math.round(diff / 2));
+          srcH = newH;
+          if (srcY + srcH > img.naturalHeight) {
+            srcY = Math.max(0, img.naturalHeight - srcH);
+            srcH = Math.min(srcH, img.naturalHeight);
+          }
+        }
 
         const canvas = document.createElement('canvas');
         canvas.width = srcW;
@@ -89,13 +109,11 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string): Pr
           canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d')!;
           ctx.drawImage(img, 0, 0);
-
           const logoMaxW = img.naturalWidth * 0.12;
           const logoScale = logoMaxW / logo.naturalWidth;
           const logoW = logo.naturalWidth * logoScale;
           const logoH = logo.naturalHeight * logoScale;
           const pad = img.naturalWidth * 0.02;
-
           let x = pad, y = pad;
           if (preset === 'top-center') { x = (img.naturalWidth - logoW) / 2; y = pad; }
           else if (preset === 'bottom-right') { x = img.naturalWidth - logoW - pad; y = img.naturalHeight - logoH - pad; }
@@ -106,7 +124,6 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string): Pr
             x = (img.naturalWidth - logoW) / 2;
             y = img.naturalHeight - bannerH + pad;
           }
-
           ctx.drawImage(logo, x, y, logoW, logoH);
           resolve(canvas.toDataURL('image/jpeg', 0.92));
         } catch { resolve(imageUrl); }
@@ -119,7 +136,6 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string): Pr
   });
 }
 
-// Apply light edit: shadows -5, contrast +5, warmth -3
 function applyLightEdit(imageUrl: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -130,7 +146,6 @@ function applyLightEdit(imageUrl: string): Promise<string> {
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d')!;
-        // contrast +5%, brightness slight boost (shadows -5 = lift shadows slightly)
         ctx.filter = 'contrast(1.05) brightness(1.02) saturate(0.97)';
         ctx.drawImage(img, 0, 0);
         resolve(canvas.toDataURL('image/jpeg', 0.92));
@@ -141,7 +156,6 @@ function applyLightEdit(imageUrl: string): Promise<string> {
   });
 }
 
-// Apply brightness boost for dark images
 function applyLightBoost(imageUrl: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -167,29 +181,22 @@ async function processInteriorImage(img: V2Image, bgType: string): Promise<strin
   const base64 = `data:${img.file.type};base64,${btoa(
     new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
   )}`;
-
-  const dims = await new Promise<{w: number; h: number}>((resolve) => {
+  const dims = await new Promise<{ w: number; h: number }>((resolve) => {
     const image = new window.Image();
     image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
     image.onerror = () => resolve({ w: 1, h: 1 });
     image.src = base64;
   });
-
   const prompt = `Look at this car image carefully. This is a photo of a car where the background is visible — either through windows, open doors, open trunk/boot, or because the car is only partially in frame. YOUR TASK: Replace ALL visible background (everything that is NOT the car itself or its interior) with a clean, ${bgType} background. KEEP THE CAR AND ITS INTERIOR EXACTLY AS THEY ARE. Do NOT alter any part of the vehicle itself. Do NOT move, resize, crop, or reframe the image. The output MUST have the EXACT same dimensions (${dims.w}x${dims.h}).`;
-
   const { data, error } = await supabase.functions.invoke('generate-scene-image', {
     body: {
-      conversationHistory: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: base64 } }
-        ]
-      }],
+      conversationHistory: [{ role: 'user', content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: base64 } }
+      ] }],
       mode: 'free-create'
     }
   });
-
   if (error) throw error;
   if (!data?.imageUrl) throw new Error('Ingen bild returnerades');
   return data.imageUrl;
@@ -204,8 +211,30 @@ function shouldApplyLogo(index: number, total: number, applyTo: V2LogoConfig['ap
   return false;
 }
 
+const LOGO_APPLY_LABELS: Record<string, string> = {
+  'none': 'Ingen',
+  'all': 'Alla bilder',
+  'first': 'Första bilden',
+  'first-last': 'Första & sista',
+  'first-3-last': 'Första 3 + sista',
+};
+
+const PLATE_STYLE_LABELS: Record<string, string> = {
+  'blur-dark': 'Mörk blur',
+  'blur-light': 'Ljus blur',
+  'logo': 'Din logotyp',
+};
+
+function getTargetAspect(format: 'landscape' | 'portrait' | 'square'): number {
+  if (format === 'landscape') return 3 / 2;
+  if (format === 'portrait') return 2 / 3;
+  return 1;
+}
+
+// --- component ---
+
 export const V2GenerateStep = ({
-  images, logoConfig, plateConfig, sceneId, projectName, credits,
+  images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat,
   onImagesUpdate, onComplete, onRefetchCredits,
 }: Props) => {
   const [processing, setProcessing] = useState(false);
@@ -215,63 +244,71 @@ export const V2GenerateStep = ({
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
   const [lightBoost, setLightBoost] = useState(false);
   const [lightEdit, setLightEdit] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  // Live results for direct mode gallery
+  const [liveResults, setLiveResults] = useState<V2Image[]>([]);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   const totalImages = images.length;
-  const exteriorCount = images.length; // estimated before classification
-  const plateCost = plateConfig.enabled ? exteriorCount : 0;
-  const totalCost = totalImages + plateCost;
+  const totalCost = totalImages + (plateConfig.enabled ? totalImages : 0);
   const canGenerate = credits >= totalCost;
+  const useLiveGallery = deliveryMode === 'direct' && totalImages <= 10;
+
+  useEffect(() => {
+    if (liveResults.length > 0 && galleryRef.current) {
+      galleryRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [liveResults.length]);
 
   const handleGenerate = async () => {
-    if (!canGenerate) {
-      toast.error('Otillräckliga krediter');
-      return;
-    }
+    if (!canGenerate) { toast.error('Otillräckliga krediter'); return; }
 
     setProcessing(true);
     setProgress(0);
     setCurrentImageIndex(0);
+    setLiveResults([]);
+    setEmailSent(false);
 
     try {
+      // 1. Classify
       setStatusText('Analyserar bilder...');
       const imageData = await Promise.all(
         images.map(async (img) => {
-          const arrayBuffer = await img.file.arrayBuffer();
-          const base64 = btoa(
-            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-          );
-          return { id: img.id, base64: `data:${img.file.type};base64,${base64}` };
+          const ab = await img.file.arrayBuffer();
+          const b64 = btoa(new Uint8Array(ab).reduce((d, b) => d + String.fromCharCode(b), ''));
+          return { id: img.id, base64: `data:${img.file.type};base64,${b64}` };
         })
       );
-
-      const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', {
-        body: { images: imageData },
-      });
+      const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', { body: { images: imageData } });
       if (classError) throw classError;
-
       const classifications: Record<string, 'interior' | 'exterior' | 'detail'> = classData.classifications;
-      const classifiedImages = images.map(img => ({
-        ...img,
-        classification: classifications[img.id] || 'exterior',
-      }));
+      const classifiedImages = images.map(img => ({ ...img, classification: classifications[img.id] || 'exterior' }));
       onImagesUpdate(classifiedImages);
 
+      // If email mode, show confirmation immediately
+      if (deliveryMode === 'email') {
+        setEmailSent(true);
+        toast.success('Dina bilder genereras nu och skickas till din e-post inom ett par minuter.');
+        // Continue processing in background but user sees confirmation
+      }
+
+      // 2. Fetch scene + logo
       const scene = await fetchScene(sceneId);
       if (!scene) throw new Error('Kunde inte ladda bakgrund');
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Din session har gått ut.');
-
       let logoUrl: string | null = null;
       if (logoConfig.applyTo !== 'none') {
         const logos = await fetchUserLogo(session.user.id);
         logoUrl = logos.light || logos.dark;
       }
-
       const sceneName = (scene.name || '').toLowerCase();
       const isDarkScene = sceneName.includes('mörk') || sceneName.includes('dark') || sceneName.includes('midnight');
       const interiorBgType = isDarkScene ? 'dark neutral black/charcoal' : 'clean white';
+      const targetAspect = getTargetAspect(outputFormat);
 
+      // 3. Process
       const resultImages: V2Image[] = [];
       const totalSteps = classifiedImages.length;
 
@@ -281,52 +318,41 @@ export const V2GenerateStep = ({
 
         try {
           let processedUrl: string;
-
           if (img.classification === 'exterior' || img.classification === 'detail') {
-            setStatusText(`Bearbetar bild ${i + 1} av ${totalSteps}...`);
+            setStatusText(`Genererar ${i + 1} av ${totalSteps}...`);
             setProgress(Math.round(((i + 0.3) / totalSteps) * 100));
-            processedUrl = await processExteriorImage(img, scene, session.access_token);
-
-            setStatusText(`Beskär bild ${i + 1} av ${totalSteps}...`);
+            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
+            setStatusText(`Beskär ${i + 1} av ${totalSteps}...`);
             setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
-            processedUrl = await autoCropImage(processedUrl);
+            processedUrl = await autoCropImage(processedUrl, targetAspect);
           } else {
             setStatusText(`Maskerar interiör ${i + 1} av ${totalSteps}...`);
             setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
             processedUrl = await processInteriorImage(img, interiorBgType);
           }
-
-          // Apply light boost if enabled
-          if (lightBoost) {
-            processedUrl = await applyLightBoost(processedUrl);
-          }
-
-          // Apply light edit if enabled
-          if (lightEdit) {
-            processedUrl = await applyLightEdit(processedUrl);
-          }
-
-          // Apply logo
+          if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
+          if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
           if (logoUrl && shouldApplyLogo(i, totalSteps, logoConfig.applyTo)) {
             processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset);
           }
-
-          resultImages.push({ ...img, processedUrl, status: 'done' });
+          const result = { ...img, processedUrl, status: 'done' as const };
+          resultImages.push(result);
+          if (deliveryMode === 'direct') {
+            setLiveResults(prev => [...prev, result]);
+          }
         } catch (err: any) {
           console.error(`Error processing image ${img.id}:`, err);
           resultImages.push({ ...img, status: 'error', error: err.message });
         }
-
         setProgress(Math.round(((i + 1) / totalSteps) * 100));
       }
 
       await onRefetchCredits();
 
-      if (deliveryMode === 'email') {
-        toast.success('Bilderna är på väg! Du får ett mail inom ett par minuter.');
+      if (deliveryMode === 'direct') {
+        onComplete(resultImages);
       }
-
-      onComplete(resultImages);
+      // email mode: user already sees confirmation
     } catch (err: any) {
       console.error('Generation error:', err);
       toast.error(err.message || 'Generering misslyckades');
@@ -334,6 +360,74 @@ export const V2GenerateStep = ({
       setProcessing(false);
     }
   };
+
+  // Email sent confirmation view
+  if (emailSent && deliveryMode === 'email') {
+    return (
+      <div className="space-y-6 max-w-lg mx-auto text-center py-12">
+        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+          <Mail className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">Dina bilder genereras!</h2>
+        <p className="text-sm text-muted-foreground">
+          Du får ett mail med alla färdiga bilder inom ett par minuter. Du kan stänga ner sidan eller skapa ett nytt projekt.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <Button onClick={() => { setEmailSent(false); onComplete([]); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nytt projekt
+          </Button>
+          <Button variant="outline" onClick={() => window.location.href = '/?tab=history'}>
+            Gå till galleriet
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Live gallery rendering during direct generation
+  if (processing && deliveryMode === 'direct') {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto" ref={galleryRef}>
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold text-foreground">Genererar bilder...</h2>
+          <p className="text-sm text-muted-foreground">
+            {currentImageIndex} av {totalImages} — {statusText}
+          </p>
+          <Progress value={progress} className="h-2 max-w-md mx-auto" />
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {/* Show completed images */}
+          {liveResults.map((img, i) => (
+            <div key={img.id} className="aspect-[4/3] rounded-lg overflow-hidden bg-muted">
+              <img
+                src={img.processedUrl || img.previewUrl}
+                alt={`Klar ${i + 1}`}
+                className="w-full h-full object-cover animate-in fade-in duration-500"
+              />
+            </div>
+          ))}
+          {/* Skeleton for current processing image */}
+          {currentImageIndex <= totalImages && liveResults.length < totalImages && (
+            useLiveGallery ? (
+              // Show all remaining as skeletons
+              Array.from({ length: totalImages - liveResults.length }).map((_, i) => (
+                <div key={`skel-${i}`} className="aspect-[4/3] rounded-lg overflow-hidden">
+                  <Skeleton className="w-full h-full" />
+                </div>
+              ))
+            ) : (
+              // For > 10, just show one skeleton
+              <div className="aspect-[4/3] rounded-lg overflow-hidden">
+                <Skeleton className="w-full h-full" />
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-lg mx-auto">
@@ -352,16 +446,24 @@ export const V2GenerateStep = ({
         )}
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Logo</span>
-          <span className="text-foreground font-medium capitalize">
-            {logoConfig.applyTo === 'none' ? 'Ingen' : logoConfig.applyTo === 'all' ? 'Alla' : logoConfig.applyTo === 'first' ? 'Första bilden' : logoConfig.applyTo}
+          <span className="text-foreground font-medium">
+            {LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}
           </span>
         </div>
         {plateConfig.enabled && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Skyltar</span>
-            <span className="text-foreground font-medium">Döljs ({plateConfig.style})</span>
+            <span className="text-foreground font-medium">
+              Döljs — {PLATE_STYLE_LABELS[plateConfig.style] || plateConfig.style}
+            </span>
           </div>
         )}
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Format</span>
+          <span className="text-foreground font-medium">
+            {outputFormat === 'landscape' ? 'Liggande' : outputFormat === 'portrait' ? 'Stående' : 'Kvadrat'}
+          </span>
+        </div>
       </div>
 
       {/* Enhancement toggles */}
@@ -399,9 +501,8 @@ export const V2GenerateStep = ({
               deliveryMode === 'direct' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
-            <Zap className="h-5 w-5 mx-auto mb-1 text-primary" />
             <p className="text-sm font-medium text-foreground">Direkt</p>
-            <p className="text-[10px] text-muted-foreground">Vänta här ~1–3 min</p>
+            <p className="text-[10px] text-muted-foreground">Se bilderna genereras</p>
           </button>
           <button
             onClick={() => setDeliveryMode('email')}
@@ -416,43 +517,17 @@ export const V2GenerateStep = ({
         </div>
       </div>
 
-      {/* Progress */}
-      {processing && (
-        <div className="space-y-3">
-          <Progress value={progress} className="h-2" />
-          <p className="text-xs text-center text-muted-foreground">
-            {statusText} — {currentImageIndex} av {totalImages}
-          </p>
-          {currentImageIndex > 0 && currentImageIndex <= images.length && (
-            <div className="flex justify-center">
-              <div className="relative w-48 aspect-[4/3] rounded-lg overflow-hidden bg-muted">
-                <img
-                  src={images[currentImageIndex - 1]?.previewUrl}
-                  alt=""
-                  className="w-full h-full object-cover animate-pulse"
-                />
-                <div className="absolute inset-0 bg-primary/10 animate-pulse" />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Generate button */}
+      {/* Generate button — gradient blue-to-orange like v1, no icons */}
       <Button
-        className="w-full bg-[image:var(--gradient-button)] hover:bg-[image:var(--gradient-button-hover)] text-primary-foreground shadow-[var(--shadow-elegant)] transition-all"
+        className="w-full text-white font-semibold shadow-[var(--shadow-elegant)] transition-all"
+        style={{
+          background: 'linear-gradient(135deg, hsl(220 27% 41%) 0%, hsl(25 71% 45%) 100%)',
+        }}
         size="lg"
         onClick={handleGenerate}
         disabled={processing || !canGenerate}
       >
-        {processing ? (
-          <span className="btn-processing">Bearbetar...</span>
-        ) : (
-          <>
-            <Zap className="h-4 w-4 mr-2" />
-            Generera {totalImages} bilder
-          </>
-        )}
+        {processing ? 'Bearbetar...' : `Generera ${totalImages} bilder`}
       </Button>
 
       {!canGenerate && (
@@ -465,7 +540,8 @@ export const V2GenerateStep = ({
 async function processExteriorImage(
   img: V2Image,
   scene: any,
-  accessToken: string
+  accessToken: string,
+  outputFormat: 'landscape' | 'portrait' | 'square'
 ): Promise<string> {
   const formData = new FormData();
   formData.append('image', img.file, img.file.name);
@@ -500,7 +576,7 @@ async function processExteriorImage(
     ? scene.full_res_url
     : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${scene.full_res_url}`;
   formData.append('backgroundUrl', backgroundUrl);
-  formData.append('orientation', 'landscape');
+  formData.append('orientation', outputFormat === 'portrait' ? 'portrait' : 'landscape');
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, CheckCircle2, Sparkles } from 'lucide-react';
@@ -34,6 +34,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
   const [userScenes, setUserScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('popular');
+  const nextBtnRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -59,11 +60,18 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
     load();
   }, [user]);
 
+  const handleSelect = (id: string) => {
+    onSelect(id);
+    // Auto-scroll to bottom so user sees "Nästa" button
+    setTimeout(() => {
+      nextBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
+  };
+
   const getDisplayScenes = () => {
     if (activeCategory === 'user') return userScenes;
     const filtered = scenes.filter(s => s.category === activeCategory);
     if (filtered.length > 0) return filtered;
-    // Fallback: show popular or first 12
     const popular = scenes.filter(s => s.category === 'popular');
     return popular.length > 0 ? popular : scenes.slice(0, 12);
   };
@@ -106,7 +114,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
             {displayScenes.map((scene) => (
               <button
                 key={scene.id}
-                onClick={() => onSelect(scene.id)}
+                onClick={() => handleSelect(scene.id)}
                 className={`relative rounded-lg overflow-hidden border-2 transition-all aspect-[4/3] ${
                   selectedSceneId === scene.id
                     ? 'border-primary ring-2 ring-primary/20'
@@ -147,6 +155,9 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
           )}
         </>
       )}
+
+      {/* Scroll target for auto-scroll after selecting a scene */}
+      <div ref={nextBtnRef} />
     </div>
   );
 };
