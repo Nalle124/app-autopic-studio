@@ -158,71 +158,84 @@ const AutopicV2 = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {renderHeader()}
-      {/* Stepper - no title, just progress */}
+      {/* Stepper - clickable progress bar */}
       <div className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex gap-1">
             {STEPS.map((step, i) => (
-              <div
+              <button
                 key={step.key}
+                onClick={() => {
+                  // Allow clicking back to previous steps, or current step
+                  if (i <= currentStep) setCurrentStep(i);
+                }}
                 className={`flex-1 h-1.5 rounded-full transition-colors ${
-                  i <= currentStep ? 'bg-primary' : 'bg-muted'
+                  i <= currentStep ? 'bg-primary cursor-pointer hover:opacity-80' : 'bg-muted cursor-default'
                 }`}
               />
             ))}
           </div>
           <div className="flex justify-between mt-1">
             {STEPS.map((step, i) => (
-              <span
+              <button
                 key={step.key}
-                className={`text-[10px] ${i <= currentStep ? 'text-primary font-medium' : 'text-muted-foreground'}`}
+                onClick={() => { if (i <= currentStep) setCurrentStep(i); }}
+                className={`text-[10px] ${i <= currentStep ? 'text-primary font-medium cursor-pointer hover:underline' : 'text-muted-foreground cursor-default'}`}
               >
                 {step.label}
-              </span>
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Step content */}
+      {/* Step content - bordered sections like V1 */}
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 sm:py-6">
         {currentStep === 0 && (
-          <V2ImageUploader
-            images={images}
-            onImagesChange={handleImagesUploaded}
-            projectName={projectName}
-            onProjectNameChange={setProjectName}
-          />
+          <section className="bg-card border border-border rounded-[10px] p-6">
+            <V2ImageUploader
+              images={images}
+              onImagesChange={handleImagesUploaded}
+              projectName={projectName}
+              onProjectNameChange={setProjectName}
+            />
+          </section>
         )}
         {currentStep === 1 && (
-          <V2SceneSelector
-            selectedSceneId={selectedSceneId}
-            onSelect={setSelectedSceneId}
-            outputFormat={outputFormat}
-            onOutputFormatChange={setOutputFormat}
-          />
+          <section className="border border-border rounded-[10px] p-6 dark:bg-[hsla(0,0%,14%,0.8)]">
+            <V2SceneSelector
+              selectedSceneId={selectedSceneId}
+              onSelect={setSelectedSceneId}
+              outputFormat={outputFormat}
+              onOutputFormatChange={setOutputFormat}
+            />
+          </section>
         )}
         {currentStep === 2 && (
-          <V2LogoPresets
-            config={logoConfig}
-            onConfigChange={setLogoConfig}
-            plateConfig={plateConfig}
-            onPlateConfigChange={setPlateConfig}
-          />
+          <section className="bg-card border border-border rounded-[10px] p-6">
+            <V2LogoPresets
+              config={logoConfig}
+              onConfigChange={setLogoConfig}
+              plateConfig={plateConfig}
+              onPlateConfigChange={setPlateConfig}
+            />
+          </section>
         )}
         {currentStep === 3 && (
-          <V2GenerateStep
-            images={images}
-            logoConfig={logoConfig}
-            plateConfig={plateConfig}
-            sceneId={selectedSceneId}
-            projectName={projectName}
-            credits={credits}
-            outputFormat={outputFormat}
-            onImagesUpdate={setImages}
-            onComplete={handleGenerationComplete}
-            onRefetchCredits={refetchCredits}
-          />
+          <section className="border border-border rounded-[10px] p-6 dark:bg-card">
+            <V2GenerateStep
+              images={images}
+              logoConfig={logoConfig}
+              plateConfig={plateConfig}
+              sceneId={selectedSceneId}
+              projectName={projectName}
+              credits={credits}
+              outputFormat={outputFormat}
+              onImagesUpdate={setImages}
+              onComplete={handleGenerationComplete}
+              onRefetchCredits={refetchCredits}
+            />
+          </section>
         )}
       </div>
 
@@ -255,3 +268,4 @@ const AutopicV2 = () => {
 };
 
 export default AutopicV2;
+
