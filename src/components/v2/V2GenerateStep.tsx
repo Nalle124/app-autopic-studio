@@ -239,7 +239,7 @@ function getTargetAspect(format: 'landscape' | 'portrait'): number {
 
 export const V2GenerateStep = ({
   images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat,
-  onImagesUpdate, onComplete, onRefetchCredits, onStartOver,
+  onImagesUpdate, onComplete, onRefetchCredits, onStartOver, onTriggerPaywall,
 }: Props) => {
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
