@@ -20,6 +20,7 @@ interface Props {
   onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
   onStartOver: () => void;
+  onTriggerPaywall?: () => void;
 }
 
 // --- helpers ---
