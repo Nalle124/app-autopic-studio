@@ -158,7 +158,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
           </Button>
         </div>
       ) : loading ? (
-        <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
+        <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
           {Array.from({ length: 9 }).map((_, i) => (
             <Skeleton key={i} className={`rounded-lg ${thumbAspect}`} />
           ))}
