@@ -21,6 +21,7 @@ import UploadSceneImages from "./pages/UploadSceneImages";
 import InviteSignup from "./pages/InviteSignup";
 import Guide from "./pages/Guide";
 import AutopicV2 from "./pages/AutopicV2";
+import TryV2 from "./pages/TryV2";
 
 const queryClient = new QueryClient({
   defaultOptions: {
