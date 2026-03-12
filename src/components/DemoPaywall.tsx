@@ -464,7 +464,7 @@ export const DemoPaywall = () => {
 
             {/* ── Step 2: Quiz with sliders ── */}
             {step === 'quiz' && (
-              <div className="px-6 py-8 space-y-8">
+              <div className="px-6 pt-12 pb-8 space-y-8">
                 <div className="space-y-8">
                   {/* Cars per month slider */}
                   <div>
