@@ -21,6 +21,7 @@ import UploadSceneImages from "./pages/UploadSceneImages";
 import InviteSignup from "./pages/InviteSignup";
 import Guide from "./pages/Guide";
 import AutopicV2 from "./pages/AutopicV2";
+import TryV2 from "./pages/TryV2";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,7 +71,7 @@ function App() {
               <Sonner />
               <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/try" element={<Demo />} />
+              <Route path="/try" element={<TryV2 />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
