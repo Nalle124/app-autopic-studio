@@ -337,7 +337,27 @@ export const V2GenerateStep = ({
       }
 
       await onRefetchCredits();
-      if (deliveryMode === 'direct') { onComplete(resultImages); }
+      if (deliveryMode === 'direct') {
+        onComplete(resultImages);
+      } else if (deliveryMode === 'email') {
+        // Send images via email
+        const successfulUrls = resultImages
+          .filter(r => r.status === 'done' && r.processedUrl)
+          .map(r => r.processedUrl!);
+        if (successfulUrls.length > 0) {
+          try {
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            const userEmail = currentUser?.email;
+            if (userEmail) {
+              await supabase.functions.invoke('send-images-email', {
+                body: { imageUrls: successfulUrls, projectName, email: userEmail },
+              });
+            }
+          } catch (emailErr) {
+            console.error('Email delivery failed:', emailErr);
+          }
+        }
+      }
     } catch (err: any) {
       console.error('Generation error:', err);
       toast.error(err.message || 'Generering misslyckades');
