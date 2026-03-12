@@ -485,38 +485,55 @@ export const V2GenerateStep = ({
     );
   }
 
-  // Live gallery rendering during direct generation
+  // Live gallery rendering during direct generation - V1 style with shimmer
   if (processing && deliveryMode === 'direct') {
     return (
-      <div className="space-y-6 max-w-5xl mx-auto px-4" ref={galleryRef}>
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold text-foreground">Genererar bilder...</h2>
+      <div className="space-y-6 max-w-5xl mx-auto" ref={galleryRef}>
+        <div className="space-y-2">
+          <h2 className="font-sans font-medium text-lg text-foreground">Genererar bilder...</h2>
           <p className="text-sm text-muted-foreground">
             {currentImageIndex} av {totalImages} — {statusText}
           </p>
-          <Progress value={progress} className="h-2 max-w-md mx-auto" />
+          <Progress value={progress} className="h-2 max-w-md" />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {liveResults.map((img, i) => (
-            <div key={img.id} className="aspect-[4/3] rounded-lg overflow-hidden bg-muted">
-              <img
-                src={img.processedUrl || img.previewUrl}
-                alt={`Klar ${i + 1}`}
-                className="w-full h-full object-cover animate-in fade-in duration-500"
-              />
+            <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card">
+              <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                <img
+                  src={img.processedUrl || img.previewUrl}
+                  alt={`Klar ${i + 1}`}
+                  className="w-full h-full object-cover animate-in fade-in duration-500"
+                />
+              </div>
             </div>
           ))}
           {currentImageIndex <= totalImages && liveResults.length < totalImages && (
             useLiveGallery ? (
               Array.from({ length: totalImages - liveResults.length }).map((_, i) => (
-                <div key={`skel-${i}`} className="aspect-[4/3] rounded-lg overflow-hidden">
-                  <Skeleton className="w-full h-full" />
+                <div key={`skel-${i}`} className="relative overflow-hidden rounded-[10px] border border-border bg-card">
+                  <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                    {i === 0 ? (
+                      <div className="absolute inset-0 animate-premium-shimmer" />
+                    ) : (
+                      <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
+                        <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">
+                          Väntar...
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))
             ) : (
-              <div className="aspect-[4/3] rounded-lg overflow-hidden">
-                <Skeleton className="w-full h-full" />
+              <div className="relative overflow-hidden rounded-[10px] border border-border bg-card col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
+                <div className="p-4 flex items-center justify-center gap-4 bg-muted/50">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm font-medium text-foreground">
+                    Genererar {liveResults.length + 1} av {totalImages}...
+                  </p>
+                </div>
               </div>
             )
           )}
