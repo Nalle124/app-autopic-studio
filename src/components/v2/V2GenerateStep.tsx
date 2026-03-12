@@ -15,7 +15,7 @@ interface Props {
   sceneId: string;
   projectName: string;
   credits: number;
-  outputFormat: 'landscape' | 'portrait' | 'square';
+  outputFormat: 'landscape' | 'portrait';
   onImagesUpdate: (images: V2Image[]) => void;
   onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
@@ -212,10 +212,9 @@ const PLATE_STYLE_LABELS: Record<string, string> = {
   'blur-dark': 'Mörk blur', 'blur-light': 'Ljus blur', 'logo': 'Din logotyp',
 };
 
-function getTargetAspect(format: 'landscape' | 'portrait' | 'square'): number {
+function getTargetAspect(format: 'landscape' | 'portrait'): number {
   if (format === 'landscape') return 3 / 2;
-  if (format === 'portrait') return 2 / 3;
-  return 1;
+  return 2 / 3;
 }
 
 // --- component ---
@@ -418,10 +417,10 @@ export const V2GenerateStep = ({
 
   return (
     <div className="space-y-6 max-w-lg mx-auto">
-      {/* Summary card with stronger gradient */}
+      {/* Summary card with stronger V1-matching gradient */}
       <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 space-y-3 shadow-sm relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, hsl(25 71% 45% / 0.3) 0%, hsl(220 27% 41% / 0.35) 50%, hsl(0 0% 10% / 0.5) 100%)',
+          background: 'linear-gradient(135deg, hsl(25 71% 45% / 0.45) 0%, hsl(220 27% 41% / 0.5) 50%, hsl(0 0% 10% / 0.6) 100%)',
         }}
       >
         <div className="space-y-1">
@@ -447,7 +446,7 @@ export const V2GenerateStep = ({
         )}
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Format</span>
-          <span className="text-foreground font-medium">{outputFormat === 'landscape' ? 'Liggande' : outputFormat === 'portrait' ? 'Stående' : 'Kvadrat'}</span>
+          <span className="text-foreground font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
         </div>
         {plateConfig.enabled && (
           <div className="flex justify-between text-sm">
@@ -473,7 +472,6 @@ export const V2GenerateStep = ({
           <Switch checked={lightBoost} onCheckedChange={setLightBoost} />
         </div>
 
-        {/* Divider between toggles */}
         <div className="border-t border-border" />
 
         <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
@@ -531,7 +529,7 @@ export const V2GenerateStep = ({
   );
 };
 
-async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait' | 'square'): Promise<string> {
+async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait'): Promise<string> {
   const formData = new FormData();
   formData.append('image', img.file, img.file.name);
   const scenePayload = {
