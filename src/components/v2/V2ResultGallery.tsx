@@ -158,8 +158,14 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 variant="outline" 
                 size="icon" 
                 className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
-                title="AI Studio"
-                onClick={() => navigate('/?tab=ai-studio')}
+                title="Redigera fritt"
+                onClick={() => {
+                  const idx = previewIndex ?? 0;
+                  const imgUrl = results[idx]?.processedUrl || results[idx]?.previewUrl || '';
+                  sessionStorage.setItem('ai-studio-initial-image', imgUrl);
+                  sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
+                  navigate('/?tab=ai-studio');
+                }}
               >
                 <img src="/favicon.png" alt="" className="w-7 h-7 object-contain dark:invert" />
               </Button>

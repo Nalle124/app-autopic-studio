@@ -133,7 +133,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
       </div>
 
       {/* Category tabs — extra spacing before gallery */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-hide">
         {CATEGORIES.map(cat => (
           <button
             key={cat.id}

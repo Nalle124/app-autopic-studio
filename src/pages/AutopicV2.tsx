@@ -136,10 +136,11 @@ const AutopicV2 = () => {
           {isMobile && (
             <Select value="v2" onValueChange={handleTabChange}>
               <SelectTrigger className="w-[120px] bg-background/80 backdrop-blur-sm h-8 text-xs">
-                <SelectValue placeholder="V2" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-popover z-[60]">
-                <SelectItem value="new">Projekt</SelectItem>
+                <SelectItem value="v2">Projekt</SelectItem>
+                <SelectItem value="new">Projekt (V1)</SelectItem>
                 <SelectItem value="ai-studio">AI Studio</SelectItem>
                 <SelectItem value="history">Galleri</SelectItem>
               </SelectContent>
