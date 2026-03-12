@@ -115,22 +115,30 @@ serve(async (req) => {
     }
 
     const aiResult = await aiResponse.json();
-    const content = aiResult.choices?.[0]?.message?.content;
+    const message = aiResult.choices?.[0]?.message;
 
     let imageUrl: string | null = null;
-    if (Array.isArray(content)) {
-      for (const part of content) {
+    
+    // Check images array (image generation model format)
+    if (message?.images?.length > 0) {
+      imageUrl = message.images[0].image_url?.url;
+    }
+    // Fallback: check content array
+    else if (Array.isArray(message?.content)) {
+      for (const part of message.content) {
         if (part.type === "image_url") {
           imageUrl = part.image_url?.url;
           break;
         }
       }
-    } else if (typeof content === "string" && content.startsWith("data:image")) {
-      imageUrl = content;
+    }
+    // Fallback: content is a data URL string
+    else if (typeof message?.content === "string" && message.content.startsWith("data:image")) {
+      imageUrl = message.content;
     }
 
     if (!imageUrl) {
-      console.error("No image in AI response");
+      console.error("No image in AI response:", JSON.stringify(aiResult).slice(0, 500));
       throw new Error("AI did not return an image");
     }
 
