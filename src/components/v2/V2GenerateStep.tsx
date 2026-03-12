@@ -265,7 +265,7 @@ export const V2GenerateStep = ({
   }, [liveResults.length]);
 
   const handleGenerate = async () => {
-    if (!canGenerate) { toast.error('Otillräckliga krediter'); return; }
+    if (!canGenerate) { toast.error('Du behöver fler krediter för att generera'); return; }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
 
     try {
