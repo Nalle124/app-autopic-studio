@@ -470,8 +470,8 @@ export const V2GenerateStep = ({
 
         {projectName && (
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Projekt</span>
-            <span className="text-foreground font-medium">{projectName}</span>
+            <span className="text-white/50">Projekt</span>
+            <span className="text-white font-medium">{projectName}</span>
           </div>
         )}
         <div className="flex justify-between text-sm">
