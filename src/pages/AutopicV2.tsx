@@ -87,6 +87,7 @@ const AutopicV2 = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Header />
       {/* Stepper header */}
       <div className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-4 py-4">
