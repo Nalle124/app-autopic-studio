@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import type { V2Image } from '@/pages/AutopicV2';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
-import autopicFavicon from '/favicon.png';
+import { CarAdjustments } from '@/types/scene';
 
 interface Props {
   results: V2Image[];
