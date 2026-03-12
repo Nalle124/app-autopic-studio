@@ -13,6 +13,27 @@ function generateId() {
   return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
 }
 
+// Loading skeleton thumbnail with shimmer effect
+const ImageThumb = ({ src, alt }: { src: string; alt: string }) => {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 bg-muted animate-pulse">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-background/20 to-transparent animate-[shimmer_1.5s_infinite]" 
+            style={{ animationTimingFunction: 'ease-in-out' }} />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        onLoad={() => setLoaded(true)}
+      />
+    </>
+  );
+};
+
 interface Props {
   images: V2Image[];
   onImagesChange: (images: V2Image[]) => void;
