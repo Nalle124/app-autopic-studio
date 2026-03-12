@@ -388,11 +388,15 @@ export const V2GenerateStep = ({
 
   // Email sent confirmation
   if (emailSent && deliveryMode === 'email') {
+    const userEmail = (() => { try { const u = JSON.parse(localStorage.getItem('sb-cfsyxrokdemwkklqflnb-auth-token') || '{}'); return u?.user?.email; } catch { return null; } })();
     return (
       <div className="space-y-6 py-8">
         <h2 className="text-lg font-medium text-foreground">Dina bilder genereras!</h2>
         <p className="text-sm text-muted-foreground">
-          Du får ett mail med alla färdiga bilder inom ett par minuter. Du kan stänga ner sidan eller skapa ett nytt projekt.
+          Du får ett mail med nedladdningslänkar inom ett par minuter{userEmail ? ` till ${userEmail}` : ''}. Du kan stänga ner sidan eller skapa ett nytt projekt.
+        </p>
+        <p className="text-xs text-muted-foreground/70">
+          💡 Tips: Kolla din skräppost om du inte hittar mailet i inkorgen.
         </p>
         <div className="flex gap-3 flex-wrap">
           <Button onClick={onStartOver}>
@@ -463,30 +467,30 @@ export const V2GenerateStep = ({
           background: 'linear-gradient(135deg, hsl(220 27% 41% / 0.8) 0%, hsl(25 71% 45% / 0.8) 100%)',
         }}
       >
-        {/* Noise texture overlay */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'url(/textures/mood-dslr.jpg)', backgroundSize: '200px', mixBlendMode: 'overlay' }} />
-        <div className="space-y-1">
+        {/* Grain noise overlay */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.12]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")', backgroundSize: '128px', mixBlendMode: 'overlay' }} />
+        <div className="space-y-1 relative z-10">
           <h2 className="font-sans font-medium text-lg text-white">Redo att generera</h2>
           <p className="text-sm text-white/60">{totalImages} bilder redo att bearbetas</p>
         </div>
 
         {projectName && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm relative z-10">
             <span className="text-white/50">Projekt</span>
             <span className="text-white font-medium">{projectName}</span>
           </div>
         )}
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-sm relative z-10">
             <span className="text-white/50">Logo</span>
             <span className="text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
         </div>
         {plateConfig.enabled && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm relative z-10">
             <span className="text-white/50">Skyltar</span>
             <span className="text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
           </div>
         )}
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-sm relative z-10">
             <span className="text-white/50">Format</span>
             <span className="text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
         </div>

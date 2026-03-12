@@ -164,9 +164,17 @@ function IndexContent() {
     if (tab === 'gallery') return 'history';
     return 'new';
   });
-  const [aiModalInitialImage, setAiModalInitialImage] = useState<string | null>(null);
+  const [aiModalInitialImage, setAiModalInitialImage] = useState<string | null>(() => {
+    const stored = sessionStorage.getItem('ai-studio-initial-image');
+    if (stored) { sessionStorage.removeItem('ai-studio-initial-image'); return stored; }
+    return null;
+  });
   const isMobile = useIsMobile();
-  const [aiChatMode, setAiChatMode] = useState<string | null>(null);
+  const [aiChatMode, setAiChatMode] = useState<string | null>(() => {
+    const stored = sessionStorage.getItem('ai-studio-initial-mode');
+    if (stored) { sessionStorage.removeItem('ai-studio-initial-mode'); return stored; }
+    return null;
+  });
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
   const [relightEnabled, setRelightEnabled] = useState(false);
   const [originalImagesBeforeLogo, setOriginalImagesBeforeLogo] = useState<Map<string, string>>(new Map());

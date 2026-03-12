@@ -94,7 +94,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
   const thumbAspect = isPortrait ? 'aspect-[2/3]' : 'aspect-[4/3]';
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header row with format toggle and grid view */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
@@ -133,7 +133,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
       </div>
 
       {/* Category tabs — extra spacing before gallery */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-hide">
         {CATEGORIES.map(cat => (
           <button
             key={cat.id}

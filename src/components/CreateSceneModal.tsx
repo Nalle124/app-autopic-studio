@@ -2260,105 +2260,70 @@ export const CreateSceneModal = ({
       }
 
       try {
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(blob);
-        });
-
-        // Get original image dimensions for aspect ratio preservation
-        const imgDims = await new Promise<{w: number; h: number}>((resolve) => {
+        // Client-side canvas-based logo application (preserves exact dimensions)
+        const resultUrl = await new Promise<string>((resolve, reject) => {
           const img = new window.Image();
-          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-          img.onerror = () => resolve({ w: 1, h: 1 });
-          img.src = base64;
-        });
-        const aspectDesc = imgDims.w > imgDims.h ? 'landscape (wider than tall)' : imgDims.h > imgDims.w ? 'portrait (taller than wide)' : 'square';
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const logo = new window.Image();
+            logo.crossOrigin = 'anonymous';
+            logo.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d')!;
+                ctx.drawImage(img, 0, 0);
 
-        const conversationHistory = [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: `You are given TWO images:
-1. The FIRST image is the ORIGINAL PHOTOGRAPH — this is the main image that must be preserved EXACTLY.
-2. The SECOND image is a LOGO that must be placed as an overlay on the photograph.
+                // Logo sizing: ~10% of image width
+                const logoMaxW = img.naturalWidth * 0.10;
+                const logoScale = logoMaxW / logo.naturalWidth;
+                const logoW = logo.naturalWidth * logoScale;
+                const logoH = logo.naturalHeight * logoScale;
+                const pad = img.naturalWidth * 0.04;
 
-Place the logo as a ${placementDesc} on the photograph.
+                let x = pad, y = pad;
+                if (selectedLogoPreset === '__logo_preset_br_small__') {
+                  x = img.naturalWidth - logoW - pad; y = img.naturalHeight - logoH - pad;
+                } else if (selectedLogoPreset === '__logo_preset_bl_small__') {
+                  x = pad; y = img.naturalHeight - logoH - pad;
+                } else if (selectedLogoPreset === '__logo_preset_tr_small__') {
+                  x = img.naturalWidth - logoW - pad; y = pad;
+                } else if (selectedLogoPreset === '__logo_preset_tl_small__') {
+                  x = pad; y = pad;
+                } else if (selectedLogoPreset === '__logo_preset_tc_medium__') {
+                  const bannerH = logoH + pad * 2;
+                  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                  ctx.fillRect(0, 0, img.naturalWidth, bannerH);
+                  x = (img.naturalWidth - logoW) / 2; y = pad;
+                } else if (selectedLogoPreset === '__logo_preset_bc_medium__') {
+                  const bannerH = logoH + pad * 2;
+                  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                  ctx.fillRect(0, img.naturalHeight - bannerH, img.naturalWidth, bannerH);
+                  x = (img.naturalWidth - logoW) / 2; y = img.naturalHeight - bannerH + pad;
+                }
 
-LOGO SIZING: The logo must be SMALL — approximately 8-12% of the image width, like a subtle professional watermark. Do NOT make the logo large or prominent.
-
-ABSOLUTE REQUIREMENTS — DIMENSIONAL INTEGRITY:
-- The input photograph is ${imgDims.w}x${imgDims.h} pixels (${aspectDesc})
-- Output MUST be EXACTLY ${imgDims.w}x${imgDims.h} pixels
-- Do NOT crop, resize, zoom, stretch, pad, or reframe the photograph AT ALL
-- Every single pixel of the original photograph must remain in the exact same position
-- The ONLY change allowed is adding the small logo overlay
-- The logo should be clean and professional, placed in the specified position
-- Do NOT cover the car/main subject with the logo — place it on the background area
-- Output dimensions: ${imgDims.w}x${imgDims.h} — this is non-negotiable
-
-CRITICAL: The first image is the photo to keep intact. The second image is the logo to overlay.` },
-              { type: 'image_url', image_url: { url: base64 } },
-              { type: 'image_url', image_url: { url: logoDataUrl } }
-            ]
-          }
-        ];
-
-        const { data, error } = await invokeWithTimeout({
-          conversationHistory,
-          mode: 'logo-apply'
+                ctx.drawImage(logo, x, y, logoW, logoH);
+                resolve(canvas.toDataURL('image/jpeg', 0.92));
+              } catch (e) { reject(e); }
+            };
+            logo.onerror = () => reject(new Error('Logo load failed'));
+            logo.src = logoDataUrl;
+          };
+          img.onerror = () => reject(new Error('Image load failed'));
+          img.src = imageUrl;
         });
 
         setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
 
-        if (error) {
-          const is402 = error?.message?.includes('non-2xx') || error?.context?.status === 402;
-          if (is402) {
-            setIsGenerating(false);
-            refetchCredits();
-            triggerPaywall('subscriber-limit');
-            return;
-          }
-          const retryPayload = { conversationHistory, mode: 'logo-apply' };
-          setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Kunde inte applicera logo. Försök igen.', retryData: retryPayload }]);
-          if (idx < selectedBlurImages.length - 1) {
-            setMessages((prev) => [...prev, { role: 'assistant-loading' as const }]);
-          }
-          continue;
-        }
-
-        if (data?.imageUrl) {
-          // Force resize to original dimensions to prevent AI from changing aspect ratio
-          const resizedUrl = await new Promise<string>((resolve) => {
-            const resultImg = new window.Image();
-            resultImg.crossOrigin = 'anonymous';
-            resultImg.onload = () => {
-              if (resultImg.naturalWidth === imgDims.w && resultImg.naturalHeight === imgDims.h) {
-                resolve(data.imageUrl);
-                return;
-              }
-              const canvas = document.createElement('canvas');
-              canvas.width = imgDims.w;
-              canvas.height = imgDims.h;
-              const ctx = canvas.getContext('2d')!;
-              ctx.drawImage(resultImg, 0, 0, imgDims.w, imgDims.h);
-              resolve(canvas.toDataURL('image/jpeg', 0.92));
-            };
-            resultImg.onerror = () => resolve(data.imageUrl);
-            resultImg.src = data.imageUrl;
-          });
-
-          setMessages((prev) => [...prev, {
-            role: 'assistant-image',
-            imageUrl: resizedUrl,
-            suggestedName: `logo`,
-            description: 'Logo applicerad på bilden',
-            scenePrompt: ''
-          }]);
-          refetchCredits();
-        }
+        setMessages((prev) => [...prev, {
+          role: 'assistant-image',
+          imageUrl: resultUrl,
+          suggestedName: `logo`,
+          description: 'Logo applicerad på bilden',
+          scenePrompt: ''
+        }]);
+        refetchCredits();
 
         // Re-add loading for next image
         if (idx < selectedBlurImages.length - 1) {
