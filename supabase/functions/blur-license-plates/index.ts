@@ -52,13 +52,25 @@ serve(async (req) => {
       ? ` CRITICAL DIMENSION RULE: The input image is ${width}x${height} pixels. Output MUST be EXACTLY ${width}x${height} pixels.`
       : '';
 
+    // If logo style but logo is SVG, fall back to blur-dark since AI can't process SVGs
+    let effectiveStyle = style;
+    let effectiveLogoBase64 = logoBase64;
+    if (style === 'logo' && logoBase64 && logoBase64.includes('image/svg')) {
+      console.log("Logo is SVG format, falling back to blur-dark style (AI cannot process SVG)");
+      effectiveStyle = 'blur-dark';
+      effectiveLogoBase64 = null;
+    }
+
+    const effectivePrompt = BLUR_PROMPTS[effectiveStyle] || BLUR_PROMPTS['blur-dark'];
+
     const userContent: any[] = [
-      { type: "text", text: prompt + dimNote },
+      { type: "text", text: effectivePrompt + dimNote },
       { type: "image_url", image_url: { url: imageBase64 } },
     ];
 
-    if (style === 'logo' && logoBase64) {
-      userContent.push({ type: "image_url", image_url: { url: logoBase64 } });
+    // Only add logo if it's a raster image (PNG/JPEG), not SVG
+    if (effectiveStyle === 'logo' && effectiveLogoBase64 && !effectiveLogoBase64.includes('image/svg')) {
+      userContent.push({ type: "image_url", image_url: { url: effectiveLogoBase64 } });
     }
 
     const messages = [
@@ -69,7 +81,7 @@ serve(async (req) => {
       { role: "user", content: userContent },
     ];
 
-    console.log(`Blur plates: style=${style}, sending to AI gateway`);
+    console.log(`Blur plates: style=${effectiveStyle} (original: ${style}), sending to AI gateway`);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -80,6 +92,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-image",
         messages,
+        modalities: ["image", "text"],
       }),
     });
 
