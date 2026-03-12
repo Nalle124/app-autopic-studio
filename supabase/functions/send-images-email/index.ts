@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email with download links
     const { error: emailError } = await resend.emails.send({
-      from: "AutoPic <noreply@autopic.se>",
+      from: "AutoPic <onboarding@resend.dev>",
       to: [email],
       subject: `Dina bilder är klara${projectName ? ` — ${projectName}` : ""}`,
       html: `

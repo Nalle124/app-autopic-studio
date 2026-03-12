@@ -518,6 +518,7 @@ export const V2GenerateStep = ({
           </div>
           <Switch checked={lightEdit} onCheckedChange={setLightEdit} />
         </div>
+        <p className="text-[10px] text-muted-foreground/70 px-1">Utan att ändra bilens originalskick.</p>
       </div>
 
       {/* Delivery mode */}
