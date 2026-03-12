@@ -88,20 +88,20 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         )}
       </div>
 
-      {/* Project name */}
-      <div>
+      {/* Project name — compact like V1 */}
+      <div className="max-w-xs">
         <label className="text-[10px] text-muted-foreground mb-1 block">Bilens namn (valfritt)</label>
         <Input
           value={projectName}
           onChange={(e) => onProjectNameChange(e.target.value)}
-          placeholder="T.ex. ABC123"
+          placeholder="ABC123"
           className="h-8 text-sm"
         />
       </div>
 
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-[10px] p-6 sm:p-8 text-center cursor-pointer transition-colors ${
+        className={`border-2 border-dashed rounded-[10px] p-8 sm:p-10 text-center cursor-pointer transition-colors ${
           isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
         }`}
       >
@@ -137,15 +137,13 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
 
       <p className="text-[10px] text-muted-foreground text-right">{images.length}/50</p>
 
-      {/* Nyhet notice */}
-      <div className="rounded-[10px] border border-border/30 bg-gradient-to-r from-card/80 via-card/60 to-accent-blue/5 dark:from-card/80 dark:via-card/60 dark:to-accent-blue/10 backdrop-blur-md shadow-sm overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-2.5">
-          <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert flex-shrink-0 opacity-60" />
-          <p className="text-sm text-muted-foreground flex-1">
-            <span className="font-semibold text-foreground/80">Nyhet:</span>{' '}
-            AI-funktioner lanserade — skapa bakgrunder, blurra skyltar & mer
-          </p>
-        </div>
+      {/* Nyhet badge */}
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10">
+        <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert flex-shrink-0" />
+        <p className="text-xs text-foreground/80">
+          <span className="font-semibold text-primary">Nyhet</span>{' '}
+          AI-funktioner lanserade — skapa bakgrunder, blurra skyltar & mer
+        </p>
       </div>
 
       {/* Photo tips dropdown */}

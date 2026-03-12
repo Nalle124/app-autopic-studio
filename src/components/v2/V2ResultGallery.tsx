@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, RotateCcw, Eye, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
+import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -32,7 +32,6 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
 
   const handleDownload = async (imageUrl: string, fileName: string) => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
     if (isMobile && navigator.share) {
       try {
         const response = await fetch(imageUrl);
@@ -46,7 +45,6 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
         if (error.name === 'AbortError') return;
       }
     }
-
     try {
       const response = await fetch(imageUrl);
       const blob = await response.blob();
@@ -113,14 +111,48 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-      {/* Results section - V1 style with gradient bg */}
+      {/* Results section */}
       <section className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
-        {/* Header row - V1 style */}
+        {/* Header row */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h2 className="font-sans font-medium text-lg text-foreground">Redigera och ladda ner</h2>
+            <h2 className="font-sans font-medium text-lg text-foreground">Färdiga bilder</h2>
             
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              {/* Crop tool */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
+                title="Beskär"
+                onClick={() => {
+                  if (results.length > 0) {
+                    const idx = previewIndex ?? 0;
+                    const url = results[idx].processedUrl || results[idx].previewUrl;
+                    setEditingImage({ url, index: idx, type: 'crop' });
+                  }
+                }}
+              >
+                <Scissors className="w-4 h-4" />
+              </Button>
+
+              {/* Edit tool */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
+                title="Redigera"
+                onClick={() => {
+                  if (results.length > 0) {
+                    const idx = previewIndex ?? 0;
+                    const url = results[idx].processedUrl || results[idx].previewUrl;
+                    setEditingImage({ url, index: idx, type: 'adjust' });
+                  }
+                }}
+              >
+                <Sliders className="w-4 h-4" />
+              </Button>
+
               {/* AI Studio button */}
               <Button 
                 variant="outline" 
@@ -199,7 +231,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
           </div>
         </div>
 
-        {/* Image grid - V1 style with Cards */}
+        {/* Image grid */}
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {results.map((img, i) => (
             <div
@@ -233,7 +265,6 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                     </div>
                   </>
                 )}
-                {/* Checkbox on hover */}
                 <button
                   className="absolute top-2 left-2 w-6 h-6 rounded-full bg-background/80 border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => {
@@ -264,80 +295,66 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
         </Button>
       </div>
 
-      {/* Preview dialog - V1 style */}
+      {/* Preview dialog */}
       <Dialog open={previewIndex !== null && !editingImage} onOpenChange={(open) => !open && setPreviewIndex(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
           <VisuallyHidden><DialogTitle>Förhandsgranskning</DialogTitle></VisuallyHidden>
-          {previewImg && (() => {
-            return (
-              <div className="flex flex-col h-full max-h-[90vh]">
-                {/* Image */}
-                <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
-                  <img
-                    src={previewUrl}
-                    alt="Förhandsgranskning"
-                    className="max-w-full max-h-[calc(90vh-80px)] object-contain"
-                  />
-                  
-                  {/* Navigation arrows - centered on image */}
-                  {results.length > 1 && (
-                    <>
-                      <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="absolute left-2 top-1/2 -translate-y-1/2" 
-                        onClick={() => {
-                          const newIndex = previewIndex! > 0 ? previewIndex! - 1 : results.length - 1;
-                          setPreviewIndex(newIndex);
-                        }}
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="secondary" 
-                        className="absolute right-2 top-1/2 -translate-y-1/2" 
-                        onClick={() => {
-                          const newIndex = previewIndex! < results.length - 1 ? previewIndex! + 1 : 0;
-                          setPreviewIndex(newIndex);
-                        }}
-                      >
-                        <ChevronRight className="w-5 h-5" />
-                      </Button>
-                    </>
-                  )}
-                  
-                  {/* Counter */}
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                    {(previewIndex ?? 0) + 1} / {results.length}
-                  </div>
-                </div>
-                
-                {/* Bottom action bar - V1 style round icon buttons */}
-                <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" title="Justera" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
-                      <Sliders className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">Justera</span>
+          {previewImg && (
+            <div className="flex flex-col h-full max-h-[90vh]">
+              <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
+                <img
+                  src={previewUrl}
+                  alt="Förhandsgranskning"
+                  className="max-w-full max-h-[calc(90vh-80px)] object-contain"
+                />
+                {results.length > 1 && (
+                  <>
+                    <Button 
+                      size="icon" 
+                      variant="secondary" 
+                      className="absolute left-2 top-1/2 -translate-y-1/2" 
+                      onClick={() => setPreviewIndex(previewIndex! > 0 ? previewIndex! - 1 : results.length - 1)}
+                    >
+                      <ChevronLeft className="w-5 h-5" />
                     </Button>
-                    <Button size="sm" variant="outline" title="Beskär" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
-                      <Scissors className="w-4 h-4" />
-                      <span className="hidden sm:inline ml-1">Beskär</span>
+                    <Button 
+                      size="icon" 
+                      variant="secondary" 
+                      className="absolute right-2 top-1/2 -translate-y-1/2" 
+                      onClick={() => setPreviewIndex(previewIndex! < results.length - 1 ? previewIndex! + 1 : 0)}
+                    >
+                      <ChevronRight className="w-5 h-5" />
                     </Button>
-                    <Button size="sm" variant="outline" title="AI Studio" onClick={() => navigate('/?tab=ai-studio')}>
-                      <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
-                      <span className="hidden sm:inline ml-1">AI</span>
-                    </Button>
-                  </div>
-                  
-                  <Button size="sm" onClick={() => handleDownload(previewUrl, `bild-${(previewIndex ?? 0) + 1}.jpg`)}>
-                    <Share2 className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Dela</span>
-                  </Button>
+                  </>
+                )}
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                  {(previewIndex ?? 0) + 1} / {results.length}
                 </div>
               </div>
-            );
-          })()}
+              
+              <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" title="Justera" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
+                    <Sliders className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Justera</span>
+                  </Button>
+                  <Button size="sm" variant="outline" title="Beskär" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
+                    <Scissors className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Beskär</span>
+                  </Button>
+                  <Button size="sm" variant="outline" title="AI Studio" onClick={() => navigate('/?tab=ai-studio')}>
+                    <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
+                    <span className="hidden sm:inline ml-1">AI</span>
+                  </Button>
+                </div>
+                
+                <Button size="sm" onClick={() => handleDownload(previewUrl, `bild-${(previewIndex ?? 0) + 1}.jpg`)}>
+                  <Share2 className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">Dela</span>
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

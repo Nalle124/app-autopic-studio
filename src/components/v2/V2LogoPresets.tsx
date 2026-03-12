@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { EyeOff, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import type { V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
 
@@ -86,7 +86,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
   }, [user]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <h2 className="font-sans font-medium text-lg text-foreground">Logo & skyltar</h2>
 
       {/* Logo toggle */}
@@ -112,10 +112,10 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
 
       {/* Logo options - only visible when enabled */}
       {logoEnabled && (
-        <div className="space-y-3 pl-2 border-l-2 border-primary/20 ml-2">
+        <div className="space-y-5 pl-2 border-l-2 border-primary/20 ml-2">
           {/* Placement presets */}
-          <div>
-            <h3 className="text-xs font-medium text-foreground mb-2">Placering</h3>
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-foreground">Placering:</h3>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {PRESETS.map((preset) => (
                 <button
@@ -137,8 +137,8 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
           </div>
 
           {/* Apply to */}
-          <div>
-            <h3 className="text-xs font-medium text-foreground mb-2">Applicera på</h3>
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-foreground">Applicera på:</h3>
             <div className="flex flex-wrap gap-1.5">
               {APPLY_OPTIONS.map((opt) => (
                 <button
@@ -192,7 +192,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
               <div className="h-6 w-full rounded bg-muted flex items-center justify-center mb-1.5">
                 {style.id === 'blur-dark' && <div className="w-10 h-3 rounded bg-black/50" />}
                 {style.id === 'blur-light' && <div className="w-10 h-3 rounded bg-white/70 border border-border/30" />}
-                {style.id === 'logo' && <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                {style.id === 'logo' && <div className="w-8 h-3 rounded bg-primary/30" />}
               </div>
               <p className="text-[10px] font-medium text-foreground">{style.label}</p>
             </button>

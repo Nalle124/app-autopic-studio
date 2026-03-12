@@ -57,7 +57,7 @@ const AutopicV2 = () => {
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState<string>('');
-  const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait' | 'square'>('landscape');
+  const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -104,7 +104,7 @@ const AutopicV2 = () => {
           <img
             src={theme === 'light' ? autopicLogoDark : autopicLogoWhite}
             alt="AutoPic"
-            className="h-5 sm:h-6 w-auto"
+            className="h-[22px] sm:h-7 w-auto"
           />
         </button>
         <div className="flex items-center gap-2">
@@ -150,16 +150,15 @@ const AutopicV2 = () => {
 
   const renderProgressBar = () => (
     <div className="border-b border-border bg-card">
-      <div className="max-w-5xl mx-auto px-4 py-4">
+      <div className="max-w-5xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {STEPS.map((step, i) => (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
-              {/* Step circle */}
               <button
                 onClick={() => { if (i <= currentStep) setCurrentStep(i); }}
-                className={`flex flex-col items-center gap-1.5 ${i <= currentStep ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`flex flex-col items-center gap-1 ${i <= currentStep ? 'cursor-pointer' : 'cursor-default'}`}
               >
-                <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
                   i < currentStep
                     ? 'bg-primary border-primary'
                     : i === currentStep
@@ -167,22 +166,21 @@ const AutopicV2 = () => {
                       : 'border-muted-foreground/30 bg-background'
                 }`}>
                   {i < currentStep ? (
-                    <Check className="w-4 h-4 text-primary-foreground" />
+                    <Check className="w-2.5 h-2.5 text-primary-foreground" />
                   ) : (
-                    <div className={`w-2.5 h-2.5 rounded-full ${
+                    <div className={`w-1.5 h-1.5 rounded-full ${
                       i === currentStep ? 'bg-primary' : 'bg-muted-foreground/20'
                     }`} />
                   )}
                 </div>
-                <span className={`text-[10px] whitespace-nowrap ${
+                <span className={`text-[9px] whitespace-nowrap ${
                   i <= currentStep ? 'text-foreground font-medium' : 'text-muted-foreground'
                 }`}>
                   {step.label}
                 </span>
               </button>
-              {/* Connector line */}
               {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-[2px] mx-2 mt-[-18px] ${
+                <div className={`flex-1 h-[1.5px] mx-1.5 mt-[-14px] ${
                   i < currentStep ? 'bg-primary' : 'bg-muted-foreground/20'
                 }`} />
               )}
@@ -262,8 +260,8 @@ const AutopicV2 = () => {
       </div>
 
       {/* Navigation footer */}
-      <div className="border-t border-border bg-card">
-        <div className="max-w-5xl mx-auto px-4 py-2 sm:py-3 flex justify-between">
+      <div className="border-t border-border bg-card pb-6">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between">
           <Button
             variant="ghost"
             size={isMobile ? 'sm' : 'default'}

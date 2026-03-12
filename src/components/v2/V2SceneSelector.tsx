@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, CheckCircle2, RefreshCw, LayoutGrid, Grid2x2 } from 'lucide-react';
+import { CheckCircle2, RefreshCw, LayoutGrid, Grid2x2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Scene {
   id: string;
@@ -15,8 +16,8 @@ interface Scene {
 interface Props {
   selectedSceneId: string;
   onSelect: (id: string) => void;
-  outputFormat: 'landscape' | 'portrait' | 'square';
-  onOutputFormatChange: (format: 'landscape' | 'portrait' | 'square') => void;
+  outputFormat: 'landscape' | 'portrait';
+  onOutputFormatChange: (format: 'landscape' | 'portrait') => void;
 }
 
 const CATEGORIES = [
@@ -28,12 +29,6 @@ const CATEGORIES = [
   { id: 'autumn', label: 'Höst' },
   { id: 'kreativa', label: 'Kreativa' },
   { id: 'user', label: 'Mina scener' },
-];
-
-const FORMAT_OPTIONS = [
-  { id: 'landscape' as const, label: 'Liggande', desc: '3:2' },
-  { id: 'portrait' as const, label: 'Stående', desc: '2:3' },
-  { id: 'square' as const, label: 'Kvadrat', desc: '1:1' },
 ];
 
 export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange }: Props) => {
@@ -95,6 +90,8 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
   };
 
   const displayScenes = getDisplayScenes();
+  const isPortrait = outputFormat === 'portrait';
+  const thumbAspect = isPortrait ? 'aspect-[2/3]' : 'aspect-[4/3]';
 
   return (
     <div className="space-y-4">
@@ -102,21 +99,28 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
         <div className="flex items-center gap-2">
-          {/* Format toggle */}
+          {/* Format toggle — 2 options like V1 */}
           <div className="flex gap-0.5 border border-border rounded-full p-0.5">
-            {FORMAT_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => onOutputFormatChange(opt.id)}
-                className={`px-2 py-1 rounded-full text-[10px] transition-all ${
-                  outputFormat === opt.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {opt.desc}
-              </button>
-            ))}
+            <button
+              onClick={() => onOutputFormatChange('landscape')}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                outputFormat === 'landscape'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Liggande
+            </button>
+            <button
+              onClick={() => onOutputFormatChange('portrait')}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                outputFormat === 'portrait'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Stående
+            </button>
           </div>
           {/* Grid toggle */}
           <button
@@ -154,8 +158,10 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
           </Button>
         </div>
       ) : loading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
+          {Array.from({ length: 9 }).map((_, i) => (
+            <Skeleton key={i} className={`rounded-lg ${thumbAspect}`} />
+          ))}
         </div>
       ) : (
         <>
@@ -164,7 +170,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
               <button
                 key={scene.id}
                 onClick={() => handleSelect(scene.id)}
-                className={`relative rounded-lg overflow-hidden border-2 transition-all aspect-[4/3] ${
+                className={`relative rounded-lg overflow-hidden border-2 transition-all ${thumbAspect} ${
                   selectedSceneId === scene.id
                     ? 'border-primary ring-2 ring-primary/20'
                     : 'border-border hover:border-primary/40'
@@ -190,7 +196,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
             {/* Create own background */}
             <button
               onClick={() => navigate('/?tab=ai-studio')}
-              className="relative rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/40 aspect-[4/3] flex flex-col items-center justify-center gap-2 bg-muted/30 transition-all"
+              className={`relative rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/40 ${thumbAspect} flex flex-col items-center justify-center gap-2 bg-muted/30 transition-all`}
             >
               <img src="/favicon.png" alt="" className="h-6 w-6 object-contain dark:invert" />
               <p className="text-xs font-medium text-foreground">Skapa egen</p>
