@@ -82,6 +82,7 @@ function App() {
               <Route path="/upload-scenes" element={<ProtectedRoute><UploadSceneImages /></ProtectedRoute>} />
               <Route path="/invite" element={<InviteSignup />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/autopic-v2" element={<ProtectedRoute><AutopicV2 /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>

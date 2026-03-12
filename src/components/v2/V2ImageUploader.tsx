@@ -4,7 +4,6 @@ import { Upload, X, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { isSupportedImageFormat, ensureApiCompatibleFormat } from '@/utils/heicConverter';
 import type { V2Image } from '@/pages/AutopicV2';
-import { v4 } from '@/lib/utils';
 
 // Simple UUID fallback
 function generateId() {
