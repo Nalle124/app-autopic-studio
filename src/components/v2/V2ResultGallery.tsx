@@ -1,9 +1,15 @@
 import { useState } from 'react';
-import { Download, RotateCcw, CheckSquare, FileText, Eye, Scissors, Sliders, ChevronLeft, ChevronRight, Video, ShoppingBag } from 'lucide-react';
+import { Download, RotateCcw, Eye, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -22,40 +28,58 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
   const [downloading, setDownloading] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [editingImage, setEditingImage] = useState<{ url: string; index: number; type: 'crop' | 'adjust' } | null>(null);
+  const [selectedImages, setSelectedImages] = useState<Set<number>>(new Set());
 
-  const downloadSingle = (url: string, index: number) => {
-    // Force download via fetch + blob to avoid opening in new tab on mobile
-    fetch(url)
-      .then(r => r.blob())
-      .then(blob => {
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = `bild-${index + 1}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(blobUrl);
-      })
-      .catch(() => toast.error('Kunde inte ladda ner bilden'));
+  const handleDownload = async (imageUrl: string, fileName: string) => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile && navigator.share) {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Spara till Bilder' });
+          return;
+        }
+      } catch (error: any) {
+        if (error.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Nedladdning misslyckades');
+    }
   };
 
-  const downloadAllZip = async () => {
+  const downloadAsZip = async (imagesToDownload: V2Image[], prefix = 'autopic') => {
+    if (imagesToDownload.length === 0) return;
     setDownloading(true);
     try {
       const zip = new JSZip();
-      for (let i = 0; i < results.length; i++) {
-        const url = results[i].processedUrl || results[i].previewUrl;
+      for (let i = 0; i < imagesToDownload.length; i++) {
+        const url = imagesToDownload[i].processedUrl || imagesToDownload[i].previewUrl;
         const res = await fetch(url);
         const blob = await res.blob();
         const ext = blob.type.includes('png') ? 'png' : 'jpg';
-        zip.file(`bild-${i + 1}.${ext}`, blob);
+        zip.file(`${prefix}-${i + 1}.${ext}`, blob);
       }
       const content = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'autopic-bilder.zip';
+      a.download = `${prefix}-bilder.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -67,88 +91,170 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
     }
   };
 
-  const extCount = results.filter(r => r.classification === 'exterior').length;
-  const intCount = results.filter(r => r.classification === 'interior').length;
-  const detCount = results.filter(r => r.classification === 'detail').length;
+  const downloadOneByOne = async (imagesToDownload: V2Image[]) => {
+    for (let i = 0; i < imagesToDownload.length; i++) {
+      const url = imagesToDownload[i].processedUrl || imagesToDownload[i].previewUrl;
+      await handleDownload(url, `bild-${i + 1}.jpg`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
+
+  const toggleSelection = (index: number) => {
+    setSelectedImages(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
   const previewImg = previewIndex !== null ? results[previewIndex] : null;
   const previewUrl = previewImg ? (previewImg.processedUrl || previewImg.previewUrl) : '';
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-      <div className="text-center space-y-2">
-        <CheckSquare className="h-8 w-8 text-primary mx-auto" />
-        <h2 className="text-2xl font-bold text-foreground">Klart!</h2>
-        <p className="text-sm text-muted-foreground">
-          {results.length} bilder genererade — {extCount} exteriör, {intCount} interiör, {detCount} detalj
-        </p>
-      </div>
-
-      {/* Image grid with inline tool buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {results.map((img, i) => (
-          <div key={img.id} className="space-y-1">
-            <button
-              onClick={() => setPreviewIndex(i)}
-              className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted group cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all w-full"
-            >
-              <img
-                src={img.processedUrl || img.previewUrl}
-                alt={`Resultat ${i + 1}`}
-                className="w-full h-full object-cover"
-              />
-              {img.classification && (
-                <span className={`absolute top-2 left-2 text-[9px] px-1.5 py-0.5 rounded-full text-white ${
-                  img.classification === 'interior' ? 'bg-blue-600' :
-                  img.classification === 'detail' ? 'bg-amber-600' : 'bg-green-600'
-                }`}>
-                  {img.classification === 'interior' ? 'Interiör' : img.classification === 'exterior' ? 'Exteriör' : 'Detalj'}
-                </span>
-              )}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
-              </div>
-            </button>
-            {/* Inline tool buttons */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setEditingImage({ url: img.processedUrl || img.previewUrl, index: i, type: 'crop' })}
-                className="flex-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground hover:text-foreground py-1 rounded transition-colors"
-                title="Beskär"
-              >
-                <Scissors className="h-3 w-3" />
-              </button>
-              <button
-                onClick={() => setEditingImage({ url: img.processedUrl || img.previewUrl, index: i, type: 'adjust' })}
-                className="flex-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground hover:text-foreground py-1 rounded transition-colors"
-                title="Redigera"
-              >
-                <Sliders className="h-3 w-3" />
-              </button>
-              <button
-                onClick={() => navigate('/?tab=ai-studio')}
-                className="flex-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground hover:text-foreground py-1 rounded transition-colors"
+      {/* Results section - V1 style with gradient bg */}
+      <section className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
+        {/* Header row - V1 style */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h2 className="font-sans font-medium text-lg text-foreground">Redigera och ladda ner</h2>
+            
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              {/* AI Studio button */}
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
                 title="AI Studio"
+                onClick={() => navigate('/?tab=ai-studio')}
               >
-                <img src="/favicon.png" alt="" className="h-3 w-3 object-contain dark:invert" />
-              </button>
-              <button
-                onClick={() => downloadSingle(img.processedUrl || img.previewUrl, i)}
-                className="flex-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground hover:text-foreground py-1 rounded transition-colors"
-                title="Ladda ner"
-              >
-                <Download className="h-3 w-3" />
-              </button>
+                <img src="/favicon.png" alt="" className="w-7 h-7 object-contain dark:invert" />
+              </Button>
+
+              {/* Download dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Ladda ner">
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem onClick={() => downloadAsZip(results)} disabled={downloading}>
+                    <FolderDown className="w-4 h-4 mr-2" />
+                    {downloading ? 'Skapar ZIP...' : 'Ladda ner som ZIP'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => downloadOneByOne(results)}>
+                    <ListOrdered className="w-4 h-4 mr-2" />
+                    Ladda ner en och en
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    disabled={selectedImages.size === 0}
+                    onClick={() => {
+                      const selected = Array.from(selectedImages).map(i => results[i]);
+                      downloadAsZip(selected, 'markerade');
+                    }}
+                  >
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    Ladda ner markerade{selectedImages.size > 0 ? ` (${selectedImages.size})` : ''}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {selectedImages.size > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-muted-foreground"
+                  onClick={() => setSelectedImages(new Set())}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Avmarkera
+                </Button>
+              )}
             </div>
           </div>
-        ))}
-      </div>
+          
+          {/* Select all */}
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="select-all-v2"
+              checked={selectedImages.size === results.length && results.length > 0}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  setSelectedImages(new Set(results.map((_, i) => i)));
+                } else {
+                  setSelectedImages(new Set());
+                }
+              }}
+            />
+            <label htmlFor="select-all-v2" className="text-sm text-foreground/70 dark:text-muted-foreground cursor-pointer whitespace-nowrap">
+              Markera alla ({results.length})
+            </label>
+            {selectedImages.size > 0 && (
+              <span className="text-sm text-primary font-medium ml-auto">
+                {selectedImages.size} vald{selectedImages.size !== 1 ? 'a' : ''}
+              </span>
+            )}
+          </div>
+        </div>
 
+        {/* Image grid - V1 style with Cards */}
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {results.map((img, i) => (
+            <div
+              key={img.id}
+              className={`group relative overflow-hidden rounded-[10px] border border-border bg-card cursor-pointer transition-all ${
+                selectedImages.has(i) ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => {
+                if (selectedImages.size > 0) {
+                  toggleSelection(i);
+                } else {
+                  setPreviewIndex(i);
+                }
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                toggleSelection(i);
+              }}
+            >
+              <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                <img
+                  src={img.processedUrl || img.previewUrl}
+                  alt={`Resultat ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                {selectedImages.has(i) && (
+                  <>
+                    <div className="absolute inset-0 bg-black/40 transition-opacity" />
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                      <Check className="w-4 h-4 text-primary-foreground" />
+                    </div>
+                  </>
+                )}
+                {/* Checkbox on hover */}
+                <button
+                  className="absolute top-2 left-2 w-6 h-6 rounded-full bg-background/80 border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSelection(i);
+                  }}
+                >
+                  {selectedImages.has(i) ? (
+                    <Check className="w-3.5 h-3.5 text-primary" />
+                  ) : (
+                    <div className="w-3 h-3 rounded-sm border border-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Action buttons */}
       <div className="flex gap-3 justify-center flex-wrap">
-        <Button onClick={downloadAllZip} disabled={downloading}>
-          <Download className="h-4 w-4 mr-2" />
-          {downloading ? 'Skapar ZIP...' : 'Ladda ner alla (ZIP)'}
-        </Button>
         <Button variant="outline" onClick={() => navigate('/?tab=history')}>
           Gå till galleriet
         </Button>
@@ -158,71 +264,80 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
         </Button>
       </div>
 
-      {/* Coming soon blocks */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-card border border-dashed border-border bg-muted/20 p-4 text-center space-y-1">
-          <ShoppingBag className="h-4 w-4 text-muted-foreground mx-auto" />
-          <h3 className="text-[10px] font-semibold text-foreground">Blocket</h3>
-          <Badge variant="outline" className="text-[8px]">Snart</Badge>
-        </div>
-        <div className="rounded-card border border-dashed border-border bg-muted/20 p-4 text-center space-y-1">
-          <FileText className="h-4 w-4 text-muted-foreground mx-auto" />
-          <h3 className="text-[10px] font-semibold text-foreground">Annonstext</h3>
-          <Badge variant="outline" className="text-[8px]">Snart</Badge>
-        </div>
-        <div className="rounded-card border border-dashed border-border bg-muted/20 p-4 text-center space-y-1">
-          <Video className="h-4 w-4 text-muted-foreground mx-auto" />
-          <h3 className="text-[10px] font-semibold text-foreground">Video</h3>
-          <Badge variant="outline" className="text-[8px]">Snart</Badge>
-        </div>
-      </div>
-
-      {/* Preview dialog */}
+      {/* Preview dialog - V1 style */}
       <Dialog open={previewIndex !== null && !editingImage} onOpenChange={(open) => !open && setPreviewIndex(null)}>
-        <DialogContent className="max-w-4xl w-full p-0 bg-background border-border overflow-hidden max-h-[90vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
           <VisuallyHidden><DialogTitle>Förhandsgranskning</DialogTitle></VisuallyHidden>
-          {previewImg && (
-            <div className="relative">
-              <img
-                src={previewUrl}
-                alt="Förhandsgranskning"
-                className="w-full h-auto max-h-[70vh] object-contain bg-muted"
-              />
-              {previewIndex !== null && previewIndex > 0 && (
-                <button
-                  onClick={() => setPreviewIndex(previewIndex - 1)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-              )}
-              {previewIndex !== null && previewIndex < results.length - 1 && (
-                <button
-                  onClick={() => setPreviewIndex(previewIndex + 1)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              )}
-              <div className="p-3 border-t border-border flex items-center justify-between flex-wrap gap-2">
-                <span className="text-xs text-muted-foreground">{(previewIndex ?? 0) + 1} / {results.length}</span>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button variant="ghost" size="sm" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
-                    <Scissors className="h-4 w-4 mr-1" /> Beskär
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
-                    <Sliders className="h-4 w-4 mr-1" /> Redigera
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/?tab=ai-studio')}>
-                    <img src="/favicon.png" alt="" className="h-4 w-4 mr-1 object-contain dark:invert" /> AI Studio
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => downloadSingle(previewUrl, previewIndex ?? 0)}>
-                    <Download className="h-4 w-4 mr-1" /> Ladda ner
+          {previewImg && (() => {
+            return (
+              <div className="flex flex-col h-full max-h-[90vh]">
+                {/* Image */}
+                <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
+                  <img
+                    src={previewUrl}
+                    alt="Förhandsgranskning"
+                    className="max-w-full max-h-[calc(90vh-80px)] object-contain"
+                  />
+                  
+                  {/* Navigation arrows - centered on image */}
+                  {results.length > 1 && (
+                    <>
+                      <Button 
+                        size="icon" 
+                        variant="secondary" 
+                        className="absolute left-2 top-1/2 -translate-y-1/2" 
+                        onClick={() => {
+                          const newIndex = previewIndex! > 0 ? previewIndex! - 1 : results.length - 1;
+                          setPreviewIndex(newIndex);
+                        }}
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="secondary" 
+                        className="absolute right-2 top-1/2 -translate-y-1/2" 
+                        onClick={() => {
+                          const newIndex = previewIndex! < results.length - 1 ? previewIndex! + 1 : 0;
+                          setPreviewIndex(newIndex);
+                        }}
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Counter */}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                    {(previewIndex ?? 0) + 1} / {results.length}
+                  </div>
+                </div>
+                
+                {/* Bottom action bar - V1 style round icon buttons */}
+                <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" title="Justera" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
+                      <Sliders className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Justera</span>
+                    </Button>
+                    <Button size="sm" variant="outline" title="Beskär" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
+                      <Scissors className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">Beskär</span>
+                    </Button>
+                    <Button size="sm" variant="outline" title="AI Studio" onClick={() => navigate('/?tab=ai-studio')}>
+                      <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
+                      <span className="hidden sm:inline ml-1">AI</span>
+                    </Button>
+                  </div>
+                  
+                  <Button size="sm" onClick={() => handleDownload(previewUrl, `bild-${(previewIndex ?? 0) + 1}.jpg`)}>
+                    <Share2 className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Dela</span>
                   </Button>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Upload, EyeOff, Shield, Check } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import type { V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
 
@@ -55,29 +54,23 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
   const renderPresetMockup = (preset: typeof PRESETS[number]) => {
     if (preset.id === 'bottom-center-banner') {
       return (
-        <>
-          <div className="absolute bottom-0 left-0 right-0 h-4 bg-black/60 flex items-center justify-center">
-            <div className="h-2 w-8 bg-white/80 rounded-sm" />
-          </div>
-        </>
+        <div className="absolute bottom-0 left-0 right-0 h-4 bg-black/60 flex items-center justify-center">
+          <div className="h-2 w-8 bg-white/80 rounded-sm" />
+        </div>
       );
     }
     if (preset.id === 'top-center-banner') {
       return (
-        <>
-          <div className="absolute top-0 left-0 right-0 h-4 bg-black/60 flex items-center justify-center">
-            <div className="h-2 w-8 bg-white/80 rounded-sm" />
-          </div>
-        </>
+        <div className="absolute top-0 left-0 right-0 h-4 bg-black/60 flex items-center justify-center">
+          <div className="h-2 w-8 bg-white/80 rounded-sm" />
+        </div>
       );
     }
     if (preset.id === 'top-banner-left') {
       return (
-        <>
-          <div className="absolute top-0 left-0 right-0 h-4 bg-black/60 flex items-center pl-1">
-            <div className="h-2 w-6 bg-white/80 rounded-sm" />
-          </div>
-        </>
+        <div className="absolute top-0 left-0 right-0 h-4 bg-black/60 flex items-center pl-1">
+          <div className="h-2 w-6 bg-white/80 rounded-sm" />
+        </div>
       );
     }
     return (
@@ -88,18 +81,13 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
   };
 
   return (
-    <div className="space-y-6 px-1">
+    <div className="space-y-6">
       {/* Logo section */}
       <div className="space-y-4">
-        <div className="text-center space-y-1">
-          <h2 className="text-xl font-bold text-foreground">Logo & skyltar</h2>
-          <p className="text-xs text-muted-foreground">
-            Konfigurera logotyp och skyltdöljning.
-          </p>
-        </div>
+        <h2 className="font-sans font-medium text-lg text-foreground">Logo & skyltar</h2>
 
         {/* Compact logo preview */}
-        <div className="flex items-center gap-3 p-3 rounded-card border border-border bg-muted/20">
+        <div className="flex items-center gap-3 p-3 rounded-[10px] border border-border bg-muted/20">
           {logoUrl ? (
             <>
               <img src={logoUrl} alt="Logo" className="h-6 object-contain" />
@@ -185,7 +173,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
               <button
                 key={style.id}
                 onClick={() => onPlateConfigChange({ ...plateConfig, style: style.id })}
-                className={`rounded-card border-2 p-2.5 text-center transition-all ${
+                className={`rounded-[10px] border-2 p-2.5 text-center transition-all ${
                   plateConfig.style === style.id
                     ? 'border-primary ring-2 ring-primary/20'
                     : 'border-border hover:border-primary/40'
@@ -202,10 +190,6 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
           </div>
         )}
       </div>
-
-      <Badge variant="outline" className="mx-auto block w-fit text-[10px]">
-        💡 Logo och skyltdöljning appliceras automatiskt
-      </Badge>
     </div>
   );
 };

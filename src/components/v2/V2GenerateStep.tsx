@@ -485,38 +485,55 @@ export const V2GenerateStep = ({
     );
   }
 
-  // Live gallery rendering during direct generation
+  // Live gallery rendering during direct generation - V1 style with shimmer
   if (processing && deliveryMode === 'direct') {
     return (
-      <div className="space-y-6 max-w-5xl mx-auto px-4" ref={galleryRef}>
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold text-foreground">Genererar bilder...</h2>
+      <div className="space-y-6 max-w-5xl mx-auto" ref={galleryRef}>
+        <div className="space-y-2">
+          <h2 className="font-sans font-medium text-lg text-foreground">Genererar bilder...</h2>
           <p className="text-sm text-muted-foreground">
             {currentImageIndex} av {totalImages} — {statusText}
           </p>
-          <Progress value={progress} className="h-2 max-w-md mx-auto" />
+          <Progress value={progress} className="h-2 max-w-md" />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {liveResults.map((img, i) => (
-            <div key={img.id} className="aspect-[4/3] rounded-lg overflow-hidden bg-muted">
-              <img
-                src={img.processedUrl || img.previewUrl}
-                alt={`Klar ${i + 1}`}
-                className="w-full h-full object-cover animate-in fade-in duration-500"
-              />
+            <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card">
+              <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                <img
+                  src={img.processedUrl || img.previewUrl}
+                  alt={`Klar ${i + 1}`}
+                  className="w-full h-full object-cover animate-in fade-in duration-500"
+                />
+              </div>
             </div>
           ))}
           {currentImageIndex <= totalImages && liveResults.length < totalImages && (
             useLiveGallery ? (
               Array.from({ length: totalImages - liveResults.length }).map((_, i) => (
-                <div key={`skel-${i}`} className="aspect-[4/3] rounded-lg overflow-hidden">
-                  <Skeleton className="w-full h-full" />
+                <div key={`skel-${i}`} className="relative overflow-hidden rounded-[10px] border border-border bg-card">
+                  <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                    {i === 0 ? (
+                      <div className="absolute inset-0 animate-premium-shimmer" />
+                    ) : (
+                      <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
+                        <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">
+                          Väntar...
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))
             ) : (
-              <div className="aspect-[4/3] rounded-lg overflow-hidden">
-                <Skeleton className="w-full h-full" />
+              <div className="relative overflow-hidden rounded-[10px] border border-border bg-card col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-4">
+                <div className="p-4 flex items-center justify-center gap-4 bg-muted/50">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm font-medium text-foreground">
+                    Genererar {liveResults.length + 1} av {totalImages}...
+                  </p>
+                </div>
               </div>
             )
           )}
@@ -526,11 +543,15 @@ export const V2GenerateStep = ({
   }
 
   return (
-    <div className="space-y-6 max-w-lg mx-auto px-4">
-      {/* Gradient header */}
-      <div className="rounded-card border border-border/30 p-5 sm:p-6 space-y-3 bg-gradient-to-br from-card via-card to-primary/5 dark:to-primary/10 shadow-sm">
-        <div className="text-center space-y-1">
-          <h2 className="text-xl font-bold text-foreground">Generera</h2>
+    <div className="space-y-6 max-w-lg mx-auto">
+      {/* Gradient header - V1 style with noise */}
+      <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 space-y-3 shadow-sm relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, hsl(25 71% 45% / 0.15) 0%, hsl(220 27% 41% / 0.2) 50%, hsl(0 0% 10% / 0.3) 100%)',
+        }}
+      >
+        <div className="space-y-1">
+          <h2 className="font-sans font-medium text-lg text-foreground">Generera</h2>
           <p className="text-sm text-muted-foreground">{totalImages} bilder redo att bearbetas</p>
         </div>
 
@@ -570,9 +591,12 @@ export const V2GenerateStep = ({
         )}
       </div>
 
+      {/* Divider */}
+      <div className="border-t border-border" />
+
       {/* Enhancement toggles */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between rounded-card border border-border p-3 sm:p-4">
+        <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
           <div className="flex items-center gap-3">
             <Sun className="h-5 w-5 text-amber-500 shrink-0" />
             <div>
@@ -583,7 +607,7 @@ export const V2GenerateStep = ({
           <Switch checked={lightBoost} onCheckedChange={setLightBoost} />
         </div>
 
-        <div className="flex items-center justify-between rounded-card border border-border p-3 sm:p-4">
+        <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
           <div className="flex items-center gap-3">
             <Palette className="h-5 w-5 text-blue-500 shrink-0" />
             <div>
@@ -601,7 +625,7 @@ export const V2GenerateStep = ({
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setDeliveryMode('direct')}
-            className={`rounded-card border-2 p-3 sm:p-4 text-center transition-all ${
+            className={`rounded-[10px] border-2 p-3 sm:p-4 text-center transition-all ${
               deliveryMode === 'direct' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
@@ -610,18 +634,17 @@ export const V2GenerateStep = ({
           </button>
           <button
             onClick={() => setDeliveryMode('email')}
-            className={`rounded-card border-2 p-3 sm:p-4 text-center transition-all ${
+            className={`rounded-[10px] border-2 p-3 sm:p-4 text-center transition-all ${
               deliveryMode === 'email' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
-            <Mail className="h-5 w-5 mx-auto mb-1 text-primary" />
             <p className="text-sm font-medium text-foreground">E-post</p>
-            <p className="text-[10px] text-muted-foreground">Få länk på mail</p>
+            <p className="text-[10px] text-muted-foreground">Få länk på email inom 2 min</p>
           </button>
         </div>
       </div>
 
-      {/* Generate button */}
+      {/* Generate button - V1 gradient */}
       <Button
         className="w-full text-white font-semibold shadow-[var(--shadow-elegant)] transition-all"
         style={{
