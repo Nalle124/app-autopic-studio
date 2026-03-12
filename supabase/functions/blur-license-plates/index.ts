@@ -3,9 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
 const BLUR_PROMPTS: Record<string, string> = {
-  'blur-dark': 'Find ALL license plates in this image (front and rear) and cover them with a solid dark/black rectangle that completely hides the ENTIRE plate — including all text, borders, and frame. The cover must extend over the full rectangular plate surface. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT add any logos, watermarks, or text anywhere else on the image. Only cover the license plate area(s). The cover should look clean, using dark grey/black. Keep everything else pixel-perfect identical.',
-  'blur-light': 'Find ALL license plates in this image (front and rear) and cover them with a solid light/white rectangle that completely hides the ENTIRE plate — including all text, borders, and frame. The cover must extend over the full rectangular plate surface. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT add any logos, watermarks, or text anywhere else on the image. Only cover the license plate area(s). The cover should look clean, using light grey/white. Keep everything else pixel-perfect identical.',
-  'logo': 'Find ALL license plates in this image (front and rear) and cover them with the provided logo, centered and scaled to fit the ENTIRE plate surface including borders and frame. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe the image in any way. Do NOT place the logo anywhere else on the image - ONLY on the license plate(s). Keep everything else pixel-perfect identical.',
+  'blur-dark': 'Look at this car image. Find the RECTANGULAR LICENSE PLATE(s) — the small metal plate with registration numbers/letters mounted on the car body. There may be one on the front bumper and one on the rear. Cover ONLY the license plate rectangle(s) with a solid dark/black rectangle. The rectangle must match the exact size and angle of the physical plate. DO NOT cover any other part of the car — not the bumper, not the headlights, not the wheels, not the grille. ONLY the small rectangular plate with text. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe. Do NOT add logos, watermarks, or text. Keep everything else pixel-perfect identical.',
+  'blur-light': 'Look at this car image. Find the RECTANGULAR LICENSE PLATE(s) — the small metal plate with registration numbers/letters mounted on the car body. There may be one on the front bumper and one on the rear. Cover ONLY the license plate rectangle(s) with a solid light/white rectangle. The rectangle must match the exact size and angle of the physical plate. DO NOT cover any other part of the car — not the bumper, not the headlights, not the wheels, not the grille. ONLY the small rectangular plate with text. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe. Do NOT add logos, watermarks, or text. Keep everything else pixel-perfect identical.',
+  'logo': 'Look at this car image. Find the RECTANGULAR LICENSE PLATE(s) — the small metal plate with registration numbers/letters mounted on the car body. There may be one on the front bumper and one on the rear. Replace ONLY the license plate rectangle(s) with the provided logo image, scaled to fit the plate area. DO NOT place the logo anywhere else — not on the bumper, not on the body, not on the wheels. ONLY on the small rectangular plate. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe. Keep everything else pixel-perfect identical.',
 };
 
 serve(async (req) => {
@@ -60,6 +60,15 @@ serve(async (req) => {
       effectiveStyle = 'blur-dark';
       effectiveLogoBase64 = null;
     }
+    // custom-logo uses the same approach as logo but with the custom uploaded logo
+    if (style === 'custom-logo') {
+      effectiveStyle = 'logo';
+      effectiveLogoBase64 = logoBase64;
+      if (!effectiveLogoBase64 || effectiveLogoBase64.includes('image/svg')) {
+        effectiveStyle = 'blur-dark';
+        effectiveLogoBase64 = null;
+      }
+    }
 
     const effectivePrompt = BLUR_PROMPTS[effectiveStyle] || BLUR_PROMPTS['blur-dark'];
 
@@ -76,7 +85,7 @@ serve(async (req) => {
     const messages = [
       {
         role: "system",
-        content: `You are an image editing assistant. You MUST preserve the exact input image dimensions. Never change resolution, aspect ratio, or crop.`,
+        content: `You are an image editing assistant. You MUST preserve the exact input image dimensions. Never change resolution, aspect ratio, or crop. You must ONLY modify the small rectangular license plate area — nothing else.`,
       },
       { role: "user", content: userContent },
     ];
@@ -119,21 +128,16 @@ serve(async (req) => {
 
     let imageUrl: string | null = null;
     
-    // Check images array (image generation model format)
     if (message?.images?.length > 0) {
       imageUrl = message.images[0].image_url?.url;
-    }
-    // Fallback: check content array
-    else if (Array.isArray(message?.content)) {
+    } else if (Array.isArray(message?.content)) {
       for (const part of message.content) {
         if (part.type === "image_url") {
           imageUrl = part.image_url?.url;
           break;
         }
       }
-    }
-    // Fallback: content is a data URL string
-    else if (typeof message?.content === "string" && message.content.startsWith("data:image")) {
+    } else if (typeof message?.content === "string" && message.content.startsWith("data:image")) {
       imageUrl = message.content;
     }
 

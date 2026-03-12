@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { useNavigate } from 'react-router-dom';
@@ -31,11 +31,13 @@ export interface V2Image {
 export interface V2LogoConfig {
   preset: string;
   applyTo: 'all' | 'first' | 'first-3-last' | 'first-last' | 'none';
+  logoSize: 'small' | 'medium' | 'large';
 }
 
 export interface V2PlateConfig {
   enabled: boolean;
-  style: 'blur-dark' | 'blur-light' | 'logo';
+  style: 'blur-dark' | 'blur-light' | 'logo' | 'custom-logo';
+  customLogoBase64?: string;
 }
 
 const STEPS = [
@@ -54,7 +56,7 @@ const AutopicV2 = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
-  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none' });
+  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
@@ -77,8 +79,13 @@ const AutopicV2 = () => {
     setCurrentStep(0);
     setProjectName('');
     setSelectedSceneId('');
-    setLogoConfig({ preset: 'top-left', applyTo: 'none' });
+    setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
+  }, []);
+
+  const goToStep = useCallback((step: number) => {
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleTabChange = (value: string) => {
@@ -104,7 +111,7 @@ const AutopicV2 = () => {
           <img
             src={theme === 'light' ? autopicLogoDark : autopicLogoWhite}
             alt="AutoPic"
-            className="h-[22px] sm:h-7 w-auto"
+            className="h-[26px] sm:h-8 w-auto"
           />
         </button>
         <div className="flex items-center gap-2">
@@ -150,12 +157,12 @@ const AutopicV2 = () => {
 
   const renderProgressBar = () => (
     <div className="border-b border-border bg-card">
-      <div className="max-w-5xl mx-auto px-4 py-3">
+      <div className="max-w-5xl mx-auto px-4 py-4 sm:py-5">
         <div className="flex items-center justify-between">
           {STEPS.map((step, i) => (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <button
-                onClick={() => { if (i <= currentStep) setCurrentStep(i); }}
+                onClick={() => { if (i <= currentStep) goToStep(i); }}
                 className={`flex flex-col items-center gap-1 ${i <= currentStep ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
@@ -260,12 +267,12 @@ const AutopicV2 = () => {
       </div>
 
       {/* Navigation footer */}
-      <div className="border-t border-border bg-card pb-6">
+      <div className="border-t border-border bg-card pb-8">
         <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between">
           <Button
             variant="ghost"
             size={isMobile ? 'sm' : 'default'}
-            onClick={() => setCurrentStep(s => Math.max(0, s - 1))}
+            onClick={() => goToStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
@@ -274,7 +281,7 @@ const AutopicV2 = () => {
           {currentStep < STEPS.length - 1 && (
             <Button
               size={isMobile ? 'sm' : 'default'}
-              onClick={() => setCurrentStep(s => s + 1)}
+              onClick={() => goToStep(currentStep + 1)}
               disabled={!canGoNext()}
             >
               Nästa

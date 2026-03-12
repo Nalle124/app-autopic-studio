@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield } from 'lucide-react';
+import { Shield, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { toast } from 'sonner';
 import type { V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
 
 interface Props {
@@ -28,42 +32,49 @@ const APPLY_OPTIONS = [
   { id: 'first-3-last' as const, label: 'Första 3 + sista' },
 ];
 
+const LOGO_SIZES = [
+  { id: 'small' as const, label: 'S' },
+  { id: 'medium' as const, label: 'M' },
+  { id: 'large' as const, label: 'L' },
+];
+
 const PLATE_STYLES = [
   { id: 'blur-dark' as const, label: 'Mörk inlay' },
   { id: 'blur-light' as const, label: 'Ljus inlay' },
   { id: 'logo' as const, label: 'Din logotyp' },
+  { id: 'custom-logo' as const, label: 'Ladda upp' },
 ];
 
 const renderPresetMockup = (presetId: string) => {
   if (presetId === 'bottom-center-banner') {
     return (
-      <div className="absolute bottom-0 left-0 right-0 h-4 bg-black/60 flex items-center justify-center">
-        <div className="h-2 w-8 bg-white/80 rounded-sm" />
+      <div className="absolute bottom-0 left-0 right-0 h-5 bg-black/60 flex items-center justify-center">
+        <div className="h-2.5 w-10 bg-white/80 rounded-sm" />
       </div>
     );
   }
   if (presetId === 'top-center-banner') {
     return (
-      <div className="absolute top-0 left-0 right-0 h-4 bg-black/60 flex items-center justify-center">
-        <div className="h-2 w-8 bg-white/80 rounded-sm" />
+      <div className="absolute top-0 left-0 right-0 h-5 bg-black/60 flex items-center justify-center">
+        <div className="h-2.5 w-10 bg-white/80 rounded-sm" />
       </div>
     );
   }
   if (presetId === 'top-banner-left') {
     return (
-      <div className="absolute top-0 left-0 right-0 h-4 bg-black/60 flex items-center pl-1">
-        <div className="h-2 w-6 bg-white/80 rounded-sm" />
+      <div className="absolute top-0 left-0 right-0 h-5 bg-black/60 flex items-center pl-1.5">
+        <div className="h-2.5 w-8 bg-white/80 rounded-sm" />
       </div>
     );
   }
   const positions: Record<string, string> = {
-    'top-left': 'top-1 left-1',
-    'top-center': 'top-1 left-1/2 -translate-x-1/2',
-    'bottom-right': 'bottom-1 right-1',
+    'top-left': 'top-1.5 left-1.5',
+    'top-center': 'top-1.5 left-1/2 -translate-x-1/2',
+    'bottom-right': 'bottom-1.5 right-1.5',
   };
   return (
-    <div className={`absolute ${positions[presetId] || 'top-1 left-1'}`}>
-      <div className="h-2.5 w-5 bg-primary/40 rounded-sm" />
+    <div className={`absolute ${positions[presetId] || 'top-1.5 left-1.5'}`}>
+      <div className="h-3 w-6 bg-primary/40 rounded-sm" />
     </div>
   );
 };
@@ -71,6 +82,8 @@ const renderPresetMockup = (presetId: string) => {
 export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange }: Props) => {
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [showPlacementModal, setShowPlacementModal] = useState(false);
+  const customLogoInputRef = useRef<HTMLInputElement>(null);
   const logoEnabled = config.applyTo !== 'none';
 
   useEffect(() => {
@@ -84,6 +97,23 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         if (data) setLogoUrl(data.logo_light || data.logo_dark || null);
       });
   }, [user]);
+
+  const handleCustomLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Max 5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      onPlateConfigChange({ ...plateConfig, style: 'custom-logo', customLogoBase64: base64 });
+    };
+    reader.readAsDataURL(file);
+  }, [plateConfig, onPlateConfigChange]);
+
+  const selectedPresetLabel = PRESETS.find(p => p.id === config.preset)?.label || 'Välj';
 
   return (
     <div className="space-y-5">
@@ -112,25 +142,35 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
 
       {/* Logo options - only visible when enabled */}
       {logoEnabled && (
-        <div className="space-y-5 pl-2 border-l-2 border-primary/20 ml-2">
-          {/* Placement presets */}
+        <div className="space-y-6 pl-2 border-l-2 border-primary/20 ml-2">
+          {/* Placement — button that opens modal */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-foreground">Placering:</h3>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              {PRESETS.map((preset) => (
+            <h3 className="text-base font-medium text-foreground">Placering:</h3>
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              onClick={() => setShowPlacementModal(true)}
+            >
+              <span>{selectedPresetLabel}</span>
+              <span className="text-xs text-muted-foreground">Välj placering</span>
+            </Button>
+          </div>
+
+          {/* Logo size */}
+          <div className="space-y-3">
+            <h3 className="text-base font-medium text-foreground">Storlek:</h3>
+            <div className="flex gap-1.5">
+              {LOGO_SIZES.map((size) => (
                 <button
-                  key={preset.id}
-                  onClick={() => onConfigChange({ ...config, preset: preset.id })}
-                  className={`relative aspect-[16/10] rounded-lg border-2 transition-all bg-muted/50 ${
-                    config.preset === preset.id
-                      ? 'border-primary ring-2 ring-primary/20'
-                      : 'border-border hover:border-primary/40'
+                  key={size.id}
+                  onClick={() => onConfigChange({ ...config, logoSize: size.id })}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                    config.logoSize === size.id
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border text-foreground hover:border-primary/40'
                   }`}
                 >
-                  {renderPresetMockup(preset.id)}
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] text-muted-foreground whitespace-nowrap leading-tight">
-                    {preset.label}
-                  </span>
+                  {size.label}
                 </button>
               ))}
             </div>
@@ -138,7 +178,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
 
           {/* Apply to */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-foreground">Applicera på:</h3>
+            <h3 className="text-base font-medium text-foreground">Applicera på:</h3>
             <div className="flex flex-wrap gap-1.5">
               {APPLY_OPTIONS.map((opt) => (
                 <button
@@ -178,27 +218,78 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
 
       {/* Plate options - only visible when enabled */}
       {plateConfig.enabled && (
-        <div className="grid grid-cols-3 gap-2 pl-2 border-l-2 border-primary/20 ml-2">
-          {PLATE_STYLES.map((style) => (
-            <button
-              key={style.id}
-              onClick={() => onPlateConfigChange({ ...plateConfig, style: style.id })}
-              className={`rounded-[10px] border-2 p-2.5 text-center transition-all ${
-                plateConfig.style === style.id
-                  ? 'border-primary ring-2 ring-primary/20'
-                  : 'border-border hover:border-primary/40'
-              }`}
-            >
-              <div className="h-6 w-full rounded bg-muted flex items-center justify-center mb-1.5">
-                {style.id === 'blur-dark' && <div className="w-10 h-3 rounded bg-black/50" />}
-                {style.id === 'blur-light' && <div className="w-10 h-3 rounded bg-white/70 border border-border/30" />}
-                {style.id === 'logo' && <div className="w-8 h-3 rounded bg-primary/30" />}
-              </div>
-              <p className="text-[10px] font-medium text-foreground">{style.label}</p>
-            </button>
-          ))}
+        <div className="pl-2 border-l-2 border-primary/20 ml-2 space-y-3">
+          <div className="grid grid-cols-4 gap-2">
+            {PLATE_STYLES.map((style) => (
+              <button
+                key={style.id}
+                onClick={() => {
+                  if (style.id === 'custom-logo') {
+                    customLogoInputRef.current?.click();
+                  } else {
+                    onPlateConfigChange({ ...plateConfig, style: style.id });
+                  }
+                }}
+                className={`rounded-[10px] border-2 p-2.5 text-center transition-all ${
+                  plateConfig.style === style.id
+                    ? 'border-primary ring-2 ring-primary/20'
+                    : 'border-border hover:border-primary/40'
+                }`}
+              >
+                <div className="h-6 w-full rounded bg-muted flex items-center justify-center mb-1.5">
+                  {style.id === 'blur-dark' && <div className="w-10 h-3 rounded bg-black/50" />}
+                  {style.id === 'blur-light' && <div className="w-10 h-3 rounded bg-white/70 border border-border/30" />}
+                  {style.id === 'logo' && <div className="w-8 h-3 rounded bg-primary/30" />}
+                  {style.id === 'custom-logo' && <Upload className="w-3.5 h-3.5 text-muted-foreground" />}
+                </div>
+                <p className="text-[10px] font-medium text-foreground">{style.label}</p>
+              </button>
+            ))}
+          </div>
+          {plateConfig.style === 'custom-logo' && plateConfig.customLogoBase64 && (
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+              <img src={plateConfig.customLogoBase64} alt="Custom" className="h-6 w-auto object-contain" />
+              <span className="text-xs text-muted-foreground">Egen logotyp vald</span>
+            </div>
+          )}
+          <input
+            ref={customLogoInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={handleCustomLogoUpload}
+          />
         </div>
       )}
+
+      {/* Placement modal */}
+      <Dialog open={showPlacementModal} onOpenChange={setShowPlacementModal}>
+        <DialogContent className="max-w-md">
+          <VisuallyHidden><DialogTitle>Välj placering</DialogTitle></VisuallyHidden>
+          <h3 className="text-lg font-medium text-foreground mb-4">Välj logotypplacering</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => {
+                  onConfigChange({ ...config, preset: preset.id });
+                  setShowPlacementModal(false);
+                }}
+                className={`relative aspect-[16/10] rounded-lg border-2 transition-all bg-muted/50 ${
+                  config.preset === preset.id
+                    ? 'border-primary ring-2 ring-primary/20'
+                    : 'border-border hover:border-primary/40'
+                }`}
+              >
+                {renderPresetMockup(preset.id)}
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap font-medium">
+                  {preset.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
