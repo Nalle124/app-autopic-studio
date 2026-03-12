@@ -71,7 +71,7 @@ function App() {
               <Sonner />
               <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/try" element={<Demo />} />
+              <Route path="/try" element={<TryV2 />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
