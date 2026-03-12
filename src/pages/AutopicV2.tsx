@@ -198,6 +198,8 @@ const AutopicV2 = () => {
           <V2SceneSelector
             selectedSceneId={selectedSceneId}
             onSelect={setSelectedSceneId}
+            outputFormat={outputFormat}
+            onOutputFormatChange={setOutputFormat}
           />
         )}
         {currentStep === 2 && (
