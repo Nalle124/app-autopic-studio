@@ -2330,9 +2330,29 @@ CRITICAL: The first image is the photo to keep intact. The second image is the l
         }
 
         if (data?.imageUrl) {
+          // Force resize to original dimensions to prevent AI from changing aspect ratio
+          const resizedUrl = await new Promise<string>((resolve) => {
+            const resultImg = new window.Image();
+            resultImg.crossOrigin = 'anonymous';
+            resultImg.onload = () => {
+              if (resultImg.naturalWidth === imgDims.w && resultImg.naturalHeight === imgDims.h) {
+                resolve(data.imageUrl);
+                return;
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = imgDims.w;
+              canvas.height = imgDims.h;
+              const ctx = canvas.getContext('2d')!;
+              ctx.drawImage(resultImg, 0, 0, imgDims.w, imgDims.h);
+              resolve(canvas.toDataURL('image/jpeg', 0.92));
+            };
+            resultImg.onerror = () => resolve(data.imageUrl);
+            resultImg.src = data.imageUrl;
+          });
+
           setMessages((prev) => [...prev, {
             role: 'assistant-image',
-            imageUrl: data.imageUrl,
+            imageUrl: resizedUrl,
             suggestedName: `logo`,
             description: 'Logo applicerad på bilden',
             scenePrompt: ''

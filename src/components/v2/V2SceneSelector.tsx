@@ -94,18 +94,18 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
   const thumbAspect = isPortrait ? 'aspect-[2/3]' : 'aspect-[4/3]';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header row with format toggle and grid view */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
         <div className="flex items-center gap-2">
-          {/* Format toggle — 2 options like V1 */}
+          {/* Format toggle — lighter, more subtle */}
           <div className="flex gap-0.5 border border-border rounded-full p-0.5">
             <button
               onClick={() => onOutputFormatChange('landscape')}
               className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
                 outputFormat === 'landscape'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary/70 text-primary-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -115,7 +115,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
               onClick={() => onOutputFormatChange('portrait')}
               className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
                 outputFormat === 'portrait'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary/70 text-primary-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -124,7 +124,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
           </div>
           {/* Grid toggle */}
           <button
-            onClick={() => setGridCols(gridCols === 3 ? 4 : 3)}
+            onClick={() => setGridCols(prev => prev === 3 ? 4 : 3)}
             className="p-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
           >
             {gridCols === 3 ? <Grid2x2 className="h-3.5 w-3.5" /> : <LayoutGrid className="h-3.5 w-3.5" />}
@@ -132,8 +132,8 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
         </div>
       </div>
 
-      {/* Category tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+      {/* Category tabs — extra spacing before gallery */}
+      <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
         {CATEGORIES.map(cat => (
           <button
             key={cat.id}
@@ -158,14 +158,14 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
           </Button>
         </div>
       ) : loading ? (
-        <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
+        <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
           {Array.from({ length: 9 }).map((_, i) => (
             <Skeleton key={i} className={`rounded-lg ${thumbAspect}`} />
           ))}
         </div>
       ) : (
         <>
-          <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
+          <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
             {displayScenes.map((scene) => (
               <button
                 key={scene.id}

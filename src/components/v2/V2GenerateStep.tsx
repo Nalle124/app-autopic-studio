@@ -265,7 +265,7 @@ export const V2GenerateStep = ({
   }, [liveResults.length]);
 
   const handleGenerate = async () => {
-    if (!canGenerate) { toast.error('Otillräckliga krediter'); return; }
+    if (!canGenerate) { toast.error('Du behöver fler krediter för att generera'); return; }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
 
     try {
@@ -350,7 +350,7 @@ export const V2GenerateStep = ({
         } catch (err: any) {
           console.error(`Error processing image ${img.id}:`, err);
           if (err?.message?.includes('402') || err?.message?.includes('Otillräckliga')) {
-            toast.error('Krediter slut — bearbetningen avbröts'); break;
+            toast.error('Krediterna tog slut — bearbetningen avbröts'); break;
           }
           resultImages.push({ ...img, status: 'error', error: err.message });
         }
@@ -380,7 +380,7 @@ export const V2GenerateStep = ({
       }
     } catch (err: any) {
       console.error('Generation error:', err);
-      toast.error(err.message || 'Generering misslyckades');
+      toast.error('Hoppsan, något gick fel. Testa igen!');
     } finally {
       setProcessing(false);
     }
@@ -460,9 +460,11 @@ export const V2GenerateStep = ({
       {/* Summary card with stronger V1-matching gradient */}
       <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 space-y-3 shadow-sm relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, hsl(220 27% 41%) 0%, hsl(25 71% 45%) 100%)',
+          background: 'linear-gradient(135deg, hsl(220 27% 41% / 0.8) 0%, hsl(25 71% 45% / 0.8) 100%)',
         }}
       >
+        {/* Noise texture overlay */}
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'url(/textures/mood-dslr.jpg)', backgroundSize: '200px', mixBlendMode: 'overlay' }} />
         <div className="space-y-1">
           <h2 className="font-sans font-medium text-lg text-white">Redo att generera</h2>
           <p className="text-sm text-white/60">{totalImages} bilder redo att bearbetas</p>
