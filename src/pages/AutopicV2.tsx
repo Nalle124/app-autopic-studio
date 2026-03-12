@@ -88,12 +88,12 @@ const AutopicV2 = () => {
 
   const renderHeader = () => (
     <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="container mx-auto px-4 py-2 sm:py-3 flex items-center justify-between">
         <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
           <img
             src={theme === 'light' ? autopicLogoDark : autopicLogoWhite}
             alt="AutoPic"
-            className="h-6 w-auto"
+            className="h-5 sm:h-6 w-auto"
           />
         </button>
         <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ const AutopicV2 = () => {
           )}
           {isMobile && (
             <Select value="v2" onValueChange={handleTabChange}>
-              <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+              <SelectTrigger className="w-[120px] bg-background/80 backdrop-blur-sm h-8 text-xs">
                 <SelectValue placeholder="V2" />
               </SelectTrigger>
               <SelectContent className="bg-popover z-[60]">
@@ -128,8 +128,8 @@ const AutopicV2 = () => {
             </Select>
           )}
           {user && (
-            <Button variant="ghost" size="icon" onClick={() => navigate('/profil')} title="Profil">
-              <User className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/profil')} title="Profil">
+              <User className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -158,10 +158,9 @@ const AutopicV2 = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {renderHeader()}
-      {/* Stepper header */}
+      {/* Stepper - no title, just progress */}
       <div className="border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-4 py-4">
-          <h1 className="text-lg font-semibold text-foreground mb-2">AutoPic V2</h1>
+        <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex gap-1">
             {STEPS.map((step, i) => (
               <div
@@ -186,7 +185,7 @@ const AutopicV2 = () => {
       </div>
 
       {/* Step content */}
-      <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
+      <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 sm:py-6">
         {currentStep === 0 && (
           <V2ImageUploader
             images={images}
@@ -229,9 +228,10 @@ const AutopicV2 = () => {
 
       {/* Navigation footer */}
       <div className="border-t border-border bg-card">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between">
+        <div className="max-w-5xl mx-auto px-4 py-2 sm:py-3 flex justify-between">
           <Button
             variant="ghost"
+            size={isMobile ? 'sm' : 'default'}
             onClick={() => setCurrentStep(s => Math.max(0, s - 1))}
             disabled={currentStep === 0}
           >
@@ -240,6 +240,7 @@ const AutopicV2 = () => {
           </Button>
           {currentStep < STEPS.length - 1 && (
             <Button
+              size={isMobile ? 'sm' : 'default'}
               onClick={() => setCurrentStep(s => s + 1)}
               disabled={!canGoNext()}
             >

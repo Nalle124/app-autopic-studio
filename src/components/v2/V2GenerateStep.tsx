@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import type { V2Image, V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
 
 interface Props {
@@ -50,16 +51,13 @@ function applyCropRegion(imageUrl: string, crop: { left: number; top: number; wi
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
-        // Compute car region in pixels
         let srcX = Math.round(crop.left * img.naturalWidth);
         let srcY = Math.round(crop.top * img.naturalHeight);
         let srcW = Math.round(crop.width * img.naturalWidth);
         let srcH = Math.round(crop.height * img.naturalHeight);
 
-        // Enforce target aspect ratio by expanding the crop region
         const currentAspect = srcW / srcH;
         if (currentAspect < targetAspect) {
-          // Need wider — expand horizontally
           const newW = Math.round(srcH * targetAspect);
           const diff = newW - srcW;
           srcX = Math.max(0, srcX - Math.round(diff / 2));
@@ -69,7 +67,6 @@ function applyCropRegion(imageUrl: string, crop: { left: number; top: number; wi
             srcW = Math.min(srcW, img.naturalWidth);
           }
         } else if (currentAspect > targetAspect) {
-          // Need taller — expand vertically
           const newH = Math.round(srcW / targetAspect);
           const diff = newH - srcH;
           srcY = Math.max(0, srcY - Math.round(diff / 2));
@@ -123,6 +120,18 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string): Pr
             ctx.fillRect(0, img.naturalHeight - bannerH, img.naturalWidth, bannerH);
             x = (img.naturalWidth - logoW) / 2;
             y = img.naturalHeight - bannerH + pad;
+          } else if (preset === 'top-center-banner') {
+            const bannerH = logoH + pad * 2;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, img.naturalWidth, bannerH);
+            x = (img.naturalWidth - logoW) / 2;
+            y = pad;
+          } else if (preset === 'top-banner-left') {
+            const bannerH = logoH + pad * 2;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, img.naturalWidth, bannerH);
+            x = pad;
+            y = pad;
           }
           ctx.drawImage(logo, x, y, logoW, logoH);
           resolve(canvas.toDataURL('image/jpeg', 0.92));
@@ -202,6 +211,51 @@ async function processInteriorImage(img: V2Image, bgType: string): Promise<strin
   return data.imageUrl;
 }
 
+async function blurPlatesOnImage(
+  imageUrl: string,
+  style: 'blur-dark' | 'blur-light' | 'logo',
+  logoBase64: string | null,
+  accessToken: string
+): Promise<string> {
+  // Convert image to base64
+  const response = await fetch(imageUrl);
+  const blob = await response.blob();
+  const base64 = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.readAsDataURL(blob);
+  });
+  
+  // Get dimensions
+  const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+    const img = new window.Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve({ w: 1, h: 1 });
+    img.src = base64;
+  });
+
+  const { data, error } = await supabase.functions.invoke('blur-license-plates', {
+    body: {
+      imageBase64: base64,
+      style,
+      logoBase64: style === 'logo' ? logoBase64 : null,
+      width: dims.w,
+      height: dims.h,
+    },
+  });
+
+  if (error) {
+    console.error('Plate blur error:', error);
+    throw new Error('Kunde inte dölja registreringsskyltar');
+  }
+
+  if (!data?.success || !data?.imageUrl) {
+    throw new Error(data?.error || 'Plate blur failed');
+  }
+
+  return data.imageUrl;
+}
+
 function shouldApplyLogo(index: number, total: number, applyTo: V2LogoConfig['applyTo']): boolean {
   if (applyTo === 'none') return false;
   if (applyTo === 'all') return true;
@@ -237,6 +291,7 @@ export const V2GenerateStep = ({
   images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat,
   onImagesUpdate, onComplete, onRefetchCredits,
 }: Props) => {
+  const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
@@ -251,7 +306,9 @@ export const V2GenerateStep = ({
   const galleryRef = useRef<HTMLDivElement>(null);
 
   const totalImages = images.length;
-  const totalCost = totalImages + (plateConfig.enabled ? totalImages : 0);
+  // Exterior images need plate blur (1 extra credit each)
+  const exteriorCount = images.filter(i => i.classification === 'exterior' || !i.classification).length;
+  const totalCost = totalImages + (plateConfig.enabled ? exteriorCount : 0);
   const canGenerate = credits >= totalCost;
   const useLiveGallery = deliveryMode === 'direct' && totalImages <= 10;
 
@@ -289,8 +346,7 @@ export const V2GenerateStep = ({
       // If email mode, show confirmation immediately
       if (deliveryMode === 'email') {
         setEmailSent(true);
-        toast.success('Dina bilder genereras nu och skickas till din e-post inom ett par minuter.');
-        // Continue processing in background but user sees confirmation
+        // Continue processing in background
       }
 
       // 2. Fetch scene + logo
@@ -299,14 +355,33 @@ export const V2GenerateStep = ({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Din session har gått ut.');
       let logoUrl: string | null = null;
+      const logos = await fetchUserLogo(session.user.id);
       if (logoConfig.applyTo !== 'none') {
-        const logos = await fetchUserLogo(session.user.id);
         logoUrl = logos.light || logos.dark;
       }
       const sceneName = (scene.name || '').toLowerCase();
       const isDarkScene = sceneName.includes('mörk') || sceneName.includes('dark') || sceneName.includes('midnight');
       const interiorBgType = isDarkScene ? 'dark neutral black/charcoal' : 'clean white';
       const targetAspect = getTargetAspect(outputFormat);
+
+      // Prepare logo base64 for plate blur if needed
+      let plateLogoBase64: string | null = null;
+      if (plateConfig.enabled && plateConfig.style === 'logo') {
+        const plateLogoUrl = logos.light || logos.dark;
+        if (plateLogoUrl) {
+          try {
+            const r = await fetch(plateLogoUrl);
+            const b = await r.blob();
+            plateLogoBase64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.readAsDataURL(b);
+            });
+          } catch (e) {
+            console.warn('Could not load logo for plates:', e);
+          }
+        }
+      }
 
       // 3. Process
       const resultImages: V2Image[] = [];
@@ -318,23 +393,45 @@ export const V2GenerateStep = ({
 
         try {
           let processedUrl: string;
-          if (img.classification === 'exterior' || img.classification === 'detail') {
+          const isExterior = img.classification === 'exterior' || img.classification === 'detail';
+
+          if (isExterior) {
             setStatusText(`Genererar ${i + 1} av ${totalSteps}...`);
-            setProgress(Math.round(((i + 0.3) / totalSteps) * 100));
+            setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
             processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
+
+            // Auto-crop
             setStatusText(`Beskär ${i + 1} av ${totalSteps}...`);
-            setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
+            setProgress(Math.round(((i + 0.4) / totalSteps) * 100));
             processedUrl = await autoCropImage(processedUrl, targetAspect);
+
+            // Plate blurring (only on exterior)
+            if (plateConfig.enabled) {
+              setStatusText(`Döljer skyltar ${i + 1} av ${totalSteps}...`);
+              setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
+              try {
+                processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token);
+              } catch (plateErr: any) {
+                console.error('Plate blur failed for image', i, plateErr);
+                // Continue without plate blur rather than failing the whole batch
+                toast.error(`Skyltdöljning misslyckades för bild ${i + 1}`);
+              }
+            }
           } else {
             setStatusText(`Maskerar interiör ${i + 1} av ${totalSteps}...`);
             setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
             processedUrl = await processInteriorImage(img, interiorBgType);
           }
+
+          // Enhancements
           if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
           if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
+
+          // Logo
           if (logoUrl && shouldApplyLogo(i, totalSteps, logoConfig.applyTo)) {
             processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset);
           }
+
           const result = { ...img, processedUrl, status: 'done' as const };
           resultImages.push(result);
           if (deliveryMode === 'direct') {
@@ -342,6 +439,10 @@ export const V2GenerateStep = ({
           }
         } catch (err: any) {
           console.error(`Error processing image ${img.id}:`, err);
+          if (err?.message?.includes('402') || err?.message?.includes('Otillräckliga')) {
+            toast.error('Krediter slut — bearbetningen avbröts');
+            break;
+          }
           resultImages.push({ ...img, status: 'error', error: err.message });
         }
         setProgress(Math.round(((i + 1) / totalSteps) * 100));
@@ -352,7 +453,6 @@ export const V2GenerateStep = ({
       if (deliveryMode === 'direct') {
         onComplete(resultImages);
       }
-      // email mode: user already sees confirmation
     } catch (err: any) {
       console.error('Generation error:', err);
       toast.error(err.message || 'Generering misslyckades');
@@ -364,7 +464,7 @@ export const V2GenerateStep = ({
   // Email sent confirmation view
   if (emailSent && deliveryMode === 'email') {
     return (
-      <div className="space-y-6 max-w-lg mx-auto text-center py-12">
+      <div className="space-y-6 max-w-lg mx-auto text-center py-12 px-4">
         <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
           <Mail className="h-8 w-8 text-primary" />
         </div>
@@ -372,12 +472,12 @@ export const V2GenerateStep = ({
         <p className="text-sm text-muted-foreground">
           Du får ett mail med alla färdiga bilder inom ett par minuter. Du kan stänga ner sidan eller skapa ett nytt projekt.
         </p>
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-3 justify-center flex-wrap">
           <Button onClick={() => { setEmailSent(false); onComplete([]); }}>
             <Plus className="h-4 w-4 mr-2" />
             Nytt projekt
           </Button>
-          <Button variant="outline" onClick={() => window.location.href = '/?tab=history'}>
+          <Button variant="outline" onClick={() => navigate('/?tab=history')}>
             Gå till galleriet
           </Button>
         </div>
@@ -388,7 +488,7 @@ export const V2GenerateStep = ({
   // Live gallery rendering during direct generation
   if (processing && deliveryMode === 'direct') {
     return (
-      <div className="space-y-6 max-w-5xl mx-auto" ref={galleryRef}>
+      <div className="space-y-6 max-w-5xl mx-auto px-4" ref={galleryRef}>
         <div className="text-center space-y-2">
           <h2 className="text-xl font-bold text-foreground">Genererar bilder...</h2>
           <p className="text-sm text-muted-foreground">
@@ -398,7 +498,6 @@ export const V2GenerateStep = ({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {/* Show completed images */}
           {liveResults.map((img, i) => (
             <div key={img.id} className="aspect-[4/3] rounded-lg overflow-hidden bg-muted">
               <img
@@ -408,17 +507,14 @@ export const V2GenerateStep = ({
               />
             </div>
           ))}
-          {/* Skeleton for current processing image */}
           {currentImageIndex <= totalImages && liveResults.length < totalImages && (
             useLiveGallery ? (
-              // Show all remaining as skeletons
               Array.from({ length: totalImages - liveResults.length }).map((_, i) => (
                 <div key={`skel-${i}`} className="aspect-[4/3] rounded-lg overflow-hidden">
                   <Skeleton className="w-full h-full" />
                 </div>
               ))
             ) : (
-              // For > 10, just show one skeleton
               <div className="aspect-[4/3] rounded-lg overflow-hidden">
                 <Skeleton className="w-full h-full" />
               </div>
@@ -430,9 +526,9 @@ export const V2GenerateStep = ({
   }
 
   return (
-    <div className="space-y-6 max-w-lg mx-auto">
+    <div className="space-y-6 max-w-lg mx-auto px-4">
       {/* Gradient header */}
-      <div className="rounded-card border border-border/30 p-6 space-y-4 bg-gradient-to-br from-card via-card to-primary/5 dark:to-primary/10 shadow-sm">
+      <div className="rounded-card border border-border/30 p-5 sm:p-6 space-y-3 bg-gradient-to-br from-card via-card to-primary/5 dark:to-primary/10 shadow-sm">
         <div className="text-center space-y-1">
           <h2 className="text-xl font-bold text-foreground">Generera</h2>
           <p className="text-sm text-muted-foreground">{totalImages} bilder redo att bearbetas</p>
@@ -464,13 +560,21 @@ export const V2GenerateStep = ({
             {outputFormat === 'landscape' ? 'Liggande' : outputFormat === 'portrait' ? 'Stående' : 'Kvadrat'}
           </span>
         </div>
+        {plateConfig.enabled && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Kostnad</span>
+            <span className="text-foreground font-medium">
+              {totalImages} + {exteriorCount} skylt = {totalCost} krediter
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Enhancement toggles */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between rounded-card border border-border p-4">
+        <div className="flex items-center justify-between rounded-card border border-border p-3 sm:p-4">
           <div className="flex items-center gap-3">
-            <Sun className="h-5 w-5 text-amber-500" />
+            <Sun className="h-5 w-5 text-amber-500 shrink-0" />
             <div>
               <p className="text-sm font-medium text-foreground">Ljusboost</p>
               <p className="text-[11px] text-muted-foreground">Automatisk ljusförbättring för mörka bilder</p>
@@ -479,9 +583,9 @@ export const V2GenerateStep = ({
           <Switch checked={lightBoost} onCheckedChange={setLightBoost} />
         </div>
 
-        <div className="flex items-center justify-between rounded-card border border-border p-4">
+        <div className="flex items-center justify-between rounded-card border border-border p-3 sm:p-4">
           <div className="flex items-center gap-3">
-            <Palette className="h-5 w-5 text-blue-500" />
+            <Palette className="h-5 w-5 text-blue-500 shrink-0" />
             <div>
               <p className="text-sm font-medium text-foreground">Lätt redigering</p>
               <p className="text-[11px] text-muted-foreground">Ökad kontrast, skarpare skuggor — proffsig finish</p>
@@ -497,7 +601,7 @@ export const V2GenerateStep = ({
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setDeliveryMode('direct')}
-            className={`rounded-card border-2 p-4 text-center transition-all ${
+            className={`rounded-card border-2 p-3 sm:p-4 text-center transition-all ${
               deliveryMode === 'direct' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
@@ -506,7 +610,7 @@ export const V2GenerateStep = ({
           </button>
           <button
             onClick={() => setDeliveryMode('email')}
-            className={`rounded-card border-2 p-4 text-center transition-all ${
+            className={`rounded-card border-2 p-3 sm:p-4 text-center transition-all ${
               deliveryMode === 'email' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
@@ -517,7 +621,7 @@ export const V2GenerateStep = ({
         </div>
       </div>
 
-      {/* Generate button — gradient blue-to-orange like v1, no icons */}
+      {/* Generate button */}
       <Button
         className="w-full text-white font-semibold shadow-[var(--shadow-elegant)] transition-all"
         style={{
@@ -531,7 +635,7 @@ export const V2GenerateStep = ({
       </Button>
 
       {!canGenerate && (
-        <p className="text-xs text-center text-destructive">Du behöver fler krediter</p>
+        <p className="text-xs text-center text-destructive">Du behöver fler krediter ({totalCost} krävs, {credits} tillgängliga)</p>
       )}
     </div>
   );
