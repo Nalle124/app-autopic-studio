@@ -35,12 +35,12 @@ function App() {
     // Dismiss splash screen after React has mounted
     const splash = document.getElementById('splash-screen');
     if (splash) {
-      // Small delay to let initial render settle
+      // Longer delay to let initial render fully settle and avoid white flash
       const timer = setTimeout(() => {
         splash.style.opacity = '0';
         splash.style.visibility = 'hidden';
         setTimeout(() => splash.remove(), 400);
-      }, 300);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, []);

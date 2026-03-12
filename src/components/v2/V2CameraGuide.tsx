@@ -37,6 +37,16 @@ const dontList = [
   'Zooma in digitalt (ger sämre kvalitet)',
 ];
 
+const goodExamples = [
+  { src: '/v2-guide/bmw-good-angle.png', label: 'Bra vinkel — ögonhöjd, rakt' },
+  { src: '/v2-guide/bmw-good-crop.png', label: 'Bra beskärning — fokus på bilen' },
+];
+
+const badExamples = [
+  { src: '/v2-guide/bmw-example-1.jpg', label: 'Referensbild — snett framifrån' },
+  { src: '/v2-guide/bmw-example-2.jpg', label: 'Referensbild — sidovy' },
+];
+
 export const V2CameraGuide = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -45,6 +55,31 @@ export const V2CameraGuide = () => {
         <p className="text-muted-foreground">
           Några snabba tips för att få bästa möjliga resultat
         </p>
+      </div>
+
+      {/* Visual examples */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Check className="h-4 w-4 text-green-500" /> Exempelbilder
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          {goodExamples.map((ex) => (
+            <div key={ex.label} className="rounded-card overflow-hidden border-2 border-green-500/30">
+              <div className="aspect-[4/3] bg-muted">
+                <img src={ex.src} alt={ex.label} className="w-full h-full object-cover" />
+              </div>
+              <p className="text-[11px] text-muted-foreground p-2 text-center">{ex.label}</p>
+            </div>
+          ))}
+          {badExamples.map((ex) => (
+            <div key={ex.label} className="rounded-card overflow-hidden border border-border">
+              <div className="aspect-[4/3] bg-muted">
+                <img src={ex.src} alt={ex.label} className="w-full h-full object-cover" />
+              </div>
+              <p className="text-[11px] text-muted-foreground p-2 text-center">{ex.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
