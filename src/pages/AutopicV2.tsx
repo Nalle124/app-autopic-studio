@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Header } from '@/components/Header';
 import { V2CameraGuide } from '@/components/v2/V2CameraGuide';
 import { V2ImageUploader } from '@/components/v2/V2ImageUploader';
 import { V2SceneSelector } from '@/components/v2/V2SceneSelector';
