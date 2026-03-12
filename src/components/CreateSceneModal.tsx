@@ -2324,7 +2324,6 @@ export const CreateSceneModal = ({
           scenePrompt: ''
         }]);
         refetchCredits();
-        }
 
         // Re-add loading for next image
         if (idx < selectedBlurImages.length - 1) {
