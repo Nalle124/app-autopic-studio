@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
-import { Loader2, ChevronDown, X, Check, Minus, Plus } from 'lucide-react';
+import { Loader2, ChevronDown, X, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Slider } from '@/components/ui/slider';
 import bmwAfter from '@/assets/paywall/bmw-after.jpg';
-import vwBefore from '@/assets/examples/vw-before.png';
+import bmwBefore from '@/assets/paywall/bmw-before.jpg';
+import pricingGradientPopular from '@/assets/pricing-gradient-popular.jpg';
+import pricingGradientPremium from '@/assets/pricing-gradient-premium.jpg';
+import proCardBg from '@/assets/pro-card-bg-new.jpg';
+import auraGradient from '@/assets/aura-gradient-3.jpg';
 
 // ── Plan data ──────────────────────────────────────────────────────
 const PRICING_PLANS = {
@@ -22,11 +27,17 @@ const CREDIT_PACKS = {
   creditPack300: { name: '300 credits', price: 899, credits: 300, priceId: 'price_1TAGWRR5EFc7nWvhkemhzZsB', estimate: '20–37 annonser' },
 } as const;
 
+const getAnnonsEstimate = (credits: number) => {
+  const low = Math.floor(credits / 15);
+  const high = Math.floor(credits / 8);
+  return `ca ${low}–${high} annonser/mån`;
+};
+
 const PLAN_FEATURES: Record<string, string[]> = {
-  start: ['100 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
-  pro: ['300 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
-  business: ['600 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)'],
-  scale: ['800 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)'],
+  start: [getAnnonsEstimate(100), '100 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
+  pro: [getAnnonsEstimate(300), '300 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
+  business: [getAnnonsEstimate(600), '600 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)'],
+  scale: [getAnnonsEstimate(800), '800 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)'],
 };
 
 type PlanKey = keyof typeof PRICING_PLANS;
@@ -43,10 +54,11 @@ const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
 
 const TIER_ORDER: PlanKey[] = ['start', 'pro', 'business', 'scale'];
 
-const getAnnonsEstimate = (credits: number) => {
-  const low = Math.floor(credits / 15);
-  const high = Math.floor(credits / 8);
-  return `ca ${low}–${high} annonser/mån`;
+const PLAN_BG: Record<PlanKey, string | null> = {
+  start: null,
+  pro: proCardBg,
+  business: pricingGradientPopular,
+  scale: pricingGradientPremium,
 };
 
 const getNextTier = (currentProductId: string | null): PlanKey | null => {
@@ -72,30 +84,6 @@ const isOnHighestTier = (currentProductId: string | null) => {
   if (!currentProductId || currentProductId === 'admin_access') return false;
   return PRODUCT_TO_PLAN[currentProductId] === 'scale';
 };
-
-// ── Number stepper component ──────────────────────────────────────
-const NumberStepper = ({ value, onChange, min = 1, max = 200, label }: { value: number; onChange: (v: number) => void; min?: number; max?: number; label: string }) => (
-  <div>
-    <label className="text-sm font-medium text-foreground/70 block mb-2">{label}</label>
-    <div className="flex items-center justify-center gap-3">
-      <button
-        onClick={() => onChange(Math.max(min, value - (value > 20 ? 5 : 1)))}
-        className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
-      >
-        <Minus className="w-4 h-4" />
-      </button>
-      <div className="w-20 text-center">
-        <span className="text-3xl font-bold text-foreground">{value}</span>
-      </div>
-      <button
-        onClick={() => onChange(Math.min(max, value + (value >= 20 ? 5 : 1)))}
-        className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
-);
 
 // ── Component ──────────────────────────────────────────────────────
 export const DemoPaywall = () => {
@@ -175,65 +163,84 @@ export const DemoPaywall = () => {
     setExpandedPlan(expandedPlan === key ? null : key);
   };
 
-  // ── Render a plan card (shared between cold/subscriber flows) ──
-  const renderPlanCard = (tier: PlanKey, opts?: { isRecommended?: boolean; showCTA?: boolean; light?: boolean }) => {
+  // ── Render a large plan card with gradient bg ──
+  const renderPlanCard = (tier: PlanKey, opts?: { isRecommended?: boolean }) => {
     const plan = PRICING_PLANS[tier];
     const isRecommended = opts?.isRecommended;
     const isLoading = loadingTier === tier;
     const isPopular = 'popular' in plan && plan.popular;
     const isExpanded = expandedPlan === tier;
+    const bgImage = PLAN_BG[tier];
+    const hasBg = !!bgImage;
 
     return (
-      <div key={tier} className={`rounded-xl border transition-all overflow-hidden ${
-        isRecommended
-          ? 'border-primary/30 bg-gradient-to-br from-primary/5 to-transparent'
-          : 'border-border/60 bg-card hover:border-border'
+      <div key={tier} className={`rounded-xl overflow-hidden transition-all ${
+        isRecommended ? 'ring-2 ring-primary/30' : ''
       }`}>
-        <button onClick={() => togglePlanExpand(tier)} className="w-full flex items-center justify-between p-4">
-          <div className="text-left">
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-foreground">{plan.name}</p>
-              {isRecommended && (
-                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Bäst val</span>
-              )}
-              {isPopular && !isRecommended && (
-                <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">Populär</span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {plan.credits} credits · {getAnnonsEstimate(plan.credits)}
-            </p>
+        {/* Main card */}
+        <div className={`relative overflow-hidden ${hasBg ? 'text-white' : 'bg-card border border-border/60'}`}>
+          {hasBg && (
+            <img src={bgImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          {hasBg && <div className="absolute inset-0 bg-black/40" />}
+
+          <div className="relative z-10">
+            <button onClick={() => togglePlanExpand(tier)} className="w-full text-left p-5">
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className={`text-lg font-bold ${hasBg ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
+                    {isRecommended && (
+                      <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">Rekommenderad</span>
+                    )}
+                    {isPopular && !isRecommended && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${hasBg ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'}`}>Populär</span>
+                    )}
+                  </div>
+                  <p className={`text-sm mt-1 ${hasBg ? 'text-white/70' : 'text-muted-foreground'}`}>
+                    {plan.credits} bilder · {getAnnonsEstimate(plan.credits)}
+                  </p>
+                </div>
+                <div className="text-right flex items-center gap-2">
+                  <div>
+                    <span className={`text-2xl font-bold ${hasBg ? 'text-white' : 'text-foreground'}`}>{plan.price}</span>
+                    <span className={`text-sm ${hasBg ? 'text-white/60' : 'text-muted-foreground'}`}> kr/mån</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${hasBg ? 'text-white/60' : 'text-muted-foreground'} ${isExpanded ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+            </button>
+
+            {isExpanded && (
+              <div className={`px-5 pb-5 pt-0 border-t ${hasBg ? 'border-white/10' : 'border-border/40'}`}>
+                <ul className="space-y-1.5 pt-3">
+                  {PLAN_FEATURES[tier]?.map((f, i) => (
+                    <li key={i} className={`text-xs flex items-start gap-2 ${hasBg ? 'text-white/80' : 'text-muted-foreground'}`}>
+                      <Check className={`w-3 h-3 mt-0.5 shrink-0 ${hasBg ? 'text-white/60' : 'text-primary'}`} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  onClick={() => handleSelectPlan(tier)}
+                  disabled={isLoading}
+                  className={`w-full mt-4 font-semibold ${hasBg
+                    ? 'bg-white/20 backdrop-blur-sm text-white border border-white/20 hover:bg-white/30'
+                    : 'bg-foreground text-background hover:bg-foreground/90'
+                  }`}
+                  size="lg"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Välj ${plan.name}`}
+                </Button>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-foreground whitespace-nowrap">{plan.price} kr<span className="text-xs font-normal text-muted-foreground">/mån</span></span>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-          </div>
-        </button>
-        {isExpanded && (
-          <div className="px-4 pb-4 pt-0 border-t border-border/40">
-            <ul className="space-y-1.5 pt-3">
-              {PLAN_FEATURES[tier]?.map((f, i) => (
-                <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
-                  <Check className="w-3 h-3 text-primary mt-0.5 shrink-0" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <Button
-              onClick={() => handleSelectPlan(tier)}
-              disabled={isLoading}
-              className="w-full mt-3 bg-foreground text-background hover:bg-foreground/90 font-semibold"
-              size="sm"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Välj ${plan.name}`}
-            </Button>
-          </div>
-        )}
+        </div>
       </div>
     );
   };
 
-  // ── Render credit packs (shared) ──────────────────────────────
+  // ── Render credit packs ──────────────────────────────────────
   const renderCreditPacks = () => (
     <div className="space-y-2">
       {(Object.entries(CREDIT_PACKS) as [CreditPackKey, typeof CREDIT_PACKS[CreditPackKey]][]).map(([key, pack]) => (
@@ -268,12 +275,13 @@ export const DemoPaywall = () => {
     const onHighest = isOnHighestTier(currentProductId);
     const currentPlan = currentPlanKey ? PRICING_PLANS[currentPlanKey] : null;
     const hasUpgrades = upgradeTiers.length > 0 && !onHighest;
+    const nextTier = hasUpgrades ? upgradeTiers[0] : null;
+    const nextPlan = nextTier ? PRICING_PLANS[nextTier] : null;
 
     return (
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
         <DialogContent className="p-0 gap-0 max-w-md border-0 bg-transparent shadow-none max-h-[90dvh] overflow-y-auto [&>button]:hidden">
           <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-background">
-            {/* Close button */}
             <button onClick={handleClose} className="absolute top-4 right-4 z-20 text-muted-foreground hover:text-foreground transition-colors">
               <X className="w-5 h-5" />
             </button>
@@ -291,7 +299,7 @@ export const DemoPaywall = () => {
                 </h2>
                 {!isProfileBuy && currentPlan && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Din <strong>{currentPlan.name}</strong>-plan med {currentPlan.credits} bilder är förbrukad denna period.
+                    {currentPlan.name} · {currentPlan.credits} bilder förbrukade
                   </p>
                 )}
               </div>
@@ -300,6 +308,16 @@ export const DemoPaywall = () => {
               {hasUpgrades && (
                 <div className="px-6 pt-2 pb-1">
                   <div className="flex bg-muted rounded-lg p-0.5">
+                    <button
+                      onClick={() => setSubscriberTab('topup')}
+                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                        subscriberTab === 'topup'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Fyll på
+                    </button>
                     <button
                       onClick={() => setSubscriberTab('upgrade')}
                       className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
@@ -310,25 +328,54 @@ export const DemoPaywall = () => {
                     >
                       Uppgradera
                     </button>
-                    <button
-                      onClick={() => setSubscriberTab('topup')}
-                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                        subscriberTab === 'topup'
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Fyll på credits
-                    </button>
                   </div>
                 </div>
               )}
 
               <div className="px-6 py-4 space-y-3">
-                {/* Upgrade tab */}
-                {subscriberTab === 'upgrade' && hasUpgrades && (
-                  <div className="space-y-2">
-                    {upgradeTiers.map(tier => renderPlanCard(tier, { isRecommended: tier === upgradeTiers[0] }))}
+                {/* Upgrade tab — prominent next tier card */}
+                {subscriberTab === 'upgrade' && hasUpgrades && nextTier && nextPlan && (
+                  <div className="space-y-3">
+                    {/* Featured upgrade card */}
+                    <div className="relative rounded-xl overflow-hidden">
+                      <img src={auraGradient} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40" />
+                      <div className="relative z-10 p-5">
+                        <p className="text-[10px] uppercase tracking-widest text-white/60 font-medium mb-1">Uppgradera till</p>
+                        <div className="flex items-start justify-between">
+                          <h3 className="text-xl font-bold text-white">{nextPlan.name}</h3>
+                          <div className="text-right">
+                            <span className="text-3xl font-bold text-white">{nextPlan.price}</span>
+                            <span className="text-sm text-white/60"> kr/mån</span>
+                          </div>
+                        </div>
+
+                        {currentPlan && (
+                          <div className="flex gap-6 mt-3">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-white/50">Fler bilder</p>
+                              <p className="text-lg font-bold text-white">+{nextPlan.credits - currentPlan.credits}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-white/50">Prisskillnad</p>
+                              <p className="text-lg font-bold text-white">+{nextPlan.price - currentPlan.price} kr</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <Button
+                          onClick={() => handleSelectPlan(nextTier)}
+                          disabled={loadingTier === nextTier}
+                          className="w-full mt-4 bg-white/20 backdrop-blur-sm text-white border border-white/20 hover:bg-white/30 font-semibold"
+                          size="lg"
+                        >
+                          {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Uppgradera'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Other upgrade tiers */}
+                    {upgradeTiers.slice(1).map(tier => renderPlanCard(tier))}
                   </div>
                 )}
 
@@ -359,13 +406,12 @@ export const DemoPaywall = () => {
     );
   }
 
-  // ── Cold user wizard flow (light/white design) ─────────────────
+  // ── Cold user wizard flow ─────────────────────────────────────
   return (
     <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
       <DialogContent className="p-0 gap-0 max-w-lg border-0 bg-transparent shadow-none max-h-[90dvh] overflow-y-auto [&>button]:hidden">
         <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-background">
-          {/* Close button */}
-          <button onClick={handleClose} className="absolute top-4 right-4 z-20 text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={handleClose} className="absolute top-4 right-4 z-20 text-muted-foreground hover:text-foreground transition-colors bg-background/60 backdrop-blur-sm rounded-full p-1.5">
             <X className="w-5 h-5" />
           </button>
 
@@ -376,23 +422,25 @@ export const DemoPaywall = () => {
               <div className="text-center space-y-0">
                 {/* Before/After split image */}
                 <div className="relative aspect-[16/10] overflow-hidden">
-                  <img src={vwBefore} alt="Före" className="absolute inset-0 w-full h-full object-cover" />
-                  <div className="absolute inset-0 w-1/2 right-auto overflow-hidden">
-                    <img src={vwBefore} alt="Före" className="w-[200%] h-full object-cover" />
+                  {/* Before (left half) */}
+                  <div className="absolute inset-0 w-1/2 overflow-hidden">
+                    <img src={bmwBefore} alt="Före" className="w-[200%] h-full object-cover object-center" />
                   </div>
-                  <div className="absolute top-1/2 right-1/2 -translate-y-1/2 translate-x-1/2 z-10">
-                    <div className="w-px h-full absolute top-0 bg-white/40" />
+                  {/* Divider */}
+                  <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 z-10 w-px bg-white/50" />
+                  {/* After (right half) */}
+                  <div className="absolute top-0 right-0 w-1/2 h-full overflow-hidden">
+                    <img src={bmwAfter} alt="Efter" className="w-[200%] h-full object-cover object-center" style={{ objectPosition: 'left center' }} />
                   </div>
-                  <img src={bmwAfter} alt="Efter" className="absolute top-0 right-0 w-1/2 h-full object-cover" />
-                  <div className="absolute bottom-3 left-4 text-[10px] font-medium text-white/70 bg-black/40 px-2 py-0.5 rounded">Före</div>
-                  <div className="absolute bottom-3 right-4 text-[10px] font-medium text-white/70 bg-black/40 px-2 py-0.5 rounded">Efter</div>
+                  <div className="absolute bottom-3 left-4 text-[10px] font-medium text-white/80 bg-black/50 px-2 py-0.5 rounded">Före</div>
+                  <div className="absolute bottom-3 right-4 text-[10px] font-medium text-white/80 bg-black/50 px-2 py-0.5 rounded">Efter</div>
                   <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
                 </div>
 
                 <div className="px-6 pb-8 space-y-5 pt-2">
                   <div>
                     <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
-                      Hitta rätt plan
+                      Hitta rätt paket
                     </h2>
                     <p className="text-sm text-muted-foreground mt-2">
                       Proffsiga bilannonser på sekunder
@@ -407,44 +455,66 @@ export const DemoPaywall = () => {
                       onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
                       className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      Se alla planer direkt
+                      Se alla paket direkt
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ── Step 2: Quiz ── */}
+            {/* ── Step 2: Quiz with sliders ── */}
             {step === 'quiz' && (
               <div className="px-6 py-8 space-y-8">
-                <div className="text-center">
-                  <h2 className="text-xl md:text-2xl font-bold text-foreground">
-                    Hitta rätt plan
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Svara på två frågor så rekommenderar vi rätt nivå.
-                  </p>
+                <div className="space-y-8">
+                  {/* Cars per month slider */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium text-foreground">Bilar per månad</label>
+                      <span className="text-2xl font-bold text-foreground tabular-nums">{carsPerMonth}</span>
+                    </div>
+                    <Slider
+                      value={[carsPerMonth]}
+                      onValueChange={([v]) => setCarsPerMonth(v)}
+                      min={1}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[11px] text-muted-foreground mt-1.5">
+                      <span>1</span>
+                      <span>25</span>
+                      <span>50</span>
+                      <span>100</span>
+                    </div>
+                  </div>
+
+                  {/* Images per car slider */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium text-foreground">Bilder per bil</label>
+                      <span className="text-2xl font-bold text-foreground tabular-nums">{imagesPerCar}</span>
+                    </div>
+                    <Slider
+                      value={[imagesPerCar]}
+                      onValueChange={([v]) => setImagesPerCar(v)}
+                      min={3}
+                      max={30}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[11px] text-muted-foreground mt-1.5">
+                      <span>3</span>
+                      <span>10</span>
+                      <span>20</span>
+                      <span>30</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-6">
-                  <NumberStepper
-                    label="Hur många bilar annonserar du per månad?"
-                    value={carsPerMonth}
-                    onChange={setCarsPerMonth}
-                    min={1}
-                    max={200}
-                  />
-                  <NumberStepper
-                    label="Hur många bilder per bil?"
-                    value={imagesPerCar}
-                    onChange={setImagesPerCar}
-                    min={1}
-                    max={30}
-                  />
-                </div>
-
-                <div className="text-center text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{carsPerMonth * imagesPerCar}</span> bilder/månad totalt
+                {/* Total */}
+                <div className="bg-muted/50 rounded-xl p-4 text-center">
+                  <span className="text-3xl font-bold text-foreground">{carsPerMonth * imagesPerCar}</span>
+                  <span className="text-sm text-muted-foreground ml-2">bilder/månad totalt</span>
                 </div>
 
                 <div className="space-y-3">
@@ -459,7 +529,7 @@ export const DemoPaywall = () => {
                     onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
                     className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Se alla planer direkt
+                    Se alla paket direkt
                   </button>
                 </div>
               </div>
@@ -468,57 +538,32 @@ export const DemoPaywall = () => {
             {/* ── Step 3: Plans ── */}
             {step === 'plans' && (
               <div className="px-6 py-6 space-y-4">
-                <div className="text-center">
-                  {recommendedPlan ? (
-                    <>
-                      <p className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full inline-block mb-2">
-                        Rekommenderat
-                      </p>
-                      <h2 className="text-xl md:text-2xl font-bold text-foreground">
-                        {PRICING_PLANS[recommendedPlan].name} passar dig bäst
-                      </h2>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {carsPerMonth * imagesPerCar} bilder/mån → {PRICING_PLANS[recommendedPlan].credits} credits
-                      </p>
-                    </>
-                  ) : (
-                    <h2 className="text-xl md:text-2xl font-bold text-foreground">
-                      Välj plan
-                    </h2>
-                  )}
-                </div>
+                {/* Recommendation badge */}
+                {recommendedPlan && (
+                  <div className="text-center">
+                    <span className="inline-block text-xs font-medium text-foreground/70 bg-muted px-3 py-1 rounded-full">
+                      {carsPerMonth} × {imagesPerCar} = ~{carsPerMonth * imagesPerCar} bilder/mån
+                    </span>
+                  </div>
+                )}
 
                 {/* If calculation exceeds Scale, show contact */}
                 {recommendedPlan && carsPerMonth * imagesPerCar > 800 && (
                   <div className="rounded-xl border border-border/60 bg-muted/30 p-5 text-center space-y-3">
-                    <p className="text-xs font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full inline-block">
-                      {carsPerMonth * imagesPerCar} bilder/mån
-                    </p>
                     <h3 className="text-lg font-bold text-foreground">Skräddarsytt paket</h3>
                     <p className="text-sm text-muted-foreground">
-                      Ditt behov överstiger standardplanerna. Vi sätter ihop ett erbjudande.
+                      Ditt behov överstiger standardpaketen. Vi sätter ihop ett erbjudande.
                     </p>
-                    <a
-                      href="https://www.autopic.studio/kontakt"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
+                    <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="block">
                       <Button className="w-full bg-foreground text-background hover:bg-foreground/90 font-semibold" size="lg">
                         Kontakta oss
                       </Button>
                     </a>
-                    <button
-                      onClick={() => { setRecommendedPlan(null); }}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Se standardplaner
-                    </button>
                   </div>
                 )}
 
                 {/* Plan cards */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {TIER_ORDER.map((tier) => renderPlanCard(tier, { isRecommended: tier === recommendedPlan }))}
                 </div>
 
