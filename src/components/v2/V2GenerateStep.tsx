@@ -265,7 +265,15 @@ export const V2GenerateStep = ({
   }, [liveResults.length]);
 
   const handleGenerate = async () => {
-    if (!canGenerate) { toast.error('Du behöver fler krediter för att generera'); return; }
+    if (!canGenerate) {
+      // Import DemoContext trigger - we need to access it
+      const { triggerPaywall } = await import('@/contexts/DemoContext').then(m => {
+        // Can't use hook here, dispatch custom event instead
+        window.dispatchEvent(new CustomEvent('trigger-paywall', { detail: 'subscriber-limit' }));
+        return { triggerPaywall: () => {} };
+      });
+      return;
+    }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
 
     try {
