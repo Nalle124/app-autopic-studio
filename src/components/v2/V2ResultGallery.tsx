@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, RotateCcw, CheckSquare, FileText, Eye, Scissors, Sliders, ChevronLeft, ChevronRight, Video, ShoppingBag, Sparkles } from 'lucide-react';
+import { Download, RotateCcw, CheckSquare, FileText, Eye, Scissors, Sliders, ChevronLeft, ChevronRight, Video, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -23,6 +23,23 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [editingImage, setEditingImage] = useState<{ url: string; index: number; type: 'crop' | 'adjust' } | null>(null);
 
+  const downloadSingle = (url: string, index: number) => {
+    // Force download via fetch + blob to avoid opening in new tab on mobile
+    fetch(url)
+      .then(r => r.blob())
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `bild-${index + 1}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      })
+      .catch(() => toast.error('Kunde inte ladda ner bilden'));
+  };
+
   const downloadAllZip = async () => {
     setDownloading(true);
     try {
@@ -39,7 +56,9 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       const a = document.createElement('a');
       a.href = url;
       a.download = 'autopic-bilder.zip';
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
       toast.error('Kunde inte skapa ZIP');
@@ -111,17 +130,27 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 className="flex-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground hover:text-foreground py-1 rounded transition-colors"
                 title="AI Studio"
               >
-                <Sparkles className="h-3 w-3" />
+                <img src="/favicon.png" alt="" className="h-3 w-3 object-contain dark:invert" />
+              </button>
+              <button
+                onClick={() => downloadSingle(img.processedUrl || img.previewUrl, i)}
+                className="flex-1 flex items-center justify-center gap-1 text-[10px] text-muted-foreground hover:text-foreground py-1 rounded transition-colors"
+                title="Ladda ner"
+              >
+                <Download className="h-3 w-3" />
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="flex gap-3 justify-center">
+      <div className="flex gap-3 justify-center flex-wrap">
         <Button onClick={downloadAllZip} disabled={downloading}>
           <Download className="h-4 w-4 mr-2" />
           {downloading ? 'Skapar ZIP...' : 'Ladda ner alla (ZIP)'}
+        </Button>
+        <Button variant="outline" onClick={() => navigate('/?tab=history')}>
+          Gå till galleriet
         </Button>
         <Button variant="outline" onClick={onStartOver}>
           <RotateCcw className="h-4 w-4 mr-2" />
@@ -130,34 +159,34 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       </div>
 
       {/* Coming soon blocks */}
-      <div className="grid sm:grid-cols-3 gap-4">
-        <div className="rounded-card border border-dashed border-border bg-muted/20 p-5 text-center space-y-2">
-          <ShoppingBag className="h-5 w-5 text-muted-foreground mx-auto" />
-          <h3 className="text-xs font-semibold text-foreground">Skicka till Blocket</h3>
-          <Badge variant="outline" className="text-[10px]">Kommer snart</Badge>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-card border border-dashed border-border bg-muted/20 p-4 text-center space-y-1">
+          <ShoppingBag className="h-4 w-4 text-muted-foreground mx-auto" />
+          <h3 className="text-[10px] font-semibold text-foreground">Blocket</h3>
+          <Badge variant="outline" className="text-[8px]">Snart</Badge>
         </div>
-        <div className="rounded-card border border-dashed border-border bg-muted/20 p-5 text-center space-y-2">
-          <FileText className="h-5 w-5 text-muted-foreground mx-auto" />
-          <h3 className="text-xs font-semibold text-foreground">Annonstext</h3>
-          <Badge variant="outline" className="text-[10px]">Kommer snart</Badge>
+        <div className="rounded-card border border-dashed border-border bg-muted/20 p-4 text-center space-y-1">
+          <FileText className="h-4 w-4 text-muted-foreground mx-auto" />
+          <h3 className="text-[10px] font-semibold text-foreground">Annonstext</h3>
+          <Badge variant="outline" className="text-[8px]">Snart</Badge>
         </div>
-        <div className="rounded-card border border-dashed border-border bg-muted/20 p-5 text-center space-y-2">
-          <Video className="h-5 w-5 text-muted-foreground mx-auto" />
-          <h3 className="text-xs font-semibold text-foreground">Skapa video</h3>
-          <Badge variant="outline" className="text-[10px]">Kommer snart</Badge>
+        <div className="rounded-card border border-dashed border-border bg-muted/20 p-4 text-center space-y-1">
+          <Video className="h-4 w-4 text-muted-foreground mx-auto" />
+          <h3 className="text-[10px] font-semibold text-foreground">Video</h3>
+          <Badge variant="outline" className="text-[8px]">Snart</Badge>
         </div>
       </div>
 
       {/* Preview dialog */}
       <Dialog open={previewIndex !== null && !editingImage} onOpenChange={(open) => !open && setPreviewIndex(null)}>
-        <DialogContent className="max-w-4xl w-full p-0 bg-background border-border overflow-hidden">
+        <DialogContent className="max-w-4xl w-full p-0 bg-background border-border overflow-hidden max-h-[90vh]">
           <VisuallyHidden><DialogTitle>Förhandsgranskning</DialogTitle></VisuallyHidden>
           {previewImg && (
             <div className="relative">
               <img
                 src={previewUrl}
                 alt="Förhandsgranskning"
-                className="w-full h-auto max-h-[75vh] object-contain bg-muted"
+                className="w-full h-auto max-h-[70vh] object-contain bg-muted"
               />
               {previewIndex !== null && previewIndex > 0 && (
                 <button
@@ -175,21 +204,19 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                   <ChevronRight className="h-5 w-5" />
                 </button>
               )}
-              <div className="p-3 border-t border-border flex items-center justify-between">
+              <div className="p-3 border-t border-border flex items-center justify-between flex-wrap gap-2">
                 <span className="text-xs text-muted-foreground">{(previewIndex ?? 0) + 1} / {results.length}</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
                     <Scissors className="h-4 w-4 mr-1" /> Beskär
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
                     <Sliders className="h-4 w-4 mr-1" /> Redigera
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    const a = document.createElement('a');
-                    a.href = previewUrl;
-                    a.download = `bild-${(previewIndex ?? 0) + 1}.jpg`;
-                    a.click();
-                  }}>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/?tab=ai-studio')}>
+                    <img src="/favicon.png" alt="" className="h-4 w-4 mr-1 object-contain dark:invert" /> AI Studio
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => downloadSingle(previewUrl, previewIndex ?? 0)}>
                     <Download className="h-4 w-4 mr-1" /> Ladda ner
                   </Button>
                 </div>

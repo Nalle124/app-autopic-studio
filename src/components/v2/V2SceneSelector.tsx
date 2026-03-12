@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Scene {
@@ -34,7 +34,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
   const [userScenes, setUserScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('popular');
-  const nextBtnRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -62,10 +62,10 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
 
   const handleSelect = (id: string) => {
     onSelect(id);
-    // Auto-scroll to bottom so user sees "Nästa" button
+    // Scroll to very bottom so the "Nästa" button in the footer is visible
     setTimeout(() => {
-      nextBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }, 100);
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 150);
   };
 
   const getDisplayScenes = () => {
@@ -80,9 +80,9 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
 
   return (
     <div className="space-y-4">
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-1">
         <h2 className="text-xl font-bold text-foreground">Välj bakgrund</h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Välj en studiomiljö som appliceras på alla exteriörbilder.
         </p>
       </div>
@@ -137,12 +137,12 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
               </button>
             ))}
 
-            {/* Create own background mockup */}
+            {/* Create own background */}
             <button
               onClick={() => navigate('/?tab=ai-studio')}
               className="relative rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/40 aspect-[4/3] flex flex-col items-center justify-center gap-2 bg-muted/30 transition-all"
             >
-              <Sparkles className="h-6 w-6 text-primary" />
+              <img src="/favicon.png" alt="" className="h-6 w-6 object-contain dark:invert" />
               <p className="text-xs font-medium text-foreground">Skapa egen</p>
               <p className="text-[10px] text-muted-foreground">via AI Studio</p>
             </button>
@@ -156,8 +156,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
         </>
       )}
 
-      {/* Scroll target for auto-scroll after selecting a scene */}
-      <div ref={nextBtnRef} />
+      <div ref={bottomRef} />
     </div>
   );
 };

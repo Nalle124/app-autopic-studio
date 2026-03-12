@@ -21,9 +21,9 @@ interface Props {
 }
 
 const FORMAT_OPTIONS = [
-  { id: 'landscape' as const, label: 'Liggande (3:2)', desc: '3072×2048' },
-  { id: 'portrait' as const, label: 'Stående (2:3)', desc: '2048×3072' },
-  { id: 'square' as const, label: 'Kvadrat (1:1)', desc: '2048×2048' },
+  { id: 'landscape' as const, label: 'Liggande', desc: '3:2' },
+  { id: 'portrait' as const, label: 'Stående', desc: '2:3' },
+  { id: 'square' as const, label: 'Kvadrat', desc: '1:1' },
 ];
 
 export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, outputFormat, onOutputFormatChange }: Props) => {
@@ -75,38 +75,37 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-foreground">Ladda upp bilder</h2>
-      <p className="text-sm text-muted-foreground">
-        Ladda upp exteriör-, interiör- och detaljbilder. Systemet hanterar dem automatiskt.
-      </p>
-
-      {/* Optional project name */}
-      <div className="max-w-sm">
-        <label className="text-xs text-muted-foreground mb-1 block">Bilens namn (valfritt)</label>
-        <Input
-          value={projectName}
-          onChange={(e) => onProjectNameChange(e.target.value)}
-          placeholder="T.ex. BMW X4 M40d 2019"
-          className="h-9 text-sm"
-        />
+      <div className="text-center space-y-1">
+        <h2 className="text-xl font-bold text-foreground">Ladda upp bilder</h2>
+        <p className="text-xs text-muted-foreground">
+          Exteriör, interiör och detaljer — systemet hanterar dem automatiskt.
+        </p>
       </div>
 
-      {/* Output format selector */}
-      <div>
-        <label className="text-xs text-muted-foreground mb-2 block">Bildformat</label>
-        <div className="flex gap-2">
+      {/* Project name + format on same row */}
+      <div className="flex gap-3 items-end">
+        <div className="flex-1">
+          <label className="text-[10px] text-muted-foreground mb-1 block">Bilens namn (valfritt)</label>
+          <Input
+            value={projectName}
+            onChange={(e) => onProjectNameChange(e.target.value)}
+            placeholder="T.ex. BMW X4 M40d 2019"
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="flex gap-1">
           {FORMAT_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               onClick={() => onOutputFormatChange(opt.id)}
-              className={`flex-1 rounded-card border-2 p-3 text-center transition-all ${
+              className={`px-2 py-1.5 rounded text-[10px] border transition-all ${
                 outputFormat === opt.id
-                  ? 'border-primary ring-2 ring-primary/20'
-                  : 'border-border hover:border-primary/40'
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border text-muted-foreground hover:border-primary/40'
               }`}
+              title={opt.label}
             >
-              <p className="text-xs font-medium text-foreground">{opt.label}</p>
-              <p className="text-[10px] text-muted-foreground">{opt.desc}</p>
+              {opt.desc}
             </button>
           ))}
         </div>
@@ -114,51 +113,51 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
 
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-card p-8 text-center cursor-pointer transition-colors ${
+        className={`border-2 border-dashed rounded-card p-6 sm:p-8 text-center cursor-pointer transition-colors ${
           isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
         }`}
       >
         <input {...getInputProps()} />
-        <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-        <p className="text-foreground font-medium">
-          {isDragActive ? 'Släpp bilderna här' : 'Dra & släpp bilder eller klicka för att välja'}
+        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+        <p className="text-foreground font-medium text-sm">
+          {isDragActive ? 'Släpp bilderna här' : 'Dra & släpp bilder eller klicka'}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-[10px] text-muted-foreground mt-1">
           JPG, PNG, WebP, HEIC — max 50 bilder
         </p>
       </div>
 
       {images.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5">
           {images.map((img) => (
             <div key={img.id} className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted">
               <img src={img.previewUrl} alt={img.file.name} className="w-full h-full object-cover" />
               <button
                 onClick={() => removeImage(img.id)}
-                className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3 w-3" />
               </button>
             </div>
           ))}
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground text-right">{images.length}/50 bilder</p>
+      <p className="text-[10px] text-muted-foreground text-right">{images.length}/50</p>
 
-      {/* Collapsible camera tips - below upload */}
+      {/* Collapsible camera tips */}
       <button
         onClick={() => setShowTips(!showTips)}
-        className="w-full flex items-center justify-between rounded-card border border-border bg-muted/30 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors"
+        className="w-full flex items-center justify-between rounded-card border border-border bg-muted/30 px-3 py-2.5 text-xs text-foreground hover:bg-muted/50 transition-colors"
       >
         <span className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-primary" />
-          <span className="font-medium">Fototips — så får du bäst resultat</span>
+          <Camera className="h-3.5 w-3.5 text-primary" />
+          <span className="font-medium">Fototips — bättre resultat</span>
         </span>
-        {showTips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        {showTips ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
       </button>
       {showTips && (
-        <div className="border border-border rounded-card p-4 bg-card">
+        <div className="border border-border rounded-card p-3 bg-card">
           <V2CameraGuide />
         </div>
       )}

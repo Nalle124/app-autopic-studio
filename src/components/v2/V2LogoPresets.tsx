@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, EyeOff, Shield } from 'lucide-react';
+import { Upload, EyeOff, Shield, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import type { V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
@@ -18,6 +18,8 @@ const PRESETS = [
   { id: 'top-center', label: 'Uppe center', position: 'top-2 left-1/2 -translate-x-1/2' },
   { id: 'bottom-right', label: 'Nere höger', position: 'bottom-2 right-2' },
   { id: 'bottom-center-banner', label: 'Banner nere', position: 'bottom-0 left-0 right-0' },
+  { id: 'top-center-banner', label: 'Banner uppe center', position: 'top-0 left-0 right-0' },
+  { id: 'top-banner-left', label: 'Banner uppe vänster', position: 'top-0 left-0 right-0' },
 ] as const;
 
 const APPLY_OPTIONS = [
@@ -29,8 +31,8 @@ const APPLY_OPTIONS = [
 ];
 
 const PLATE_STYLES = [
-  { id: 'blur-dark' as const, label: 'Mörk blur', desc: 'Mörk suddig inlay' },
-  { id: 'blur-light' as const, label: 'Ljus blur', desc: 'Ljus suddig inlay' },
+  { id: 'blur-dark' as const, label: 'Mörk inlay', desc: 'Mörk platta över skylt' },
+  { id: 'blur-light' as const, label: 'Ljus inlay', desc: 'Ljus platta över skylt' },
   { id: 'logo' as const, label: 'Din logotyp', desc: 'Ersätt med din logo' },
 ];
 
@@ -50,34 +52,73 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
       });
   }, [user]);
 
+  const renderPresetMockup = (preset: typeof PRESETS[number]) => {
+    if (preset.id === 'bottom-center-banner') {
+      return (
+        <>
+          <div className="absolute bottom-0 left-0 right-0 h-4 bg-black/60 flex items-center justify-center">
+            <div className="h-2 w-8 bg-white/80 rounded-sm" />
+          </div>
+        </>
+      );
+    }
+    if (preset.id === 'top-center-banner') {
+      return (
+        <>
+          <div className="absolute top-0 left-0 right-0 h-4 bg-black/60 flex items-center justify-center">
+            <div className="h-2 w-8 bg-white/80 rounded-sm" />
+          </div>
+        </>
+      );
+    }
+    if (preset.id === 'top-banner-left') {
+      return (
+        <>
+          <div className="absolute top-0 left-0 right-0 h-4 bg-black/60 flex items-center pl-1">
+            <div className="h-2 w-6 bg-white/80 rounded-sm" />
+          </div>
+        </>
+      );
+    }
+    return (
+      <div className={`absolute ${preset.position}`}>
+        <div className="h-3 w-6 bg-primary/40 rounded-sm" />
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 px-1">
       {/* Logo section */}
       <div className="space-y-4">
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold text-foreground">Logo-placering</h2>
-          <p className="text-sm text-muted-foreground">
-            Välj var logotypen ska placeras och på vilka bilder.
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-bold text-foreground">Logo & skyltar</h2>
+          <p className="text-xs text-muted-foreground">
+            Konfigurera logotyp och skyltdöljning.
           </p>
         </div>
 
-        {logoUrl ? (
-          <div className="flex items-center justify-center gap-3 p-4 rounded-card border border-border bg-muted/20">
-            <img src={logoUrl} alt="Din logo" className="h-10 object-contain" />
-            <span className="text-sm text-muted-foreground">Din logotyp</span>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center gap-3 p-4 rounded-card border border-dashed border-border">
-            <Upload className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              Ingen logotyp hittades. Ladda upp en i din profil.
-            </span>
-          </div>
-        )}
+        {/* Compact logo preview */}
+        <div className="flex items-center gap-3 p-3 rounded-card border border-border bg-muted/20">
+          {logoUrl ? (
+            <>
+              <img src={logoUrl} alt="Logo" className="h-6 object-contain" />
+              <span className="text-xs text-muted-foreground flex-1">Din logotyp</span>
+              <Check className="h-4 w-4 text-primary" />
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground flex-1">
+                Ingen logo — ladda upp i din profil
+              </span>
+            </>
+          )}
+        </div>
 
         <div>
-          <h3 className="text-sm font-medium text-foreground mb-3">Placering</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <h3 className="text-xs font-medium text-foreground mb-2">Placering</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -88,18 +129,8 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                     : 'border-border hover:border-primary/40'
                 }`}
               >
-                <div className={`absolute ${preset.position} ${
-                  preset.id === 'bottom-center-banner'
-                    ? 'h-5 bg-black/60 flex items-center justify-center'
-                    : ''
-                }`}>
-                  <div className={`${
-                    preset.id === 'bottom-center-banner'
-                      ? 'h-3 w-10 bg-white/80 rounded-sm'
-                      : 'h-4 w-8 bg-primary/40 rounded-sm'
-                  }`} />
-                </div>
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-muted-foreground whitespace-nowrap">
+                {renderPresetMockup(preset)}
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] text-muted-foreground whitespace-nowrap leading-tight">
                   {preset.label}
                 </span>
               </button>
@@ -108,13 +139,13 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         </div>
 
         <div>
-          <h3 className="text-sm font-medium text-foreground mb-3">Applicera på</h3>
-          <div className="flex flex-wrap gap-2">
+          <h3 className="text-xs font-medium text-foreground mb-2">Applicera på</h3>
+          <div className="flex flex-wrap gap-1.5">
             {APPLY_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => onConfigChange({ ...config, applyTo: opt.id })}
-                className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
                   config.applyTo === opt.id
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border text-foreground hover:border-primary/40'
@@ -131,15 +162,15 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
       <div className="border-t border-border" />
 
       {/* License plate section */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary" />
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Shield className="h-4 w-4 text-primary" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">Dölj registreringsskyltar</h3>
-              <p className="text-xs text-muted-foreground">+1 kredit per exteriörbild</p>
+              <p className="text-[10px] text-muted-foreground">+1 kredit per exteriörbild</p>
             </div>
           </div>
           <Switch
@@ -149,32 +180,31 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         </div>
 
         {plateConfig.enabled && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {PLATE_STYLES.map((style) => (
               <button
                 key={style.id}
                 onClick={() => onPlateConfigChange({ ...plateConfig, style: style.id })}
-                className={`rounded-card border-2 p-3 text-center transition-all ${
+                className={`rounded-card border-2 p-2.5 text-center transition-all ${
                   plateConfig.style === style.id
                     ? 'border-primary ring-2 ring-primary/20'
                     : 'border-border hover:border-primary/40'
                 }`}
               >
-                <div className="h-8 w-full rounded bg-muted flex items-center justify-center mb-2">
-                  {style.id === 'blur-dark' && <div className="w-12 h-4 rounded bg-black/40 blur-[2px]" />}
-                  {style.id === 'blur-light' && <div className="w-12 h-4 rounded bg-white/60 blur-[2px]" />}
-                  {style.id === 'logo' && <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                <div className="h-6 w-full rounded bg-muted flex items-center justify-center mb-1.5">
+                  {style.id === 'blur-dark' && <div className="w-10 h-3 rounded bg-black/50" />}
+                  {style.id === 'blur-light' && <div className="w-10 h-3 rounded bg-white/70 border border-border/30" />}
+                  {style.id === 'logo' && <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
                 </div>
-                <p className="text-xs font-medium text-foreground">{style.label}</p>
-                <p className="text-[10px] text-muted-foreground">{style.desc}</p>
+                <p className="text-[10px] font-medium text-foreground">{style.label}</p>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      <Badge variant="outline" className="mx-auto block w-fit text-xs">
-        💡 Logo och skyltdöljning appliceras automatiskt vid generering
+      <Badge variant="outline" className="mx-auto block w-fit text-[10px]">
+        💡 Logo och skyltdöljning appliceras automatiskt
       </Badge>
     </div>
   );
