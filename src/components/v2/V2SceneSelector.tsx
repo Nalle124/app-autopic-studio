@@ -165,7 +165,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
         </div>
       ) : (
         <>
-          <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
+          <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
             {displayScenes.map((scene) => (
               <button
                 key={scene.id}

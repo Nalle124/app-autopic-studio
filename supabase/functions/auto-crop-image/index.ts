@@ -31,7 +31,7 @@ serve(async (req) => {
           content: [
             {
               type: "text",
-              text: `Analyze this car photograph. Find the tightest bounding box that contains the ENTIRE vehicle — including all wheels (touching the ground), side mirrors, roof rack, antenna, and any protruding parts. The box must fully enclose the car from the leftmost pixel to the rightmost pixel and from the top of the roof to the bottom of the tires where they meet the ground. Do NOT exclude any part of the vehicle. Return ONLY a JSON object with these normalized values (0 to 1, as fractions of image width/height): {"left": <number>, "top": <number>, "right": <number>, "bottom": <number>}`
+              text: `Analyze this car photograph. Find the bounding box that contains the ENTIRE vehicle including ALL wheels (where tires touch ground), ALL side mirrors, roof, antenna, and any protruding parts like tow bars or spoilers. IMPORTANT: The bounding box must be SYMMETRICALLY padded — the car should appear CENTERED within the box with roughly equal space on both sides. Add approximately 5-8% padding on each side of the car so it has breathing room. The bottom of the box should be just below where the tires meet the ground. The top should have similar padding above the roof. Return ONLY a JSON object with normalized values (0 to 1): {"left": <number>, "top": <number>, "right": <number>, "bottom": <number>}`
             },
             {
               type: "image_url",

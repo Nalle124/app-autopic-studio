@@ -350,7 +350,7 @@ export const V2GenerateStep = ({
         } catch (err: any) {
           console.error(`Error processing image ${img.id}:`, err);
           if (err?.message?.includes('402') || err?.message?.includes('Otillräckliga')) {
-            toast.error('Krediter slut — bearbetningen avbröts'); break;
+            toast.error('Krediterna tog slut — bearbetningen avbröts'); break;
           }
           resultImages.push({ ...img, status: 'error', error: err.message });
         }

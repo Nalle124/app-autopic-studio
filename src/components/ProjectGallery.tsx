@@ -557,7 +557,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   // Create virtual project for orphan jobs
   const orphanProject: Project | null = orphanJobs.length > 0 ? {
     id: 'orphan',
-    registration_number: 'Utan projekt',
+    registration_number: 'Utan namn',
     created_at: orphanJobs[0]?.created_at || new Date().toISOString(),
     notes: null,
     jobs: orphanJobs.map(j => ({ id: j.id, final_url: j.final_url, thumbnail_url: j.thumbnail_url, scene_id: j.scene_id }))
