@@ -94,7 +94,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
   const thumbAspect = isPortrait ? 'aspect-[2/3]' : 'aspect-[4/3]';
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header row with format toggle and grid view */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
