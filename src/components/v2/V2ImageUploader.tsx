@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, ImageIcon } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { isSupportedImageFormat, ensureApiCompatibleFormat } from '@/utils/heicConverter';
 import type { V2Image } from '@/pages/AutopicV2';
 
-// Simple UUID fallback
 function generateId() {
   return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
 }
@@ -13,9 +13,11 @@ function generateId() {
 interface Props {
   images: V2Image[];
   onImagesChange: (images: V2Image[]) => void;
+  projectName: string;
+  onProjectNameChange: (name: string) => void;
 }
 
-export const V2ImageUploader = ({ images, onImagesChange }: Props) => {
+export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange }: Props) => {
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter(f => {
       if (!isSupportedImageFormat(f)) {
@@ -64,8 +66,19 @@ export const V2ImageUploader = ({ images, onImagesChange }: Props) => {
     <div className="space-y-4">
       <h2 className="text-xl font-bold text-foreground">Ladda upp bilder</h2>
       <p className="text-sm text-muted-foreground">
-        Ladda upp exteriör-, interiör- och detaljbilder. Systemet klassificerar dem automatiskt.
+        Ladda upp exteriör-, interiör- och detaljbilder. Systemet hanterar dem automatiskt.
       </p>
+
+      {/* Optional project name */}
+      <div className="max-w-sm">
+        <label className="text-xs text-muted-foreground mb-1 block">Bilens namn (valfritt)</label>
+        <Input
+          value={projectName}
+          onChange={(e) => onProjectNameChange(e.target.value)}
+          placeholder="T.ex. BMW X4 M40d 2019"
+          className="h-9 text-sm"
+        />
+      </div>
 
       <div
         {...getRootProps()}
@@ -87,22 +100,13 @@ export const V2ImageUploader = ({ images, onImagesChange }: Props) => {
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
           {images.map((img) => (
             <div key={img.id} className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted">
-              <img
-                src={img.previewUrl}
-                alt={img.file.name}
-                className="w-full h-full object-cover"
-              />
+              <img src={img.previewUrl} alt={img.file.name} className="w-full h-full object-cover" />
               <button
                 onClick={() => removeImage(img.id)}
                 className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
-              {img.classification && (
-                <span className="absolute bottom-1 left-1 text-[9px] px-1.5 py-0.5 rounded-full bg-black/60 text-white">
-                  {img.classification === 'interior' ? 'Interiör' : img.classification === 'exterior' ? 'Exteriör' : 'Detalj'}
-                </span>
-              )}
             </div>
           ))}
         </div>
