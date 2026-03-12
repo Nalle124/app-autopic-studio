@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Camera, ChevronDown, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { isSupportedImageFormat, ensureApiCompatibleFormat } from '@/utils/heicConverter';
+import { V2CameraGuide } from './V2CameraGuide';
 import type { V2Image } from '@/pages/AutopicV2';
 
 function generateId() {
@@ -18,6 +19,8 @@ interface Props {
 }
 
 export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange }: Props) => {
+  const [showTips, setShowTips] = useState(false);
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter(f => {
       if (!isSupportedImageFormat(f)) {
@@ -68,6 +71,23 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       <p className="text-sm text-muted-foreground">
         Ladda upp exteriör-, interiör- och detaljbilder. Systemet hanterar dem automatiskt.
       </p>
+
+      {/* Collapsible camera tips */}
+      <button
+        onClick={() => setShowTips(!showTips)}
+        className="w-full flex items-center justify-between rounded-card border border-border bg-muted/30 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <Camera className="h-4 w-4 text-primary" />
+          <span className="font-medium">Fototips — så får du bäst resultat</span>
+        </span>
+        {showTips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+      {showTips && (
+        <div className="border border-border rounded-card p-4 bg-card">
+          <V2CameraGuide />
+        </div>
+      )}
 
       {/* Optional project name */}
       <div className="max-w-sm">

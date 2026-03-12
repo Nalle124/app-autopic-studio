@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, Plus, History, User } from 'lucide-react';
-import { V2CameraGuide } from '@/components/v2/V2CameraGuide';
 import { V2ImageUploader } from '@/components/v2/V2ImageUploader';
 import { V2SceneSelector } from '@/components/v2/V2SceneSelector';
 import { V2LogoPresets } from '@/components/v2/V2LogoPresets';
@@ -34,11 +33,15 @@ export interface V2LogoConfig {
   applyTo: 'all' | 'first' | 'first-3-last' | 'first-last' | 'none';
 }
 
+export interface V2PlateConfig {
+  enabled: boolean;
+  style: 'blur-dark' | 'blur-light' | 'logo';
+}
+
 const STEPS = [
-  { label: 'Fototips', key: 'guide' },
   { label: 'Ladda upp', key: 'upload' },
   { label: 'Bakgrund', key: 'scene' },
-  { label: 'Logo', key: 'logo' },
+  { label: 'Logo & skyltar', key: 'logo' },
   { label: 'Generera', key: 'generate' },
 ] as const;
 
@@ -52,6 +55,7 @@ const AutopicV2 = () => {
   const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'first' });
+  const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState<string>('');
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -73,16 +77,14 @@ const AutopicV2 = () => {
 
   const canGoNext = () => {
     switch (currentStep) {
-      case 0: return true;
-      case 1: return images.length > 0;
-      case 2: return !!selectedSceneId;
-      case 3: return true;
-      case 4: return false;
+      case 0: return images.length > 0;
+      case 1: return !!selectedSceneId;
+      case 2: return true;
+      case 3: return false;
       default: return false;
     }
   };
 
-  // Shared header with nav tabs (same pattern as Index.tsx)
   const renderHeader = () => (
     <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -158,10 +160,7 @@ const AutopicV2 = () => {
       {/* Stepper header */}
       <div className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-lg font-semibold text-foreground">AutoPic V2</h1>
-            <span className="text-sm text-muted-foreground">{credits} krediter</span>
-          </div>
+          <h1 className="text-lg font-semibold text-foreground mb-2">AutoPic V2</h1>
           <div className="flex gap-1">
             {STEPS.map((step, i) => (
               <div
@@ -187,8 +186,7 @@ const AutopicV2 = () => {
 
       {/* Step content */}
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
-        {currentStep === 0 && <V2CameraGuide />}
-        {currentStep === 1 && (
+        {currentStep === 0 && (
           <V2ImageUploader
             images={images}
             onImagesChange={handleImagesUploaded}
@@ -196,19 +194,25 @@ const AutopicV2 = () => {
             onProjectNameChange={setProjectName}
           />
         )}
-        {currentStep === 2 && (
+        {currentStep === 1 && (
           <V2SceneSelector
             selectedSceneId={selectedSceneId}
             onSelect={setSelectedSceneId}
           />
         )}
-        {currentStep === 3 && (
-          <V2LogoPresets config={logoConfig} onConfigChange={setLogoConfig} />
+        {currentStep === 2 && (
+          <V2LogoPresets
+            config={logoConfig}
+            onConfigChange={setLogoConfig}
+            plateConfig={plateConfig}
+            onPlateConfigChange={setPlateConfig}
+          />
         )}
-        {currentStep === 4 && (
+        {currentStep === 3 && (
           <V2GenerateStep
             images={images}
             logoConfig={logoConfig}
+            plateConfig={plateConfig}
             sceneId={selectedSceneId}
             projectName={projectName}
             credits={credits}

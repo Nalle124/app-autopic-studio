@@ -8,7 +8,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, paddingLevel, targetAspectRatio } = await req.json();
+    const { imageUrl, paddingPercent } = await req.json();
     
     if (!imageUrl) {
       throw new Error("imageUrl is required");
@@ -19,18 +19,10 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Padding percentages based on level
-    const paddingMap = {
-      tight: 0.05,    // 5% padding
-      medium: 0.10,   // 10% padding
-      airy: 0.20      // 20% padding
-    };
+    const padding = typeof paddingPercent === 'number' ? paddingPercent : 0.08;
 
-    const paddingPercent = paddingMap[paddingLevel as keyof typeof paddingMap] || 0.10;
+    console.log('Auto-crop: analyzing image for car bounds');
 
-    console.log('Analyzing image for auto-crop:', { imageUrl, paddingLevel, targetAspectRatio });
-
-    // Use AI to detect the car's bounding box in the image
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -45,17 +37,9 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: `Analyze this car image and detect the bounding box of the car. Return ONLY a JSON object with this exact structure:
-{
-  "carBounds": {
-    "left": <percentage from left edge 0-1>,
-    "top": <percentage from top edge 0-1>,
-    "right": <percentage from left edge 0-1>,
-    "bottom": <percentage from top edge 0-1>
-  }
-}
-
-The car should be the main subject. Include the entire car but exclude unnecessary empty space.`
+                text: `Detect the bounding box of the car in this image. Return ONLY a JSON object:
+{"left": <0-1>, "top": <0-1>, "right": <0-1>, "bottom": <0-1>}
+Values are percentages of image dimensions. Include the ENTIRE car including wheels, mirrors, roof. Exclude empty space.`
               },
               {
                 type: "image_url",
@@ -68,28 +52,22 @@ The car should be the main subject. Include the entire car but exclude unnecessa
           {
             type: "function",
             function: {
-              name: "detect_car_bounds",
-              description: "Detect the bounding box of the car in the image",
+              name: "report_car_bounds",
+              description: "Report the bounding box of the car",
               parameters: {
                 type: "object",
                 properties: {
-                  carBounds: {
-                    type: "object",
-                    properties: {
-                      left: { type: "number", description: "Left edge as percentage 0-1" },
-                      top: { type: "number", description: "Top edge as percentage 0-1" },
-                      right: { type: "number", description: "Right edge as percentage 0-1" },
-                      bottom: { type: "number", description: "Bottom edge as percentage 0-1" }
-                    },
-                    required: ["left", "top", "right", "bottom"]
-                  }
+                  left: { type: "number" },
+                  top: { type: "number" },
+                  right: { type: "number" },
+                  bottom: { type: "number" }
                 },
-                required: ["carBounds"]
+                required: ["left", "top", "right", "bottom"]
               }
             }
           }
         ],
-        tool_choice: { type: "function", function: { name: "detect_car_bounds" } }
+        tool_choice: { type: "function", function: { name: "report_car_bounds" } }
       }),
     });
 
@@ -100,83 +78,53 @@ The car should be the main subject. Include the entire car but exclude unnecessa
     }
 
     const aiResult = await response.json();
-    console.log('AI response:', JSON.stringify(aiResult, null, 2));
-
-    // Extract car bounds from tool call
     const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
-    let carBounds = null;
     
-    if (toolCall?.function?.arguments) {
-      const args = JSON.parse(toolCall.function.arguments);
-      carBounds = args.carBounds;
-    }
-
-    if (!carBounds) {
-      console.error('No car bounds detected in AI response');
+    if (!toolCall?.function?.arguments) {
       throw new Error("Could not detect car in image");
     }
 
-    console.log('Detected car bounds:', carBounds);
+    const bounds = JSON.parse(toolCall.function.arguments);
+    console.log('Detected car bounds:', bounds);
 
-    // Calculate car dimensions
-    const carWidth = carBounds.right - carBounds.left;
-    const carHeight = carBounds.bottom - carBounds.top;
-    const carCenterX = (carBounds.left + carBounds.right) / 2;
-    const carCenterY = (carBounds.top + carBounds.bottom) / 2;
+    // Validate bounds
+    const left = Math.max(0, Math.min(1, bounds.left));
+    const top = Math.max(0, Math.min(1, bounds.top));
+    const right = Math.max(0, Math.min(1, bounds.right));
+    const bottom = Math.max(0, Math.min(1, bounds.bottom));
 
-    // Add padding
-    const paddedWidth = carWidth * (1 + paddingPercent * 2);
-    const paddedHeight = carHeight * (1 + paddingPercent * 2);
+    const carW = right - left;
+    const carH = bottom - top;
+    const carCenterX = (left + right) / 2;
+    const carCenterY = (top + bottom) / 2;
 
-    // Calculate target aspect ratio
-    const targetRatio = targetAspectRatio === 'landscape' ? 16 / 9 : 9 / 16;
+    // Add padding relative to car size
+    const padX = carW * padding;
+    const padY = carH * padding;
 
-    // Determine which dimension should drive the crop
-    const currentRatio = paddedWidth / paddedHeight;
-    let finalWidth, finalHeight;
+    // Crop region preserving the car with padding
+    let cropLeft = carCenterX - (carW / 2) - padX;
+    let cropTop = carCenterY - (carH / 2) - padY;
+    let cropW = carW + padX * 2;
+    let cropH = carH + padY * 2;
 
-    if (currentRatio > targetRatio) {
-      // Image is too wide, height drives
-      finalHeight = paddedHeight;
-      finalWidth = finalHeight * targetRatio;
-    } else {
-      // Image is too tall, width drives
-      finalWidth = paddedWidth;
-      finalHeight = finalWidth / targetRatio;
-    }
-
-    // Center the crop on the car with slight bias toward more space at top
-    // (cars look better with more space above than below)
-    const topBias = 0.55; // 55% of extra space goes to top
-    const cropLeft = carCenterX - finalWidth / 2;
-    const cropTop = carCenterY - finalHeight * topBias;
-
-    // Ensure crop stays within image bounds (0-1)
-    const adjustedLeft = Math.max(0, Math.min(1 - finalWidth, cropLeft));
-    const adjustedTop = Math.max(0, Math.min(1 - finalHeight, cropTop));
-
-    // Calculate zoom needed for react-easy-crop
-    // Zoom represents how much the image needs to be scaled
-    const zoom = 1 / Math.max(finalWidth, finalHeight);
-
-    // Calculate position for react-easy-crop (percentage of visible area)
-    const x = -(adjustedLeft / finalWidth) * 100;
-    const y = -(adjustedTop / finalHeight) * 100;
+    // Clamp to image bounds
+    if (cropLeft < 0) { cropLeft = 0; }
+    if (cropTop < 0) { cropTop = 0; }
+    if (cropLeft + cropW > 1) { cropW = 1 - cropLeft; }
+    if (cropTop + cropH > 1) { cropH = 1 - cropTop; }
 
     const cropData = {
-      zoom: Math.max(1, Math.min(3, zoom)), // Clamp between 1-3
-      x: Math.max(-50, Math.min(50, x)),    // Clamp to reasonable range
-      y: Math.max(-50, Math.min(50, y)),
+      left: cropLeft,
+      top: cropTop,
+      width: cropW,
+      height: cropH,
     };
 
-    console.log('Calculated crop:', cropData);
+    console.log('Calculated crop region:', cropData);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        crop: cropData,
-        debug: { carBounds, paddingLevel, targetAspectRatio }
-      }),
+      JSON.stringify({ success: true, crop: cropData }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
@@ -185,7 +133,6 @@ The car should be the main subject. Include the entire car but exclude unnecessa
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : "Auto-crop failed",
-        details: error instanceof Error ? error.stack : undefined
       }),
       { 
         status: 500, 
