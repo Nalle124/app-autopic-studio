@@ -1,15 +1,21 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
+import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Header } from '@/components/Header';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChevronLeft, ChevronRight, Plus, History, User } from 'lucide-react';
 import { V2CameraGuide } from '@/components/v2/V2CameraGuide';
 import { V2ImageUploader } from '@/components/v2/V2ImageUploader';
 import { V2SceneSelector } from '@/components/v2/V2SceneSelector';
 import { V2LogoPresets } from '@/components/v2/V2LogoPresets';
 import { V2GenerateStep } from '@/components/v2/V2GenerateStep';
 import { V2ResultGallery } from '@/components/v2/V2ResultGallery';
+import autopicLogoDark from '@/assets/autopic-logo-dark.png';
+import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 
 export interface V2Image {
   id: string;
@@ -39,6 +45,9 @@ const STEPS = [
 const AutopicV2 = () => {
   const { user } = useAuth();
   const { credits, refetch: refetchCredits } = useUserCredits();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { theme } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
   const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
@@ -56,21 +65,79 @@ const AutopicV2 = () => {
     setShowResults(true);
   }, []);
 
+  const handleTabChange = (value: string) => {
+    if (value === 'new') navigate('/');
+    else if (value === 'ai-studio') navigate('/?tab=ai-studio');
+    else if (value === 'history') navigate('/?tab=history');
+  };
+
   const canGoNext = () => {
     switch (currentStep) {
       case 0: return true;
       case 1: return images.length > 0;
       case 2: return !!selectedSceneId;
-      case 3: return true; // logo is optional
-      case 4: return false; // generate is the final action
+      case 3: return true;
+      case 4: return false;
       default: return false;
     }
   };
 
+  // Shared header with nav tabs (same pattern as Index.tsx)
+  const renderHeader = () => (
+    <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
+          <img
+            src={theme === 'light' ? autopicLogoDark : autopicLogoWhite}
+            alt="AutoPic"
+            className="h-6 w-auto"
+          />
+        </button>
+        <div className="flex items-center gap-2">
+          {!isMobile && (
+            <Tabs value="v2" onValueChange={handleTabChange} className="w-auto">
+              <TabsList className="bg-background/80 backdrop-blur-sm">
+                <TabsTrigger value="new" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Projekt
+                </TabsTrigger>
+                <TabsTrigger value="ai-studio" className="gap-2">
+                  <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
+                  AI Studio
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-2">
+                  <History className="w-4 h-4" />
+                  Galleri
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+          {isMobile && (
+            <Select value="v2" onValueChange={handleTabChange}>
+              <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+                <SelectValue placeholder="V2" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-[60]">
+                <SelectItem value="new">Projekt</SelectItem>
+                <SelectItem value="ai-studio">AI Studio</SelectItem>
+                <SelectItem value="history">Galleri</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          {user && (
+            <Button variant="ghost" size="icon" onClick={() => navigate('/profil')} title="Profil">
+              <User className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+
   if (showResults) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        {renderHeader()}
         <V2ResultGallery
           results={results}
           onStartOver={() => {
@@ -87,7 +154,7 @@ const AutopicV2 = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+      {renderHeader()}
       {/* Stepper header */}
       <div className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-4 py-4">
