@@ -460,33 +460,33 @@ export const V2GenerateStep = ({
       {/* Summary card with stronger V1-matching gradient */}
       <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 space-y-3 shadow-sm relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, hsl(25 71% 45% / 0.55) 0%, hsl(220 27% 41% / 0.6) 50%, hsl(0 0% 10% / 0.7) 100%)',
+          background: 'linear-gradient(135deg, hsl(220 27% 41%) 0%, hsl(25 71% 45%) 100%)',
         }}
       >
         <div className="space-y-1">
-          <h2 className="font-sans font-medium text-lg text-foreground">Redo att generera</h2>
-          <p className="text-sm text-muted-foreground">{totalImages} bilder redo att bearbetas</p>
+          <h2 className="font-sans font-medium text-lg text-white">Redo att generera</h2>
+          <p className="text-sm text-white/60">{totalImages} bilder redo att bearbetas</p>
         </div>
 
         {projectName && (
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Projekt</span>
-            <span className="text-foreground font-medium">{projectName}</span>
+            <span className="text-white/50">Projekt</span>
+            <span className="text-white font-medium">{projectName}</span>
           </div>
         )}
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Logo</span>
-          <span className="text-foreground font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
+            <span className="text-white/50">Logo</span>
+            <span className="text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
         </div>
         {plateConfig.enabled && (
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Skyltar</span>
-            <span className="text-foreground font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
+            <span className="text-white/50">Skyltar</span>
+            <span className="text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
           </div>
         )}
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Format</span>
-          <span className="text-foreground font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
+            <span className="text-white/50">Format</span>
+            <span className="text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
         </div>
       </div>
 
@@ -518,6 +518,7 @@ export const V2GenerateStep = ({
           </div>
           <Switch checked={lightEdit} onCheckedChange={setLightEdit} />
         </div>
+        <p className="text-[10px] text-muted-foreground/70 px-1">Utan att ändra bilens originalskick.</p>
       </div>
 
       {/* Delivery mode */}
