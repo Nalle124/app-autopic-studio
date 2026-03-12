@@ -388,11 +388,15 @@ export const V2GenerateStep = ({
 
   // Email sent confirmation
   if (emailSent && deliveryMode === 'email') {
+    const userEmail = (() => { try { const u = JSON.parse(localStorage.getItem('sb-cfsyxrokdemwkklqflnb-auth-token') || '{}'); return u?.user?.email; } catch { return null; } })();
     return (
       <div className="space-y-6 py-8">
         <h2 className="text-lg font-medium text-foreground">Dina bilder genereras!</h2>
         <p className="text-sm text-muted-foreground">
-          Du får ett mail med alla färdiga bilder inom ett par minuter. Du kan stänga ner sidan eller skapa ett nytt projekt.
+          Du får ett mail med nedladdningslänkar inom ett par minuter{userEmail ? ` till ${userEmail}` : ''}. Du kan stänga ner sidan eller skapa ett nytt projekt.
+        </p>
+        <p className="text-xs text-muted-foreground/70">
+          💡 Tips: Kolla din skräppost om du inte hittar mailet i inkorgen.
         </p>
         <div className="flex gap-3 flex-wrap">
           <Button onClick={onStartOver}>
