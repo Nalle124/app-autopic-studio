@@ -66,8 +66,8 @@ const ProfileContent = () => {
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleBuyCredits = () => {
-    // Profile buy should NOT show the "Du har slut på credits" message
-    triggerPaywall('profile-buy');
+    // Use subscriber-limit trigger so they see upgrade + topup tabs
+    triggerPaywall('subscriber-limit');
   };
 
   const handleManageSubscription = async () => {
