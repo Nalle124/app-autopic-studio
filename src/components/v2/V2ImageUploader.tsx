@@ -1,8 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Trash2 } from 'lucide-react';
+import { Upload, X, Trash2, ChevronDown, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { toast } from 'sonner';
 import { isSupportedImageFormat, ensureApiCompatibleFormat } from '@/utils/heicConverter';
 import type { V2Image } from '@/pages/AutopicV2';
@@ -19,6 +21,9 @@ interface Props {
 }
 
 export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange }: Props) => {
+  const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
+  const [showTips, setShowTips] = useState(false);
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter(f => {
       if (!isSupportedImageFormat(f)) {
@@ -89,7 +94,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         <Input
           value={projectName}
           onChange={(e) => onProjectNameChange(e.target.value)}
-          placeholder="T.ex. BMW X4 M40d 2019"
+          placeholder="T.ex. ABC123"
           className="h-8 text-sm"
         />
       </div>
@@ -113,10 +118,14 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       {images.length > 0 && (
         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5">
           {images.map((img) => (
-            <div key={img.id} className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted">
+            <div
+              key={img.id}
+              className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted cursor-pointer"
+              onClick={() => setPreviewImage(img)}
+            >
               <img src={img.previewUrl} alt={img.file.name} className="w-full h-full object-cover" />
               <button
-                onClick={() => removeImage(img.id)}
+                onClick={(e) => { e.stopPropagation(); removeImage(img.id); }}
                 className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <X className="h-3 w-3" />
@@ -127,6 +136,63 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       )}
 
       <p className="text-[10px] text-muted-foreground text-right">{images.length}/50</p>
+
+      {/* Nyhet notice */}
+      <div className="rounded-[10px] border border-border/30 bg-gradient-to-r from-card/80 via-card/60 to-accent-blue/5 dark:from-card/80 dark:via-card/60 dark:to-accent-blue/10 backdrop-blur-md shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert flex-shrink-0 opacity-60" />
+          <p className="text-sm text-muted-foreground flex-1">
+            <span className="font-semibold text-foreground/80">Nyhet:</span>{' '}
+            AI-funktioner lanserade — skapa bakgrunder, blurra skyltar & mer
+          </p>
+        </div>
+      </div>
+
+      {/* Photo tips dropdown */}
+      <button
+        onClick={() => setShowTips(!showTips)}
+        className="w-full text-left rounded-[10px] border border-border/50 overflow-hidden transition-all hover:border-border"
+      >
+        <div className="flex items-center justify-between px-4 py-2.5">
+          <span className="text-sm font-medium text-foreground">Foto tips</span>
+          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showTips ? 'rotate-180' : ''}`} />
+        </div>
+        {showTips && (
+          <div className="px-4 pb-3 space-y-2 border-t border-border/30 pt-2">
+            <div className="flex items-start gap-2">
+              <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">Ta bilderna från höfthöjd för bästa resultat</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">Håll telefonen/kameran liggandes (horisontellt), inte stående</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">Se till att hela bilen syns i bilden</p>
+            </div>
+          </div>
+        )}
+      </button>
+
+      {/* Image preview dialog */}
+      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <VisuallyHidden><DialogTitle>Förhandsvisning</DialogTitle></VisuallyHidden>
+          {previewImage && (
+            <div className="relative bg-black">
+              <img
+                src={previewImage.previewUrl}
+                alt={previewImage.file.name}
+                className="w-full max-h-[70vh] object-contain"
+              />
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                <p className="text-xs text-white/80 truncate">{previewImage.file.name}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
