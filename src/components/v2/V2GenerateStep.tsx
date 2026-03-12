@@ -485,8 +485,8 @@ export const V2GenerateStep = ({
           </div>
         )}
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Format</span>
-          <span className="text-foreground font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
+            <span className="text-white/50">Format</span>
+            <span className="text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
         </div>
       </div>
 
