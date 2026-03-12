@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, Plus, History, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, History, User, Check } from 'lucide-react';
 import { V2ImageUploader } from '@/components/v2/V2ImageUploader';
 import { V2SceneSelector } from '@/components/v2/V2SceneSelector';
 import { V2LogoPresets } from '@/components/v2/V2LogoPresets';
@@ -54,7 +54,7 @@ const AutopicV2 = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
-  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'first' });
+  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait' | 'square'>('landscape');
@@ -68,6 +68,17 @@ const AutopicV2 = () => {
   const handleGenerationComplete = useCallback((resultImages: V2Image[]) => {
     setResults(resultImages);
     setShowResults(true);
+  }, []);
+
+  const handleStartOver = useCallback(() => {
+    setImages([]);
+    setResults([]);
+    setShowResults(false);
+    setCurrentStep(0);
+    setProjectName('');
+    setSelectedSceneId('');
+    setLogoConfig({ preset: 'top-left', applyTo: 'none' });
+    setPlateConfig({ enabled: false, style: 'blur-dark' });
   }, []);
 
   const handleTabChange = (value: string) => {
@@ -137,19 +148,58 @@ const AutopicV2 = () => {
     </header>
   );
 
+  const renderProgressBar = () => (
+    <div className="border-b border-border bg-card">
+      <div className="max-w-5xl mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          {STEPS.map((step, i) => (
+            <div key={step.key} className="flex items-center flex-1 last:flex-none">
+              {/* Step circle */}
+              <button
+                onClick={() => { if (i <= currentStep) setCurrentStep(i); }}
+                className={`flex flex-col items-center gap-1.5 ${i <= currentStep ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                  i < currentStep
+                    ? 'bg-primary border-primary'
+                    : i === currentStep
+                      ? 'border-primary bg-background'
+                      : 'border-muted-foreground/30 bg-background'
+                }`}>
+                  {i < currentStep ? (
+                    <Check className="w-4 h-4 text-primary-foreground" />
+                  ) : (
+                    <div className={`w-2.5 h-2.5 rounded-full ${
+                      i === currentStep ? 'bg-primary' : 'bg-muted-foreground/20'
+                    }`} />
+                  )}
+                </div>
+                <span className={`text-[10px] whitespace-nowrap ${
+                  i <= currentStep ? 'text-foreground font-medium' : 'text-muted-foreground'
+                }`}>
+                  {step.label}
+                </span>
+              </button>
+              {/* Connector line */}
+              {i < STEPS.length - 1 && (
+                <div className={`flex-1 h-[2px] mx-2 mt-[-18px] ${
+                  i < currentStep ? 'bg-primary' : 'bg-muted-foreground/20'
+                }`} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   if (showResults) {
     return (
       <div className="min-h-screen bg-background">
         {renderHeader()}
         <V2ResultGallery
           results={results}
-          onStartOver={() => {
-            setImages([]);
-            setResults([]);
-            setShowResults(false);
-            setCurrentStep(0);
-            setProjectName('');
-          }}
+          onStartOver={handleStartOver}
         />
       </div>
     );
@@ -158,38 +208,9 @@ const AutopicV2 = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {renderHeader()}
-      {/* Stepper - clickable progress bar */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-4 py-3">
-          <div className="flex gap-1">
-            {STEPS.map((step, i) => (
-              <button
-                key={step.key}
-                onClick={() => {
-                  // Allow clicking back to previous steps, or current step
-                  if (i <= currentStep) setCurrentStep(i);
-                }}
-                className={`flex-1 h-1.5 rounded-full transition-colors ${
-                  i <= currentStep ? 'bg-primary cursor-pointer hover:opacity-80' : 'bg-muted cursor-default'
-                }`}
-              />
-            ))}
-          </div>
-          <div className="flex justify-between mt-1">
-            {STEPS.map((step, i) => (
-              <button
-                key={step.key}
-                onClick={() => { if (i <= currentStep) setCurrentStep(i); }}
-                className={`text-[10px] ${i <= currentStep ? 'text-primary font-medium cursor-pointer hover:underline' : 'text-muted-foreground cursor-default'}`}
-              >
-                {step.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      {renderProgressBar()}
 
-      {/* Step content - bordered sections like V1 */}
+      {/* Step content */}
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 sm:py-6">
         {currentStep === 0 && (
           <section className="bg-card border border-border rounded-[10px] p-6">
@@ -234,6 +255,7 @@ const AutopicV2 = () => {
               onImagesUpdate={setImages}
               onComplete={handleGenerationComplete}
               onRefetchCredits={refetchCredits}
+              onStartOver={handleStartOver}
             />
           </section>
         )}
@@ -268,4 +290,3 @@ const AutopicV2 = () => {
 };
 
 export default AutopicV2;
-
