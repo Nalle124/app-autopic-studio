@@ -16,9 +16,17 @@ interface Props {
   onImagesChange: (images: V2Image[]) => void;
   projectName: string;
   onProjectNameChange: (name: string) => void;
+  outputFormat: 'landscape' | 'portrait' | 'square';
+  onOutputFormatChange: (format: 'landscape' | 'portrait' | 'square') => void;
 }
 
-export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange }: Props) => {
+const FORMAT_OPTIONS = [
+  { id: 'landscape' as const, label: 'Liggande (3:2)', desc: '3072×2048' },
+  { id: 'portrait' as const, label: 'Stående (2:3)', desc: '2048×3072' },
+  { id: 'square' as const, label: 'Kvadrat (1:1)', desc: '2048×2048' },
+];
+
+export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, outputFormat, onOutputFormatChange }: Props) => {
   const [showTips, setShowTips] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -72,23 +80,6 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         Ladda upp exteriör-, interiör- och detaljbilder. Systemet hanterar dem automatiskt.
       </p>
 
-      {/* Collapsible camera tips */}
-      <button
-        onClick={() => setShowTips(!showTips)}
-        className="w-full flex items-center justify-between rounded-card border border-border bg-muted/30 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors"
-      >
-        <span className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-primary" />
-          <span className="font-medium">Fototips — så får du bäst resultat</span>
-        </span>
-        {showTips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-      </button>
-      {showTips && (
-        <div className="border border-border rounded-card p-4 bg-card">
-          <V2CameraGuide />
-        </div>
-      )}
-
       {/* Optional project name */}
       <div className="max-w-sm">
         <label className="text-xs text-muted-foreground mb-1 block">Bilens namn (valfritt)</label>
@@ -98,6 +89,27 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
           placeholder="T.ex. BMW X4 M40d 2019"
           className="h-9 text-sm"
         />
+      </div>
+
+      {/* Output format selector */}
+      <div>
+        <label className="text-xs text-muted-foreground mb-2 block">Bildformat</label>
+        <div className="flex gap-2">
+          {FORMAT_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => onOutputFormatChange(opt.id)}
+              className={`flex-1 rounded-card border-2 p-3 text-center transition-all ${
+                outputFormat === opt.id
+                  ? 'border-primary ring-2 ring-primary/20'
+                  : 'border-border hover:border-primary/40'
+              }`}
+            >
+              <p className="text-xs font-medium text-foreground">{opt.label}</p>
+              <p className="text-[10px] text-muted-foreground">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div
@@ -133,6 +145,23 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       )}
 
       <p className="text-xs text-muted-foreground text-right">{images.length}/50 bilder</p>
+
+      {/* Collapsible camera tips - below upload */}
+      <button
+        onClick={() => setShowTips(!showTips)}
+        className="w-full flex items-center justify-between rounded-card border border-border bg-muted/30 px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <Camera className="h-4 w-4 text-primary" />
+          <span className="font-medium">Fototips — så får du bäst resultat</span>
+        </span>
+        {showTips ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+      {showTips && (
+        <div className="border border-border rounded-card p-4 bg-card">
+          <V2CameraGuide />
+        </div>
+      )}
     </div>
   );
 };

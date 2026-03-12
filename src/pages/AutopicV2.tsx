@@ -57,6 +57,7 @@ const AutopicV2 = () => {
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'first' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState<string>('');
+  const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait' | 'square'>('landscape');
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -192,6 +193,8 @@ const AutopicV2 = () => {
             onImagesChange={handleImagesUploaded}
             projectName={projectName}
             onProjectNameChange={setProjectName}
+            outputFormat={outputFormat}
+            onOutputFormatChange={setOutputFormat}
           />
         )}
         {currentStep === 1 && (
@@ -216,6 +219,7 @@ const AutopicV2 = () => {
             sceneId={selectedSceneId}
             projectName={projectName}
             credits={credits}
+            outputFormat={outputFormat}
             onImagesUpdate={setImages}
             onComplete={handleGenerationComplete}
             onRefetchCredits={refetchCredits}
