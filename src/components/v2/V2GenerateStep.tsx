@@ -460,7 +460,7 @@ export const V2GenerateStep = ({
       {/* Summary card with stronger V1-matching gradient */}
       <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 space-y-3 shadow-sm relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, hsl(25 71% 45% / 0.55) 0%, hsl(220 27% 41% / 0.6) 50%, hsl(0 0% 10% / 0.7) 100%)',
+          background: 'linear-gradient(135deg, hsl(220 27% 41%) 0%, hsl(25 71% 45%) 100%)',
         }}
       >
         <div className="space-y-1">
