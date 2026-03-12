@@ -8,12 +8,14 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product to credits mapping - REAL product IDs
+// Product to credits mapping - includes both old and new product IDs for backward compat
 const PRODUCT_CREDITS: Record<string, number> = {
   "prod_TYcMOi23KMqOh6": 100, // Start (399 kr)
   "prod_TYcNnx01K8TR0F": 300, // Pro (699 kr)
-  "prod_TYcO3bE3Ec2Amv": 600, // Business (1299 kr)
-  "prod_TvOxn4SrvfgY12": 800, // Scale (1499 kr)
+  "prod_TYcO3bE3Ec2Amv": 600, // Business v1 (1299 kr) - old subscribers
+  "prod_TvOxn4SrvfgY12": 800, // Scale v1 (1499 kr) - old subscribers
+  "prod_U8XXaqL2BD1ieM": 600, // Business v2 (1499 kr) - new subscribers
+  "prod_U8XYydmVeSHax8": 800, // Scale v2 (1999 kr) - new subscribers
 };
 
 serve(async (req) => {
@@ -150,7 +152,6 @@ serve(async (req) => {
       const subscription = subscriptions.data[0];
 
       // Safely parse subscription end date
-      // In Stripe Basil API, current_period_end is on the item level, not subscription level
       const subscriptionItem = subscription.items.data[0];
       const periodEnd = (subscriptionItem as any).current_period_end ?? (subscription as any).current_period_end;
       if (periodEnd) {
@@ -172,13 +173,10 @@ serve(async (req) => {
       const product = await stripe.products.retrieve(productId);
       planName = product.name;
 
-      // Monthly credit RESET mechanism (credits are REPLACED, not accumulated)
-      // Uses time-based idempotency: only one renewal per subscription per 28 days
+      // Monthly credit RESET mechanism
       const periodKey = `${subscription.id}:${periodEnd || 'current'}`;
 
       if (creditsPerMonth > 0) {
-        // Period-based idempotency: check if a renewal already exists for THIS specific
-        // Stripe billing period using the periodKey (sub_id:period_end)
         const { data: existingResetRows } = await supabaseClient
           .from('credit_transactions')
           .select('id')
@@ -189,7 +187,6 @@ serve(async (req) => {
 
         const existingReset = existingResetRows && existingResetRows.length > 0 ? existingResetRows[0] : null;
 
-        // Also check if this is a NEW subscription (handled by verify-payment)
         const { data: recentSubscriptionRows } = await supabaseClient
           .from('credit_transactions')
           .select('id, created_at')
@@ -200,12 +197,10 @@ serve(async (req) => {
 
         const recentSubscription = recentSubscriptionRows && recentSubscriptionRows.length > 0 ? recentSubscriptionRows[0] : null;
 
-        // If subscription was just created (within 5 minutes), don't reset credits
         const isNewSubscription = recentSubscription && 
           (Date.now() - new Date(recentSubscription.created_at).getTime() < 5 * 60 * 1000);
 
         if (!existingReset && !isNewSubscription) {
-          // Check if user bought additional credits recently (within last hour)
           const { data: recentPurchaseRows } = await supabaseClient
             .from('credit_transactions')
             .select('amount')
@@ -237,7 +232,7 @@ serve(async (req) => {
               amount: creditsPerMonth,
               balance_after: newBalance,
               transaction_type: 'subscription_renewal',
-              description: periodKey,  // Used for period-based idempotency
+              description: periodKey,
             });
 
           logStep('Monthly credits reset', { creditsPerMonth, newBalance, periodKey });

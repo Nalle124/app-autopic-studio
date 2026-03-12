@@ -1,289 +1,267 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
-import { Check, Loader2, ChevronDown, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Switch } from '@/components/ui/switch';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useIsMobile } from '@/hooks/use-mobile';
-import proCardBg from '@/assets/pro-card-bg-new.jpg';
+import { Input } from '@/components/ui/input';
 
-// Outcome-driven benefits (not features)
-const benefits = [
-  'Färdiga miljöer som får annonser att sticka ut på Blocket',
-  'Samma stil på alla bilar – sälj som en processdriven handlare',
-  'Inga fler timmar med redigering – klar på sekunder',
-];
-
-
-// Pricing plans - Updated names: Start, Pro, Business, Scale - with REAL Stripe price IDs
+// ── Plan data ──────────────────────────────────────────────────────
 const PRICING_PLANS = {
-  start: {
-    name: 'Start',
-    price: 399,
-    yearlyPrice: 319,
-    credits: 100,
-    priceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe',
-    yearlyPriceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe',
-    tagline: '100 bilder/mån',
-  },
-  pro: {
-    name: 'Pro',
-    price: 699,
-    yearlyPrice: 559,
-    credits: 300,
-    priceId: 'price_1SbV94R5EFc7nWvhHlWgPKsp',
-    yearlyPriceId: 'price_1SbV94R5EFc7nWvhHlWgPKsp',
-    tagline: '300 bilder/mån',
-    popular: true,
-  },
-  business: {
-    name: 'Business',
-    price: 1299,
-    yearlyPrice: 1039,
-    credits: 600,
-    priceId: 'price_1SbV9KR5EFc7nWvhAvP0jDbX',
-    yearlyPriceId: 'price_1SbV9KR5EFc7nWvhAvP0jDbX',
-    tagline: '600 bilder/mån',
-  },
-  scale: {
-    name: 'Scale',
-    price: 1499,
-    yearlyPrice: 1199,
-    credits: 800,
-    priceId: 'price_1SxY9GR5EFc7nWvhCAxK4pEr',
-    yearlyPriceId: 'price_1SxY9GR5EFc7nWvhCAxK4pEr',
-    tagline: '800 bilder/mån',
-  },
-  creditPack: {
-    name: '30 bilder',
-    price: 69,
-    credits: 30,
-    priceId: 'price_1SbV9dR5EFc7nWvhOwgnPGX0',
-    oneTime: true,
-  },
+  start:    { name: 'Start',    price: 399,  credits: 100, priceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe' },
+  pro:      { name: 'Pro',      price: 699,  credits: 300, priceId: 'price_1SbV94R5EFc7nWvhHlWgPKsp', popular: true },
+  business: { name: 'Business', price: 1499, credits: 600, priceId: 'price_1TAGStR5EFc7nWvhW1YYQZQe' },
+  scale:    { name: 'Scale',    price: 1999, credits: 800, priceId: 'price_1TAGTYR5EFc7nWvhppU1NUin' },
+} as const;
+
+const CREDIT_PACKS = {
+  creditPack30:  { name: '30 credits',  price: 129, credits: 30,  priceId: 'price_1TAGUMR5EFc7nWvh3TjjWNlH', estimate: '2–4 annonser' },
+  creditPack100: { name: '100 credits', price: 399, credits: 100, priceId: 'price_1TAGUyR5EFc7nWvhqvjU2wrV', estimate: '8–14 annonser' },
+  creditPack300: { name: '300 credits', price: 899, credits: 300, priceId: 'price_1TAGWRR5EFc7nWvhkemhzZsB', estimate: '20–37 annonser' },
 } as const;
 
 type PlanKey = keyof typeof PRICING_PLANS;
+type CreditPackKey = keyof typeof CREDIT_PACKS;
 
-// Map product IDs to plan keys for upgrade suggestions - REAL product IDs
+// Map product IDs → plan keys (old + new for backward compat)
 const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
-  'prod_TYcMOi23KMqOh6': 'start',    // 100 credits
-  'prod_TYcNnx01K8TR0F': 'pro',      // 300 credits
-  'prod_TYcO3bE3Ec2Amv': 'business', // 600 credits
-  'prod_TvOxn4SrvfgY12': 'scale',    // 800 credits
+  'prod_TYcMOi23KMqOh6': 'start',
+  'prod_TYcNnx01K8TR0F': 'pro',
+  'prod_TYcO3bE3Ec2Amv': 'business', // v1
+  'prod_TvOxn4SrvfgY12': 'scale',    // v1
+  'prod_U8XXaqL2BD1ieM': 'business',  // v2
+  'prod_U8XYydmVeSHax8': 'scale',     // v2
 };
 
-// Tier order for determining available upgrades
 const TIER_ORDER: PlanKey[] = ['start', 'pro', 'business', 'scale'];
 
-// Get available tiers for upgrade (tiers higher than current)
-const getAvailableUpgradeTiers = (currentProductId: string | null): PlanKey[] => {
-  if (!currentProductId) return TIER_ORDER; // Free user sees all tiers
-  const currentPlan = PRODUCT_TO_PLAN[currentProductId];
-  if (!currentPlan) return TIER_ORDER;
-  const currentIndex = TIER_ORDER.indexOf(currentPlan);
-  if (currentIndex === -1) return TIER_ORDER;
-  return TIER_ORDER.slice(currentIndex + 1);
+const getAnnonsEstimate = (credits: number) => {
+  const low = Math.floor(credits / 15);
+  const high = Math.floor(credits / 8);
+  return `ca ${low}–${high} annonser/mån`;
 };
 
-// Check if user is on the highest tier
-const isOnHighestTier = (currentProductId: string | null): boolean => {
-  if (!currentProductId) return false;
-  return PRODUCT_TO_PLAN[currentProductId] === 'scale';
-};
-
-// Get next tier for upgrade (single next tier)
 const getNextTier = (currentProductId: string | null): PlanKey | null => {
   if (!currentProductId) return 'start';
-  const currentPlan = PRODUCT_TO_PLAN[currentProductId];
-  if (currentPlan === 'start') return 'pro';
-  if (currentPlan === 'pro') return 'business';
-  if (currentPlan === 'business') return 'scale';
-  return null; // Already on highest tier
+  const current = PRODUCT_TO_PLAN[currentProductId];
+  const idx = current ? TIER_ORDER.indexOf(current) : -1;
+  return idx >= 0 && idx < TIER_ORDER.length - 1 ? TIER_ORDER[idx + 1] : null;
 };
 
+const getUpgradeTiers = (currentProductId: string | null): PlanKey[] => {
+  if (!currentProductId) return [...TIER_ORDER];
+  const current = PRODUCT_TO_PLAN[currentProductId];
+  const idx = current ? TIER_ORDER.indexOf(current) : -1;
+  return idx >= 0 ? TIER_ORDER.slice(idx + 1) : [...TIER_ORDER];
+};
+
+const isOnHighestTier = (currentProductId: string | null) =>
+  currentProductId ? PRODUCT_TO_PLAN[currentProductId] === 'scale' : false;
+
+// ── Component ──────────────────────────────────────────────────────
 export const DemoPaywall = () => {
   const { showPaywall, setShowPaywall, paywallTrigger, isSubscribed, currentProductId } = useDemo();
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
-  const [isYearly, setIsYearly] = useState(false);
-  const [oneTimeOpen, setOneTimeOpen] = useState(false);
-  const [expandedPlan, setExpandedPlan] = useState<PlanKey | null>(null);
 
-  // Views
+  // Cold flow wizard state
+  const [step, setStep] = useState<'hero' | 'quiz' | 'plans'>('hero');
+  const [carsPerMonth, setCarsPerMonth] = useState('');
+  const [imagesPerCar, setImagesPerCar] = useState('');
+  const [recommendedPlan, setRecommendedPlan] = useState<PlanKey | null>(null);
+
+  // Subscriber flow tab
+  const [subscriberTab, setSubscriberTab] = useState<'topup' | 'upgrade'>('topup');
+
   const isSubscriberLimit = paywallTrigger === 'subscriber-limit' || (isSubscribed && paywallTrigger === 'limit');
   const isProfileBuy = paywallTrigger === 'profile-buy';
 
-  const nextTier = getNextTier(currentProductId);
-  const onHighestTier = isOnHighestTier(currentProductId);
-  const availableUpgradeTiers = getAvailableUpgradeTiers(currentProductId);
-
   const handleClose = () => {
     setShowPaywall(false);
+    // Reset wizard state on close
+    setTimeout(() => {
+      setStep('hero');
+      setCarsPerMonth('');
+      setImagesPerCar('');
+      setRecommendedPlan(null);
+      setSubscriberTab('topup');
+    }, 300);
   };
 
-  const handleSelectPlan = async (tier: PlanKey) => {
-    const tierConfig = PRICING_PLANS[tier];
-    const isOneTime = 'oneTime' in tierConfig && tierConfig.oneTime;
-    setLoadingTier(tier);
-
+  const handleCheckout = async (priceId: string, tierKey: string, mode: 'subscription' | 'payment') => {
+    setLoadingTier(tierKey);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
-        // Not logged in - go directly to Stripe via guest checkout
         handleClose();
-        window.location.href = `/guest-checkout?plan=${tier}`;
+        window.location.href = `/guest-checkout?plan=${tierKey}`;
         return;
       }
-
-      const priceId = isYearly && 'yearlyPriceId' in tierConfig 
-        ? tierConfig.yearlyPriceId 
-        : tierConfig.priceId;
-
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          priceId,
-          mode: isOneTime ? 'payment' : 'subscription',
-        },
+        body: { priceId, mode },
       });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
+      if (error) throw new Error(error.message);
+      if (data?.url) window.location.href = data.url;
+    } catch {
       toast.error('Kunde inte starta betalning. Försök igen.');
     } finally {
       setLoadingTier(null);
     }
   };
 
+  const handleSelectPlan = (tier: PlanKey) => {
+    const plan = PRICING_PLANS[tier];
+    handleCheckout(plan.priceId, tier, 'subscription');
+  };
 
-  const planKeys = ['start', 'pro', 'business', 'scale'] as const;
+  const handleSelectCreditPack = (key: CreditPackKey) => {
+    const pack = CREDIT_PACKS[key];
+    handleCheckout(pack.priceId, key, 'payment');
+  };
 
-  // Subscriber paywall - simplified view for refill/upgrade (and profile buy)
+  const handleCalculate = () => {
+    const cars = parseInt(carsPerMonth) || 0;
+    const imgs = parseInt(imagesPerCar) || 0;
+    const totalCredits = cars * imgs;
+
+    let best: PlanKey = 'start';
+    if (totalCredits > 600) best = 'scale';
+    else if (totalCredits > 300) best = 'business';
+    else if (totalCredits > 100) best = 'pro';
+
+    setRecommendedPlan(best);
+    setStep('plans');
+  };
+
+  // ── Subscriber / Profile buy flow ──────────────────────────────
   if (isSubscriberLimit || isProfileBuy) {
+    const nextTier = getNextTier(currentProductId);
+    const upgradeTiers = getUpgradeTiers(currentProductId);
+    const onHighest = isOnHighestTier(currentProductId);
+
     return (
       <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
         <DialogContent className="p-0 gap-0 max-w-md border-0 bg-transparent shadow-none">
           <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
             <div className="relative z-10">
               {/* Header */}
-              <div className="px-6 pt-6 pb-4 text-center">
-                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">
-                  {isProfileBuy ? 'Fyll på credits' : 'Du har slut på credits'}
+              <div className="px-6 pt-6 pb-2 text-center">
+                {!isProfileBuy && (
+                  <span className="inline-block text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full mb-3">
+                    Dina credits är slut
+                  </span>
+                )}
+                <h2 className="text-xl md:text-2xl font-bold text-foreground font-['Playfair_Display',serif] italic">
+                  {isProfileBuy ? 'Fyll på credits' : 'Fyll på och fortsätt'}
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  {isProfileBuy ? 'Välj engångsköp eller uppgradera abonnemang' : 'Fyll på eller uppgradera för att fortsätta'}
-                </p>
               </div>
 
-              {/* Options */}
-              <div className="px-6 pb-6 space-y-3">
-                {/* Credit pack - always available */}
-                <button
-                  onClick={() => handleSelectPlan('creditPack')}
-                  disabled={loadingTier === 'creditPack'}
-                  className="w-full p-4 rounded-xl bg-gray-100 dark:bg-gray-800/50 border border-border hover:border-primary/50 transition-all flex items-center justify-between"
-                >
-                  <div className="text-left">
-                    <p className="font-medium text-foreground">Fyll på 30 bilder</p>
-                    <p className="text-sm text-muted-foreground">Engångsköp</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {loadingTier === 'creditPack' ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                    ) : (
-                      <span className="font-bold text-lg">69 kr</span>
-                    )}
-                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </button>
+              {/* Tab toggle - only for subscriber limit */}
+              {!isProfileBuy && !onHighest && (
+                <div className="px-6 pt-3 pb-1 flex gap-2">
+                  <button
+                    onClick={() => setSubscriberTab('topup')}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                      subscriberTab === 'topup'
+                        ? 'bg-secondary text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Fyll på credits
+                  </button>
+                  <button
+                    onClick={() => setSubscriberTab('upgrade')}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                      subscriberTab === 'upgrade'
+                        ? 'bg-secondary text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Uppgradera plan
+                  </button>
+                </div>
+              )}
 
-                {/* Upgrade options - only tiers ABOVE current plan */}
-                {availableUpgradeTiers.length > 0 ? (
-                  <div className="space-y-2">
-                    {availableUpgradeTiers.map((tier) => {
+              <div className="px-6 py-4 space-y-3">
+                {/* Credit packs tab (default) */}
+                {(subscriberTab === 'topup' || isProfileBuy || onHighest) && (
+                  <>
+                    {(Object.entries(CREDIT_PACKS) as [CreditPackKey, typeof CREDIT_PACKS[CreditPackKey]][]).map(([key, pack]) => (
+                      <button
+                        key={key}
+                        onClick={() => handleSelectCreditPack(key)}
+                        disabled={loadingTier === key}
+                        className="w-full p-4 rounded-xl border border-border hover:border-primary/40 transition-all flex items-center justify-between bg-card"
+                      >
+                        <div className="text-left">
+                          <p className="font-medium text-foreground">{pack.credits} credits</p>
+                          <p className="text-xs text-muted-foreground">{pack.estimate}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {loadingTier === key ? (
+                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                          ) : (
+                            <span className="font-bold text-lg">{pack.price} kr</span>
+                          )}
+                          <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      </button>
+                    ))}
+                    <p className="text-xs text-center text-muted-foreground pt-1">Credits förfaller inte</p>
+                  </>
+                )}
+
+                {/* Upgrade tab */}
+                {subscriberTab === 'upgrade' && !isProfileBuy && !onHighest && (
+                  <>
+                    {upgradeTiers.map((tier) => {
                       const plan = PRICING_PLANS[tier];
                       const isLoading = loadingTier === tier;
-                      const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
-                      const isBusiness = tier === 'business';
-                      const isPro = tier === 'pro';
-
                       return (
                         <button
                           key={tier}
                           onClick={() => handleSelectPlan(tier)}
                           disabled={isLoading}
-                          className={`relative w-full p-4 rounded-xl overflow-hidden border transition-all flex items-center justify-between ${
-                            isBusiness 
-                              ? 'border-primary/50 gradient-premium' 
-                              : isPro
-                                ? 'border-border'
-                                : 'border-border'
-                          }`}
+                          className="w-full p-4 rounded-xl border border-border hover:border-primary/40 transition-all flex items-center justify-between bg-card"
                         >
-                          {/* Start card - black to blue-gray gradient */}
-                          {tier === 'start' && (
-                            <div 
-                              className="absolute inset-0"
-                              style={{
-                                background: 'linear-gradient(180deg, hsl(0, 0%, 0%) 0%, #4D5F85 100%)',
-                              }}
-                            />
-                          )}
-                          {/* Pro card background image */}
-                          {isPro && (
-                            <div 
-                              className="absolute inset-0 opacity-80"
-                              style={{
-                                backgroundImage: `url(${proCardBg})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                              }}
-                            />
-                          )}
-                          {isPro && <div className="absolute inset-0 bg-black/30" />}
-                          <div className="relative z-10 text-left min-w-0">
-                            <p className={`font-medium ${isBusiness || isPro || tier === 'start' ? 'text-white' : 'text-foreground'}`}>{plan.name}</p>
-                            <p className={`text-sm ${isBusiness || isPro || tier === 'start' ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.credits} bilder/månad</p>
+                          <div className="text-left">
+                            <p className="font-medium text-foreground">{plan.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {plan.credits} credits/mån · {getAnnonsEstimate(plan.credits)}
+                            </p>
                           </div>
-                          <div className="relative z-10 flex items-center gap-2">
+                          <div className="flex items-center gap-2">
                             {isLoading ? (
                               <Loader2 className="w-5 h-5 animate-spin text-primary" />
                             ) : (
-                              <span className={`font-bold text-lg whitespace-nowrap ${isBusiness || isPro || tier === 'start' ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr/mån</span>
+                              <span className="font-bold text-lg">{plan.price} kr/mån</span>
                             )}
-                            <ArrowRight className={`w-4 h-4 ${isBusiness || isPro || tier === 'start' ? 'text-white/70' : 'text-primary'}`} />
+                            <ArrowRight className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </button>
                       );
                     })}
-                  </div>
-                ) : null}
+                  </>
+                )}
 
-                {/* Contact for highest tier users */}
-                {onHighestTier && (
+                {/* Contact for highest tier */}
+                {onHighest && !isProfileBuy && (
                   <div className="text-center pt-2 text-sm text-muted-foreground">
-                    <p>Behöver du fler credits?</p>
-                    <a href="mailto:jacob@autopic.studio" className="text-primary hover:underline">
+                    <p>Behöver du fler credits regelbundet?</p>
+                    <a
+                      href="https://www.autopic.studio/kontakt"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
                       Kontakta oss för företagsanpassad lösning
                     </a>
                   </div>
                 )}
               </div>
 
-              {/* Close button */}
               <button
                 onClick={handleClose}
                 className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors border-t border-border"
@@ -297,313 +275,238 @@ export const DemoPaywall = () => {
     );
   }
 
+  // ── Cold user wizard flow ──────────────────────────────────────
   return (
     <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
-      <DialogContent className="p-0 gap-0 max-w-4xl border-0 bg-transparent shadow-none max-h-[90dvh] overflow-y-auto">
-        {/* Main card */}
+      <DialogContent className="p-0 gap-0 max-w-lg border-0 bg-transparent shadow-none max-h-[90dvh] overflow-y-auto">
         <div className="relative rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
           <div className="relative z-10">
-            {/* Header - compact */}
-            <div className="px-6 pt-6 pb-4 text-center">
-              <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">
-                Skapa konto
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Kom igång på 30 sekunder
-              </p>
-            </div>
 
-            {/* Single benefit line */}
-            <div className="px-6 pb-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Inga fler timmar med redigering. Färdiga miljöer och smart AI-positionering.
-              </p>
-            </div>
+            {/* ── Step 1: Hero ── */}
+            {step === 'hero' && (
+              <div className="px-6 py-8 text-center space-y-6">
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground font-['Playfair_Display',serif] italic leading-tight">
+                    Hitta rätt plan
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Proffsiga bilannonser på sekunder — vi hjälper dig hitta rätt.
+                  </p>
+                </div>
 
-            {/* Pricing toggle */}
-            <div className="px-6 pb-4">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <span className={`text-sm transition-colors ${!isYearly ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                  Månadsvis
-                </span>
-                <Switch checked={isYearly} onCheckedChange={setIsYearly} />
-                <span className={`text-sm transition-colors ${isYearly ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                  Årsvis
-                </span>
-                <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
-                  20% rabatt
-                </span>
-              </div>
-
-              {/* Desktop: Wide cards side by side */}
-              {!isMobile ? (
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  {planKeys.map((key) => {
-                    const plan = PRICING_PLANS[key];
-                    const isPopular = 'popular' in plan && plan.popular;
-                    const isBusiness = key === 'business';
-                    const isScale = key === 'scale';
-                    const isLoading = loadingTier === key;
-                    const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
-
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => !isLoading && handleSelectPlan(key)}
-                          disabled={isLoading}
-                          className={`relative rounded-2xl overflow-hidden transition-all text-left min-h-[320px] ${
-                            isScale
-                              ? 'gradient-premium ring-2 ring-primary/30'
-                              : isBusiness 
-                                ? 'bg-[#1a1a1a] border border-border hover:border-primary/20' 
-                                : isPopular 
-                                  ? 'bg-[#1a1a1a] border border-primary/30 ring-1 ring-primary/20' 
-                                  : 'bg-[#1a1a1a] border border-border hover:border-primary/20'
-                          }`}
-                        >
-                          {/* Start card background gradient - blue to black */}
-                          {key === 'start' && (
-                            <div 
-                              className="absolute inset-0"
-                              style={{
-                                background: 'linear-gradient(180deg, #4D5F85 0%, hsl(0, 0%, 0%) 100%)',
-                              }}
-                            />
-                          )}
-                          {/* Pro card background image */}
-                          {isPopular && (
-                            <div 
-                              className="absolute inset-0 opacity-70"
-                              style={{
-                                backgroundImage: `url(${proCardBg})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                              }}
-                            />
-                          )}
-                          {/* Dark overlay for Pro cards */}
-                          {isPopular && (
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                          )}
-                          {/* Scale card - premium gradient background */}
-                          {isScale && (
-                            <div 
-                              className="absolute inset-0 opacity-70"
-                              style={{
-                                backgroundImage: `url(${proCardBg})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                              }}
-                            />
-                          )}
-                          {isScale && (
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                          )}
-                        
-                          <div className="relative z-10 p-5 h-full flex flex-col">
-                            <div className="flex items-start justify-between">
-                              <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
-                              {isPopular && (
-                                <span className="text-[10px] bg-white/20 text-white px-2 py-1 rounded-full font-medium">
-                                  Populär
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="flex-1 flex flex-col justify-end">
-                              <div className="flex items-baseline gap-1 mb-1">
-                                <span className="text-3xl font-bold text-white">{displayPrice}</span>
-                                <span className="text-sm text-white/70">kr</span>
-                                <span className="text-sm text-white/70">/månad</span>
-                              </div>
-                              <p className="text-sm mb-3 text-white/80">
-                                Få full tillgång till magisk annonsbild-generering.
-                              </p>
-                              
-                              <div className="rounded-full py-2.5 px-4 text-center mb-4 flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm">
-                                {isLoading ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                    <span className="text-sm font-medium text-white">Laddar...</span>
-                                  </>
-                                ) : (
-                                  <span className="text-sm font-medium text-white">Skaffa nu</span>
-                                )}
-                              </div>
-                              
-                              <div className="pt-4 border-t border-white/20 space-y-1.5">
-                                <div className="flex items-center gap-2 text-xs text-white/80">
-                                  <Check className="w-3.5 h-3.5 text-white/70" />
-                                  <span>{plan.credits} bilder/mån</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-white/80">
-                                  <Check className="w-3.5 h-3.5 text-white/70" />
-                                  <span>Alla funktioner</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                        </button>
-                      );
-                    })}
-                  </div>
-              ) : (
-                /* Mobile: Dropdown accordion */
-                <div className="space-y-2 mb-4">
-                  {planKeys.map((key) => {
-                    const plan = PRICING_PLANS[key];
-                    const isPopular = 'popular' in plan && plan.popular;
-                    const isBusiness = key === 'business';
-                    const isScale = key === 'scale';
-                    const isLoading = loadingTier === key;
-                    const displayPrice = isYearly && 'yearlyPrice' in plan ? plan.yearlyPrice : plan.price;
-                    const isExpanded = expandedPlan === key;
-                    const isPremiumStyle = isScale || isBusiness || key === 'start';
-
-                      return (
-                        <div
-                          key={key}
-                          className={`relative rounded-xl overflow-hidden transition-all ${
-                            isScale
-                              ? 'gradient-premium ring-2 ring-primary/30'
-                              : isBusiness 
-                                ? 'bg-[#1a1a1a] border border-border' 
-                                : isPopular 
-                                  ? 'ring-2 ring-primary/50 bg-card border border-primary/30' 
-                                  : 'bg-[#1a1a1a] border border-border'
-                          }`}
-                        >
-                          {/* Start card background gradient - blue to black */}
-                          {key === 'start' && (
-                            <div 
-                              className="absolute inset-0"
-                              style={{
-                                background: 'linear-gradient(180deg, #4D5F85 0%, hsl(0, 0%, 0%) 100%)',
-                              }}
-                            />
-                          )}
-                          {/* Scale card background */}
-                          {isScale && (
-                            <>
-                              <div 
-                                className="absolute inset-0 opacity-70"
-                                style={{
-                                  backgroundImage: `url(${proCardBg})`,
-                                  backgroundSize: 'cover',
-                                  backgroundPosition: 'center',
-                                }}
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                            </>
-                          )}
-                          {/* Header - always visible */}
-                          <button
-                            onClick={() => setExpandedPlan(isExpanded ? null : key)}
-                            className="w-full relative overflow-hidden"
-                          >
-                            <div className="relative z-10 p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h3 className={`text-base font-semibold text-left ${isPremiumStyle ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
-                                    {isPopular && (
-                                      <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-                                        Populär
-                                      </span>
-                                    )}
-                                    {isScale && (
-                                      <span className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded-full">
-                                        Mest värde
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className={`text-xs text-left ${isPremiumStyle ? 'text-white/70' : 'text-muted-foreground'}`}>{plan.tagline}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <div className="text-right whitespace-nowrap">
-                                  <span className={`text-lg font-bold ${isPremiumStyle ? 'text-white' : 'text-foreground'}`}>{displayPrice}&nbsp;kr</span>
-                                  <span className={`text-xs ${isPremiumStyle ? 'text-white/70' : 'text-muted-foreground'}`}>/mån</span>
-                                </div>
-                                <ChevronDown className={`w-5 h-5 transition-transform ${isPremiumStyle ? 'text-white/70' : 'text-muted-foreground'} ${isExpanded ? 'rotate-180' : ''}`} />
-                              </div>
-                            </div>
-                          </button>
-                        
-                          {/* Expanded content */}
-                          {isExpanded && (
-                            <div className={`relative z-10 p-4 space-y-3 ${isPremiumStyle ? 'bg-black/20' : 'bg-muted/50'}`}>
-                              <div className="space-y-1.5">
-                                <div className={`flex items-center gap-2 text-sm ${isPremiumStyle ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                  <Check className={`w-3.5 h-3.5 ${isPremiumStyle ? 'text-white/70' : 'text-primary/70'}`} />
-                                  <span>{plan.credits} bilder/mån</span>
-                                </div>
-                                <div className={`flex items-center gap-2 text-sm ${isPremiumStyle ? 'text-white/80' : 'text-muted-foreground'}`}>
-                                  <Check className={`w-3.5 h-3.5 ${isPremiumStyle ? 'text-white/70' : 'text-primary/70'}`} />
-                                  <span>Alla funktioner</span>
-                                </div>
-                              </div>
-                              <Button
-                                onClick={() => handleSelectPlan(key)}
-                                disabled={isLoading}
-                                className={`w-full ${isPremiumStyle ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
-                              >
-                                {isLoading ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  'Skaffa nu'
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-            </div>
-
-            {/* One-time purchase - expandable */}
-            <div className="px-6 pb-4">
-              <Collapsible open={oneTimeOpen} onOpenChange={setOneTimeOpen}>
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center justify-between text-sm text-muted-foreground hover:text-foreground transition-colors py-3 border border-border/50 rounded-lg px-4">
-                    <span className="font-medium">Behöver du bara några bilder?</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${oneTimeOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="flex items-center justify-between bg-muted/30 rounded-lg p-4 mt-2">
-                    <div>
-                      <p className="text-base font-medium text-foreground">30 bilder engångsköp</p>
-                      <p className="text-sm text-muted-foreground">Alla funktioner ingår</p>
+                {/* Before / After preview area */}
+                <div className="rounded-xl border border-border overflow-hidden aspect-[16/9] bg-muted flex items-center justify-center">
+                  <div className="flex w-full h-full">
+                    <div className="w-1/2 h-full flex items-center justify-center bg-muted/80 border-r border-border">
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Före</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">Egen parkering</p>
+                      </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleSelectPlan('creditPack')}
-                      disabled={loadingTier === 'creditPack'}
-                      className="rounded-full px-6"
-                    >
-                      {loadingTier === 'creditPack' ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <span className="text-base font-medium">69 kr</span>
-                      )}
-                    </Button>
+                    <div className="w-1/2 h-full flex items-center justify-center bg-muted/40">
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Efter</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">Professionell studio</p>
+                      </div>
+                    </div>
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
+                </div>
 
+                <div className="space-y-3">
+                  <Button onClick={() => setStep('quiz')} className="w-full" size="lg">
+                    Fortsätt
+                  </Button>
+                  <button
+                    onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Se alla planer direkt
+                  </button>
+                </div>
+              </div>
+            )}
 
-            {/* Close/skip */}
-            <button
-              onClick={handleClose}
-              className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors border-t border-border"
-            >
-              Fortsätt demo
-            </button>
+            {/* ── Step 2: Quiz ── */}
+            {step === 'quiz' && (
+              <div className="px-6 py-8 space-y-6">
+                <div className="text-center">
+                  <h2 className="text-xl md:text-2xl font-bold text-foreground font-['Playfair_Display',serif] italic">
+                    Hitta rätt plan
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Svara på två frågor så rekommenderar vi rätt nivå.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1.5">
+                      Hur många bilar annonserar du per månad?
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="t.ex. 20"
+                      value={carsPerMonth}
+                      onChange={e => setCarsPerMonth(e.target.value)}
+                      className="text-center text-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1.5">
+                      Hur många bilder per bil?
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="t.ex. 8"
+                      value={imagesPerCar}
+                      onChange={e => setImagesPerCar(e.target.value)}
+                      className="text-center text-lg"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Button
+                    onClick={handleCalculate}
+                    className="w-full"
+                    size="lg"
+                    disabled={!carsPerMonth || !imagesPerCar}
+                  >
+                    Beräkna
+                  </Button>
+                  <button
+                    onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Se alla planer direkt
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Step 3: Plans ── */}
+            {step === 'plans' && (
+              <div className="px-6 py-6 space-y-4">
+                <div className="text-center">
+                  {recommendedPlan ? (
+                    <>
+                      <p className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full inline-block mb-2">
+                        Rekommenderat
+                      </p>
+                      <h2 className="text-xl md:text-2xl font-bold text-foreground font-['Playfair_Display',serif] italic">
+                        {PRICING_PLANS[recommendedPlan].name} passar dig bäst
+                      </h2>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {parseInt(carsPerMonth) * parseInt(imagesPerCar)} bilder/mån → {PRICING_PLANS[recommendedPlan].credits} credits
+                      </p>
+                    </>
+                  ) : (
+                    <h2 className="text-xl md:text-2xl font-bold text-foreground font-['Playfair_Display',serif] italic">
+                      Välj plan
+                    </h2>
+                  )}
+                </div>
+
+                {/* Plan cards */}
+                <div className="space-y-3">
+                  {TIER_ORDER.map((tier) => {
+                    const plan = PRICING_PLANS[tier];
+                    const isRecommended = tier === recommendedPlan;
+                    const isLoading = loadingTier === tier;
+                    const isPopular = 'popular' in plan && plan.popular;
+
+                    return (
+                      <button
+                        key={tier}
+                        onClick={() => handleSelectPlan(tier)}
+                        disabled={isLoading}
+                        className={`w-full p-4 rounded-xl border transition-all flex items-center justify-between bg-card text-left ${
+                          isRecommended
+                            ? 'border-primary ring-1 ring-primary/30'
+                            : 'border-border hover:border-primary/30'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-foreground font-['Playfair_Display',serif] italic">
+                              {plan.name}
+                            </p>
+                            {isRecommended && (
+                              <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
+                                Rekommenderat
+                              </span>
+                            )}
+                            {isPopular && !isRecommended && (
+                              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                                Populär
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {plan.credits} credits · {getAnnonsEstimate(plan.credits)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                          ) : (
+                            <span className="font-bold text-lg whitespace-nowrap">{plan.price} kr<span className="text-sm font-normal text-muted-foreground">/mån</span></span>
+                          )}
+                          <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Credit packs section */}
+                <div className="pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground mb-3 text-center">Eller köp engångscredits</p>
+                  <div className="space-y-2">
+                    {(Object.entries(CREDIT_PACKS) as [CreditPackKey, typeof CREDIT_PACKS[CreditPackKey]][]).map(([key, pack]) => (
+                      <button
+                        key={key}
+                        onClick={() => handleSelectCreditPack(key)}
+                        disabled={loadingTier === key}
+                        className="w-full p-3 rounded-xl border border-border hover:border-primary/30 transition-all flex items-center justify-between bg-card"
+                      >
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-foreground">{pack.credits} credits</p>
+                          <p className="text-[11px] text-muted-foreground">{pack.estimate}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {loadingTier === key ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          ) : (
+                            <span className="font-bold">{pack.price} kr</span>
+                          )}
+                          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-center text-muted-foreground mt-2">Credits förfaller inte</p>
+                </div>
+
+                {/* Back / close */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setStep(recommendedPlan ? 'quiz' : 'hero')}
+                    className="flex-1 py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors border border-border rounded-lg"
+                  >
+                    Tillbaka
+                  </button>
+                  <button
+                    onClick={handleClose}
+                    className="flex-1 py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors border border-border rounded-lg"
+                  >
+                    Fortsätt demo
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

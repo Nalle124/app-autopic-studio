@@ -47,10 +47,10 @@ export const PRICING_TIERS: Record<string, PricingTierConfig> = {
   },
   business: {
     name: "Business",
-    price: 1299,
+    price: 1499,
     credits: 600,
-    priceId: "price_1SbV9KR5EFc7nWvhAvP0jDbX",
-    productId: "prod_TYcO3bE3Ec2Amv",
+    priceId: "price_1TAGStR5EFc7nWvhW1YYQZQe",
+    productId: "prod_U8XXaqL2BD1ieM",
     description: "600 credits per månad för bildigenerering",
     oneTime: false,
     features: [
@@ -64,10 +64,10 @@ export const PRICING_TIERS: Record<string, PricingTierConfig> = {
   },
   scale: {
     name: "Scale",
-    price: 1499,
+    price: 1999,
     credits: 800,
-    priceId: "price_1SxY9GR5EFc7nWvhCAxK4pEr",
-    productId: "prod_TvOxn4SrvfgY12",
+    priceId: "price_1TAGTYR5EFc7nWvhppU1NUin",
+    productId: "prod_U8XYydmVeSHax8",
     description: "800 credits per månad för bildigenerering",
     oneTime: false,
     features: [
@@ -79,16 +79,46 @@ export const PRICING_TIERS: Record<string, PricingTierConfig> = {
       "API-åtkomst (kommer snart)"
     ]
   },
-  creditPack: {
-    name: "Credit Pack",
-    price: 69,
+  creditPack30: {
+    name: "Credit Pack 30",
+    price: 129,
     credits: 30,
-    priceId: "price_1SbV9dR5EFc7nWvhOwgnPGX0",
-    productId: "prod_TYcOcv9ORqRLYH",
+    priceId: "price_1TAGUMR5EFc7nWvh3TjjWNlH",
+    productId: "prod_U8XYUvF2J6hOoM",
     description: "30 credits engångsköp",
     oneTime: true,
     features: [
       "30 bildgenereringar",
+      "Ingen prenumeration",
+      "Alla bakgrunder",
+      "Brand Kit"
+    ]
+  },
+  creditPack100: {
+    name: "Credit Pack 100",
+    price: 399,
+    credits: 100,
+    priceId: "price_1TAGUyR5EFc7nWvhqvjU2wrV",
+    productId: "prod_U8XZgWHtPFaYh8",
+    description: "100 credits engångsköp",
+    oneTime: true,
+    features: [
+      "100 bildgenereringar",
+      "Ingen prenumeration",
+      "Alla bakgrunder",
+      "Brand Kit"
+    ]
+  },
+  creditPack300: {
+    name: "Credit Pack 300",
+    price: 899,
+    credits: 300,
+    priceId: "price_1TAGWRR5EFc7nWvhkemhzZsB",
+    productId: "prod_U8Xa3v2gKKVlNz",
+    description: "300 credits engångsköp",
+    oneTime: true,
+    features: [
+      "300 bildgenereringar",
       "Ingen prenumeration",
       "Alla bakgrunder",
       "Brand Kit"
