@@ -267,12 +267,7 @@ export const V2GenerateStep = ({
 
   const handleGenerate = async () => {
     if (!canGenerate) {
-      // Import DemoContext trigger - we need to access it
-      const { triggerPaywall } = await import('@/contexts/DemoContext').then(m => {
-        // Can't use hook here, dispatch custom event instead
-        window.dispatchEvent(new CustomEvent('trigger-paywall', { detail: 'subscriber-limit' }));
-        return { triggerPaywall: () => {} };
-      });
+      if (onTriggerPaywall) onTriggerPaywall();
       return;
     }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
