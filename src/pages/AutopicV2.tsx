@@ -13,6 +13,8 @@ import { V2SceneSelector } from '@/components/v2/V2SceneSelector';
 import { V2LogoPresets } from '@/components/v2/V2LogoPresets';
 import { V2GenerateStep } from '@/components/v2/V2GenerateStep';
 import { V2ResultGallery } from '@/components/v2/V2ResultGallery';
+import { DemoProvider, useDemo } from '@/contexts/DemoContext';
+import { DemoPaywall } from '@/components/DemoPaywall';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 
@@ -47,13 +49,15 @@ const STEPS = [
   { label: 'Generera', key: 'generate' },
 ] as const;
 
-const AutopicV2 = () => {
+const AutopicV2Content = () => {
   const { user } = useAuth();
   const { credits, refetch: refetchCredits } = useUserCredits();
+  const { triggerPaywall } = useDemo();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
+  const [maxStepReached, setMaxStepReached] = useState(0);
   const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
@@ -77,6 +81,7 @@ const AutopicV2 = () => {
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
+    setMaxStepReached(0);
     setProjectName('');
     setSelectedSceneId('');
     setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
@@ -85,6 +90,7 @@ const AutopicV2 = () => {
 
   const goToStep = useCallback((step: number) => {
     setCurrentStep(step);
+    setMaxStepReached(prev => Math.max(prev, step));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -103,6 +109,10 @@ const AutopicV2 = () => {
       default: return false;
     }
   };
+
+  const handleTriggerPaywall = useCallback(() => {
+    triggerPaywall('subscriber-limit');
+  }, [triggerPaywall]);
 
   const renderHeader = () => (
     <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10">
@@ -163,33 +173,35 @@ const AutopicV2 = () => {
           {STEPS.map((step, i) => (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <button
-                onClick={() => { if (i <= currentStep) goToStep(i); }}
-                className={`flex flex-col items-center gap-1 ${i <= currentStep ? 'cursor-pointer' : 'cursor-default'}`}
+                onClick={() => { if (i <= maxStepReached) goToStep(i); }}
+                className={`flex flex-col items-center gap-1 ${i <= maxStepReached ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
                   i < currentStep
                     ? 'bg-primary border-primary'
                     : i === currentStep
                       ? 'border-primary bg-background'
-                      : 'border-muted-foreground/30 bg-background'
+                      : i <= maxStepReached
+                        ? 'bg-primary/20 border-primary/50'
+                        : 'border-muted-foreground/30 bg-background'
                 }`}>
                   {i < currentStep ? (
                     <Check className="w-2.5 h-2.5 text-primary-foreground" />
                   ) : (
                     <div className={`w-1.5 h-1.5 rounded-full ${
-                      i === currentStep ? 'bg-primary' : 'bg-muted-foreground/20'
+                      i === currentStep ? 'bg-primary' : i <= maxStepReached ? 'bg-primary/50' : 'bg-muted-foreground/20'
                     }`} />
                   )}
                 </div>
                 <span className={`text-[9px] whitespace-nowrap ${
-                  i <= currentStep ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  i <= maxStepReached ? 'text-foreground font-medium' : 'text-muted-foreground'
                 }`}>
                   {step.label}
                 </span>
               </button>
               {i < STEPS.length - 1 && (
                 <div className={`flex-1 h-[1.5px] mx-1.5 mt-[-14px] ${
-                  i < currentStep ? 'bg-primary' : 'bg-muted-foreground/20'
+                  i < currentStep ? 'bg-primary' : i < maxStepReached ? 'bg-primary/30' : 'bg-muted-foreground/20'
                 }`} />
               )}
             </div>
@@ -262,6 +274,7 @@ const AutopicV2 = () => {
               onComplete={handleGenerationComplete}
               onRefetchCredits={refetchCredits}
               onStartOver={handleStartOver}
+              onTriggerPaywall={handleTriggerPaywall}
             />
           </section>
         )}
@@ -291,8 +304,17 @@ const AutopicV2 = () => {
           )}
         </div>
       </div>
+
+      {/* Paywall modal */}
+      <DemoPaywall />
     </div>
   );
 };
+
+const AutopicV2 = () => (
+  <DemoProvider>
+    <AutopicV2Content />
+  </DemoProvider>
+);
 
 export default AutopicV2;

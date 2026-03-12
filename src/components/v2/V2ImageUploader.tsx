@@ -13,6 +13,27 @@ function generateId() {
   return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
 }
 
+// Loading skeleton thumbnail with shimmer effect
+const ImageThumb = ({ src, alt }: { src: string; alt: string }) => {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && (
+        <div className="absolute inset-0 bg-muted animate-pulse">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-background/20 to-transparent animate-[shimmer_1.5s_infinite]" 
+            style={{ animationTimingFunction: 'ease-in-out' }} />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        onLoad={() => setLoaded(true)}
+      />
+    </>
+  );
+};
+
 interface Props {
   images: V2Image[];
   onImagesChange: (images: V2Image[]) => void;
@@ -123,7 +144,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
               className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted cursor-pointer"
               onClick={() => setPreviewImage(img)}
             >
-              <img src={img.previewUrl} alt={img.file.name} className="w-full h-full object-cover" />
+              <ImageThumb src={img.previewUrl} alt={img.file.name} />
               <button
                 onClick={(e) => { e.stopPropagation(); removeImage(img.id); }}
                 className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"

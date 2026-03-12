@@ -20,6 +20,7 @@ interface Props {
   onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
   onStartOver: () => void;
+  onTriggerPaywall?: () => void;
 }
 
 // --- helpers ---
@@ -238,7 +239,7 @@ function getTargetAspect(format: 'landscape' | 'portrait'): number {
 
 export const V2GenerateStep = ({
   images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat,
-  onImagesUpdate, onComplete, onRefetchCredits, onStartOver,
+  onImagesUpdate, onComplete, onRefetchCredits, onStartOver, onTriggerPaywall,
 }: Props) => {
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
@@ -265,7 +266,10 @@ export const V2GenerateStep = ({
   }, [liveResults.length]);
 
   const handleGenerate = async () => {
-    if (!canGenerate) { toast.error('Du behöver fler krediter för att generera'); return; }
+    if (!canGenerate) {
+      if (onTriggerPaywall) onTriggerPaywall();
+      return;
+    }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
 
     try {
@@ -558,14 +562,10 @@ export const V2GenerateStep = ({
         style={{ background: 'linear-gradient(135deg, hsl(220 27% 41%) 0%, hsl(25 71% 45%) 100%)' }}
         size="lg"
         onClick={handleGenerate}
-        disabled={processing || !canGenerate}
+        disabled={processing}
       >
         {processing ? 'Bearbetar...' : `Generera ${totalImages} bilder`}
       </Button>
-
-      {!canGenerate && (
-        <p className="text-xs text-center text-destructive">Du behöver fler krediter ({totalCost} krävs, {credits} tillgängliga)</p>
-      )}
     </div>
   );
 };
