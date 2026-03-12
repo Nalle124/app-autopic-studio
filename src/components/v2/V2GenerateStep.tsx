@@ -558,14 +558,10 @@ export const V2GenerateStep = ({
         style={{ background: 'linear-gradient(135deg, hsl(220 27% 41%) 0%, hsl(25 71% 45%) 100%)' }}
         size="lg"
         onClick={handleGenerate}
-        disabled={processing || !canGenerate}
+        disabled={processing}
       >
         {processing ? 'Bearbetar...' : `Generera ${totalImages} bilder`}
       </Button>
-
-      {!canGenerate && (
-        <p className="text-xs text-center text-destructive">Du behöver fler krediter ({totalCost} krävs, {credits} tillgängliga)</p>
-      )}
     </div>
   );
 };
