@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Loader2, Zap, Mail, ImageIcon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Zap, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +15,16 @@ interface Props {
   onImagesUpdate: (images: V2Image[]) => void;
   onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
+}
+
+// Fetch full scene data for process-car-image
+async function fetchScene(sceneId: string) {
+  const { data } = await supabase
+    .from('scenes')
+    .select('*')
+    .eq('id', sceneId)
+    .single();
+  return data;
 }
 
 export const V2GenerateStep = ({
@@ -35,7 +45,6 @@ export const V2GenerateStep = ({
   const totalImages = images.length;
   const canGenerate = credits >= totalImages;
 
-  // Classify images in background, then process
   const handleGenerate = async () => {
     if (!canGenerate) {
       toast.error('Otillräckliga krediter');
@@ -48,7 +57,6 @@ export const V2GenerateStep = ({
 
     try {
       // Step 1: Classify images silently
-      toast.info('Analyserar bilder...');
       const imageData = await Promise.all(
         images.map(async (img) => {
           const arrayBuffer = await img.file.arrayBuffer();
@@ -75,12 +83,14 @@ export const V2GenerateStep = ({
       }));
       onImagesUpdate(classifiedImages);
 
-      const extCount = classifiedImages.filter(i => i.classification === 'exterior').length;
-      const intCount = classifiedImages.filter(i => i.classification === 'interior').length;
-      const detCount = classifiedImages.filter(i => i.classification === 'detail').length;
-      toast.success(`${extCount} exteriör, ${intCount} interiör, ${detCount} detalj`);
+      // Step 2: Fetch scene data
+      const scene = await fetchScene(sceneId);
+      if (!scene) throw new Error('Kunde inte ladda bakgrund');
 
-      // Step 2: Process each image
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Din session har gått ut. Ladda om sidan.');
+
+      // Step 3: Process each image
       const resultImages: V2Image[] = [];
       for (let i = 0; i < classifiedImages.length; i++) {
         const img = classifiedImages[i];
@@ -88,20 +98,17 @@ export const V2GenerateStep = ({
         setProgress(Math.round(((i + 0.5) / classifiedImages.length) * 100));
 
         try {
-          // For now, use the preview URL as placeholder result
-          // In production: call process-car-image for exterior, AI masking for interior
-          await new Promise(r => setTimeout(r, 800)); // Simulate processing
-          resultImages.push({
-            ...img,
-            processedUrl: img.previewUrl, // placeholder
-            status: 'done',
-          });
+          if (img.classification === 'exterior' || img.classification === 'detail') {
+            // Process via PhotoRoom (process-car-image)
+            const finalUrl = await processExteriorImage(img, scene, session.access_token);
+            resultImages.push({ ...img, processedUrl: finalUrl, status: 'done' });
+          } else {
+            // Interior: use as-is for now (masking will be added later)
+            resultImages.push({ ...img, processedUrl: img.previewUrl, status: 'done' });
+          }
         } catch (err: any) {
-          resultImages.push({
-            ...img,
-            status: 'error',
-            error: err.message,
-          });
+          console.error(`Error processing image ${img.id}:`, err);
+          resultImages.push({ ...img, status: 'error', error: err.message });
         }
 
         setProgress(Math.round(((i + 1) / classifiedImages.length) * 100));
@@ -109,7 +116,6 @@ export const V2GenerateStep = ({
 
       await onRefetchCredits();
       onComplete(resultImages);
-      toast.success('Alla bilder genererade!');
     } catch (err: any) {
       console.error('Generation error:', err);
       toast.error(err.message || 'Generering misslyckades');
@@ -117,9 +123,6 @@ export const V2GenerateStep = ({
       setProcessing(false);
     }
   };
-
-  const extCount = images.filter(i => i.classification === 'exterior').length;
-  const intCount = images.filter(i => i.classification === 'interior').length;
 
   return (
     <div className="space-y-6 max-w-lg mx-auto">
@@ -188,7 +191,6 @@ export const V2GenerateStep = ({
           <p className="text-xs text-center text-muted-foreground">
             Bearbetar bild {currentImageIndex} av {totalImages}... {progress}%
           </p>
-          {/* Live preview of current processing image */}
           {currentImageIndex > 0 && currentImageIndex <= images.length && (
             <div className="flex justify-center">
               <div className="relative w-48 aspect-[4/3] rounded-lg overflow-hidden bg-muted">
@@ -204,7 +206,7 @@ export const V2GenerateStep = ({
         </div>
       )}
 
-      {/* Generate button — same style as standard flow */}
+      {/* Generate button */}
       <Button
         className="w-full btn-processing-ready"
         size="lg"
@@ -229,3 +231,79 @@ export const V2GenerateStep = ({
     </div>
   );
 };
+
+// Process a single exterior image via process-car-image edge function
+async function processExteriorImage(
+  img: V2Image,
+  scene: any,
+  accessToken: string
+): Promise<string> {
+  const formData = new FormData();
+  formData.append('image', img.file, img.file.name);
+  
+  const scenePayload = {
+    id: scene.id,
+    name: scene.name,
+    horizonY: scene.horizon_y,
+    baselineY: scene.baseline_y,
+    defaultScale: scene.default_scale,
+    shadowPreset: {
+      enabled: scene.shadow_enabled,
+      strength: scene.shadow_strength,
+      blur: scene.shadow_blur,
+      offsetX: scene.shadow_offset_x,
+      offsetY: scene.shadow_offset_y,
+    },
+    reflectionPreset: {
+      enabled: scene.reflection_enabled,
+      opacity: scene.reflection_opacity,
+      fade: scene.reflection_fade,
+    },
+    aiPrompt: scene.ai_prompt,
+    shadowMode: scene.photoroom_shadow_mode,
+    referenceScale: scene.reference_scale,
+    compositeMode: scene.composite_mode,
+  };
+  
+  formData.append('scene', JSON.stringify(scenePayload));
+  
+  const backgroundUrl = scene.full_res_url.startsWith('http') || scene.full_res_url.startsWith('data:')
+    ? scene.full_res_url
+    : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${scene.full_res_url}`;
+  formData.append('backgroundUrl', backgroundUrl);
+  formData.append('orientation', 'landscape');
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: formData,
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorDetail = `HTTP ${response.status}`;
+      try {
+        const errBody = await response.json();
+        errorDetail = errBody.error || errorDetail;
+      } catch {}
+      throw new Error(errorDetail);
+    }
+
+    const result = await response.json();
+    if (!result.success || !result.finalUrl) {
+      throw new Error(result.error || 'Bearbetning misslyckades');
+    }
+    return result.finalUrl;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
