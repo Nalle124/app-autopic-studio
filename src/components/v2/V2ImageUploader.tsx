@@ -101,7 +101,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
 
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-[10px] p-8 sm:p-10 text-center cursor-pointer transition-colors ${
+        className={`border-2 border-dashed rounded-[10px] p-10 sm:p-14 text-center cursor-pointer transition-colors ${
           isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
         }`}
       >
@@ -138,7 +138,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       <p className="text-[10px] text-muted-foreground text-right">{images.length}/50</p>
 
       {/* Nyhet badge */}
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[10px] border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10">
         <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert flex-shrink-0" />
         <p className="text-xs text-foreground/80">
           <span className="font-semibold text-primary">Nyhet</span>{' '}

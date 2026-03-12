@@ -24,6 +24,12 @@ interface Props {
 
 // --- helpers ---
 
+const LOGO_SIZE_MAP: Record<string, number> = {
+  small: 0.08,
+  medium: 0.12,
+  large: 0.16,
+};
+
 async function fetchScene(sceneId: string) {
   const { data } = await supabase.from('scenes').select('*').eq('id', sceneId).single();
   return data;
@@ -55,6 +61,16 @@ function applyCropRegion(imageUrl: string, crop: { left: number; top: number; wi
         let srcY = Math.round(crop.top * img.naturalHeight);
         let srcW = Math.round(crop.width * img.naturalWidth);
         let srcH = Math.round(crop.height * img.naturalHeight);
+
+        // Validate minimum crop size
+        if (srcW < img.naturalWidth * 0.2 || srcH < img.naturalHeight * 0.2) {
+          console.warn('Crop region too small, using safe defaults');
+          srcX = Math.round(img.naturalWidth * 0.03);
+          srcY = Math.round(img.naturalHeight * 0.03);
+          srcW = Math.round(img.naturalWidth * 0.94);
+          srcH = Math.round(img.naturalHeight * 0.94);
+        }
+
         const currentAspect = srcW / srcH;
         if (currentAspect < targetAspect) {
           const newW = Math.round(srcH * targetAspect);
@@ -81,7 +97,7 @@ function applyCropRegion(imageUrl: string, crop: { left: number; top: number; wi
   });
 }
 
-function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string): Promise<string> {
+function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string, logoSize: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -94,11 +110,12 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string): Pr
           canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d')!;
           ctx.drawImage(img, 0, 0);
-          const logoMaxW = img.naturalWidth * 0.12;
+          const sizeRatio = LOGO_SIZE_MAP[logoSize] || 0.12;
+          const logoMaxW = img.naturalWidth * sizeRatio;
           const logoScale = logoMaxW / logo.naturalWidth;
           const logoW = logo.naturalWidth * logoScale;
           const logoH = logo.naturalHeight * logoScale;
-          const pad = img.naturalWidth * 0.02;
+          const pad = img.naturalWidth * 0.04;
           let x = pad, y = pad;
           if (preset === 'top-center') { x = (img.naturalWidth - logoW) / 2; y = pad; }
           else if (preset === 'bottom-right') { x = img.naturalWidth - logoW - pad; y = img.naturalHeight - logoH - pad; }
@@ -176,7 +193,7 @@ async function processInteriorImage(img: V2Image, bgType: string): Promise<strin
   return data.imageUrl;
 }
 
-async function blurPlatesOnImage(imageUrl: string, style: 'blur-dark' | 'blur-light' | 'logo', logoBase64: string | null, _accessToken: string): Promise<string> {
+async function blurPlatesOnImage(imageUrl: string, style: string, logoBase64: string | null, _accessToken: string): Promise<string> {
   const response = await fetch(imageUrl);
   const blob = await response.blob();
   const base64 = await new Promise<string>((resolve) => {
@@ -189,7 +206,7 @@ async function blurPlatesOnImage(imageUrl: string, style: 'blur-dark' | 'blur-li
     img.src = base64;
   });
   const { data, error } = await supabase.functions.invoke('blur-license-plates', {
-    body: { imageBase64: base64, style, logoBase64: style === 'logo' ? logoBase64 : null, width: dims.w, height: dims.h },
+    body: { imageBase64: base64, style, logoBase64: logoBase64, width: dims.w, height: dims.h },
   });
   if (error) { console.error('Plate blur error:', error); throw new Error('Kunde inte dölja registreringsskyltar'); }
   if (!data?.success || !data?.imageUrl) throw new Error(data?.error || 'Plate blur failed');
@@ -209,7 +226,7 @@ const LOGO_APPLY_LABELS: Record<string, string> = {
   'none': 'Ingen', 'all': 'Alla bilder', 'first': 'Första bilden', 'first-last': 'Första & sista', 'first-3-last': 'Första 3 + sista',
 };
 const PLATE_STYLE_LABELS: Record<string, string> = {
-  'blur-dark': 'Mörk blur', 'blur-light': 'Ljus blur', 'logo': 'Din logotyp',
+  'blur-dark': 'Mörk blur', 'blur-light': 'Ljus blur', 'logo': 'Din logotyp', 'custom-logo': 'Egen logotyp',
 };
 
 function getTargetAspect(format: 'landscape' | 'portrait'): number {
@@ -281,13 +298,17 @@ export const V2GenerateStep = ({
       const targetAspect = getTargetAspect(outputFormat);
 
       let plateLogoBase64: string | null = null;
-      if (plateConfig.enabled && plateConfig.style === 'logo') {
-        const plateLogoUrl = logos.light || logos.dark;
-        if (plateLogoUrl) {
-          try {
-            const r = await fetch(plateLogoUrl); const b = await r.blob();
-            plateLogoBase64 = await new Promise<string>((resolve) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target?.result as string); reader.readAsDataURL(b); });
-          } catch (e) { console.warn('Could not load logo for plates:', e); }
+      if (plateConfig.enabled) {
+        if (plateConfig.style === 'custom-logo' && plateConfig.customLogoBase64) {
+          plateLogoBase64 = plateConfig.customLogoBase64;
+        } else if (plateConfig.style === 'logo') {
+          const plateLogoUrl = logos.light || logos.dark;
+          if (plateLogoUrl) {
+            try {
+              const r = await fetch(plateLogoUrl); const b = await r.blob();
+              plateLogoBase64 = await new Promise<string>((resolve) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target?.result as string); reader.readAsDataURL(b); });
+            } catch (e) { console.warn('Could not load logo for plates:', e); }
+          }
         }
       }
 
@@ -321,7 +342,7 @@ export const V2GenerateStep = ({
           if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
           if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
           if (logoUrl && shouldApplyLogo(i, totalSteps, logoConfig.applyTo)) {
-            processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset);
+            processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset, logoConfig.logoSize);
           }
           const result = { ...img, processedUrl, status: 'done' as const };
           resultImages.push(result);
@@ -340,7 +361,6 @@ export const V2GenerateStep = ({
       if (deliveryMode === 'direct') {
         onComplete(resultImages);
       } else if (deliveryMode === 'email') {
-        // Send images via email
         const successfulUrls = resultImages
           .filter(r => r.status === 'done' && r.processedUrl)
           .map(r => r.processedUrl!);
@@ -440,7 +460,7 @@ export const V2GenerateStep = ({
       {/* Summary card with stronger V1-matching gradient */}
       <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 space-y-3 shadow-sm relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, hsl(25 71% 45% / 0.45) 0%, hsl(220 27% 41% / 0.5) 50%, hsl(0 0% 10% / 0.6) 100%)',
+          background: 'linear-gradient(135deg, hsl(25 71% 45% / 0.55) 0%, hsl(220 27% 41% / 0.6) 50%, hsl(0 0% 10% / 0.7) 100%)',
         }}
       >
         <div className="space-y-1">
@@ -468,12 +488,6 @@ export const V2GenerateStep = ({
           <span className="text-muted-foreground">Format</span>
           <span className="text-foreground font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
         </div>
-        {plateConfig.enabled && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Kostnad</span>
-            <span className="text-foreground font-medium">{totalImages} + {exteriorCount} skylt = {totalCost} krediter</span>
-          </div>
-        )}
       </div>
 
       {/* Divider */}

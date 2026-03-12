@@ -31,9 +31,7 @@ serve(async (req) => {
           content: [
             {
               type: "text",
-              text: `Detect the bounding box of the car in this image. Return ONLY a JSON object:
-{"left": <0-1>, "top": <0-1>, "right": <0-1>, "bottom": <0-1>}
-Values are percentages of image dimensions. Include the ENTIRE car including wheels, mirrors, roof. Exclude empty space.`
+              text: `Analyze this car photograph. Find the tightest bounding box that contains the ENTIRE vehicle — including all wheels (touching the ground), side mirrors, roof rack, antenna, and any protruding parts. The box must fully enclose the car from the leftmost pixel to the rightmost pixel and from the top of the roof to the bottom of the tires where they meet the ground. Do NOT exclude any part of the vehicle. Return ONLY a JSON object with these normalized values (0 to 1, as fractions of image width/height): {"left": <number>, "top": <number>, "right": <number>, "bottom": <number>}`
             },
             {
               type: "image_url",
@@ -47,14 +45,14 @@ Values are percentages of image dimensions. Include the ENTIRE car including whe
           type: "function",
           function: {
             name: "report_car_bounds",
-            description: "Report the bounding box of the car",
+            description: "Report the bounding box of the entire car including wheels, mirrors, and roof",
             parameters: {
               type: "object",
               properties: {
-                left: { type: "number" },
-                top: { type: "number" },
-                right: { type: "number" },
-                bottom: { type: "number" }
+                left: { type: "number", description: "Left edge of car as fraction of image width (0-1)" },
+                top: { type: "number", description: "Top edge of car as fraction of image height (0-1)" },
+                right: { type: "number", description: "Right edge of car as fraction of image width (0-1)" },
+                bottom: { type: "number", description: "Bottom edge of car as fraction of image height (0-1)" }
               },
               required: ["left", "top", "right", "bottom"]
             }
@@ -64,7 +62,6 @@ Values are percentages of image dimensions. Include the ENTIRE car including whe
       tool_choice: { type: "function", function: { name: "report_car_bounds" } }
     });
 
-    // Retry up to 3 times on transient errors (503, 429, etc.)
     let response: Response | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
       console.log(`AI request attempt ${attempt}/3`);
@@ -89,7 +86,6 @@ Values are percentages of image dimensions. Include the ENTIRE car including whe
         continue;
       }
 
-      // Non-retryable or final attempt — return a safe default crop instead of failing
       console.warn('AI analysis failed after retries, returning default center crop');
       return new Response(
         JSON.stringify({ 
@@ -113,11 +109,24 @@ Values are percentages of image dimensions. Include the ENTIRE car including whe
     // Validate bounds
     const left = Math.max(0, Math.min(1, bounds.left));
     const top = Math.max(0, Math.min(1, bounds.top));
-    const right = Math.max(0, Math.min(1, bounds.right));
-    const bottom = Math.max(0, Math.min(1, bounds.bottom));
+    const right = Math.max(left + 0.1, Math.min(1, bounds.right));
+    const bottom = Math.max(top + 0.1, Math.min(1, bounds.bottom));
 
     const carW = right - left;
     const carH = bottom - top;
+
+    // Validate: car should occupy at least 20% of image in both dimensions
+    if (carW < 0.2 || carH < 0.15) {
+      console.warn('Detected car bounds too small, likely inaccurate. Returning safe default.');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          crop: { left: 0.03, top: 0.03, width: 0.94, height: 0.94 } 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const carCenterX = (left + right) / 2;
     const carCenterY = (top + bottom) / 2;
 
@@ -125,7 +134,6 @@ Values are percentages of image dimensions. Include the ENTIRE car including whe
     const padX = carW * padding;
     const padY = carH * padding;
 
-    // Crop region preserving the car with padding
     let cropLeft = carCenterX - (carW / 2) - padX;
     let cropTop = carCenterY - (carH / 2) - padY;
     let cropW = carW + padX * 2;
@@ -136,6 +144,15 @@ Values are percentages of image dimensions. Include the ENTIRE car including whe
     if (cropTop < 0) { cropTop = 0; }
     if (cropLeft + cropW > 1) { cropW = 1 - cropLeft; }
     if (cropTop + cropH > 1) { cropH = 1 - cropTop; }
+
+    // Final validation: crop must be at least 30% of image
+    if (cropW < 0.3 || cropH < 0.3) {
+      console.warn('Crop region too small after calculation, expanding to safe minimum.');
+      cropLeft = Math.max(0, carCenterX - 0.45);
+      cropTop = Math.max(0, carCenterY - 0.45);
+      cropW = Math.min(0.9, 1 - cropLeft);
+      cropH = Math.min(0.9, 1 - cropTop);
+    }
 
     const cropData = {
       left: cropLeft,
