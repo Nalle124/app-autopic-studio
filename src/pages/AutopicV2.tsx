@@ -192,8 +192,6 @@ const AutopicV2 = () => {
             onImagesChange={handleImagesUploaded}
             projectName={projectName}
             onProjectNameChange={setProjectName}
-            outputFormat={outputFormat}
-            onOutputFormatChange={setOutputFormat}
           />
         )}
         {currentStep === 1 && (
