@@ -475,22 +475,22 @@ export const V2GenerateStep = ({
         </div>
 
         {projectName && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm relative z-10">
             <span className="text-white/50">Projekt</span>
             <span className="text-white font-medium">{projectName}</span>
           </div>
         )}
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-sm relative z-10">
             <span className="text-white/50">Logo</span>
             <span className="text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
         </div>
         {plateConfig.enabled && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm relative z-10">
             <span className="text-white/50">Skyltar</span>
             <span className="text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
           </div>
         )}
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-sm relative z-10">
             <span className="text-white/50">Format</span>
             <span className="text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
         </div>
