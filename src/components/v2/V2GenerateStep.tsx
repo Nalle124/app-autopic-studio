@@ -380,7 +380,7 @@ export const V2GenerateStep = ({
       }
     } catch (err: any) {
       console.error('Generation error:', err);
-      toast.error(err.message || 'Generering misslyckades');
+      toast.error('Hoppsan, något gick fel. Testa igen!');
     } finally {
       setProcessing(false);
     }
