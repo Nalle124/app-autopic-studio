@@ -23,58 +23,81 @@ serve(async (req) => {
 
     console.log('Auto-crop: analyzing image for car bounds');
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Detect the bounding box of the car in this image. Return ONLY a JSON object:
+    const aiBody = JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Detect the bounding box of the car in this image. Return ONLY a JSON object:
 {"left": <0-1>, "top": <0-1>, "right": <0-1>, "bottom": <0-1>}
 Values are percentages of image dimensions. Include the ENTIRE car including wheels, mirrors, roof. Exclude empty space.`
+            },
+            {
+              type: "image_url",
+              image_url: { url: imageUrl }
+            }
+          ]
+        }
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "report_car_bounds",
+            description: "Report the bounding box of the car",
+            parameters: {
+              type: "object",
+              properties: {
+                left: { type: "number" },
+                top: { type: "number" },
+                right: { type: "number" },
+                bottom: { type: "number" }
               },
-              {
-                type: "image_url",
-                image_url: { url: imageUrl }
-              }
-            ]
-          }
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "report_car_bounds",
-              description: "Report the bounding box of the car",
-              parameters: {
-                type: "object",
-                properties: {
-                  left: { type: "number" },
-                  top: { type: "number" },
-                  right: { type: "number" },
-                  bottom: { type: "number" }
-                },
-                required: ["left", "top", "right", "bottom"]
-              }
+              required: ["left", "top", "right", "bottom"]
             }
           }
-        ],
-        tool_choice: { type: "function", function: { name: "report_car_bounds" } }
-      }),
+        }
+      ],
+      tool_choice: { type: "function", function: { name: "report_car_bounds" } }
     });
 
-    if (!response.ok) {
+    // Retry up to 3 times on transient errors (503, 429, etc.)
+    let response: Response | null = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log(`AI request attempt ${attempt}/3`);
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: aiBody,
+      });
+
+      if (response.ok) break;
+
       const errorText = await response.text();
-      console.error("AI API error:", response.status, errorText);
-      throw new Error("AI analysis failed");
+      console.error(`AI API error (attempt ${attempt}):`, response.status, errorText);
+
+      if (attempt < 3 && (response.status === 503 || response.status === 429 || response.status >= 500)) {
+        const delay = attempt * 2000;
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+
+      // Non-retryable or final attempt — return a safe default crop instead of failing
+      console.warn('AI analysis failed after retries, returning default center crop');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          crop: { left: 0.05, top: 0.05, width: 0.9, height: 0.9 } 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const aiResult = await response.json();
