@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Zap, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -27,6 +27,169 @@ async function fetchScene(sceneId: string) {
   return data;
 }
 
+// Fetch user's logo URLs from profile
+async function fetchUserLogo(userId: string): Promise<{ light: string | null; dark: string | null }> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('logo_light, logo_dark')
+    .eq('id', userId)
+    .single();
+  return { light: data?.logo_light || null, dark: data?.logo_dark || null };
+}
+
+// Auto-crop an exterior image using AI detection
+async function autoCropImage(imageUrl: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('auto-crop-image', {
+    body: { imageUrl, paddingLevel: 'medium', targetAspectRatio: 'landscape' },
+  });
+  if (error || !data?.success) {
+    console.warn('Auto-crop failed, returning original:', error || data?.error);
+    return imageUrl; // fallback to original
+  }
+  
+  // Apply crop via canvas
+  const crop = data.crop;
+  return await applyCropToImage(imageUrl, crop);
+}
+
+// Apply crop data to image via canvas
+function applyCropToImage(imageUrl: string, crop: { zoom: number; x: number; y: number }): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const zoom = crop.zoom || 1;
+        const outputW = img.naturalWidth;
+        const outputH = Math.round(outputW / (16 / 9));
+        
+        // Calculate visible area dimensions at this zoom
+        const visibleW = img.naturalWidth / zoom;
+        const visibleH = img.naturalHeight / zoom;
+        
+        // Center + offset
+        const centerX = img.naturalWidth / 2;
+        const centerY = img.naturalHeight / 2;
+        const srcX = centerX - visibleW / 2 - (crop.x / 100) * visibleW;
+        const srcY = centerY - visibleH / 2 - (crop.y / 100) * visibleH;
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = outputW;
+        canvas.height = outputH;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 
+          Math.max(0, srcX), Math.max(0, srcY), visibleW, visibleH,
+          0, 0, outputW, outputH
+        );
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => resolve(imageUrl); // fallback
+    img.src = imageUrl;
+  });
+}
+
+// Apply logo to image via canvas
+function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const logo = new Image();
+      logo.crossOrigin = 'anonymous';
+      logo.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0);
+          
+          // Size logo to ~12% of image width
+          const logoMaxW = img.naturalWidth * 0.12;
+          const logoScale = logoMaxW / logo.naturalWidth;
+          const logoW = logo.naturalWidth * logoScale;
+          const logoH = logo.naturalHeight * logoScale;
+          const pad = img.naturalWidth * 0.02;
+          
+          let x = pad, y = pad;
+          if (preset === 'top-center') {
+            x = (img.naturalWidth - logoW) / 2;
+            y = pad;
+          } else if (preset === 'bottom-right') {
+            x = img.naturalWidth - logoW - pad;
+            y = img.naturalHeight - logoH - pad;
+          } else if (preset === 'bottom-center-banner') {
+            // Draw banner bar
+            const bannerH = logoH + pad * 2;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, img.naturalHeight - bannerH, img.naturalWidth, bannerH);
+            x = (img.naturalWidth - logoW) / 2;
+            y = img.naturalHeight - bannerH + pad;
+          }
+          // default top-left uses pad, pad
+          
+          ctx.drawImage(logo, x, y, logoW, logoH);
+          resolve(canvas.toDataURL('image/jpeg', 0.92));
+        } catch {
+          resolve(imageUrl);
+        }
+      };
+      logo.onerror = () => resolve(imageUrl);
+      logo.src = logoUrl;
+    };
+    img.onerror = () => resolve(imageUrl);
+    img.src = imageUrl;
+  });
+}
+
+// Process interior image via Gemini masking (same prompt as AI Studio)
+async function processInteriorImage(img: V2Image, bgType: string): Promise<string> {
+  const arrayBuffer = await img.file.arrayBuffer();
+  const base64 = `data:${img.file.type};base64,${btoa(
+    new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+  )}`;
+  
+  // Get dimensions
+  const dims = await new Promise<{w: number; h: number}>((resolve) => {
+    const image = new window.Image();
+    image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
+    image.onerror = () => resolve({ w: 1, h: 1 });
+    image.src = base64;
+  });
+
+  const prompt = `Look at this car image carefully. This is a photo of a car where the background is visible — either through windows, open doors, open trunk/boot, or because the car is only partially in frame. YOUR TASK: Replace ALL visible background (everything that is NOT the car itself or its interior) with a clean, ${bgType} background. This includes: background visible through windows, behind open doors, through the trunk opening, and any background visible around the car. KEEP THE CAR AND ITS INTERIOR EXACTLY AS THEY ARE — same position, angle, color, reflections, dashboard, seats, steering wheel, and all details. Do NOT alter any part of the vehicle itself. Do NOT move, resize, crop, or reframe the image in any way. The output MUST have the EXACT same dimensions and framing as the input. The input image is ${dims.w}x${dims.h} pixels. Output MUST be the EXACT same dimensions (${dims.w}x${dims.h}).`;
+
+  const { data, error } = await supabase.functions.invoke('generate-scene-image', {
+    body: {
+      conversationHistory: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: base64 } }
+        ]
+      }],
+      mode: 'free-create'
+    }
+  });
+
+  if (error) throw error;
+  if (!data?.imageUrl) throw new Error('Ingen bild returnerades');
+  return data.imageUrl;
+}
+
+// Determine which images should get logo based on config
+function shouldApplyLogo(index: number, total: number, applyTo: V2LogoConfig['applyTo']): boolean {
+  if (applyTo === 'none') return false;
+  if (applyTo === 'all') return true;
+  if (applyTo === 'first') return index === 0;
+  if (applyTo === 'first-last') return index === 0 || index === total - 1;
+  if (applyTo === 'first-3-last') return index < 3 || index === total - 1;
+  return false;
+}
+
 export const V2GenerateStep = ({
   images,
   logoConfig,
@@ -39,6 +202,7 @@ export const V2GenerateStep = ({
 }: Props) => {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
 
@@ -57,6 +221,7 @@ export const V2GenerateStep = ({
 
     try {
       // Step 1: Classify images silently
+      setStatusText('Analyserar bilder...');
       const imageData = await Promise.all(
         images.map(async (img) => {
           const arrayBuffer = await img.file.arrayBuffer();
@@ -83,35 +248,66 @@ export const V2GenerateStep = ({
       }));
       onImagesUpdate(classifiedImages);
 
-      // Step 2: Fetch scene data
+      // Step 2: Fetch scene data + user logo
       const scene = await fetchScene(sceneId);
       if (!scene) throw new Error('Kunde inte ladda bakgrund');
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Din session har gått ut. Ladda om sidan.');
 
+      // Fetch logo if needed
+      let logoUrl: string | null = null;
+      if (logoConfig.applyTo !== 'none') {
+        const logos = await fetchUserLogo(session.user.id);
+        logoUrl = logos.light || logos.dark;
+      }
+
+      // Determine interior bg type based on scene (light or dark)
+      const sceneName = (scene.name || '').toLowerCase();
+      const isDarkScene = sceneName.includes('mörk') || sceneName.includes('dark') || sceneName.includes('midnight');
+      const interiorBgType = isDarkScene ? 'dark neutral black/charcoal' : 'clean white';
+
       // Step 3: Process each image
       const resultImages: V2Image[] = [];
+      const totalSteps = classifiedImages.length;
+
       for (let i = 0; i < classifiedImages.length; i++) {
         const img = classifiedImages[i];
         setCurrentImageIndex(i + 1);
-        setProgress(Math.round(((i + 0.5) / classifiedImages.length) * 100));
-
+        
         try {
+          let processedUrl: string;
+
           if (img.classification === 'exterior' || img.classification === 'detail') {
-            // Process via PhotoRoom (process-car-image)
-            const finalUrl = await processExteriorImage(img, scene, session.access_token);
-            resultImages.push({ ...img, processedUrl: finalUrl, status: 'done' });
+            // Phase 1: Process via PhotoRoom
+            setStatusText(`Bearbetar exteriör ${i + 1}/${totalSteps}...`);
+            setProgress(Math.round(((i + 0.3) / totalSteps) * 100));
+            processedUrl = await processExteriorImage(img, scene, session.access_token);
+            
+            // Phase 2: Auto-crop
+            setStatusText(`Beskär bild ${i + 1}/${totalSteps}...`);
+            setProgress(Math.round(((i + 0.7) / totalSteps) * 100));
+            processedUrl = await autoCropImage(processedUrl);
           } else {
-            // Interior: use as-is for now (masking will be added later)
-            resultImages.push({ ...img, processedUrl: img.previewUrl, status: 'done' });
+            // Interior: mask via Gemini
+            setStatusText(`Maskerar interiör ${i + 1}/${totalSteps}...`);
+            setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
+            processedUrl = await processInteriorImage(img, interiorBgType);
           }
+
+          // Phase 3: Apply logo if needed
+          if (logoUrl && shouldApplyLogo(i, totalSteps, logoConfig.applyTo)) {
+            setStatusText(`Applicerar logo ${i + 1}/${totalSteps}...`);
+            processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset);
+          }
+
+          resultImages.push({ ...img, processedUrl, status: 'done' });
         } catch (err: any) {
           console.error(`Error processing image ${img.id}:`, err);
           resultImages.push({ ...img, status: 'error', error: err.message });
         }
 
-        setProgress(Math.round(((i + 1) / classifiedImages.length) * 100));
+        setProgress(Math.round(((i + 1) / totalSteps) * 100));
       }
 
       await onRefetchCredits();
@@ -189,7 +385,7 @@ export const V2GenerateStep = ({
         <div className="space-y-3">
           <Progress value={progress} className="h-2" />
           <p className="text-xs text-center text-muted-foreground">
-            Bearbetar bild {currentImageIndex} av {totalImages}... {progress}%
+            {statusText} {progress}%
           </p>
           {currentImageIndex > 0 && currentImageIndex <= images.length && (
             <div className="flex justify-center">
