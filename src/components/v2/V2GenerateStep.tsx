@@ -464,8 +464,8 @@ export const V2GenerateStep = ({
         }}
       >
         <div className="space-y-1">
-          <h2 className="font-sans font-medium text-lg text-foreground">Redo att generera</h2>
-          <p className="text-sm text-muted-foreground">{totalImages} bilder redo att bearbetas</p>
+          <h2 className="font-sans font-medium text-lg text-white">Redo att generera</h2>
+          <p className="text-sm text-white/60">{totalImages} bilder redo att bearbetas</p>
         </div>
 
         {projectName && (
