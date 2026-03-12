@@ -480,8 +480,8 @@ export const V2GenerateStep = ({
         </div>
         {plateConfig.enabled && (
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Skyltar</span>
-            <span className="text-foreground font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
+            <span className="text-white/50">Skyltar</span>
+            <span className="text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
           </div>
         )}
         <div className="flex justify-between text-sm">
