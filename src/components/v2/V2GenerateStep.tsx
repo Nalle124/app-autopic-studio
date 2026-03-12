@@ -208,7 +208,7 @@ export const V2GenerateStep = ({
 
       {/* Generate button */}
       <Button
-        className="w-full btn-processing-ready"
+        className="w-full bg-[image:var(--gradient-button)] hover:bg-[image:var(--gradient-button-hover)] text-primary-foreground shadow-[var(--shadow-elegant)] transition-all"
         size="lg"
         onClick={handleGenerate}
         disabled={processing || !canGenerate}
