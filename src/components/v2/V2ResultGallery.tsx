@@ -212,13 +212,13 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       {/* Crop editor */}
       {editingImage?.type === 'crop' && (
         <ImageCropEditor
-          imageUrl={editingImage.url}
-          onSave={(croppedUrl) => {
-            // Update the result's processedUrl
+          image={{ id: String(editingImage.index), finalUrl: editingImage.url, fileName: `bild-${editingImage.index + 1}` }}
+          onClose={() => setEditingImage(null)}
+          onSave={(_id, croppedUrl) => {
             results[editingImage.index].processedUrl = croppedUrl;
             setEditingImage(null);
           }}
-          onCancel={() => setEditingImage(null)}
+          aspectRatio="landscape"
         />
       )}
 
@@ -226,12 +226,13 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       {editingImage?.type === 'adjust' && (
         <OriginalImageEditor
           imageUrl={editingImage.url}
-          fileName={`bild-${editingImage.index + 1}`}
-          onSave={(adjustedUrl) => {
+          imageName={`bild-${editingImage.index + 1}`}
+          open={true}
+          onClose={() => setEditingImage(null)}
+          onSave={(adjustedUrl: string, _adjustments: CarAdjustments) => {
             results[editingImage.index].processedUrl = adjustedUrl;
             setEditingImage(null);
           }}
-          onCancel={() => setEditingImage(null)}
         />
       )}
     </div>
