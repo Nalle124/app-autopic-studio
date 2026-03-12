@@ -129,12 +129,12 @@ export const V2GenerateStep = ({
       <div className="text-center space-y-2">
         <h2 className="text-xl font-bold text-foreground">Generera</h2>
         <p className="text-sm text-muted-foreground">
-          {totalImages} bilder redo att bearbetas.
+          {totalImages} bilder redo att bearbetas
         </p>
       </div>
 
-      {/* Summary */}
-      <div className="rounded-card border border-border p-4 space-y-2">
+      {/* Summary card with gradient */}
+      <div className="rounded-card border border-border/30 p-5 space-y-3 bg-gradient-to-br from-card via-card to-primary/5 dark:to-primary/10 shadow-sm">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Antal bilder</span>
           <span className="text-foreground font-medium">{totalImages}</span>
@@ -208,7 +208,7 @@ export const V2GenerateStep = ({
 
       {/* Generate button */}
       <Button
-        className="w-full btn-processing-ready"
+        className="w-full bg-[image:var(--gradient-button)] hover:bg-[image:var(--gradient-button-hover)] text-primary-foreground shadow-[var(--shadow-elegant)] transition-all"
         size="lg"
         onClick={handleGenerate}
         disabled={processing || !canGenerate}

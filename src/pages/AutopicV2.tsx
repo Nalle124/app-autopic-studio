@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Header } from '@/components/Header';
 import { V2CameraGuide } from '@/components/v2/V2CameraGuide';
 import { V2ImageUploader } from '@/components/v2/V2ImageUploader';
 import { V2SceneSelector } from '@/components/v2/V2SceneSelector';
@@ -69,6 +70,7 @@ const AutopicV2 = () => {
   if (showResults) {
     return (
       <div className="min-h-screen bg-background">
+        <Header />
         <V2ResultGallery
           results={results}
           onStartOver={() => {
@@ -85,6 +87,7 @@ const AutopicV2 = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Header />
       {/* Stepper header */}
       <div className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-4 py-4">
