@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, RefreshCw, LayoutGrid, Grid2x2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface Scene {
   id: string;
@@ -14,6 +15,8 @@ interface Scene {
 interface Props {
   selectedSceneId: string;
   onSelect: (id: string) => void;
+  outputFormat: 'landscape' | 'portrait' | 'square';
+  onOutputFormatChange: (format: 'landscape' | 'portrait' | 'square') => void;
 }
 
 const CATEGORIES = [
@@ -27,21 +30,31 @@ const CATEGORIES = [
   { id: 'user', label: 'Mina scener' },
 ];
 
-export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
+const FORMAT_OPTIONS = [
+  { id: 'landscape' as const, label: 'Liggande', desc: '3:2' },
+  { id: 'portrait' as const, label: 'Stående', desc: '2:3' },
+  { id: 'square' as const, label: 'Kvadrat', desc: '1:1' },
+];
+
+export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange }: Props) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [userScenes, setUserScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [activeCategory, setActiveCategory] = useState('popular');
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [gridCols, setGridCols] = useState<3 | 4>(3);
 
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase
+  const loadScenes = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const { data, error: fetchError } = await supabase
         .from('scenes')
         .select('id, name, thumbnail_url, category')
         .order('sort_order', { ascending: true });
+      if (fetchError) throw fetchError;
       if (data) setScenes(data);
 
       if (user) {
@@ -54,15 +67,20 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
           setUserScenes(uScenes.map(s => ({ ...s, category: 'user' })));
         }
       }
-
+    } catch (err) {
+      console.error('Failed to load scenes:', err);
+      setError(true);
+    } finally {
       setLoading(false);
-    };
-    load();
+    }
+  };
+
+  useEffect(() => {
+    loadScenes();
   }, [user]);
 
   const handleSelect = (id: string) => {
     onSelect(id);
-    // Scroll to very bottom so the "Nästa" button in the footer is visible
     setTimeout(() => {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }, 150);
@@ -80,11 +98,34 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
 
   return (
     <div className="space-y-4">
-      <div className="text-center space-y-1">
-        <h2 className="text-xl font-bold text-foreground">Välj bakgrund</h2>
-        <p className="text-xs text-muted-foreground">
-          Välj en studiomiljö som appliceras på alla exteriörbilder.
-        </p>
+      {/* Header row with format toggle and grid view */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
+        <div className="flex items-center gap-2">
+          {/* Format toggle */}
+          <div className="flex gap-0.5 border border-border rounded-full p-0.5">
+            {FORMAT_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => onOutputFormatChange(opt.id)}
+                className={`px-2 py-1 rounded-full text-[10px] transition-all ${
+                  outputFormat === opt.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.desc}
+              </button>
+            ))}
+          </div>
+          {/* Grid toggle */}
+          <button
+            onClick={() => setGridCols(gridCols === 3 ? 4 : 3)}
+            className="p-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {gridCols === 3 ? <Grid2x2 className="h-3.5 w-3.5" /> : <LayoutGrid className="h-3.5 w-3.5" />}
+          </button>
+        </div>
       </div>
 
       {/* Category tabs */}
@@ -104,13 +145,21 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
         ))}
       </div>
 
-      {loading ? (
+      {error ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-3">
+          <p className="text-sm text-muted-foreground">Kunde inte ladda bakgrunder</p>
+          <Button variant="outline" size="sm" onClick={loadScenes}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Försök igen
+          </Button>
+        </div>
+      ) : loading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className={`grid gap-3 ${gridCols === 4 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
             {displayScenes.map((scene) => (
               <button
                 key={scene.id}
@@ -125,6 +174,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
                   src={scene.thumbnail_url}
                   alt={scene.name}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
                   <p className="text-[11px] text-white font-medium truncate">{scene.name}</p>
@@ -155,8 +205,6 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect }: Props) => {
           )}
         </>
       )}
-
-      <div ref={bottomRef} />
     </div>
   );
 };
