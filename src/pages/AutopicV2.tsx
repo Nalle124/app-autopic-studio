@@ -70,6 +70,7 @@ const AutopicV2 = () => {
   if (showResults) {
     return (
       <div className="min-h-screen bg-background">
+        <Header />
         <V2ResultGallery
           results={results}
           onStartOver={() => {
