@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import UploadSceneImages from "./pages/UploadSceneImages";
 import InviteSignup from "./pages/InviteSignup";
 import Guide from "./pages/Guide";
+import AutopicV2 from "./pages/AutopicV2";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,6 +82,7 @@ function App() {
               <Route path="/upload-scenes" element={<ProtectedRoute><UploadSceneImages /></ProtectedRoute>} />
               <Route path="/invite" element={<InviteSignup />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/autopic-v2" element={<ProtectedRoute><AutopicV2 /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>
