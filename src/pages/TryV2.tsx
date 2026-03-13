@@ -90,10 +90,20 @@ const TryV2Content = () => {
   }, []);
 
   const goToStep = useCallback((step: number) => {
+    // If trying to go forward past upload without images, show toast
+    if (step > 0 && images.length === 0) {
+      toast.info('Ladda upp bilder först för att fortsätta');
+      setCurrentStep(0);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     setCurrentStep(step);
-    setMaxStepReached(prev => Math.max(prev, step));
+    // Only mark steps as reached if going forward sequentially
+    if (step > 0 && images.length > 0) {
+      setMaxStepReached(prev => Math.max(prev, step));
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [images.length]);
 
   const canGoNext = () => {
     switch (currentStep) {

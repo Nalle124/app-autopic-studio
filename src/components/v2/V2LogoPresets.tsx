@@ -20,9 +20,11 @@ const PRESETS = [
   { id: 'top-left', label: 'Uppe vänster' },
   { id: 'top-center', label: 'Uppe center' },
   { id: 'bottom-right', label: 'Nere höger' },
+  { id: 'bottom-left', label: 'Nere vänster' },
   { id: 'bottom-center-banner', label: 'Banner nere' },
   { id: 'top-center-banner', label: 'Banner uppe' },
   { id: 'top-banner-left', label: 'Banner vänster' },
+  { id: 'top-banner-right', label: 'Banner höger' },
 ] as const;
 
 const APPLY_OPTIONS = [
@@ -67,10 +69,18 @@ const renderPresetMockup = (presetId: string) => {
       </div>
     );
   }
+  if (presetId === 'top-banner-right') {
+    return (
+      <div className="absolute top-0 left-0 right-0 h-5 bg-black/60 flex items-center justify-end pr-1.5">
+        <div className="h-2.5 w-8 bg-white/80 rounded-sm" />
+      </div>
+    );
+  }
   const positions: Record<string, string> = {
     'top-left': 'top-1.5 left-1.5',
     'top-center': 'top-1.5 left-1/2 -translate-x-1/2',
     'bottom-right': 'bottom-1.5 right-1.5',
+    'bottom-left': 'bottom-1.5 left-1.5',
   };
   return (
     <div className={`absolute ${positions[presetId] || 'top-1.5 left-1.5'}`}>
@@ -267,7 +277,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         <DialogContent className="max-w-md">
           <VisuallyHidden><DialogTitle>Välj placering</DialogTitle></VisuallyHidden>
           <h3 className="text-lg font-medium text-foreground mb-4">Välj logotypplacering</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -275,14 +285,16 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                   onConfigChange({ ...config, preset: preset.id });
                   setShowPlacementModal(false);
                 }}
-                className={`relative aspect-[16/10] rounded-lg border-2 transition-all bg-muted/50 ${
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div className={`relative aspect-[16/10] w-full rounded-lg border-2 transition-all bg-muted/50 ${
                   config.preset === preset.id
                     ? 'border-primary ring-2 ring-primary/20'
                     : 'border-border hover:border-primary/40'
-                }`}
-              >
-                {renderPresetMockup(preset.id)}
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap font-medium">
+                }`}>
+                  {renderPresetMockup(preset.id)}
+                </div>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap font-medium">
                   {preset.label}
                 </span>
               </button>
