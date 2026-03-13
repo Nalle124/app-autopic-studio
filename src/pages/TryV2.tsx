@@ -186,14 +186,34 @@ const TryV2Content = () => {
 
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 sm:py-6">
         {currentStep === 0 && (
-          <section className="bg-card border border-border rounded-[10px] p-6">
-            <V2ImageUploader
-              images={images}
-              onImagesChange={handleImagesChange}
-              projectName={projectName}
-              onProjectNameChange={setProjectName}
-            />
-          </section>
+          <div className="space-y-4">
+            <section className="bg-card border border-border rounded-[10px] p-6">
+              <V2ImageUploader
+                images={images}
+                onImagesChange={handleImagesChange}
+                projectName={projectName}
+                onProjectNameChange={setProjectName}
+              />
+            </section>
+
+            {images.length === 0 && (
+              <section className="bg-card border border-border rounded-[10px] p-5">
+                <p className="text-sm font-medium text-foreground mb-1">Eller testa med exempelbilder</p>
+                <p className="text-xs text-muted-foreground mb-3">Klicka för att ladda in färdiga bilder direkt</p>
+                <button
+                  onClick={() => handleImagesChange(EXAMPLE_IMAGES)}
+                  className="flex gap-2 items-center group"
+                >
+                  {EXAMPLE_IMAGES.map((img) => (
+                    <div key={img.id} className="w-20 h-14 rounded-md overflow-hidden border border-border group-hover:border-primary/50 transition-colors">
+                      <img src={img.preview} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                  <span className="text-xs text-primary font-medium ml-1">Använd dessa →</span>
+                </button>
+              </section>
+            )}
+          </div>
         )}
         {currentStep === 1 && (
           <section className="border border-border rounded-[10px] p-6">
