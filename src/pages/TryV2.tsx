@@ -14,7 +14,14 @@ import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { toast } from 'sonner';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
+import exampleBefore from '@/assets/paywall/bmw-before.jpg';
+import exampleAfter from '@/assets/paywall/bmw-after.jpg';
 import type { V2Image, V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
+
+const EXAMPLE_IMAGES: V2Image[] = [
+  { id: 'example-1', file: null as any, preview: exampleBefore, status: 'pending', originalFilename: 'bmw-before.jpg' },
+  { id: 'example-2', file: null as any, preview: exampleAfter, status: 'pending', originalFilename: 'bmw-after.jpg' },
+];
 
 const STEPS = [
   { label: 'Ladda upp', key: 'upload' },
