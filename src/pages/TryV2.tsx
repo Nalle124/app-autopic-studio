@@ -128,8 +128,8 @@ const TryV2Content = () => {
           {STEPS.map((step, i) => (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <button
-                onClick={() => { if (i <= maxStepReached) goToStep(i); }}
-                className={`flex flex-col items-center gap-1 ${i <= maxStepReached ? 'cursor-pointer' : 'cursor-default'}`}
+                onClick={() => goToStep(i)}
+                className="flex flex-col items-center gap-1 cursor-pointer"
               >
                 <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
                   i < currentStep ? 'bg-primary border-primary'
