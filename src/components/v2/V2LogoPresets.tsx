@@ -20,9 +20,11 @@ const PRESETS = [
   { id: 'top-left', label: 'Uppe vänster' },
   { id: 'top-center', label: 'Uppe center' },
   { id: 'bottom-right', label: 'Nere höger' },
+  { id: 'bottom-left', label: 'Nere vänster' },
   { id: 'bottom-center-banner', label: 'Banner nere' },
   { id: 'top-center-banner', label: 'Banner uppe' },
   { id: 'top-banner-left', label: 'Banner vänster' },
+  { id: 'top-banner-right', label: 'Banner höger' },
 ] as const;
 
 const APPLY_OPTIONS = [
