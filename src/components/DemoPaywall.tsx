@@ -324,9 +324,7 @@ export const DemoPaywall = () => {
                 {subscriberTab === 'upgrade' && hasUpgrades && nextTier && nextPlan && (
                   <div className="space-y-3">
                     {/* Featured upgrade card */}
-                    <div className="relative rounded-xl overflow-hidden">
-                      <img src={auraGradient} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40" />
+                    <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-[hsl(220,30%,30%)] via-[hsl(200,15%,18%)] to-[hsl(25,70%,35%)]">
                       <div className="relative z-10 p-5">
                         <p className="text-[10px] uppercase tracking-widest text-white/60 font-medium mb-1">Uppgradera till</p>
                         <div className="flex items-start justify-between">
@@ -338,7 +336,7 @@ export const DemoPaywall = () => {
                         </div>
 
                         {currentPlan && (
-                          <div className="flex gap-6 mt-3">
+                          <div className="flex gap-6 mt-3 border-t border-white/10 pt-3">
                             <div>
                               <p className="text-[10px] uppercase tracking-wider text-white/50">Fler bilder</p>
                               <p className="text-lg font-bold text-white">+{nextPlan.credits - currentPlan.credits}</p>
@@ -353,7 +351,7 @@ export const DemoPaywall = () => {
                         <Button
                           onClick={() => handleSelectPlan(nextTier)}
                           disabled={loadingTier === nextTier}
-                          className="w-full mt-4 bg-white/20 backdrop-blur-sm text-white border border-white/20 hover:bg-white/30 font-semibold"
+                          className="w-full mt-4 bg-white/15 backdrop-blur-sm text-white border border-white/20 hover:bg-white/25 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all"
                           size="lg"
                         >
                           {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Uppgradera'}
