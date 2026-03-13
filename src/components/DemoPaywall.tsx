@@ -167,53 +167,46 @@ export const DemoPaywall = () => {
     const isLoading = loadingTier === tier;
     const isPopular = 'popular' in plan && plan.popular;
     const isExpanded = expandedPlan === tier;
-    const bgImage = PLAN_BG[tier];
-    const hasBg = !!bgImage;
+    const gradientClass = PLAN_GRADIENT[tier];
 
     return (
       <div key={tier} className={`rounded-xl overflow-hidden transition-all ${
         isRecommended ? 'ring-2 ring-primary/30' : ''
       }`}>
-        {/* Main card */}
-        <div className={`relative overflow-hidden ${hasBg ? 'text-white' : 'bg-card border border-border/60'}`}>
-          {hasBg && (
-            <img src={bgImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          )}
-          {hasBg && <div className="absolute inset-0 bg-black/40" />}
-
+        <div className={`relative overflow-hidden text-white ${gradientClass}`}>
           <div className="relative z-10">
             <button onClick={() => togglePlanExpand(tier)} className="w-full text-left p-5">
               <div className="flex items-start justify-between mb-1">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className={`text-lg font-bold ${hasBg ? 'text-white' : 'text-foreground'}`}>{plan.name}</h3>
+                    <h3 className="text-lg font-bold text-white">{plan.name}</h3>
                     {isRecommended && (
                       <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">Rekommenderad</span>
                     )}
                     {isPopular && !isRecommended && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${hasBg ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'}`}>Populär</span>
+                      <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">Populär</span>
                     )}
                   </div>
-                  <p className={`text-sm mt-1 ${hasBg ? 'text-white/70' : 'text-muted-foreground'}`}>
-                    {plan.credits} bilder · {getAnnonsEstimate(plan.credits)}
+                  <p className="text-sm mt-1 text-white/70">
+                    {plan.credits} bilder/månad
                   </p>
                 </div>
                 <div className="text-right flex items-center gap-2">
                   <div>
-                    <span className={`text-2xl font-bold ${hasBg ? 'text-white' : 'text-foreground'}`}>{plan.price}</span>
-                    <span className={`text-sm ${hasBg ? 'text-white/60' : 'text-muted-foreground'}`}> kr/mån</span>
+                    <span className="text-2xl font-bold text-white">{plan.price}</span>
+                    <span className="text-sm text-white/60"> kr/mån</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${hasBg ? 'text-white/60' : 'text-muted-foreground'} ${isExpanded ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 transition-transform text-white/60 ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
               </div>
             </button>
 
             {isExpanded && (
-              <div className={`px-5 pb-5 pt-0 border-t ${hasBg ? 'border-white/10' : 'border-border/40'}`}>
+              <div className="px-5 pb-5 pt-0 border-t border-white/10">
                 <ul className="space-y-1.5 pt-3">
                   {PLAN_FEATURES[tier]?.map((f, i) => (
-                    <li key={i} className={`text-xs flex items-start gap-2 ${hasBg ? 'text-white/80' : 'text-muted-foreground'}`}>
-                      <Check className={`w-3 h-3 mt-0.5 shrink-0 ${hasBg ? 'text-white/60' : 'text-primary'}`} />
+                    <li key={i} className="text-xs flex items-start gap-2 text-white/80">
+                      <Check className="w-3 h-3 mt-0.5 shrink-0 text-white/60" />
                       {f}
                     </li>
                   ))}
@@ -221,13 +214,10 @@ export const DemoPaywall = () => {
                 <Button
                   onClick={() => handleSelectPlan(tier)}
                   disabled={isLoading}
-                  className={`w-full mt-4 font-semibold ${hasBg
-                    ? 'bg-white/20 backdrop-blur-sm text-white border border-white/20 hover:bg-white/30'
-                    : 'bg-foreground text-background hover:bg-foreground/90'
-                  }`}
+                  className="w-full mt-4 font-semibold bg-white/15 backdrop-blur-sm text-white border border-white/20 hover:bg-white/25 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all"
                   size="lg"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Välj ${plan.name}`}
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Skaffa nu`}
                 </Button>
               </div>
             )}
