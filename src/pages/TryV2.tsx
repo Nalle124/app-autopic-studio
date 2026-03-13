@@ -146,7 +146,7 @@ const TryV2Content = () => {
                   )}
                 </div>
                 <span className={`text-[9px] whitespace-nowrap ${
-                  i <= maxStepReached ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  i <= currentStep || i <= maxStepReached ? 'text-foreground font-medium' : 'text-muted-foreground'
                 }`}>
                   {step.label}
                 </span>
