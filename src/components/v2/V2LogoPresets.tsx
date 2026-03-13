@@ -277,7 +277,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         <DialogContent className="max-w-md">
           <VisuallyHidden><DialogTitle>Välj placering</DialogTitle></VisuallyHidden>
           <h3 className="text-lg font-medium text-foreground mb-4">Välj logotypplacering</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {PRESETS.map((preset) => (
               <button
                 key={preset.id}
@@ -285,14 +285,16 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                   onConfigChange({ ...config, preset: preset.id });
                   setShowPlacementModal(false);
                 }}
-                className={`relative aspect-[16/10] rounded-lg border-2 transition-all bg-muted/50 ${
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div className={`relative aspect-[16/10] w-full rounded-lg border-2 transition-all bg-muted/50 ${
                   config.preset === preset.id
                     ? 'border-primary ring-2 ring-primary/20'
                     : 'border-border hover:border-primary/40'
-                }`}
-              >
-                {renderPresetMockup(preset.id)}
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap font-medium">
+                }`}>
+                  {renderPresetMockup(preset.id)}
+                </div>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap font-medium">
                   {preset.label}
                 </span>
               </button>
