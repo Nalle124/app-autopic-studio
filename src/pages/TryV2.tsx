@@ -206,7 +206,7 @@ const TryV2Content = () => {
                 >
                   {EXAMPLE_IMAGES.map((img) => (
                     <div key={img.id} className="w-20 h-14 rounded-md overflow-hidden border border-border group-hover:border-primary/50 transition-colors">
-                      <img src={img.preview} alt="" className="w-full h-full object-cover" />
+                      <img src={img.previewUrl} alt="" className="w-full h-full object-cover" />
                     </div>
                   ))}
                   <span className="text-xs text-primary font-medium ml-1">Använd dessa →</span>
