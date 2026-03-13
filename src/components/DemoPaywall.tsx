@@ -594,6 +594,13 @@ export const DemoPaywall = () => {
                   )}
                 </div>
 
+                {/* Contact link */}
+                <div className="text-center pt-1">
+                  <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline">
+                    Kontakta oss
+                  </a>
+                </div>
+
                 {/* Back / close */}
                 <div className="flex gap-3 pt-2">
                   <button
