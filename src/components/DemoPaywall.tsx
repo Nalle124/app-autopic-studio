@@ -8,10 +8,6 @@ import { toast } from 'sonner';
 import { Slider } from '@/components/ui/slider';
 import bmwAfter from '@/assets/paywall/bmw-after.jpg';
 import bmwBefore from '@/assets/paywall/bmw-before.jpg';
-import pricingGradientPopular from '@/assets/pricing-gradient-popular.jpg';
-import pricingGradientPremium from '@/assets/pricing-gradient-premium.jpg';
-import proCardBg from '@/assets/pro-card-bg-new.jpg';
-import auraGradient from '@/assets/aura-gradient-3.jpg';
 
 // ── Plan data ──────────────────────────────────────────────────────
 const PRICING_PLANS = {
@@ -54,11 +50,12 @@ const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
 
 const TIER_ORDER: PlanKey[] = ['start', 'pro', 'business', 'scale'];
 
-const PLAN_BG: Record<PlanKey, string | null> = {
-  start: null,
-  pro: proCardBg,
-  business: pricingGradientPopular,
-  scale: pricingGradientPremium,
+// CSS gradient backgrounds for plan cards
+const PLAN_GRADIENT: Record<PlanKey, string> = {
+  start: 'bg-gradient-to-br from-[hsl(220,20%,20%)] to-[hsl(220,15%,12%)]',
+  pro: 'bg-gradient-to-br from-[hsl(220,27%,35%)] via-[hsl(220,20%,25%)] to-[hsl(25,60%,30%)]',
+  business: 'bg-gradient-to-br from-[hsl(220,30%,30%)] via-[hsl(200,15%,18%)] to-[hsl(25,70%,35%)]',
+  scale: 'bg-gradient-to-br from-[hsl(25,50%,30%)] via-[hsl(220,25%,20%)] to-[hsl(220,30%,12%)]',
 };
 
 const getNextTier = (currentProductId: string | null): PlanKey | null => {
