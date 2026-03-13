@@ -19,8 +19,8 @@ import exampleAfter from '@/assets/paywall/bmw-after.jpg';
 import type { V2Image, V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
 
 const EXAMPLE_IMAGES: V2Image[] = [
-  { id: 'example-1', file: null as any, preview: exampleBefore, status: 'pending', originalFilename: 'bmw-before.jpg' },
-  { id: 'example-2', file: null as any, preview: exampleAfter, status: 'pending', originalFilename: 'bmw-after.jpg' },
+  { id: 'example-1', file: null as any, previewUrl: exampleBefore, status: 'pending' },
+  { id: 'example-2', file: null as any, previewUrl: exampleAfter, status: 'pending' },
 ];
 
 const STEPS = [
