@@ -14,7 +14,14 @@ import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { toast } from 'sonner';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
+import exampleBefore from '@/assets/paywall/bmw-before.jpg';
+import exampleAfter from '@/assets/paywall/bmw-after.jpg';
 import type { V2Image, V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
+
+const EXAMPLE_IMAGES: V2Image[] = [
+  { id: 'example-1', file: null as any, previewUrl: exampleBefore, status: 'pending' },
+  { id: 'example-2', file: null as any, previewUrl: exampleAfter, status: 'pending' },
+];
 
 const STEPS = [
   { label: 'Ladda upp', key: 'upload' },
@@ -128,8 +135,8 @@ const TryV2Content = () => {
           {STEPS.map((step, i) => (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <button
-                onClick={() => { if (i <= maxStepReached) goToStep(i); }}
-                className={`flex flex-col items-center gap-1 ${i <= maxStepReached ? 'cursor-pointer' : 'cursor-default'}`}
+                onClick={() => goToStep(i)}
+                className="flex flex-col items-center gap-1 cursor-pointer"
               >
                 <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
                   i < currentStep ? 'bg-primary border-primary'
@@ -146,7 +153,7 @@ const TryV2Content = () => {
                   )}
                 </div>
                 <span className={`text-[9px] whitespace-nowrap ${
-                  i <= maxStepReached ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  i <= currentStep || i <= maxStepReached ? 'text-foreground font-medium' : 'text-muted-foreground'
                 }`}>
                   {step.label}
                 </span>
@@ -179,14 +186,34 @@ const TryV2Content = () => {
 
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 sm:py-6">
         {currentStep === 0 && (
-          <section className="bg-card border border-border rounded-[10px] p-6">
-            <V2ImageUploader
-              images={images}
-              onImagesChange={handleImagesChange}
-              projectName={projectName}
-              onProjectNameChange={setProjectName}
-            />
-          </section>
+          <div className="space-y-4">
+            <section className="bg-card border border-border rounded-[10px] p-6">
+              <V2ImageUploader
+                images={images}
+                onImagesChange={handleImagesChange}
+                projectName={projectName}
+                onProjectNameChange={setProjectName}
+              />
+            </section>
+
+            {images.length === 0 && (
+              <section className="bg-card border border-border rounded-[10px] p-5">
+                <p className="text-sm font-medium text-foreground mb-1">Eller testa med exempelbilder</p>
+                <p className="text-xs text-muted-foreground mb-3">Klicka för att ladda in färdiga bilder direkt</p>
+                <button
+                  onClick={() => handleImagesChange(EXAMPLE_IMAGES)}
+                  className="flex gap-2 items-center group"
+                >
+                  {EXAMPLE_IMAGES.map((img) => (
+                    <div key={img.id} className="w-20 h-14 rounded-md overflow-hidden border border-border group-hover:border-primary/50 transition-colors">
+                      <img src={img.previewUrl} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                  <span className="text-xs text-primary font-medium ml-1">Använd dessa →</span>
+                </button>
+              </section>
+            )}
+          </div>
         )}
         {currentStep === 1 && (
           <section className="border border-border rounded-[10px] p-6">
