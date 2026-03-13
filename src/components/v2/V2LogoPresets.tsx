@@ -69,10 +69,18 @@ const renderPresetMockup = (presetId: string) => {
       </div>
     );
   }
+  if (presetId === 'top-banner-right') {
+    return (
+      <div className="absolute top-0 left-0 right-0 h-5 bg-black/60 flex items-center justify-end pr-1.5">
+        <div className="h-2.5 w-8 bg-white/80 rounded-sm" />
+      </div>
+    );
+  }
   const positions: Record<string, string> = {
     'top-left': 'top-1.5 left-1.5',
     'top-center': 'top-1.5 left-1/2 -translate-x-1/2',
     'bottom-right': 'bottom-1.5 right-1.5',
+    'bottom-left': 'bottom-1.5 left-1.5',
   };
   return (
     <div className={`absolute ${positions[presetId] || 'top-1.5 left-1.5'}`}>
