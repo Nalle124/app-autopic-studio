@@ -530,8 +530,7 @@ const Auth = () => {
                     Förbli inloggad
                   </label>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
                   Logga in
                 </Button>
               </form>
