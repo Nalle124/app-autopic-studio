@@ -11,16 +11,16 @@ import autopicLogo from '@/assets/autopic-logo-dark.png';
 
 // ── Plan data ──────────────────────────────────────────────────────
 const PRICING_PLANS = {
-  start:    { name: 'Start',    price: 399,  credits: 100, priceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe' },
-  pro:      { name: 'Pro',      price: 699,  credits: 300, priceId: 'price_1SbV94R5EFc7nWvhHlWgPKsp', popular: true },
+  start: { name: 'Start', price: 399, credits: 100, priceId: 'price_1SbV8AR5EFc7nWvhDcyFNiMe' },
+  pro: { name: 'Pro', price: 699, credits: 300, priceId: 'price_1SbV94R5EFc7nWvhHlWgPKsp', popular: true },
   business: { name: 'Business', price: 1499, credits: 600, priceId: 'price_1TAGStR5EFc7nWvhW1YYQZQe' },
-  scale:    { name: 'Scale',    price: 1999, credits: 800, priceId: 'price_1TAGTYR5EFc7nWvhppU1NUin' },
+  scale: { name: 'Scale', price: 1999, credits: 800, priceId: 'price_1TAGTYR5EFc7nWvhppU1NUin' }
 } as const;
 
 const CREDIT_PACKS = {
-  creditPack30:  { name: '30 credits',  price: 129, credits: 30,  priceId: 'price_1TAGUMR5EFc7nWvh3TjjWNlH', estimate: '2–4 annonser' },
+  creditPack30: { name: '30 credits', price: 129, credits: 30, priceId: 'price_1TAGUMR5EFc7nWvh3TjjWNlH', estimate: '2–4 annonser' },
   creditPack100: { name: '100 credits', price: 399, credits: 100, priceId: 'price_1TAGUyR5EFc7nWvhqvjU2wrV', estimate: '8–14 annonser' },
-  creditPack300: { name: '300 credits', price: 899, credits: 300, priceId: 'price_1TAGWRR5EFc7nWvhkemhzZsB', estimate: '20–37 annonser' },
+  creditPack300: { name: '300 credits', price: 899, credits: 300, priceId: 'price_1TAGWRR5EFc7nWvhkemhzZsB', estimate: '20–37 annonser' }
 } as const;
 
 const getAnnonsEstimate = (credits: number) => {
@@ -33,7 +33,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
   start: [getAnnonsEstimate(100), '100 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
   pro: [getAnnonsEstimate(300), '300 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
   business: [getAnnonsEstimate(600), '600 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)'],
-  scale: [getAnnonsEstimate(800), '800 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)'],
+  scale: [getAnnonsEstimate(800), '800 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)']
 };
 
 type PlanKey = keyof typeof PRICING_PLANS;
@@ -45,7 +45,7 @@ const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
   'prod_TYcO3bE3Ec2Amv': 'business',
   'prod_TvOxn4SrvfgY12': 'scale',
   'prod_U8XXaqL2BD1ieM': 'business',
-  'prod_U8XYydmVeSHax8': 'scale',
+  'prod_U8XYydmVeSHax8': 'scale'
 };
 
 const TIER_ORDER: PlanKey[] = ['start', 'pro', 'business', 'scale'];
@@ -55,7 +55,7 @@ const PLAN_BG: Record<PlanKey, string> = {
   start: 'linear-gradient(135deg, #3B4F6B 0%, #2C3E5A 40%, #1E2A3D 100%)',
   pro: 'linear-gradient(135deg, #4A6080 0%, #3D5575 30%, #5A6E80 70%, #2E4055 100%)',
   business: 'linear-gradient(135deg, #A1581D 0%, #6B7B9A 50%, #1E2A3D 100%)',
-  scale: 'linear-gradient(135deg, #F5F3F0 0%, #E8E4DF 50%, #D8D3CC 100%)',
+  scale: 'linear-gradient(135deg, #F5F3F0 0%, #E8E4DF 50%, #D8D3CC 100%)'
 };
 
 const BRAND_GRADIENT = 'linear-gradient(135deg, #6B89C2 0%, #FFBA82 60%, #1a1a1a 100%)';
@@ -99,7 +99,7 @@ export const DemoPaywall = () => {
   const [coldTab, setColdTab] = useState<'subscription' | 'onetime'>('subscription');
   const [subscriberTab, setSubscriberTab] = useState<'upgrade' | 'topup'>('upgrade');
 
-  const isSubscriberLimit = paywallTrigger === 'subscriber-limit' || (isSubscribed && paywallTrigger === 'limit');
+  const isSubscriberLimit = paywallTrigger === 'subscriber-limit' || isSubscribed && paywallTrigger === 'limit';
   const isProfileBuy = paywallTrigger === 'profile-buy';
 
   const handleClose = () => {
@@ -125,7 +125,7 @@ export const DemoPaywall = () => {
         return;
       }
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId, mode },
+        body: { priceId, mode }
       });
       if (error) throw new Error(error.message);
       if (data?.url) window.location.href = data.url;
@@ -149,9 +149,9 @@ export const DemoPaywall = () => {
   const handleCalculate = () => {
     const totalCredits = carsPerMonth * imagesPerCar;
     let best: PlanKey = 'start';
-    if (totalCredits > 600) best = 'scale';
-    else if (totalCredits > 300) best = 'business';
-    else if (totalCredits > 100) best = 'pro';
+    if (totalCredits > 600) best = 'scale';else
+    if (totalCredits > 300) best = 'business';else
+    if (totalCredits > 100) best = 'pro';
     setRecommendedPlan(best);
     setExpandedPlan(best);
     setStep('plans');
@@ -162,39 +162,39 @@ export const DemoPaywall = () => {
   };
 
   // ── Contact link ──
-  const renderContactLink = () => (
-    <div className="text-center pt-3 pb-1">
+  const renderContactLink = () =>
+  <div className="text-center pt-3 pb-1">
       <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline">
         Kontakta oss för skräddarsydd lösning
       </a>
-    </div>
-  );
+    </div>;
+
 
   // ── Tab toggle ──
   const renderTabToggle = (
-    tabs: { key: string; label: string }[],
-    activeTab: string,
-    setTab: (t: any) => void
-  ) => (
-    <div className="flex bg-muted rounded-lg p-0.5">
-      {tabs.map(tab => (
-        <button
-          key={tab.key}
-          onClick={() => setTab(tab.key)}
-          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-            activeTab === tab.key
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
+  tabs: {key: string;label: string;}[],
+  activeTab: string,
+  setTab: (t: any) => void) =>
+
+  <div className="flex bg-muted rounded-lg p-0.5">
+      {tabs.map((tab) =>
+    <button
+      key={tab.key}
+      onClick={() => setTab(tab.key)}
+      className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+      activeTab === tab.key ?
+      'bg-background text-foreground shadow-sm' :
+      'text-muted-foreground hover:text-foreground'}`
+      }>
+      
           {tab.label}
         </button>
-      ))}
-    </div>
-  );
+    )}
+    </div>;
+
 
   // ── Render a plan card with unique background ──
-  const renderPlanCard = (tier: PlanKey, opts?: { isRecommended?: boolean }) => {
+  const renderPlanCard = (tier: PlanKey, opts?: {isRecommended?: boolean;}) => {
     const plan = PRICING_PLANS[tier];
     const isRecommended = opts?.isRecommended;
     const isLoading = loadingTier === tier;
@@ -206,8 +206,8 @@ export const DemoPaywall = () => {
 
     return (
       <div key={tier} className={`rounded-xl overflow-hidden transition-all ${
-        isRecommended ? 'ring-2 ring-white/20' : ''
-      }`}>
+      isRecommended ? 'ring-2 ring-white/20' : ''}`
+      }>
         <div className="relative overflow-hidden" style={{ background: PLAN_BG[tier] }}>
           {/* Shine overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
@@ -220,12 +220,12 @@ export const DemoPaywall = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className={`text-base font-bold ${textColor}`}>{plan.name}</h3>
-                    {isRecommended && (
-                      <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">Rekommenderad</span>
-                    )}
-                    {isPopular && !isRecommended && (
-                      <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">Populär</span>
-                    )}
+                    {isRecommended &&
+                    <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">Rekommenderad</span>
+                    }
+                    {isPopular && !isRecommended &&
+                    <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">Populär</span>
+                    }
                   </div>
                   <p className={`text-xs mt-0.5 ${subTextColor}`}>{plan.credits} bilder/månad</p>
                 </div>
@@ -240,63 +240,63 @@ export const DemoPaywall = () => {
               </div>
             </button>
 
-            {isExpanded && (
-              <div className="px-4 pb-4 pt-0 border-t border-white/10">
+            {isExpanded &&
+            <div className="px-4 pb-4 pt-0 border-t border-white/10">
                 <ul className="space-y-1.5 pt-3">
-                  {PLAN_FEATURES[tier]?.map((f, i) => (
-                    <li key={i} className={`text-xs flex items-start gap-2 ${isScaleTier ? 'text-muted-foreground' : 'text-white/75'}`}>
+                  {PLAN_FEATURES[tier]?.map((f, i) =>
+                <li key={i} className={`text-xs flex items-start gap-2 ${isScaleTier ? 'text-muted-foreground' : 'text-white/75'}`}>
                       <Check className={`w-3 h-3 mt-0.5 shrink-0 ${isScaleTier ? 'text-muted-foreground' : 'text-white/50'}`} />
                       {f}
                     </li>
-                  ))}
+                )}
                 </ul>
                 <Button
-                  onClick={() => handleSelectPlan(tier)}
-                  disabled={isLoading}
-                  className={`w-full mt-4 font-semibold transition-all ${
-                    isScaleTier
-                      ? 'bg-foreground text-background hover:bg-foreground/90'
-                      : 'bg-white/15 backdrop-blur-sm text-white border border-white/20 hover:bg-white/25 shadow-[0_0_20px_rgba(255,255,255,0.08)] hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]'
-                  }`}
-                  size="lg"
-                >
+                onClick={() => handleSelectPlan(tier)}
+                disabled={isLoading}
+                className={`w-full mt-4 font-semibold transition-all ${
+                isScaleTier ?
+                'bg-foreground text-background hover:bg-foreground/90' :
+                'bg-white/15 backdrop-blur-sm text-white border border-white/20 hover:bg-white/25 shadow-[0_0_20px_rgba(255,255,255,0.08)] hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]'}`
+                }
+                size="lg">
+                
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Välj paket'}
                 </Button>
               </div>
-            )}
+            }
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   };
 
   // ── Credit packs ──
-  const renderCreditPacks = () => (
-    <div className="space-y-2">
-      {(Object.entries(CREDIT_PACKS) as [CreditPackKey, typeof CREDIT_PACKS[CreditPackKey]][]).map(([key, pack]) => (
-        <button
-          key={key}
-          onClick={() => handleSelectCreditPack(key)}
-          disabled={loadingTier === key}
-          className="w-full p-4 rounded-xl border border-border/60 hover:border-foreground/20 transition-all flex items-center justify-between bg-card"
-        >
+  const renderCreditPacks = () =>
+  <div className="space-y-2">
+      {(Object.entries(CREDIT_PACKS) as [CreditPackKey, typeof CREDIT_PACKS[CreditPackKey]][]).map(([key, pack]) =>
+    <button
+      key={key}
+      onClick={() => handleSelectCreditPack(key)}
+      disabled={loadingTier === key}
+      className="w-full p-4 rounded-xl border border-border/60 hover:border-foreground/20 transition-all flex items-center justify-between bg-card">
+      
           <div className="text-left">
             <p className="font-semibold text-foreground">{pack.credits} credits</p>
             <p className="text-xs text-muted-foreground">{pack.estimate}</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="font-bold text-lg text-foreground">{pack.price} kr</span>
-            {loadingTier === key ? (
-              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-            ) : (
-              <span className="bg-foreground text-background text-xs font-semibold px-3 py-1.5 rounded-lg">Köp</span>
-            )}
+            {loadingTier === key ?
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> :
+
+        <span className="bg-foreground text-background text-xs font-semibold px-3 py-1.5 rounded-lg">Köp</span>
+        }
           </div>
         </button>
-      ))}
+    )}
       <p className="text-xs text-center text-muted-foreground pt-1">Credits förfaller inte — använd dem när du vill</p>
-    </div>
-  );
+    </div>;
+
 
   // ── Subscriber / Profile buy flow ──────────────────────────────
   if (isSubscriberLimit || isProfileBuy) {
@@ -319,36 +319,36 @@ export const DemoPaywall = () => {
             <div className="relative z-10">
               {/* Header */}
               <div className="px-6 pt-8 pb-3 text-center">
-                {!isProfileBuy && (
-                  <span className="inline-block text-xs font-medium text-foreground/70 bg-muted px-3 py-1 rounded-full mb-3">
+                {!isProfileBuy &&
+                <span className="inline-block text-xs font-medium text-foreground/70 bg-muted px-3 py-1 rounded-full mb-3">
                     Credits förbrukade
                   </span>
-                )}
+                }
                 <h2 className="text-xl md:text-2xl font-bold text-foreground">
                   Fyll på och fortsätt
                 </h2>
-                {!isProfileBuy && currentPlan && (
-                  <p className="text-sm text-muted-foreground mt-1">
+                {!isProfileBuy && currentPlan &&
+                <p className="text-sm text-muted-foreground mt-1">
                     {currentPlan.name} · {currentPlan.credits} bilder förbrukade
                   </p>
-                )}
+                }
               </div>
 
               {/* Tab toggle */}
-              {hasUpgrades && (
-                <div className="px-6 pt-2 pb-1">
+              {hasUpgrades &&
+              <div className="px-6 pt-2 pb-1">
                   {renderTabToggle(
-                    [{ key: 'topup', label: 'Fyll på' }, { key: 'upgrade', label: 'Uppgradera' }],
-                    subscriberTab,
-                    setSubscriberTab
-                  )}
+                  [{ key: 'topup', label: 'Fyll på' }, { key: 'upgrade', label: 'Uppgradera' }],
+                  subscriberTab,
+                  setSubscriberTab
+                )}
                 </div>
-              )}
+              }
 
               <div className="px-6 py-4 space-y-3">
                 {/* Upgrade tab */}
-                {subscriberTab === 'upgrade' && hasUpgrades && nextTier && nextPlan && (
-                  <div className="space-y-3">
+                {subscriberTab === 'upgrade' && hasUpgrades && nextTier && nextPlan &&
+                <div className="space-y-3">
                     {/* Featured upgrade card */}
                     <div className="relative rounded-xl overflow-hidden" style={{ background: PLAN_BG[nextTier] }}>
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
@@ -363,8 +363,8 @@ export const DemoPaywall = () => {
                           </div>
                         </div>
 
-                        {currentPlan && (
-                          <div className="flex gap-6 mt-3 border-t border-white/10 pt-3">
+                        {currentPlan &&
+                      <div className="flex gap-6 mt-3 border-t border-white/10 pt-3">
                             <div>
                               <p className="text-[10px] uppercase tracking-wider text-white/40">Fler bilder</p>
                               <p className="text-lg font-bold text-white">+{nextPlan.credits - currentPlan.credits}</p>
@@ -374,44 +374,44 @@ export const DemoPaywall = () => {
                               <p className="text-lg font-bold text-white">+{nextPlan.price - currentPlan.price} kr</p>
                             </div>
                           </div>
-                        )}
+                      }
 
                         <Button
-                          onClick={() => handleSelectPlan(nextTier)}
-                          disabled={loadingTier === nextTier}
-                          className="w-full mt-4 bg-white/15 backdrop-blur-sm text-white border border-white/20 hover:bg-white/25 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.08)] hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all"
-                          size="lg"
-                        >
+                        onClick={() => handleSelectPlan(nextTier)}
+                        disabled={loadingTier === nextTier}
+                        className="w-full mt-4 bg-white/15 backdrop-blur-sm text-white border border-white/20 hover:bg-white/25 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.08)] hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all"
+                        size="lg">
+                        
                           {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Uppgradera'}
                         </Button>
                       </div>
                     </div>
 
                     {/* Other upgrade tiers */}
-                    {upgradeTiers.slice(1).map(tier => renderPlanCard(tier))}
+                    {upgradeTiers.slice(1).map((tier) => renderPlanCard(tier))}
                   </div>
-                )}
+                }
 
                 {/* Credit packs tab or only option for highest tier */}
                 {(subscriberTab === 'topup' || !hasUpgrades) && renderCreditPacks()}
 
                 {/* Contact for highest tier */}
-                {onHighest && (
-                  <div className="text-center pt-2 text-sm text-muted-foreground">
+                {onHighest &&
+                <div className="text-center pt-2 text-sm text-muted-foreground">
                     <p>Behöver du fler credits regelbundet?</p>
                     <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                       Kontakta oss för företagsanpassad lösning
                     </a>
                   </div>
-                )}
+                }
 
                 {renderContactLink()}
               </div>
             </div>
           </div>
         </DialogContent>
-      </Dialog>
-    );
+      </Dialog>);
+
   }
 
   // ── Cold user wizard flow ─────────────────────────────────────
@@ -426,8 +426,8 @@ export const DemoPaywall = () => {
           <div className="relative z-10">
 
             {/* ── Step 1: Hero ── */}
-            {step === 'hero' && (
-              <div className="space-y-0">
+            {step === 'hero' &&
+            <div className="space-y-0">
                 {/* Hero image — single before/after composite */}
                 <div className="relative aspect-[16/10] overflow-hidden">
                   <img src={heroPay} alt="Före och efter" className="w-full h-full object-cover" />
@@ -466,22 +466,22 @@ export const DemoPaywall = () => {
                   {/* Gradient CTA button — lighter gradient */}
                   <div className="space-y-1.5">
                     <Button
-                      onClick={() => setStep('choose')}
-                      className="w-full font-semibold text-white shadow-[0_0_24px_rgba(255,255,255,0.08)] hover:shadow-[0_0_32px_rgba(255,255,255,0.15)] transition-all"
-                      style={{ background: BRAND_GRADIENT }}
-                      size="lg"
-                    >
+                    onClick={() => setStep('choose')}
+                    className="w-full font-semibold text-white shadow-[0_0_24px_rgba(255,255,255,0.08)] hover:shadow-[0_0_32px_rgba(255,255,255,0.15)] transition-all"
+                    style={{ background: BRAND_GRADIENT }}
+                    size="lg">
+                    
                       Fortsätt
                     </Button>
                     <p className="text-xs text-center text-muted-foreground">Ingen bindningstid</p>
                   </div>
                 </div>
               </div>
-            )}
+            }
 
             {/* ── Step 2: Choose — quiz or see all ── */}
-            {step === 'choose' && (
-              <div>
+            {step === 'choose' &&
+            <div>
                 {/* White card area */}
                 <div className="px-6 pt-10 pb-6">
                   <h2 className="text-xl font-bold text-foreground text-center mb-5">Hur vill du välja?</h2>
@@ -489,18 +489,18 @@ export const DemoPaywall = () => {
                   <div className="grid grid-cols-2 gap-3">
                     {/* See all option */}
                     <button
-                      onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
-                      className="group relative bg-muted hover:bg-muted/80 p-5 text-center transition-all flex flex-col items-center justify-center rounded-xl"
-                    >
+                    onClick={() => {setRecommendedPlan(null);setStep('plans');}}
+                    className="group relative bg-muted hover:bg-muted/80 p-5 text-center transition-all flex flex-col items-center justify-center rounded-xl">
+                    
                       <h3 className="font-semibold text-foreground text-sm">Se alla paket direkt</h3>
                     </button>
 
                     {/* Quiz option — highlighted with gradient nudge + quiz badge */}
                     <button
-                      onClick={() => setStep('quiz')}
-                      className="group relative p-5 text-center transition-all flex flex-col items-center justify-center overflow-hidden rounded-xl"
-                      style={{ background: 'linear-gradient(135deg, hsl(220, 15%, 92%) 0%, hsl(25, 20%, 92%) 100%)' }}
-                    >
+                    onClick={() => setStep('quiz')}
+                    className="group relative p-5 text-center transition-all flex flex-col items-center justify-center overflow-hidden rounded-xl"
+                    style={{ background: 'linear-gradient(135deg, hsl(220, 15%, 92%) 0%, hsl(25, 20%, 92%) 100%)' }}>
+                    
                       <span className="absolute top-2 right-2 text-[9px] uppercase tracking-widest font-bold text-white bg-primary px-2 py-0.5 rounded-full">Quiz</span>
                       <h3 className="font-semibold text-foreground text-sm">Beräkna min plan</h3>
                     </button>
@@ -516,20 +516,20 @@ export const DemoPaywall = () => {
                       " Förr lade vi timmar i månaden på bilderna/annonsering. Nu blir det bra direkt "
                     </p>
                     <div className="flex justify-center gap-0.5 mt-3">
-                      {[1,2,3,4,5].map(i => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-white/60 text-white/60" />
-                      ))}
+                      {[1, 2, 3, 4, 5].map((i) =>
+                    <Star key={i} className="w-3.5 h-3.5 fill-white/60 text-white/60" />
+                    )}
                     </div>
                     <p className="text-sm font-semibold text-white/80 mt-2">– Bilförmedling Skaraborg</p>
-                    <img src={autopicLogo} alt="AutoPic" className="h-4 mx-auto mt-2 opacity-50 brightness-0 invert" />
+                    
                   </div>
                 </div>
               </div>
-            )}
+            }
 
             {/* ── Step 3a: Quiz with sliders ── */}
-            {step === 'quiz' && (
-              <div className="px-6 pt-14 pb-8 space-y-8">
+            {step === 'quiz' &&
+            <div className="px-6 pt-14 pb-8 space-y-8">
                 <div className="space-y-8">
                   {/* Cars per month slider */}
                   <div>
@@ -538,13 +538,13 @@ export const DemoPaywall = () => {
                       <span className="text-2xl font-bold text-foreground tabular-nums">{carsPerMonth}</span>
                     </div>
                     <Slider
-                      value={[carsPerMonth]}
-                      onValueChange={([v]) => setCarsPerMonth(v)}
-                      min={1}
-                      max={100}
-                      step={1}
-                      className="w-full"
-                    />
+                    value={[carsPerMonth]}
+                    onValueChange={([v]) => setCarsPerMonth(v)}
+                    min={1}
+                    max={100}
+                    step={1}
+                    className="w-full" />
+                  
                     <div className="flex justify-between text-[11px] text-muted-foreground mt-1.5">
                       <span>1</span>
                       <span>25</span>
@@ -560,13 +560,13 @@ export const DemoPaywall = () => {
                       <span className="text-2xl font-bold text-foreground tabular-nums">{imagesPerCar}</span>
                     </div>
                     <Slider
-                      value={[imagesPerCar]}
-                      onValueChange={([v]) => setImagesPerCar(v)}
-                      min={3}
-                      max={30}
-                      step={1}
-                      className="w-full"
-                    />
+                    value={[imagesPerCar]}
+                    onValueChange={([v]) => setImagesPerCar(v)}
+                    min={3}
+                    max={30}
+                    step={1}
+                    className="w-full" />
+                  
                     <div className="flex justify-between text-[11px] text-muted-foreground mt-1.5">
                       <span>3</span>
                       <span>10</span>
@@ -585,30 +585,30 @@ export const DemoPaywall = () => {
                 <div className="space-y-3">
                   {/* Dark/neutral button */}
                   <Button
-                    onClick={handleCalculate}
-                    className="w-full font-semibold bg-foreground text-background hover:bg-foreground/90 transition-all"
-                    size="lg"
-                  >
+                  onClick={handleCalculate}
+                  className="w-full font-semibold bg-foreground text-background hover:bg-foreground/90 transition-all"
+                  size="lg">
+                  
                     Beräkna
                   </Button>
                   <button
-                    onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
-                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  onClick={() => {setRecommendedPlan(null);setStep('plans');}}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  
                     Se alla paket direkt
                   </button>
                 </div>
               </div>
-            )}
+            }
 
             {/* ── Step 3b: Plans with toggle ── */}
-            {step === 'plans' && (
-              <div className="px-6 pt-10 pb-6 space-y-4">
+            {step === 'plans' &&
+            <div className="px-6 pt-10 pb-6 space-y-4">
                 <h2 className="text-xl font-bold text-foreground text-center">Välj din plan</h2>
 
                 {/* If calculation exceeds Scale */}
-                {recommendedPlan && carsPerMonth * imagesPerCar > 800 && (
-                  <div className="rounded-xl border border-border/60 bg-muted/30 p-5 text-center space-y-3">
+                {recommendedPlan && carsPerMonth * imagesPerCar > 800 &&
+              <div className="rounded-xl border border-border/60 bg-muted/30 p-5 text-center space-y-3">
                     <h3 className="text-lg font-bold text-foreground">Skräddarsytt paket</h3>
                     <p className="text-sm text-muted-foreground">
                       Ditt behov överstiger standardpaketen. Vi sätter ihop ett erbjudande.
@@ -619,33 +619,33 @@ export const DemoPaywall = () => {
                       </Button>
                     </a>
                   </div>
-                )}
+              }
 
                 {/* Toggle */}
                 <div>
                   {renderTabToggle(
-                    [{ key: 'subscription', label: 'Abonnemang' }, { key: 'onetime', label: 'Engångsköp' }],
-                    coldTab,
-                    setColdTab
-                  )}
+                  [{ key: 'subscription', label: 'Abonnemang' }, { key: 'onetime', label: 'Engångsköp' }],
+                  coldTab,
+                  setColdTab
+                )}
                 </div>
 
                 {/* Subscription plans */}
-                {coldTab === 'subscription' && (
-                  <div className="space-y-3">
+                {coldTab === 'subscription' &&
+              <div className="space-y-3">
                     {TIER_ORDER.map((tier) => renderPlanCard(tier, { isRecommended: tier === recommendedPlan }))}
                   </div>
-                )}
+              }
 
                 {/* One-time credit packs */}
                 {coldTab === 'onetime' && renderCreditPacks()}
 
                 {renderContactLink()}
               </div>
-            )}
+            }
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>);
+
 };
