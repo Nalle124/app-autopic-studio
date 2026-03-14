@@ -3419,14 +3419,12 @@ export const CreateSceneModal = ({
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="space-y-2 max-w-[85%]">
-                      <div
-                    className="rounded-2xl rounded-tl-md overflow-hidden border border-border/30 animate-scale-in cursor-pointer relative group/img max-w-[320px]"
-                    onClick={() => setPreviewImage({ imageUrl: msg.imageUrl, name: msg.suggestedName })}>
-
-                        <img
-                      src={msg.imageUrl}
-                      alt={msg.suggestedName}
-                      className="w-full aspect-[3/2] object-cover" />
+                      <ImageWithSkeleton
+                        src={msg.imageUrl}
+                        alt={msg.suggestedName}
+                        className="rounded-2xl rounded-tl-md overflow-hidden border border-border/30 animate-scale-in cursor-pointer relative group/img max-w-[320px]"
+                        onClick={() => setPreviewImage({ imageUrl: msg.imageUrl, name: msg.suggestedName })}
+                      >
 
                         <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors flex items-center justify-center pointer-events-none">
                           <span className="text-white text-xs font-medium opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm">
