@@ -125,13 +125,23 @@ const TryV2Content = () => {
         <a href="https://autopic.studio" className="hover:opacity-80 transition-opacity">
           <img src={autopicLogoDark} alt="AutoPic" className="h-[26px] sm:h-8 w-auto" />
         </a>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="text-[10px] sm:text-xs text-muted-foreground bg-muted px-1.5 sm:px-2 py-1 rounded-full whitespace-nowrap">
             {availableCredits} gratis
           </span>
-          <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="gap-1.5">
-            <LogIn className="w-3.5 h-3.5" />
-            Logga in
+          <Button
+            size="sm"
+            onClick={() => triggerPaywall('signup')}
+            className="text-xs px-2.5 sm:px-3 h-8 font-semibold text-white shadow-[0_0_16px_rgba(255,255,255,0.06)]"
+            style={{
+              background: 'linear-gradient(135deg, hsl(25, 50%, 45%) 0%, hsl(220, 28%, 32%) 60%, hsl(220, 25%, 14%) 100%)',
+            }}
+          >
+            Skaffa Pro
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="text-xs px-2.5 sm:px-3 h-8 gap-1">
+            <LogIn className="w-3 h-3" />
+            <span className="hidden sm:inline">Logga in</span>
           </Button>
         </div>
       </div>
