@@ -121,26 +121,60 @@ const TryV2Content = () => {
     triggerPaywall('limit');
   }, [triggerPaywall]);
 
+  const handleTabChange = (value: string) => {
+    if (value === 'new') navigate('/');
+    else if (value === 'ai-studio') navigate('/?tab=ai-studio');
+    else if (value === 'history') navigate('/?tab=history');
+    else if (value === 'pro') triggerPaywall('signup');
+  };
+
   const renderHeader = () => (
     <header className="border-b border-border/30 bg-white/90 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)]">
       <div className="container mx-auto px-4 py-2 sm:py-3 flex items-center justify-between">
         <a href="https://autopic.studio" className="hover:opacity-80 transition-opacity">
           <img src={autopicLogoDark} alt="AutoPic" className="h-[26px] sm:h-8 w-auto" />
         </a>
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <Select value="menu" onValueChange={(v) => {
-            if (v === 'login') navigate('/auth');
-            else if (v === 'pro') triggerPaywall('signup');
-          }}>
-            <SelectTrigger className="w-[110px] bg-background/80 backdrop-blur-sm h-9 text-sm">
-              <SelectValue placeholder="Meny" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover z-[60]">
-              <SelectItem value="menu" className="hidden">Meny</SelectItem>
-              <SelectItem value="pro">Skaffa Pro</SelectItem>
-              <SelectItem value="login">Logga in</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          {!isMobile ? (
+            <Tabs value="v2" onValueChange={handleTabChange} className="w-auto">
+              <TabsList className="bg-background/80 backdrop-blur-sm">
+                <TabsTrigger value="new" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Projekt
+                </TabsTrigger>
+                <TabsTrigger value="ai-studio" className="gap-2">
+                  <img src="/favicon.png" alt="" className="w-5 h-5 object-contain" />
+                  AI Studio
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-2">
+                  <History className="w-4 h-4" />
+                  Galleri
+                </TabsTrigger>
+                <TabsTrigger value="pro" className="gap-2 relative">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] bg-clip-text text-transparent font-semibold">Skaffa Pro</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : (
+            <Select value="v2" onValueChange={handleTabChange}>
+              <SelectTrigger className="w-[120px] bg-background/80 backdrop-blur-sm h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-[60]">
+                <SelectItem value="v2">Projekt</SelectItem>
+                <SelectItem value="new">Projekt (V1)</SelectItem>
+                <SelectItem value="ai-studio">AI Studio</SelectItem>
+                <SelectItem value="history">Galleri</SelectItem>
+                <SelectItem value="pro">
+                  <span className="font-semibold">✨ Skaffa Pro</span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/profil')} title="Profil">
+            <User className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </header>
