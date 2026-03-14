@@ -66,8 +66,11 @@ const ProfileContent = () => {
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleBuyCredits = () => {
-    // Use subscriber-limit trigger so they see upgrade + topup tabs
-    triggerPaywall('subscriber-limit');
+    if (isSubscribed) {
+      triggerPaywall('subscriber-limit');
+    } else {
+      triggerPaywall('profile-buy');
+    }
   };
 
   const handleManageSubscription = async () => {
