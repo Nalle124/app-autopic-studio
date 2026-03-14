@@ -438,7 +438,7 @@ export const DemoPaywall = () => {
                   </h2>
 
                   {/* 3 Bullet points */}
-                  <ul className="space-y-2.5 text-sm text-muted-foreground">
+                  <ul className="space-y-2.5 text-base text-muted-foreground">
                     <li className="flex items-center gap-2.5">
                       <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 text-foreground/60" />
