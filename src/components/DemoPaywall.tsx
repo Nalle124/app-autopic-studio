@@ -267,28 +267,28 @@ export const DemoPaywall = () => {
 
   // ── Credit packs ──
   const renderCreditPacks = () =>
-    <div className="space-y-2">
+    <div className="space-y-3">
       {(Object.entries(CREDIT_PACKS) as [CreditPackKey, typeof CREDIT_PACKS[CreditPackKey]][]).map(([key, pack]) =>
         <button
           key={key}
           onClick={() => handleSelectCreditPack(key)}
           disabled={loadingTier === key}
-          className="w-full p-4 rounded-xl border border-border/60 hover:border-foreground/20 transition-all flex items-center justify-between bg-card"
+          className="w-full p-5 py-6 rounded-xl border border-border/60 hover:border-foreground/20 transition-all flex items-center justify-between bg-card"
         >
           <div className="text-left">
-            <p className="font-semibold text-foreground">{pack.credits} credits</p>
-            <p className="text-xs text-muted-foreground">{pack.estimate}</p>
+            <p className="font-bold text-lg text-foreground">{pack.credits} credits</p>
+            <p className="text-sm text-muted-foreground">{pack.estimate}</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="font-bold text-lg text-foreground">{pack.price} kr</span>
+            <span className="font-bold text-2xl text-foreground">{pack.price} <span className="text-sm font-normal text-muted-foreground">kr</span></span>
             {loadingTier === key
               ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              : <span className="bg-foreground text-background text-xs font-semibold px-3 py-1.5 rounded-lg">Köp</span>
+              : <span className="bg-foreground text-background text-sm font-semibold px-4 py-2 rounded-lg">Köp</span>
             }
           </div>
         </button>
       )}
-      <p className="text-xs text-center text-muted-foreground pt-1">Credits förfaller inte — använd dem när du vill</p>
+      <p className="text-sm text-center text-muted-foreground pt-1">Credits förfaller inte — använd dem när du vill</p>
     </div>;
 
   // ── Subscriber / Profile buy flow ──────────────────────────────
