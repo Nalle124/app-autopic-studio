@@ -599,7 +599,7 @@ export const DemoPaywall = () => {
             {/* ── Step 3b: Plans with toggle ── */}
             {step === 'plans' &&
               <div className="px-6 pt-10 pb-6 space-y-4">
-                <h2 className="text-xl font-bold text-foreground text-center">Välj din plan</h2>
+                <h2 className="text-2xl font-bold text-foreground text-center">Välj din plan</h2>
 
                 {/* If calculation exceeds Scale */}
                 {recommendedPlan && carsPerMonth * imagesPerCar > 800 &&
