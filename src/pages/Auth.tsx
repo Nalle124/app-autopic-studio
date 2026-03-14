@@ -361,10 +361,9 @@ const Auth = () => {
             
             <Button 
               onClick={handleVerifyCode}
-              className="w-full"
+              className={`w-full ${verifying ? 'btn-processing' : ''}`}
               disabled={verifying || verificationCode.length !== 4}
             >
-              {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Verifiera & skapa konto
             </Button>
             
