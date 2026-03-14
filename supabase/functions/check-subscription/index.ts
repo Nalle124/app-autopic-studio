@@ -217,15 +217,9 @@ serve(async (req) => {
             logStep('Preserving recent purchase on renewal', { purchaseAmount: recentPurchase.amount });
           }
 
-          await supabaseClient
-            .from('user_credits')
-            .upsert({
-              user_id: user.id,
-              credits: newBalance,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: 'user_id' });
-
-          await supabaseClient
+          // Use INSERT with conflict handling to prevent race-condition duplicates
+          // The unique index idx_credit_transactions_renewal_unique ensures only one renewal per period
+          const { error: insertError } = await supabaseClient
             .from('credit_transactions')
             .insert({
               user_id: user.id,
@@ -235,7 +229,21 @@ serve(async (req) => {
               description: periodKey,
             });
 
-          logStep('Monthly credits reset', { creditsPerMonth, newBalance, periodKey });
+          if (insertError) {
+            // Unique constraint violation = another request already handled this renewal
+            logStep('Skipping reset - concurrent renewal already handled', { periodKey, error: insertError.message });
+          } else {
+            // Only update balance if we successfully inserted the renewal record
+            await supabaseClient
+              .from('user_credits')
+              .upsert({
+                user_id: user.id,
+                credits: newBalance,
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'user_id' });
+
+            logStep('Monthly credits reset', { creditsPerMonth, newBalance, periodKey });
+          }
         } else if (existingReset) {
           logStep('Skipping reset - renewal already exists for this period', { periodKey });
         } else if (isNewSubscription) {
