@@ -516,7 +516,7 @@ export const DemoPaywall = () => {
                         <Star key={i} className="w-3.5 h-3.5 fill-white/60 text-white/60" />
                       )}
                     </div>
-                    <p className="text-sm font-semibold text-white/80 mt-2">– Bilförmedling Skaraborg</p>
+                    <p className="text-base font-semibold text-white/80 mt-2">– Bilförmedling Skaraborg</p>
                   </div>
                 </div>
               </div>
