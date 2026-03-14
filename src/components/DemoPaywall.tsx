@@ -209,14 +209,14 @@ export const DemoPaywall = () => {
           {/* Shine overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
           {/* Noise */}
-          <div className="absolute inset-0 opacity-[0.06] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
+          <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
           <div className="relative z-10">
             {/* Header row — clickable */}
-            <button onClick={() => togglePlanExpand(tier)} className="w-full text-left p-4">
+            <button onClick={() => togglePlanExpand(tier)} className="w-full text-left p-5 py-6">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className={`text-base font-bold ${textColor}`}>{plan.name}</h3>
+                    <h3 className={`text-lg font-bold ${textColor}`}>{plan.name}</h3>
                     {isRecommended &&
                       <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">Rekommenderad</span>
                     }
@@ -224,37 +224,39 @@ export const DemoPaywall = () => {
                       <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">Populär</span>
                     }
                   </div>
-                  <p className={`text-xs mt-0.5 ${subTextColor}`}>{plan.credits} bilder/månad</p>
+                  <p className={`text-sm mt-0.5 ${subTextColor}`}>{plan.credits} bilder/månad</p>
                 </div>
                 {/* Price + dropdown arrow on the right */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <div className="text-right">
-                    <span className={`text-xl font-bold ${textColor}`}>{plan.price}</span>
-                    <span className={`text-xs ${subTextColor}`}> kr/mån</span>
+                    <span className={`text-2xl font-bold ${textColor}`}>{plan.price}</span>
+                    <span className={`text-sm ${subTextColor}`}> kr/mån</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform text-white/40 ${isExpanded ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-5 h-5 transition-transform text-white/40 ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
               </div>
             </button>
 
             {isExpanded &&
-              <div className="px-4 pb-4 pt-0 border-t border-white/10">
-                <ul className="space-y-1.5 pt-3">
+              <div className="px-5 pb-5 pt-0 border-t border-white/10">
+                <ul className="space-y-2 pt-4">
                   {PLAN_FEATURES[tier]?.map((f, i) =>
-                    <li key={i} className={`text-sm flex items-start gap-2 text-white/80`}>
-                      <Check className={`w-3.5 h-3.5 mt-0.5 shrink-0 text-white/60`} />
+                    <li key={i} className={`text-[15px] flex items-start gap-2.5 text-white/85`}>
+                      <Check className={`w-4 h-4 mt-0.5 shrink-0 text-white/60`} />
                       {f}
                     </li>
                   )}
                 </ul>
-                <Button
-                  onClick={() => handleSelectPlan(tier)}
-                  disabled={isLoading}
-                  className="w-3/4 mx-auto mt-4 font-semibold transition-all bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                  size="default"
-                >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isSubscriber ? 'Uppgradera' : 'Välj paket')}
-                </Button>
+                <div className="flex justify-center mt-5">
+                  <Button
+                    onClick={() => handleSelectPlan(tier)}
+                    disabled={isLoading}
+                    className="w-2/3 font-semibold transition-all bg-white/10 backdrop-blur-sm text-white border-2 border-white/60 hover:bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.12)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]"
+                    size="default"
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isSubscriber ? 'Uppgradera' : 'Välj paket')}
+                  </Button>
+                </div>
               </div>
             }
           </div>
