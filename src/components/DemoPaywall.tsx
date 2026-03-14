@@ -480,7 +480,7 @@ export const DemoPaywall = () => {
               <div>
                 {/* White card area */}
                 <div className="px-6 pt-10 pb-6">
-                  <h2 className="text-xl font-bold text-foreground text-center mb-5">Hur vill du välja?</h2>
+                  <h2 className="text-2xl font-bold text-foreground text-center mb-5">Hur vill du välja?</h2>
 
                   <div className="grid grid-cols-2 gap-3">
                     {/* See all option */}
