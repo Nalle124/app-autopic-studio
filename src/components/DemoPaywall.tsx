@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
-import { Loader2, ChevronDown, X, Check, ArrowLeft, Calculator, LayoutGrid, Star } from 'lucide-react';
+import { Loader2, ChevronDown, X, Check, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Slider } from '@/components/ui/slider';
-import bmwAfter from '@/assets/paywall/bmw-after.jpg';
-import bmwBefore from '@/assets/paywall/bmw-before.jpg';
+import heroPay from '@/assets/paywall/hero-pay.png';
 import autopicLogo from '@/assets/autopic-logo-dark.png';
 
 // ── Plan data ──────────────────────────────────────────────────────
@@ -51,13 +50,17 @@ const PRODUCT_TO_PLAN: Record<string, PlanKey> = {
 
 const TIER_ORDER: PlanKey[] = ['start', 'pro', 'business', 'scale'];
 
-// Gradient backgrounds per plan tier
-const PLAN_GRADIENT: Record<PlanKey, string> = {
-  start: 'bg-gradient-to-br from-[hsl(220,20%,20%)] via-[hsl(218,18%,16%)] to-[hsl(220,14%,13%)]',
-  pro: 'bg-gradient-to-br from-[hsl(220,28%,26%)] via-[hsl(218,22%,20%)] to-[hsl(25,35%,20%)]',
-  business: 'bg-gradient-to-br from-[hsl(25,30%,22%)] via-[hsl(220,20%,18%)] to-[hsl(220,26%,16%)]',
-  scale: 'bg-gradient-to-br from-[hsl(215,22%,18%)] via-[hsl(220,18%,14%)] to-[hsl(25,25%,16%)]',
+// Unique gradient per tier matching reference screenshots
+const PLAN_BG: Record<PlanKey, string> = {
+  start: 'linear-gradient(135deg, #3B4F6B 0%, #2C3E5A 40%, #1E2A3D 100%)',
+  pro: 'linear-gradient(135deg, #4A6080 0%, #3D5575 30%, #5A6E80 70%, #2E4055 100%)',
+  business: 'linear-gradient(135deg, #A1581D 0%, #6B7B9A 50%, #1E2A3D 100%)',
+  scale: 'linear-gradient(135deg, #F5F3F0 0%, #E8E4DF 50%, #D8D3CC 100%)',
 };
+
+const BRAND_GRADIENT = 'linear-gradient(135deg, #6B89C2 0%, #FFBA82 60%, #1a1a1a 100%)';
+const SOCIAL_GRADIENT = 'linear-gradient(160deg, #3B4F6B 0%, #1E2A3D 50%, #A1581D 100%)';
+const NOISE_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
 const getNextTier = (currentProductId: string | null): PlanKey | null => {
   if (!currentProductId || currentProductId === 'admin_access') return 'start';
@@ -167,17 +170,6 @@ export const DemoPaywall = () => {
     </div>
   );
 
-  // ── Back button ──
-  const renderBackButton = (target: 'hero' | 'choose' | 'quiz' | 'plans') => (
-    <button
-      onClick={() => setStep(target)}
-      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors pt-1"
-    >
-      <ArrowLeft className="w-3.5 h-3.5" />
-      Tillbaka
-    </button>
-  );
-
   // ── Tab toggle ──
   const renderTabToggle = (
     tabs: { key: string; label: string }[],
@@ -201,46 +193,50 @@ export const DemoPaywall = () => {
     </div>
   );
 
-  // ── Render a plan card ──
+  // ── Render a plan card with unique background ──
   const renderPlanCard = (tier: PlanKey, opts?: { isRecommended?: boolean }) => {
     const plan = PRICING_PLANS[tier];
     const isRecommended = opts?.isRecommended;
     const isLoading = loadingTier === tier;
     const isPopular = 'popular' in plan && plan.popular;
     const isExpanded = expandedPlan === tier;
-    const gradientClass = PLAN_GRADIENT[tier];
+    const isScaleTier = tier === 'scale';
+    const textColor = isScaleTier ? 'text-foreground' : 'text-white';
+    const subTextColor = isScaleTier ? 'text-muted-foreground' : 'text-white/50';
 
     return (
       <div key={tier} className={`rounded-xl overflow-hidden transition-all ${
         isRecommended ? 'ring-2 ring-white/20' : ''
       }`}>
-        <div className={`relative overflow-hidden text-white ${gradientClass}`}>
-          {/* Shine */}
+        <div className="relative overflow-hidden" style={{ background: PLAN_BG[tier] }}>
+          {/* Shine overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
+          {/* Noise */}
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
           <div className="relative z-10">
-            {/* Header - always visible, clickable to expand */}
+            {/* Header row — clickable */}
             <button onClick={() => togglePlanExpand(tier)} className="w-full text-left p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white">{plan.name}</h3>
-                  {isRecommended && (
-                    <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">Rekommenderad</span>
-                  )}
-                  {isPopular && !isRecommended && (
-                    <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">Populär</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    <span className="text-xl font-bold text-white">{plan.price}</span>
-                    <span className="text-xs text-white/50"> kr/mån</span>
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className={`text-base font-bold ${textColor}`}>{plan.name}</h3>
+                    {isRecommended && (
+                      <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">Rekommenderad</span>
+                    )}
+                    {isPopular && !isRecommended && (
+                      <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">Populär</span>
+                    )}
                   </div>
+                  <p className={`text-xs mt-0.5 ${subTextColor}`}>{plan.credits} bilder/månad</p>
                 </div>
-              </div>
-              <p className="text-xs mt-0.5 text-white/50">{plan.credits} bilder/månad</p>
-              {/* Centered dropdown arrow */}
-              <div className="flex justify-center mt-2">
-                <ChevronDown className={`w-4 h-4 transition-transform text-white/40 ${isExpanded ? 'rotate-180' : ''}`} />
+                {/* Price + dropdown arrow on the right */}
+                <div className="flex items-center gap-1.5">
+                  <div className="text-right">
+                    <span className={`text-xl font-bold ${textColor}`}>{plan.price}</span>
+                    <span className={`text-xs ${subTextColor}`}> kr/mån</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isScaleTier ? 'text-muted-foreground' : 'text-white/40'} ${isExpanded ? 'rotate-180' : ''}`} />
+                </div>
               </div>
             </button>
 
@@ -248,8 +244,8 @@ export const DemoPaywall = () => {
               <div className="px-4 pb-4 pt-0 border-t border-white/10">
                 <ul className="space-y-1.5 pt-3">
                   {PLAN_FEATURES[tier]?.map((f, i) => (
-                    <li key={i} className="text-xs flex items-start gap-2 text-white/75">
-                      <Check className="w-3 h-3 mt-0.5 shrink-0 text-white/50" />
+                    <li key={i} className={`text-xs flex items-start gap-2 ${isScaleTier ? 'text-muted-foreground' : 'text-white/75'}`}>
+                      <Check className={`w-3 h-3 mt-0.5 shrink-0 ${isScaleTier ? 'text-muted-foreground' : 'text-white/50'}`} />
                       {f}
                     </li>
                   ))}
@@ -257,7 +253,11 @@ export const DemoPaywall = () => {
                 <Button
                   onClick={() => handleSelectPlan(tier)}
                   disabled={isLoading}
-                  className="w-full mt-4 font-semibold bg-white/15 backdrop-blur-sm text-white border border-white/20 hover:bg-white/25 shadow-[0_0_20px_rgba(255,255,255,0.08)] hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all"
+                  className={`w-full mt-4 font-semibold transition-all ${
+                    isScaleTier
+                      ? 'bg-foreground text-background hover:bg-foreground/90'
+                      : 'bg-white/15 backdrop-blur-sm text-white border border-white/20 hover:bg-white/25 shadow-[0_0_20px_rgba(255,255,255,0.08)] hover:shadow-[0_0_30px_rgba(255,255,255,0.15)]'
+                  }`}
                   size="lg"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Välj paket'}
@@ -350,8 +350,9 @@ export const DemoPaywall = () => {
                 {subscriberTab === 'upgrade' && hasUpgrades && nextTier && nextPlan && (
                   <div className="space-y-3">
                     {/* Featured upgrade card */}
-                    <div className={`relative rounded-xl overflow-hidden ${PLAN_GRADIENT[nextTier]}`}>
+                    <div className="relative rounded-xl overflow-hidden" style={{ background: PLAN_BG[nextTier] }}>
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
                       <div className="relative z-10 p-5">
                         <p className="text-[10px] uppercase tracking-widest text-white/50 font-medium mb-1">Uppgradera till</p>
                         <div className="flex items-start justify-between">
@@ -427,15 +428,9 @@ export const DemoPaywall = () => {
             {/* ── Step 1: Hero ── */}
             {step === 'hero' && (
               <div className="space-y-0">
-                {/* Before/After split — single image view */}
+                {/* Hero image — single before/after composite */}
                 <div className="relative aspect-[16/10] overflow-hidden">
-                  <div className="absolute inset-0 w-1/2 overflow-hidden">
-                    <img src={bmwBefore} alt="Före" className="w-[200%] h-full object-cover object-center" />
-                  </div>
-                  <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 z-10 w-px bg-white/50" />
-                  <div className="absolute top-0 right-0 w-1/2 h-full overflow-hidden">
-                    <img src={bmwAfter} alt="Efter" className="w-[200%] h-full object-cover object-center" style={{ objectPosition: 'left center' }} />
-                  </div>
+                  <img src={heroPay} alt="Före och efter" className="w-full h-full object-cover" />
                   <div className="absolute bottom-3 left-4 text-[10px] font-medium text-white/80 bg-black/50 px-2 py-0.5 rounded">Före</div>
                   <div className="absolute bottom-3 right-4 text-[10px] font-medium text-white/80 bg-black/50 px-2 py-0.5 rounded">Efter</div>
                   <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
@@ -468,77 +463,54 @@ export const DemoPaywall = () => {
                     </li>
                   </ul>
 
-                  {/* Gradient CTA button */}
-                  <Button
-                    onClick={() => setStep('choose')}
-                    className="w-full font-semibold text-white shadow-[0_0_24px_rgba(255,255,255,0.08)] hover:shadow-[0_0_32px_rgba(255,255,255,0.15)] transition-all"
-                    style={{
-                      background: 'linear-gradient(135deg, hsl(25, 50%, 45%) 0%, hsl(220, 28%, 32%) 60%, hsl(220, 25%, 14%) 100%)',
-                    }}
-                    size="lg"
-                  >
-                    Fortsätt
-                  </Button>
-                  <p className="text-xs text-center text-muted-foreground">Ingen bindningstid</p>
+                  {/* Gradient CTA button — lighter gradient */}
+                  <div className="space-y-1.5">
+                    <Button
+                      onClick={() => setStep('choose')}
+                      className="w-full font-semibold text-white shadow-[0_0_24px_rgba(255,255,255,0.08)] hover:shadow-[0_0_32px_rgba(255,255,255,0.15)] transition-all"
+                      style={{ background: BRAND_GRADIENT }}
+                      size="lg"
+                    >
+                      Fortsätt
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">Ingen bindningstid</p>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* ── Step 2: Choose — quiz or see all ── */}
             {step === 'choose' && (
-              <div className="px-6 pt-10 pb-0 space-y-5">
-                <div className="text-center">
-                  <h2 className="text-xl font-bold text-foreground">Hur vill du välja?</h2>
-                </div>
+              <div>
+                {/* White card area */}
+                <div className="px-6 pt-10 pb-6">
+                  <h2 className="text-xl font-bold text-foreground text-center mb-5">Hur vill du välja?</h2>
 
-                <div className="grid grid-cols-5 gap-3 items-center">
-                  {/* See all option */}
-                  <button
-                    onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
-                    className="col-span-2 group relative rounded-xl border border-border/60 hover:border-foreground/20 bg-card p-4 text-center transition-all hover:shadow-md h-full flex flex-col items-center justify-center"
-                  >
-                    <div className="relative z-10">
-                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center mb-2 mx-auto">
-                        <LayoutGrid className="w-4 h-4 text-foreground/70" />
-                      </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* See all option */}
+                    <button
+                      onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
+                      className="group relative bg-muted hover:bg-muted/80 p-5 text-center transition-all flex flex-col items-center justify-center rounded-xl"
+                    >
                       <h3 className="font-semibold text-foreground text-sm">Se alla paket direkt</h3>
-                    </div>
-                  </button>
+                    </button>
 
-                  <span className="text-xs text-muted-foreground text-center">eller</span>
-
-                  {/* Quiz option — highlighted / nudged */}
-                  <button
-                    onClick={() => setStep('quiz')}
-                    className="col-span-2 group relative rounded-xl border border-primary/30 bg-card p-4 text-center transition-all hover:shadow-md h-full flex flex-col items-center justify-center overflow-hidden"
-                  >
-                    {/* Subtle gradient nudge */}
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[hsl(220,25%,94%)] to-[hsl(25,30%,94%)] dark:from-[hsl(220,20%,14%)] dark:to-[hsl(25,25%,16%)] opacity-60" />
-                    <div className="relative z-10">
-                      <span className="inline-block text-[9px] uppercase tracking-widest font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full mb-2">Quiz</span>
-                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center mb-2 mx-auto">
-                        <Calculator className="w-4 h-4 text-foreground/70" />
-                      </div>
+                    {/* Quiz option — highlighted with gradient nudge + quiz badge */}
+                    <button
+                      onClick={() => setStep('quiz')}
+                      className="group relative p-5 text-center transition-all flex flex-col items-center justify-center overflow-hidden rounded-xl"
+                      style={{ background: 'linear-gradient(135deg, hsl(220, 15%, 92%) 0%, hsl(25, 20%, 92%) 100%)' }}
+                    >
+                      <span className="absolute top-2 right-2 text-[9px] uppercase tracking-widest font-bold text-white bg-primary px-2 py-0.5 rounded-full">Quiz</span>
                       <h3 className="font-semibold text-foreground text-sm">Beräkna min plan</h3>
-                    </div>
-                  </button>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Social proof section with gradient */}
-                <div className="relative rounded-xl overflow-hidden -mx-6 mt-4">
-                  {/* Gradient background with noise */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: 'linear-gradient(160deg, hsl(215, 25%, 40%) 0%, hsl(220, 20%, 28%) 50%, hsl(25, 30%, 35%) 100%)',
-                    }}
-                  />
-                  <div
-                    className="absolute inset-0 opacity-[0.04]"
-                    style={{
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
-                    }}
-                  />
+                {/* Social proof — flush, no border radius, straight edge */}
+                <div className="relative overflow-hidden">
+                  <div className="absolute inset-0" style={{ background: SOCIAL_GRADIENT }} />
+                  <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
                   <div className="relative z-10 px-8 py-8 text-center text-white">
                     <p className="text-sm md:text-base italic leading-relaxed text-white/90">
                       " Förr lade vi timmar i månaden på bilderna/annonsering. Nu blir det bra direkt "
@@ -557,7 +529,7 @@ export const DemoPaywall = () => {
 
             {/* ── Step 3a: Quiz with sliders ── */}
             {step === 'quiz' && (
-              <div className="px-6 pt-12 pb-8 space-y-8">
+              <div className="px-6 pt-14 pb-8 space-y-8">
                 <div className="space-y-8">
                   {/* Cars per month slider */}
                   <div>
@@ -611,12 +583,10 @@ export const DemoPaywall = () => {
                 </div>
 
                 <div className="space-y-3">
+                  {/* Dark/neutral button */}
                   <Button
                     onClick={handleCalculate}
-                    className="w-full font-semibold text-white shadow-[0_0_24px_rgba(255,255,255,0.08)] hover:shadow-[0_0_32px_rgba(255,255,255,0.15)] transition-all"
-                    style={{
-                      background: 'linear-gradient(135deg, hsl(25, 50%, 45%) 0%, hsl(220, 28%, 32%) 60%, hsl(220, 25%, 14%) 100%)',
-                    }}
+                    className="w-full font-semibold bg-foreground text-background hover:bg-foreground/90 transition-all"
                     size="lg"
                   >
                     Beräkna
@@ -628,8 +598,6 @@ export const DemoPaywall = () => {
                     Se alla paket direkt
                   </button>
                 </div>
-
-                {renderBackButton('choose')}
               </div>
             )}
 
@@ -637,15 +605,6 @@ export const DemoPaywall = () => {
             {step === 'plans' && (
               <div className="px-6 pt-10 pb-6 space-y-4">
                 <h2 className="text-xl font-bold text-foreground text-center">Välj din plan</h2>
-
-                {/* Recommendation badge */}
-                {recommendedPlan && (
-                  <div className="text-center">
-                    <span className="inline-block text-xs font-medium text-foreground/70 bg-muted px-3 py-1 rounded-full">
-                      {carsPerMonth} × {imagesPerCar} = ~{carsPerMonth * imagesPerCar} bilder/mån
-                    </span>
-                  </div>
-                )}
 
                 {/* If calculation exceeds Scale */}
                 {recommendedPlan && carsPerMonth * imagesPerCar > 800 && (
@@ -682,10 +641,6 @@ export const DemoPaywall = () => {
                 {coldTab === 'onetime' && renderCreditPacks()}
 
                 {renderContactLink()}
-
-                <div className="pt-1">
-                  {renderBackButton(recommendedPlan ? 'quiz' : 'choose')}
-                </div>
               </div>
             )}
           </div>
