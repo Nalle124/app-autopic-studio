@@ -66,8 +66,11 @@ const ProfileContent = () => {
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleBuyCredits = () => {
-    // Use subscriber-limit trigger so they see upgrade + topup tabs
-    triggerPaywall('subscriber-limit');
+    if (isSubscribed) {
+      triggerPaywall('subscriber-limit');
+    } else {
+      triggerPaywall('profile-buy');
+    }
   };
 
   const handleManageSubscription = async () => {
@@ -369,7 +372,7 @@ const ProfileContent = () => {
                 </div>
               </div>
               <Button variant="outline" size="sm" className="text-sm" onClick={handleBuyCredits}>
-                Köp credits
+                {isSubscribed ? 'Köp credits' : 'Skaffa Pro'}
               </Button>
             </div>
           </div>
