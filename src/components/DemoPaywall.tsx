@@ -508,7 +508,7 @@ export const DemoPaywall = () => {
                   <div className="absolute inset-0" style={{ background: SOCIAL_GRADIENT }} />
                   <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
                   <div className="relative z-10 px-8 py-8 text-center text-white">
-                    <p className="text-sm md:text-base italic leading-relaxed text-white/90">
+                    <p className="text-base md:text-lg italic leading-relaxed text-white/90">
                       " Förr lade vi timmar i månaden på bilderna/annonsering. Nu blir det bra direkt "
                     </p>
                     <div className="flex justify-center gap-0.5 mt-3">
