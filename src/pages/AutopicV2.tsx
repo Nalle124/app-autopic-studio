@@ -125,37 +125,17 @@ const AutopicV2Content = () => {
           />
         </button>
         <div className="flex items-center gap-2">
-          {!isMobile && (
-            <Tabs value="v2" onValueChange={handleTabChange} className="w-auto">
-              <TabsList className="bg-background/80 backdrop-blur-sm">
-                <TabsTrigger value="new" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Projekt
-                </TabsTrigger>
-                <TabsTrigger value="ai-studio" className="gap-2">
-                  <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
-                  AI Studio
-                </TabsTrigger>
-                <TabsTrigger value="history" className="gap-2">
-                  <History className="w-4 h-4" />
-                  Galleri
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          )}
-          {isMobile && (
-            <Select value="v2" onValueChange={handleTabChange}>
-              <SelectTrigger className="w-[120px] bg-background/80 backdrop-blur-sm h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-[60]">
-                <SelectItem value="v2">Projekt</SelectItem>
-                <SelectItem value="new">Projekt (V1)</SelectItem>
-                <SelectItem value="ai-studio">AI Studio</SelectItem>
-                <SelectItem value="history">Galleri</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+          <Select value="v2" onValueChange={handleTabChange}>
+            <SelectTrigger className={`${isMobile ? 'w-[120px] h-8 text-xs' : 'w-[150px] h-9 text-sm'} bg-background/80 backdrop-blur-sm`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-[60]">
+              <SelectItem value="v2">Projekt</SelectItem>
+              <SelectItem value="new">Projekt (V1)</SelectItem>
+              <SelectItem value="ai-studio">AI Studio</SelectItem>
+              <SelectItem value="history">Galleri</SelectItem>
+            </SelectContent>
+          </Select>
           {user && (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/profil')} title="Profil">
               <User className="w-4 h-4" />
