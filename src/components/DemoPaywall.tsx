@@ -372,10 +372,11 @@ export const DemoPaywall = () => {
                           </div>
                         }
 
+                        <div className="flex justify-center mt-4">
                         <Button
                           onClick={() => handleSelectPlan(nextTier)}
                           disabled={loadingTier === nextTier}
-                          className="w-3/4 mx-auto mt-4 bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all"
+                          className="w-2/3 bg-white/10 backdrop-blur-sm text-white border-2 border-white/60 hover:bg-white/20 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.12)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] transition-all"
                           size="default"
                         >
                           {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Uppgradera'}
