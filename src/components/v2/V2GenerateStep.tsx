@@ -465,42 +465,36 @@ export const V2GenerateStep = ({
 
   return (
     <div className="space-y-6 max-w-lg mx-auto">
-      {/* Summary card with V1-matching grey gradient */}
-      <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 shadow-sm relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, #2A2A2A 0%, #1E1E1E 40%, #151515 100%)',
-        }}
-      >
-        {/* Grain noise overlay */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.12]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")', backgroundSize: '128px', mixBlendMode: 'overlay' }} />
+      {/* Summary card with grey gradient matching V1 export & V2 results */}
+      <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 shadow-sm relative overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
         <div className="space-y-1 relative z-10">
-          <h2 className="font-sans font-medium text-lg text-white">Redo att generera</h2>
-          <p className="text-sm text-white/60">{totalImages} bilder redo att bearbetas</p>
+          <h2 className="font-sans font-medium text-lg text-foreground dark:text-white">Redo att generera</h2>
+          <p className="text-sm text-foreground/60 dark:text-white/60">{totalImages} bilder redo att bearbetas</p>
         </div>
 
         {/* Subtle divider between heading and details */}
-        <div className="border-t border-white/10 my-3 relative z-10" />
+        <div className="border-t border-foreground/10 dark:border-white/10 my-3 relative z-10" />
 
         <div className="space-y-2 relative z-10">
           {projectName && (
             <div className="flex justify-between text-sm">
-              <span className="text-white/50">Projekt</span>
-              <span className="text-white font-medium">{projectName}</span>
+              <span className="text-foreground/50 dark:text-white/50">Projekt</span>
+              <span className="text-foreground dark:text-white font-medium">{projectName}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">
-              <span className="text-white/50">Logo</span>
-              <span className="text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
+              <span className="text-foreground/50 dark:text-white/50">Logo</span>
+              <span className="text-foreground dark:text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
           </div>
           {plateConfig.enabled && (
             <div className="flex justify-between text-sm">
-              <span className="text-white/50">Skyltar</span>
-              <span className="text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
+              <span className="text-foreground/50 dark:text-white/50">Skyltar</span>
+              <span className="text-foreground dark:text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">
-              <span className="text-white/50">Format</span>
-              <span className="text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
+              <span className="text-foreground/50 dark:text-white/50">Format</span>
+              <span className="text-foreground dark:text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
           </div>
         </div>
       </div>
