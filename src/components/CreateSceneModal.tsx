@@ -55,6 +55,27 @@ type ChatMessage =
 {role: 'assistant-status';text: string;} |
 {role: 'mode-select';};
 
+// Image with shimmer skeleton loading state
+const ImageWithSkeleton = ({ src, alt, className, onClick, children }: { src: string; alt: string; className?: string; onClick?: () => void; children?: React.ReactNode }) => {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className={className} onClick={onClick}>
+      {!loaded && (
+        <div className="w-full aspect-[3/2] bg-muted relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent animate-[shimmer_1.5s_infinite] bg-[length:200%_100%]" />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full aspect-[3/2] object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+        onLoad={() => setLoaded(true)}
+      />
+      {loaded && children}
+    </div>
+  );
+};
+
 // Mode-specific loading phrases
 const LOADING_PHRASES: Record<string, string[]> = {
   'background-studio': [
