@@ -3431,7 +3431,7 @@ export const CreateSceneModal = ({
                             Klicka för att förstora & redigera
                           </span>
                         </div>
-                      </div>
+                      </ImageWithSkeleton>
 
                       {/* Name & info */}
                       <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5">
