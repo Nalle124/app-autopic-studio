@@ -60,17 +60,23 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
     }
 
     const newImages: V2Image[] = [];
-    for (const file of validFiles) {
-      try {
+    // Process files in parallel for faster perceived upload
+    const results = await Promise.allSettled(
+      validFiles.map(async (file) => {
         const converted = await ensureApiCompatibleFormat(file);
-        newImages.push({
+        return {
           id: generateId(),
           file: converted,
           previewUrl: URL.createObjectURL(converted),
-          status: 'pending',
-        });
-      } catch (err: any) {
-        toast.error(err.message || `Kunde inte läsa ${file.name}`);
+          status: 'pending' as const,
+        };
+      })
+    );
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        newImages.push(result.value);
+      } else {
+        toast.error('Kunde inte läsa en bild');
       }
     }
 

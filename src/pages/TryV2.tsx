@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, ChevronRight, Check, Plus, History, User, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, User } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { V2ImageUploader } from '@/components/v2/V2ImageUploader';
 import { V2SceneSelector } from '@/components/v2/V2SceneSelector';
@@ -135,43 +134,20 @@ const TryV2Content = () => {
           <img src={autopicLogoDark} alt="AutoPic" className="h-[26px] sm:h-8 w-auto" />
         </a>
         <div className="flex items-center gap-2">
-          {!isMobile ? (
-            <Tabs value="v2" onValueChange={handleTabChange} className="w-auto">
-              <TabsList className="bg-background/80 backdrop-blur-sm">
-                <TabsTrigger value="new" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Projekt
-                </TabsTrigger>
-                <TabsTrigger value="ai-studio" className="gap-2">
-                  <img src="/favicon.png" alt="" className="w-5 h-5 object-contain" />
-                  AI Studio
-                </TabsTrigger>
-                <TabsTrigger value="history" className="gap-2">
-                  <History className="w-4 h-4" />
-                  Galleri
-                </TabsTrigger>
-                <TabsTrigger value="pro" className="gap-2 relative">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] bg-clip-text text-transparent font-semibold">Skaffa Pro</span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          ) : (
-            <Select value="v2" onValueChange={handleTabChange}>
-              <SelectTrigger className="w-[120px] bg-background/80 backdrop-blur-sm h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-[60]">
-                <SelectItem value="v2">Projekt</SelectItem>
-                <SelectItem value="new">Projekt (V1)</SelectItem>
-                <SelectItem value="ai-studio">AI Studio</SelectItem>
-                <SelectItem value="history">Galleri</SelectItem>
-                <SelectItem value="pro">
-                  <span className="font-semibold">✨ Skaffa Pro</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+          <Select value="v2" onValueChange={handleTabChange}>
+            <SelectTrigger className={`${isMobile ? 'w-[120px] h-8 text-xs' : 'w-[150px] h-9 text-sm'} bg-background/80 backdrop-blur-sm`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-[60]">
+              <SelectItem value="v2">Projekt</SelectItem>
+              <SelectItem value="new">Projekt (V1)</SelectItem>
+              <SelectItem value="ai-studio">AI Studio</SelectItem>
+              <SelectItem value="history">Galleri</SelectItem>
+              <SelectItem value="pro">
+                <span className="bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] bg-clip-text text-transparent font-semibold">✨ Skaffa Pro</span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/profil')} title="Profil">
             <User className="w-4 h-4" />
           </Button>

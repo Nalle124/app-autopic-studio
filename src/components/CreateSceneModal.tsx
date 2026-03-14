@@ -55,6 +55,27 @@ type ChatMessage =
 {role: 'assistant-status';text: string;} |
 {role: 'mode-select';};
 
+// Image with shimmer skeleton loading state
+const ImageWithSkeleton = ({ src, alt, className, onClick, children }: { src: string; alt: string; className?: string; onClick?: () => void; children?: React.ReactNode }) => {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className={className} onClick={onClick}>
+      {!loaded && (
+        <div className="w-full aspect-[3/2] bg-muted relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent animate-[shimmer_1.5s_infinite] bg-[length:200%_100%]" />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full aspect-[3/2] object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+        onLoad={() => setLoaded(true)}
+      />
+      {loaded && children}
+    </div>
+  );
+};
+
 // Mode-specific loading phrases
 const LOADING_PHRASES: Record<string, string[]> = {
   'background-studio': [
@@ -3419,21 +3440,19 @@ export const CreateSceneModal = ({
                   <div className="flex gap-2.5 items-start">
                     <AutopicAvatar />
                     <div className="space-y-2 max-w-[85%]">
-                      <div
-                    className="rounded-2xl rounded-tl-md overflow-hidden border border-border/30 animate-scale-in cursor-pointer relative group/img max-w-[320px]"
-                    onClick={() => setPreviewImage({ imageUrl: msg.imageUrl, name: msg.suggestedName })}>
-
-                        <img
-                      src={msg.imageUrl}
-                      alt={msg.suggestedName}
-                      className="w-full aspect-[3/2] object-cover" />
+                      <ImageWithSkeleton
+                        src={msg.imageUrl}
+                        alt={msg.suggestedName}
+                        className="rounded-2xl rounded-tl-md overflow-hidden border border-border/30 animate-scale-in cursor-pointer relative group/img max-w-[320px]"
+                        onClick={() => setPreviewImage({ imageUrl: msg.imageUrl, name: msg.suggestedName })}
+                      >
 
                         <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors flex items-center justify-center pointer-events-none">
                           <span className="text-white text-xs font-medium opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm">
                             Klicka för att förstora & redigera
                           </span>
                         </div>
-                      </div>
+                      </ImageWithSkeleton>
 
                       {/* Name & info */}
                       <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5">
