@@ -345,11 +345,14 @@ export const DemoPaywall = () => {
                     {/* Featured upgrade card */}
                     <div className="relative rounded-xl overflow-hidden" style={{ background: PLAN_BG[nextTier] }}>
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
-                      <div className="absolute inset-0 opacity-[0.06] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
-                      <div className="relative z-10 p-5">
-                        <p className="text-[10px] uppercase tracking-widest text-white/50 font-medium mb-1">Uppgradera till</p>
+                      <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
+                      <div className="relative z-10 p-5 py-6">
+                        <p className="text-xs uppercase tracking-widest text-white/50 font-medium mb-1">Uppgradera till</p>
                         <div className="flex items-start justify-between">
-                          <h3 className="text-xl font-bold text-white">{nextPlan.name}</h3>
+                          <div>
+                            <h3 className="text-2xl font-bold text-white">{nextPlan.name}</h3>
+                            <p className="text-sm text-white/50 mt-0.5">{nextPlan.credits} bilder/månad</p>
+                          </div>
                           <div className="text-right">
                             <span className="text-3xl font-bold text-white">{nextPlan.price}</span>
                             <span className="text-sm text-white/50"> kr/mån</span>
@@ -359,11 +362,11 @@ export const DemoPaywall = () => {
                         {currentPlan &&
                           <div className="flex gap-6 mt-3 border-t border-white/10 pt-3">
                             <div>
-                              <p className="text-[10px] uppercase tracking-wider text-white/40">Fler bilder</p>
+                              <p className="text-xs uppercase tracking-wider text-white/40">Fler bilder</p>
                               <p className="text-lg font-bold text-white">+{nextPlan.credits - currentPlan.credits}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-wider text-white/40">Prisskillnad</p>
+                              <p className="text-xs uppercase tracking-wider text-white/40">Prisskillnad</p>
                               <p className="text-lg font-bold text-white">+{nextPlan.price - currentPlan.price} kr</p>
                             </div>
                           </div>
