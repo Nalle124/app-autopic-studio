@@ -369,7 +369,7 @@ const ProfileContent = () => {
                 </div>
               </div>
               <Button variant="outline" size="sm" className="text-sm" onClick={handleBuyCredits}>
-                Köp credits
+                {isSubscribed ? 'Köp credits' : 'Skaffa Pro'}
               </Button>
             </div>
           </div>
