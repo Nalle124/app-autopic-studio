@@ -287,7 +287,10 @@ export const V2GenerateStep = ({
       const classifiedImages = images.map(img => ({ ...img, classification: classifications[img.id] || 'exterior' }));
       onImagesUpdate(classifiedImages);
 
-      if (deliveryMode === 'email') { setEmailSent(true); }
+      if (deliveryMode === 'email') { 
+        setEmailSent(true);
+        toast.success('Bilderna bearbetas — du får ett mail strax!');
+      }
 
       const scene = await fetchScene(sceneId);
       if (!scene) throw new Error('Kunde inte ladda bakgrund');
