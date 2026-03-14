@@ -381,6 +381,7 @@ export const DemoPaywall = () => {
                         >
                           {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Uppgradera'}
                         </Button>
+                        </div>
                       </div>
                     </div>
 
