@@ -465,10 +465,10 @@ export const V2GenerateStep = ({
 
   return (
     <div className="space-y-6 max-w-lg mx-auto">
-      {/* Summary card with stronger V1-matching gradient */}
-      <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 space-y-3 shadow-sm relative overflow-hidden"
+      {/* Summary card with V1-matching grey gradient */}
+      <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 shadow-sm relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, hsl(220 27% 41% / 0.8) 0%, hsl(25 71% 45% / 0.8) 100%)',
+          background: 'linear-gradient(135deg, #2A2A2A 0%, #1E1E1E 40%, #151515 100%)',
         }}
       >
         {/* Grain noise overlay */}
@@ -478,30 +478,32 @@ export const V2GenerateStep = ({
           <p className="text-sm text-white/60">{totalImages} bilder redo att bearbetas</p>
         </div>
 
-        {projectName && (
-          <div className="flex justify-between text-sm relative z-10">
-            <span className="text-white/50">Projekt</span>
-            <span className="text-white font-medium">{projectName}</span>
+        {/* Subtle divider between heading and details */}
+        <div className="border-t border-white/10 my-3 relative z-10" />
+
+        <div className="space-y-2 relative z-10">
+          {projectName && (
+            <div className="flex justify-between text-sm">
+              <span className="text-white/50">Projekt</span>
+              <span className="text-white font-medium">{projectName}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm">
+              <span className="text-white/50">Logo</span>
+              <span className="text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
           </div>
-        )}
-        <div className="flex justify-between text-sm relative z-10">
-            <span className="text-white/50">Logo</span>
-            <span className="text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
-        </div>
-        {plateConfig.enabled && (
-          <div className="flex justify-between text-sm relative z-10">
-            <span className="text-white/50">Skyltar</span>
-            <span className="text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
+          {plateConfig.enabled && (
+            <div className="flex justify-between text-sm">
+              <span className="text-white/50">Skyltar</span>
+              <span className="text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm">
+              <span className="text-white/50">Format</span>
+              <span className="text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
           </div>
-        )}
-        <div className="flex justify-between text-sm relative z-10">
-            <span className="text-white/50">Format</span>
-            <span className="text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
         </div>
       </div>
-
-      {/* Divider */}
-      <div className="border-t border-border" />
 
       {/* Enhancement toggles */}
       <div className="space-y-3">
