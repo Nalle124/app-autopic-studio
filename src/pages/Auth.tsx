@@ -361,10 +361,9 @@ const Auth = () => {
             
             <Button 
               onClick={handleVerifyCode}
-              className="w-full"
+              className={`w-full ${verifying ? 'btn-processing' : ''}`}
               disabled={verifying || verificationCode.length !== 4}
             >
-              {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Verifiera & skapa konto
             </Button>
             
@@ -470,8 +469,7 @@ const Auth = () => {
                     disabled={loading}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
                   Skicka återställningslänk
                 </Button>
               </form>
@@ -530,8 +528,7 @@ const Auth = () => {
                     Förbli inloggad
                   </label>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
                   Logga in
                 </Button>
               </form>
@@ -554,8 +551,7 @@ const Auth = () => {
                     Minst 6 tecken
                   </p>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
                   {selectedPlan ? `Skapa konto & fortsätt` : 'Skapa konto'}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
@@ -651,8 +647,7 @@ const ResetPasswordForm = () => {
                 disabled={loading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
               Uppdatera lösenord
             </Button>
           </form>
