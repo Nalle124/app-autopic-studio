@@ -126,23 +126,19 @@ const TryV2Content = () => {
           <img src={autopicLogoDark} alt="AutoPic" className="h-[26px] sm:h-8 w-auto" />
         </a>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <span className="text-[10px] sm:text-xs text-muted-foreground bg-muted px-1.5 sm:px-2 py-1 rounded-full whitespace-nowrap">
-            {availableCredits} gratis
-          </span>
-          <Button
-            size="sm"
-            onClick={() => triggerPaywall('signup')}
-            className="text-xs px-2.5 sm:px-3 h-8 font-semibold text-white shadow-[0_0_16px_rgba(255,255,255,0.06)]"
-            style={{
-              background: 'linear-gradient(135deg, hsl(25, 50%, 45%) 0%, hsl(220, 28%, 32%) 60%, hsl(220, 25%, 14%) 100%)',
-            }}
-          >
-            Skaffa Pro
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="text-xs px-2.5 sm:px-3 h-8 gap-1">
-            <LogIn className="w-3 h-3" />
-            <span className="hidden sm:inline">Logga in</span>
-          </Button>
+          <Select value="menu" onValueChange={(v) => {
+            if (v === 'login') navigate('/auth');
+            else if (v === 'pro') triggerPaywall('signup');
+          }}>
+            <SelectTrigger className="w-[110px] bg-background/80 backdrop-blur-sm h-9 text-sm">
+              <SelectValue placeholder="Meny" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-[60]">
+              <SelectItem value="menu" className="hidden">Meny</SelectItem>
+              <SelectItem value="pro">Skaffa Pro</SelectItem>
+              <SelectItem value="login">Logga in</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </header>
