@@ -498,7 +498,7 @@ export const DemoPaywall = () => {
                       style={{ background: 'linear-gradient(135deg, hsl(220, 15%, 92%) 0%, hsl(25, 20%, 92%) 100%)' }}
                     >
                       <span className="absolute -top-2.5 right-3 text-[9px] uppercase tracking-widest font-bold text-white bg-primary px-2.5 py-1 rounded-full shadow-sm z-10">Quiz</span>
-                      <h3 className="font-semibold text-foreground text-sm">Beräkna min plan</h3>
+                      <h3 className="font-semibold text-foreground text-base">Beräkna min plan</h3>
                     </button>
                   </div>
                 </div>
