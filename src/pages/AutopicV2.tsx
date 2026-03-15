@@ -131,10 +131,10 @@ const AutopicV2Content = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-popover z-[60]">
-              <SelectItem value="v2">Projekt</SelectItem>
-              <SelectItem value="new">Projekt (V1)</SelectItem>
-              <SelectItem value="ai-studio">AI Studio</SelectItem>
-              <SelectItem value="history">Galleri</SelectItem>
+              <SelectItem value="v2">{t('nav.project')}</SelectItem>
+              <SelectItem value="new">{t('nav.projectV1')}</SelectItem>
+              <SelectItem value="ai-studio">{t('nav.aiStudio')}</SelectItem>
+              <SelectItem value="history">{t('nav.gallery')}</SelectItem>
             </SelectContent>
           </Select>
           {user && (
