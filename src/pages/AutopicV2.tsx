@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
 import { useNavigate } from 'react-router-dom';
@@ -41,14 +42,15 @@ export interface V2PlateConfig {
   customLogoBase64?: string;
 }
 
-const STEPS = [
-  { label: 'Ladda upp', key: 'upload' },
-  { label: 'Bakgrund', key: 'scene' },
-  { label: 'Logo & skyltar', key: 'logo' },
-  { label: 'Generera', key: 'generate' },
-] as const;
-
 const AutopicV2Content = () => {
+  const { t } = useTranslation();
+
+  const STEPS = [
+    { label: t('v2.steps.upload'), key: 'upload' },
+    { label: t('v2.steps.background'), key: 'scene' },
+    { label: t('v2.steps.logoPlates'), key: 'logo' },
+    { label: t('v2.steps.generate'), key: 'generate' },
+  ] as const;
   const { user } = useAuth();
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { triggerPaywall } = useDemo();
@@ -129,10 +131,10 @@ const AutopicV2Content = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-popover z-[60]">
-              <SelectItem value="v2">Projekt</SelectItem>
-              <SelectItem value="new">Projekt (V1)</SelectItem>
-              <SelectItem value="ai-studio">AI Studio</SelectItem>
-              <SelectItem value="history">Galleri</SelectItem>
+              <SelectItem value="v2">{t('nav.project')}</SelectItem>
+              <SelectItem value="new">{t('nav.projectV1')}</SelectItem>
+              <SelectItem value="ai-studio">{t('nav.aiStudio')}</SelectItem>
+              <SelectItem value="history">{t('nav.gallery')}</SelectItem>
             </SelectContent>
           </Select>
           {user && (
@@ -269,7 +271,7 @@ const AutopicV2Content = () => {
             disabled={currentStep === 0}
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
-            Tillbaka
+            {t('common.back')}
           </Button>
           {currentStep < STEPS.length - 1 && (
             <Button
@@ -277,7 +279,7 @@ const AutopicV2Content = () => {
               onClick={() => goToStep(currentStep + 1)}
               disabled={!canGoNext()}
             >
-              Nästa
+              {t('common.next')}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           )}

@@ -1,86 +1,30 @@
 
 
-# Plan: Session 1 — Fix Recommended Plan Auto-Expand, Live Preview Click, and i18n Infrastructure
+## Plan: AI Studio Lansering
 
-## Part A: Bug Fixes (this session)
+### Status: Lanserad (Annonsmaterial undantaget)
 
-### 1. Recommended plan auto-expanded after quiz
-**File:** `src/components/DemoPaywall.tsx`
-- In `handleCalculate` (line 157), change `setExpandedPlan(null)` to `setExpandedPlan(best)` so the recommended tier is pre-opened when the user lands on the plans step.
-- No layout/size changes — just the `expandedPlan` state matches `recommendedPlan`.
+**Vad har gjorts:**
 
-### 2. Live gallery: clickable images during generation
-**File:** `src/components/v2/V2GenerateStep.tsx`
-- Add a `previewUrl` state for a lightbox overlay.
-- In the live gallery grid (line 434-438), wrap completed images with an `onClick` that sets `previewUrl`.
-- Render a simple fullscreen overlay (dark backdrop + centered image + close button) when `previewUrl` is set. Generation continues in the background.
+1. **AI Studio lanserad** – "Kommer snart"-overlayen borttagen för inloggade användare. Alla kan nu använda AI Studio.
 
-## Part B: i18n Infrastructure (this session)
+2. **Annonsmaterial blockerat** – Visas som "Kommer snart" i menyn men kan inte klickas. Ska lanseras separat.
 
-### Approach
-- Add `react-i18next` + `i18next` + `i18next-browser-languagedetector` as dependencies.
-- Create `src/i18n.ts` configuration file with language detection (browser → localStorage fallback).
-- Create locale files: `src/locales/sv.json`, `en.json`, `de.json`, `pl.json`.
-- Import i18n config in `main.tsx`.
-- Add a `language` column to the `profiles` table (migration) to persist user preference.
-- Add language selector to Profile page.
+3. **Blurra regskyltar & Applicera logo** – Uppladdning av egna bilder fungerar nu direkt i första meddelandet (upload-knapp i bildgridet), oavsett om det finns projektbilder eller ej.
 
-### Scope for this session
-- Set up the infrastructure (i18n config, locale files with empty/stub structure).
-- Translate the **shared components** that appear across flows:
-  - `DemoPaywall.tsx` — all paywall strings
-  - `Header` navigation labels
-  - Auth page (`Auth.tsx`) — login/signup strings
-  - Profile page labels
-- Create the 4 locale JSON files with these initial translations.
+4. **Fixa insidebilder (egen meny-funktion)** – Flyttat från Redigera fritt till en egen funktion i menyn med mockup-bild. Stöder batch-bearbetning: välj flera bilder → välj ljus/mörk bakgrund → alla bearbetas sekventiellt.
 
-### What is NOT translated (by design)
-- V1 standard flow (`Index.tsx`, `Demo.tsx`) — will be replaced by V2
-- V1 try page — replaced by TryV2
-- Edge function error messages (later session)
+5. **Förbättrade blur-prompter** – Master-prompterna för regskyltsblurring uppdaterade för att täcka HELA plåten (inkl. ram) och säkerställa identiskt resultat i batch.
 
-### Translation file structure
-```text
-src/locales/
-  sv.json    — Swedish (extract current hardcoded strings)
-  en.json    — English
-  de.json    — German
-  pl.json    — Polish
-```
+6. **Notice-text uppdaterad** – "Kommer snart:" → "Nyhet:" med uppdaterad beskrivning.
 
-Each file organized by namespace:
-```json
-{
-  "nav": { "project": "...", "aiStudio": "...", "gallery": "...", "profile": "..." },
-  "auth": { "login": "...", "signup": "...", ... },
-  "paywall": { "findPlan": "...", "continue": "...", ... },
-  "v2": { "upload": "...", "background": "...", "generate": "...", ... },
-  "profile": { "settings": "...", "language": "...", ... },
-  "common": { "next": "...", "back": "...", "save": "...", ... }
-}
-```
+7. **Ny/Meny-knappar** – Separata knappar: "Ny" (startar om i samma läge) och "Meny" (går tillbaka till huvudmenyn).
 
-### Database migration
-```sql
-ALTER TABLE public.profiles ADD COLUMN language text DEFAULT 'sv';
-```
+8. **Redigera fritt** – Uppdaterad mockup-bild som visar vinkeländring istället för bildtransport.
 
-## Files changed
-- `src/components/DemoPaywall.tsx` — auto-expand fix + i18n strings
-- `src/components/v2/V2GenerateStep.tsx` — clickable live preview
-- `src/i18n.ts` — new, i18n configuration
-- `src/locales/sv.json`, `en.json`, `de.json`, `pl.json` — new translation files
-- `src/main.tsx` — import i18n
-- `src/pages/Profile.tsx` — language selector
-- `src/pages/Auth.tsx` — i18n strings
-- `src/pages/AutopicV2.tsx` — i18n nav labels
-- `src/pages/TryV2.tsx` — i18n nav labels
-- Database migration for `profiles.language`
-- `package.json` — new deps
+### Nästa steg
 
-## Next sessions to complete the full plan
-1. **Session 2:** Translate V2 flow components (`V2ImageUploader`, `V2SceneSelector`, `V2LogoPresets`, `V2GenerateStep`, `V2ResultGallery`)
-2. **Session 3:** Translate remaining pages (Onboarding, Guide, Profile details, Payments, error states)
-3. **Session 4:** Edge function response localization (pass locale param, translate server-side messages)
-4. **Session 5:** QA pass — verify all languages render correctly, test RTL-safe, review German/Polish translations
-
+- Testa alla flöden end-to-end (bakgrund, redigera fritt, fixa insidebilder, blur, logo)
+- Finjustera design och UX baserat på feedback
+- Färdigställ Annonsmaterial-flödet
+- Verifiera att credits dras korrekt vid varje generering

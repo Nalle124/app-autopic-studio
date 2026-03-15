@@ -1,4 +1,5 @@
 import { LogOut, Shield, User, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +24,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
@@ -72,7 +74,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => navigate('/profil')}>
                       <User className="mr-2 h-4 w-4" />
-                      Profil
+                      {t('nav.profile')}
                     </DropdownMenuItem>
                     {isAdmin && (
                       <DropdownMenuItem onClick={() => navigate('/admin')}>
@@ -89,13 +91,13 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
                   variant="ghost"
                   onClick={() => navigate('/auth')}
                 >
-                  Logga in
+                  {t('nav.login')}
                 </Button>
                 <Button 
                   variant="premium"
                   onClick={() => navigate('/auth')}
                 >
-                  Prova gratis
+                  {t('nav.tryFree')}
                   <Sparkles className="ml-2 w-4 h-4" />
                 </Button>
               </div>

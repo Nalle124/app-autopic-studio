@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard, BookOpen, Sparkles } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard, BookOpen, Sparkles, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,8 +37,48 @@ interface ProfileData {
 }
 
 
+const LANGUAGES = [
+  { code: 'sv', label: 'Svenska' },
+  { code: 'en', label: 'English' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'pl', label: 'Polski' },
+] as const;
+
+const LanguageSelector = () => {
+  const { i18n, t } = useTranslation();
+  const currentLang = i18n.language?.substring(0, 2) || 'sv';
+
+  const handleChange = async (lang: string) => {
+    i18n.changeLanguage(lang);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('profiles').update({ language: lang } as any).eq('id', user.id);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-3">
+        <Globe className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        <span className="text-sm font-medium">{t('profile.language')}</span>
+      </div>
+      <Select value={currentLang} onValueChange={handleChange}>
+        <SelectTrigger className="w-[130px] h-8 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {LANGUAGES.map(l => (
+            <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
 const ProfileContent = () => {
   const { user, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const { credits, triggerPaywall } = useDemo();
@@ -438,6 +479,9 @@ const ProfileContent = () => {
               </CollapsibleContent>
             </Collapsible>
 
+            {/* Language selector */}
+            <LanguageSelector />
+
             {/* Guide link */}
             <button
               onClick={() => navigate('/guide')}
@@ -445,7 +489,7 @@ const ProfileContent = () => {
             >
               <div className="flex items-center gap-3">
                 <BookOpen className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm font-medium">Användningsguide</span>
+                <span className="text-sm font-medium">{t('profile.userGuide')}</span>
               </div>
               <ChevronDown className="w-4 h-4 text-muted-foreground -rotate-90" />
             </button>

@@ -251,6 +251,7 @@ export const V2GenerateStep = ({
   const [lightEdit, setLightEdit] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [liveResults, setLiveResults] = useState<V2Image[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   const totalImages = images.length;
@@ -429,9 +430,17 @@ export const V2GenerateStep = ({
           <Progress value={progress} className="h-2 max-w-md" />
         </div>
 
+        {/* Lightbox preview */}
+        {previewUrl && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
+            <img src={previewUrl} alt="Preview" className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+            <button onClick={() => setPreviewUrl(null)} className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl font-bold">✕</button>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {liveResults.map((img, i) => (
-            <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card">
+            <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all" onClick={() => setPreviewUrl(img.processedUrl || img.previewUrl)}>
               <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                 <img src={img.processedUrl || img.previewUrl} alt={`Klar ${i + 1}`} className="w-full h-full object-cover animate-in fade-in duration-500" />
               </div>
