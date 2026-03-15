@@ -24,6 +24,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
