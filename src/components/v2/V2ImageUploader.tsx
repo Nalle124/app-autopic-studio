@@ -119,7 +119,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
 
       {/* Project name — compact like V1 */}
       <div className="max-w-xs">
-        <label className="text-[10px] text-muted-foreground mb-1 block">Bilens namn (valfritt)</label>
+        <label className="text-[10px] text-muted-foreground mb-1 block">{t('v2.carName')}</label>
         <Input
           value={projectName}
           onChange={(e) => onProjectNameChange(e.target.value)}
