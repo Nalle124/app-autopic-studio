@@ -91,13 +91,13 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
                   variant="ghost"
                   onClick={() => navigate('/auth')}
                 >
-                  Logga in
+                  {t('nav.login')}
                 </Button>
                 <Button 
                   variant="premium"
                   onClick={() => navigate('/auth')}
                 >
-                  Prova gratis
+                  {t('nav.tryFree')}
                   <Sparkles className="ml-2 w-4 h-4" />
                 </Button>
               </div>
