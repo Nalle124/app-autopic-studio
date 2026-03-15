@@ -50,7 +50,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter(f => {
       if (!isSupportedImageFormat(f)) {
-        toast.error(`${f.name} — format stöds inte`);
+        toast.error(`${f.name} — ${t('v2.formatNotSupported')}`);
         return false;
       }
       return true;
