@@ -82,6 +82,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Defer admin check with setTimeout to avoid deadlock
         if (session?.user) {
           checkAdminStatus(session.user.id);
+          // Sync language preference from profile
+          setTimeout(async () => {
+            try {
+              const { data } = await supabase.from('profiles').select('language').eq('id', session.user.id).single();
+              if (data?.language && data.language !== i18n.language) {
+                i18n.changeLanguage(data.language);
+              }
+            } catch {}
+          }, 0);
         } else {
           setIsAdmin(false);
           setAdminLoading(false);
