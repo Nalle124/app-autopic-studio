@@ -205,7 +205,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       {/* Image preview dialog */}
       <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden">
-          <VisuallyHidden><DialogTitle>Förhandsvisning</DialogTitle></VisuallyHidden>
+          <VisuallyHidden><DialogTitle>{t('v2.preview')}</DialogTitle></VisuallyHidden>
           {previewImage && (
             <div className="relative bg-black">
               <img
