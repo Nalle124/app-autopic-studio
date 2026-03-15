@@ -37,6 +37,45 @@ interface ProfileData {
 }
 
 
+const LANGUAGES = [
+  { code: 'sv', label: 'Svenska' },
+  { code: 'en', label: 'English' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'pl', label: 'Polski' },
+] as const;
+
+const LanguageSelector = () => {
+  const { i18n, t } = useTranslation();
+  const currentLang = i18n.language?.substring(0, 2) || 'sv';
+
+  const handleChange = async (lang: string) => {
+    i18n.changeLanguage(lang);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('profiles').update({ language: lang } as any).eq('id', user.id);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-3">
+        <Globe className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        <span className="text-sm font-medium">{t('profile.language')}</span>
+      </div>
+      <Select value={currentLang} onValueChange={handleChange}>
+        <SelectTrigger className="w-[130px] h-8 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {LANGUAGES.map(l => (
+            <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
 const ProfileContent = () => {
   const { user, signOut } = useAuth();
   const { t, i18n } = useTranslation();
