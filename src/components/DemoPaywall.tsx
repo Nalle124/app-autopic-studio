@@ -154,7 +154,7 @@ export const DemoPaywall = () => {
     if (totalCredits > 300) best = 'business'; else
     if (totalCredits > 100) best = 'pro';
     setRecommendedPlan(best);
-    setExpandedPlan(null);
+    setExpandedPlan(best);
     setStep('plans');
   };
 

@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import App from "./App.tsx";
 import "./index.css";
+import "./i18n";
 
 // Initialize Sentry for error tracking and session replay
 Sentry.init({
