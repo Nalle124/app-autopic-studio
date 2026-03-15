@@ -57,7 +57,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
     });
 
     if (images.length + validFiles.length > 50) {
-      toast.error('Max 50 bilder åt gången');
+      toast.error(t('v2.max50'));
       return;
     }
 
