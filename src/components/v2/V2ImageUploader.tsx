@@ -78,7 +78,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       if (result.status === 'fulfilled') {
         newImages.push(result.value);
       } else {
-        toast.error('Kunde inte läsa en bild');
+        toast.error(t('v2.couldNotRead'));
       }
     }
 
