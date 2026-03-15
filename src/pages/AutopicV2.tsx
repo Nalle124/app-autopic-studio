@@ -279,7 +279,7 @@ const AutopicV2Content = () => {
               onClick={() => goToStep(currentStep + 1)}
               disabled={!canGoNext()}
             >
-              Nästa
+              {t('common.next')}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           )}
