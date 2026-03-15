@@ -112,7 +112,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
             }}
           >
             <Trash2 className="h-3.5 w-3.5 mr-1" />
-            Rensa alla
+            {t('v2.clearAll')}
           </Button>
         )}
       </div>
