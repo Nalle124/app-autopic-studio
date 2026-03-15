@@ -251,6 +251,7 @@ export const V2GenerateStep = ({
   const [lightEdit, setLightEdit] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [liveResults, setLiveResults] = useState<V2Image[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
 
   const totalImages = images.length;
