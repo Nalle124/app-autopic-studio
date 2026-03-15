@@ -42,14 +42,15 @@ export interface V2PlateConfig {
   customLogoBase64?: string;
 }
 
-const STEPS = [
-  { label: 'Ladda upp', key: 'upload' },
-  { label: 'Bakgrund', key: 'scene' },
-  { label: 'Logo & skyltar', key: 'logo' },
-  { label: 'Generera', key: 'generate' },
-] as const;
-
 const AutopicV2Content = () => {
+  const { t } = useTranslation();
+
+  const STEPS = [
+    { label: t('v2.steps.upload'), key: 'upload' },
+    { label: t('v2.steps.background'), key: 'scene' },
+    { label: t('v2.steps.logoPlates'), key: 'logo' },
+    { label: t('v2.steps.generate'), key: 'generate' },
+  ] as const;
   const { user } = useAuth();
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { triggerPaywall } = useDemo();
