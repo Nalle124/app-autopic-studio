@@ -100,7 +100,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-sans font-medium text-lg text-foreground">Ladda upp bilder</h2>
+        <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.uploadImages')}</h2>
         {images.length > 0 && (
           <Button
             variant="ghost"
