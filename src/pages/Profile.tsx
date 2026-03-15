@@ -39,6 +39,7 @@ interface ProfileData {
 
 const ProfileContent = () => {
   const { user, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const { credits, triggerPaywall } = useDemo();
