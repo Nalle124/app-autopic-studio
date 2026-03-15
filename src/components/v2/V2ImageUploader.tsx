@@ -137,10 +137,10 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         <input {...getInputProps()} />
         <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
         <p className="text-foreground font-medium text-sm">
-          {isDragActive ? 'Släpp bilderna här' : 'Dra & släpp bilder eller klicka'}
+          {isDragActive ? t('v2.dropImages') : t('v2.dragOrClick')}
         </p>
         <p className="text-[10px] text-muted-foreground mt-1">
-          JPG, PNG, WebP, HEIC — max 50 bilder
+          {t('v2.imageFormats')}
         </p>
       </div>
 
