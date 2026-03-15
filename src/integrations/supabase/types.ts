@@ -215,6 +215,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          language: string | null
           logo_dark: string | null
           logo_light: string | null
           manual_access: boolean
@@ -233,6 +234,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          language?: string | null
           logo_dark?: string | null
           logo_light?: string | null
           manual_access?: boolean
@@ -251,6 +253,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          language?: string | null
           logo_dark?: string | null
           logo_light?: string | null
           manual_access?: boolean
