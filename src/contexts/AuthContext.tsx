@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import * as Sentry from '@sentry/react';
+import i18n from '@/i18n';
 
 interface AuthContextType {
   user: User | null;
