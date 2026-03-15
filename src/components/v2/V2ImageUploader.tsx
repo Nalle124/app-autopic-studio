@@ -181,22 +181,22 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         className="w-full text-left rounded-[10px] border border-border/50 overflow-hidden transition-all hover:border-border"
       >
         <div className="flex items-center justify-between px-4 py-2.5">
-          <span className="text-sm font-medium text-foreground">Foto tips</span>
+          <span className="text-sm font-medium text-foreground">{t('v2.photoTips')}</span>
           <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showTips ? 'rotate-180' : ''}`} />
         </div>
         {showTips && (
           <div className="px-4 pb-3 space-y-2 border-t border-border/30 pt-2">
             <div className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">Ta bilderna från höfthöjd för bästa resultat</p>
+              <p className="text-xs text-muted-foreground">{t('v2.tip1')}</p>
             </div>
             <div className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">Håll telefonen/kameran liggandes (horisontellt), inte stående</p>
+              <p className="text-xs text-muted-foreground">{t('v2.tip2')}</p>
             </div>
             <div className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">Se till att hela bilen syns i bilden</p>
+              <p className="text-xs text-muted-foreground">{t('v2.tip3')}</p>
             </div>
           </div>
         )}
