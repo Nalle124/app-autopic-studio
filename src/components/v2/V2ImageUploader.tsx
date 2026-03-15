@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Trash2, ChevronDown, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -42,20 +43,21 @@ interface Props {
 }
 
 export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange }: Props) => {
+  const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
   const [showTips, setShowTips] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter(f => {
       if (!isSupportedImageFormat(f)) {
-        toast.error(`${f.name} — format stöds inte`);
+        toast.error(`${f.name} — ${t('v2.formatNotSupported')}`);
         return false;
       }
       return true;
     });
 
     if (images.length + validFiles.length > 50) {
-      toast.error('Max 50 bilder åt gången');
+      toast.error(t('v2.max50'));
       return;
     }
 
@@ -76,7 +78,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       if (result.status === 'fulfilled') {
         newImages.push(result.value);
       } else {
-        toast.error('Kunde inte läsa en bild');
+        toast.error(t('v2.couldNotRead'));
       }
     }
 
@@ -98,7 +100,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-sans font-medium text-lg text-foreground">Ladda upp bilder</h2>
+        <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.uploadImages')}</h2>
         {images.length > 0 && (
           <Button
             variant="ghost"
@@ -110,14 +112,14 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
             }}
           >
             <Trash2 className="h-3.5 w-3.5 mr-1" />
-            Rensa alla
+            {t('v2.clearAll')}
           </Button>
         )}
       </div>
 
       {/* Project name — compact like V1 */}
       <div className="max-w-xs">
-        <label className="text-[10px] text-muted-foreground mb-1 block">Bilens namn (valfritt)</label>
+        <label className="text-[10px] text-muted-foreground mb-1 block">{t('v2.carName')}</label>
         <Input
           value={projectName}
           onChange={(e) => onProjectNameChange(e.target.value)}
@@ -135,10 +137,10 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         <input {...getInputProps()} />
         <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
         <p className="text-foreground font-medium text-sm">
-          {isDragActive ? 'Släpp bilderna här' : 'Dra & släpp bilder eller klicka'}
+          {isDragActive ? t('v2.dropImages') : t('v2.dragOrClick')}
         </p>
         <p className="text-[10px] text-muted-foreground mt-1">
-          JPG, PNG, WebP, HEIC — max 50 bilder
+          {t('v2.imageFormats')}
         </p>
       </div>
 
@@ -168,8 +170,8 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[10px] border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10">
         <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert flex-shrink-0" />
         <p className="text-xs text-foreground/80">
-          <span className="font-semibold text-primary">Nyhet</span>{' '}
-          AI-funktioner lanserade — skapa bakgrunder, blurra skyltar & mer
+          <span className="font-semibold text-primary">{t('v2.newsLabel')}</span>{' '}
+          {t('v2.newsText')}
         </p>
       </div>
 
@@ -179,22 +181,22 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         className="w-full text-left rounded-[10px] border border-border/50 overflow-hidden transition-all hover:border-border"
       >
         <div className="flex items-center justify-between px-4 py-2.5">
-          <span className="text-sm font-medium text-foreground">Foto tips</span>
+          <span className="text-sm font-medium text-foreground">{t('v2.photoTips')}</span>
           <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showTips ? 'rotate-180' : ''}`} />
         </div>
         {showTips && (
           <div className="px-4 pb-3 space-y-2 border-t border-border/30 pt-2">
             <div className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">Ta bilderna från höfthöjd för bästa resultat</p>
+              <p className="text-xs text-muted-foreground">{t('v2.tip1')}</p>
             </div>
             <div className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">Håll telefonen/kameran liggandes (horisontellt), inte stående</p>
+              <p className="text-xs text-muted-foreground">{t('v2.tip2')}</p>
             </div>
             <div className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">Se till att hela bilen syns i bilden</p>
+              <p className="text-xs text-muted-foreground">{t('v2.tip3')}</p>
             </div>
           </div>
         )}
@@ -203,7 +205,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       {/* Image preview dialog */}
       <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden">
-          <VisuallyHidden><DialogTitle>Förhandsvisning</DialogTitle></VisuallyHidden>
+          <VisuallyHidden><DialogTitle>{t('v2.preview')}</DialogTitle></VisuallyHidden>
           {previewImage && (
             <div className="relative bg-black">
               <img
