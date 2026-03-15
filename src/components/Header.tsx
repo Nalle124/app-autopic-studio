@@ -74,7 +74,7 @@ export const Header = ({ onUpgradeClick }: HeaderProps) => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => navigate('/profil')}>
                       <User className="mr-2 h-4 w-4" />
-                      Profil
+                      {t('nav.profile')}
                     </DropdownMenuItem>
                     {isAdmin && (
                       <DropdownMenuItem onClick={() => navigate('/admin')}>
