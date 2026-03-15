@@ -271,7 +271,7 @@ const AutopicV2Content = () => {
             disabled={currentStep === 0}
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
-            Tillbaka
+            {t('common.back')}
           </Button>
           {currentStep < STEPS.length - 1 && (
             <Button
