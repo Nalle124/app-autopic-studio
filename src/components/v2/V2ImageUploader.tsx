@@ -170,8 +170,8 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[10px] border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10">
         <img src="/favicon.png" alt="" className="w-4 h-4 object-contain dark:invert flex-shrink-0" />
         <p className="text-xs text-foreground/80">
-          <span className="font-semibold text-primary">Nyhet</span>{' '}
-          AI-funktioner lanserade — skapa bakgrunder, blurra skyltar & mer
+          <span className="font-semibold text-primary">{t('v2.newsLabel')}</span>{' '}
+          {t('v2.newsText')}
         </p>
       </div>
 
