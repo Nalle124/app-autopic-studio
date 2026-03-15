@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Trash2, ChevronDown, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
