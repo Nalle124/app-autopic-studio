@@ -543,7 +543,7 @@ export const V2GenerateStep = ({
 
       {/* Delivery mode */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-foreground">Leveranssätt</h3>
+        <h3 className="text-sm font-medium text-foreground">{t('v2.deliveryMethod')}</h3>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setDeliveryMode('direct')}
@@ -551,8 +551,8 @@ export const V2GenerateStep = ({
               deliveryMode === 'direct' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
-            <p className="text-sm font-medium text-foreground">Direkt</p>
-            <p className="text-[10px] text-muted-foreground">Se bilderna genereras</p>
+            <p className="text-sm font-medium text-foreground">{t('v2.direct')}</p>
+            <p className="text-[10px] text-muted-foreground">{t('v2.directDesc')}</p>
           </button>
           <button
             onClick={() => setDeliveryMode('email')}
@@ -560,8 +560,8 @@ export const V2GenerateStep = ({
               deliveryMode === 'email' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
-            <p className="text-sm font-medium text-foreground">E-post</p>
-            <p className="text-[10px] text-muted-foreground">Få länk på email inom 2 min</p>
+            <p className="text-sm font-medium text-foreground">{t('v2.emailDelivery')}</p>
+            <p className="text-[10px] text-muted-foreground">{t('v2.emailDesc')}</p>
           </button>
         </div>
       </div>
