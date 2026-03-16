@@ -242,6 +242,7 @@ export const V2GenerateStep = ({
   images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat,
   onImagesUpdate, onComplete, onRefetchCredits, onStartOver, onTriggerPaywall,
 }: Props) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
