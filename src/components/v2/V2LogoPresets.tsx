@@ -232,7 +232,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
       {plateConfig.enabled && (
         <div className="pl-2 border-l-2 border-primary/20 ml-2 space-y-3">
           <div className="grid grid-cols-4 gap-2">
-            {PLATE_STYLES.map((style) => (
+            {PLATE_STYLE_KEYS.map((style) => (
               <button
                 key={style.id}
                 onClick={() => {
@@ -254,7 +254,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                   {style.id === 'logo' && <div className="w-8 h-3 rounded bg-primary/30" />}
                   {style.id === 'custom-logo' && <Upload className="w-3.5 h-3.5 text-muted-foreground" />}
                 </div>
-                <p className="text-[10px] font-medium text-foreground">{style.label}</p>
+                <p className="text-[10px] font-medium text-foreground">{t(style.key)}</p>
               </button>
             ))}
           </div>
