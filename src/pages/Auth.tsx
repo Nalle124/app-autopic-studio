@@ -577,6 +577,7 @@ const Auth = () => {
 
 // Separate component for resetting password after clicking email link
 const ResetPasswordForm = () => {
+  const { t } = useTranslation();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -586,17 +587,17 @@ const ResetPasswordForm = () => {
     e.preventDefault();
     
     if (!newPassword || !confirmPassword) {
-      toast.error('Fyll i båda fälten');
+      toast.error(t('auth.fillBothFields'));
       return;
     }
     
     if (newPassword.length < 6) {
-      toast.error('Lösenordet måste vara minst 6 tecken');
+      toast.error(t('auth.passwordMinLength'));
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      toast.error('Lösenorden matchar inte');
+      toast.error(t('auth.passwordsDontMatch'));
       return;
     }
     
@@ -609,10 +610,9 @@ const ResetPasswordForm = () => {
     setLoading(false);
     
     if (error) {
-      toast.error(error.message || 'Kunde inte uppdatera lösenord');
+      toast.error(error.message || t('auth.couldNotUpdatePassword'));
     } else {
-      toast.success('Lösenord uppdaterat! Logga in med ditt nya lösenord.');
-      // Sign out to clear the recovery session, then redirect to clean login
+      toast.success(t('auth.passwordUpdated'));
       await supabase.auth.signOut();
       window.location.href = '/auth';
     }
@@ -622,35 +622,35 @@ const ResetPasswordForm = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Nytt lösenord</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('auth.newPasswordTitle')}</CardTitle>
           <CardDescription className="text-center">
-            Ange ditt nya lösenord
+            {t('auth.enterNewPassword')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">Nytt lösenord</Label>
+              <Label htmlFor="new-password">{t('auth.newPassword')}</Label>
               <PasswordInput
                 id="new-password"
-                placeholder="••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 disabled={loading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Bekräfta lösenord</Label>
+              <Label htmlFor="confirm-password">{t('auth.confirmPassword')}</Label>
               <PasswordInput
                 id="confirm-password"
-                placeholder="••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 disabled={loading}
               />
             </div>
             <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
-              Uppdatera lösenord
+              {t('auth.updatePassword')}
             </Button>
           </form>
         </CardContent>
