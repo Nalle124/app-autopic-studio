@@ -262,7 +262,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                 <img
                   src={img.processedUrl || img.previewUrl}
-                  alt={`Resultat ${i + 1}`}
+                  alt={`${t('v2.result')} ${i + 1}`}
                   className="w-full h-full object-cover"
                 />
                 {selectedImages.has(i) && (
