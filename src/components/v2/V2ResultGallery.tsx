@@ -295,11 +295,11 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       {/* Action buttons */}
       <div className="flex gap-3 justify-center flex-wrap">
         <Button variant="outline" onClick={() => navigate('/?tab=history')}>
-          Gå till galleriet
+          {t('common.goToGallery')}
         </Button>
         <Button variant="outline" onClick={onStartOver}>
           <RotateCcw className="h-4 w-4 mr-2" />
-          Börja om
+          {t('v2.startOver')}
         </Button>
       </div>
 
