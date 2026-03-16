@@ -218,8 +218,8 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         <div className="flex items-center gap-3">
           <Shield className="h-5 w-5 text-primary shrink-0" />
           <div>
-            <p className="text-sm font-medium text-foreground">Dölj registreringsskyltar</p>
-            <p className="text-[11px] text-muted-foreground">+1 kredit per exteriörbild</p>
+            <p className="text-sm font-medium text-foreground">{t('v2.hidePlates')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('v2.platesCost')}</p>
           </div>
         </div>
         <Switch
