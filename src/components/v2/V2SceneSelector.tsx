@@ -136,7 +136,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
 
       {/* Category tabs — extra spacing before gallery */}
       <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-hide">
-        {CATEGORIES.map(cat => (
+        {CATEGORY_KEYS.map(cat => (
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}
@@ -146,7 +146,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
-            {cat.label}
+            {t(cat.key)}
           </button>
         ))}
       </div>
