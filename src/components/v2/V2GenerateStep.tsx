@@ -457,7 +457,7 @@ export const V2GenerateStep = ({
                       <div className="absolute inset-0 animate-premium-shimmer" />
                     ) : (
                       <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
-                        <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">Väntar...</div>
+                        <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">{t('common.waiting')}</div>
                       </div>
                     )}
                   </div>
