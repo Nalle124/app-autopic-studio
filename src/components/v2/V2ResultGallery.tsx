@@ -118,7 +118,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
         {/* Header row */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h2 className="font-sans font-medium text-lg text-foreground">Färdiga bilder</h2>
+            <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.finishedImages')}</h2>
             
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               {/* Crop tool */}
