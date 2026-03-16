@@ -85,7 +85,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Kunde inte skapa ZIP');
+      toast.error(t('v2.couldNotCreateZip'));
     } finally {
       setDownloading(false);
     }
