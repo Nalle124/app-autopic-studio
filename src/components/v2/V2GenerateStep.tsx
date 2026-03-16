@@ -345,7 +345,7 @@ export const V2GenerateStep = ({
               catch (plateErr: any) { console.error('Plate blur failed for image', i, plateErr); }
             }
           } else {
-            setStatusText(`Maskerar interiör ${i + 1} av ${totalSteps}...`);
+            setStatusText(t('v2.maskingInterior', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
             processedUrl = await processInteriorImage(img, interiorBgType);
           }
