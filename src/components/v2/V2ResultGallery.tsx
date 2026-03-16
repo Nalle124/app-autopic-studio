@@ -126,7 +126,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 variant="outline"
                 size="icon"
                 className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
-                title="Beskär"
+                title={t('v2.crop')}
                 onClick={() => {
                   if (results.length > 0) {
                     const idx = previewIndex ?? 0;
