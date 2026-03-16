@@ -267,7 +267,7 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Fyll i e-post och lösenord');
+      toast.error(t('auth.fillEmailAndPassword'));
       return;
     }
     setLoading(true);
