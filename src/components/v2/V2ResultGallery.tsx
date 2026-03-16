@@ -25,6 +25,7 @@ interface Props {
 }
 
 export const V2ResultGallery = ({ results, onStartOver }: Props) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
