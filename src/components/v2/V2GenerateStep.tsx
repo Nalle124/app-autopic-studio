@@ -332,14 +332,14 @@ export const V2GenerateStep = ({
           let processedUrl: string;
           const isExterior = img.classification === 'exterior' || img.classification === 'detail';
           if (isExterior) {
-            setStatusText(`Genererar ${i + 1} av ${totalSteps}...`);
+            setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
             processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
-            setStatusText(`Beskär ${i + 1} av ${totalSteps}...`);
+            setStatusText(t('v2.cropping', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.4) / totalSteps) * 100));
             processedUrl = await autoCropImage(processedUrl, targetAspect);
             if (plateConfig.enabled) {
-              setStatusText(`Döljer skyltar ${i + 1} av ${totalSteps}...`);
+              setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
               setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
               try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); }
               catch (plateErr: any) { console.error('Plate blur failed for image', i, plateErr); }
