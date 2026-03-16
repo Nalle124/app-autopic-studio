@@ -519,8 +519,8 @@ export const V2GenerateStep = ({
           <div className="flex items-center gap-3">
             <Sun className="h-5 w-5 text-amber-500 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-foreground">Ljusboost</p>
-              <p className="text-[11px] text-muted-foreground">Automatisk ljusförbättring för mörka bilder</p>
+              <p className="text-sm font-medium text-foreground">{t('v2.lightBoost')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('v2.lightBoostDesc')}</p>
             </div>
           </div>
           <Switch checked={lightBoost} onCheckedChange={setLightBoost} />
