@@ -153,10 +153,10 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
 
       {error ? (
         <div className="flex flex-col items-center justify-center py-10 gap-3">
-          <p className="text-sm text-muted-foreground">Kunde inte ladda bakgrunder</p>
+          <p className="text-sm text-muted-foreground">{t('v2.couldNotLoadBackgrounds')}</p>
           <Button variant="outline" size="sm" onClick={loadScenes}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Försök igen
+            {t('v2.tryAgain')}
           </Button>
         </div>
       ) : loading ? (
