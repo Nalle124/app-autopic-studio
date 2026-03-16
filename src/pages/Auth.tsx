@@ -472,7 +472,7 @@ const Auth = () => {
                   />
                 </div>
                 <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
-                  Skicka återställningslänk
+                  {t('auth.sendResetLink')}
                 </Button>
               </form>
             )}
