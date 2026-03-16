@@ -190,9 +190,9 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
 
           {/* Apply to */}
           <div className="space-y-3">
-            <h3 className="text-base font-medium text-foreground">Applicera på:</h3>
+            <h3 className="text-base font-medium text-foreground">{t('v2.applyTo')}</h3>
             <div className="flex flex-wrap gap-1.5">
-              {APPLY_OPTIONS.map((opt) => (
+              {APPLY_OPTION_KEYS.map((opt) => (
                 <button
                   key={opt.id}
                   onClick={() => onConfigChange({ ...config, applyTo: opt.id })}
@@ -202,7 +202,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                       : 'border-border text-foreground hover:border-primary/40'
                   }`}
                 >
-                  {opt.label}
+                  {t(opt.key)}
                 </button>
               ))}
             </div>
