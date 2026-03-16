@@ -444,7 +444,7 @@ export const V2GenerateStep = ({
           {liveResults.map((img, i) => (
             <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all" onClick={() => setPreviewUrl(img.processedUrl || img.previewUrl)}>
               <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                <img src={img.processedUrl || img.previewUrl} alt={`Klar ${i + 1}`} className="w-full h-full object-cover animate-in fade-in duration-500" />
+                <img src={img.processedUrl || img.previewUrl} alt={`${t('v2.imagesDone', { current: i + 1 })}`} className="w-full h-full object-cover animate-in fade-in duration-500" />
               </div>
             </div>
           ))}
