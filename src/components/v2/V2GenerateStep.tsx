@@ -276,7 +276,7 @@ export const V2GenerateStep = ({
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
 
     try {
-      setStatusText('Analyserar bilder...');
+      setStatusText(t('v2.analyzingImages'));
       const imageData = await Promise.all(
         images.map(async (img) => {
           const ab = await img.file.arrayBuffer();
