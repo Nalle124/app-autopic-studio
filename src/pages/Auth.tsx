@@ -258,7 +258,7 @@ const Auth = () => {
       setVerificationCode('');
       // UI handles state indication - no toast needed
     } catch (error: any) {
-      toast.error(error.message || 'Kunde inte skicka ny kod');
+      toast.error(error.message || t('auth.couldNotSendNewCode'));
     } finally {
       setLoading(false);
     }
