@@ -208,7 +208,7 @@ const Auth = () => {
       });
       
       if (error || !data?.valid) {
-        toast.error(data?.error || 'Fel verifieringskod');
+        toast.error(data?.error || t('auth.wrongCode'));
         setVerifying(false);
         return;
       }
