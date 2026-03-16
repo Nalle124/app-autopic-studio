@@ -277,8 +277,8 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
       {/* Placement modal */}
       <Dialog open={showPlacementModal} onOpenChange={setShowPlacementModal}>
         <DialogContent className="max-w-md">
-          <VisuallyHidden><DialogTitle>Välj placering</DialogTitle></VisuallyHidden>
-          <h3 className="text-lg font-medium text-foreground mb-4">Välj logotypplacering</h3>
+          <VisuallyHidden><DialogTitle>{t('v2.choosePlacementTitle')}</DialogTitle></VisuallyHidden>
+          <h3 className="text-lg font-medium text-foreground mb-4">{t('v2.choosePlacementTitle')}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {PRESETS.map((preset) => (
               <button
