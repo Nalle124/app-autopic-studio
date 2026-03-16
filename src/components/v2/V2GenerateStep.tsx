@@ -532,8 +532,8 @@ export const V2GenerateStep = ({
           <div className="flex items-center gap-3">
             <Palette className="h-5 w-5 text-blue-500 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-foreground">Lätt redigering</p>
-              <p className="text-[11px] text-muted-foreground">Ökad kontrast, skarpare skuggor — proffsig finish</p>
+              <p className="text-sm font-medium text-foreground">{t('v2.lightEdit')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('v2.lightEditDesc')}</p>
             </div>
           </div>
           <Switch checked={lightEdit} onCheckedChange={setLightEdit} />
