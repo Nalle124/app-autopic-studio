@@ -86,7 +86,7 @@ const Auth = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Startar betalning...</p>
+          <p className="text-muted-foreground">{t('auth.startingPayment')}</p>
         </div>
       </div>
     );
