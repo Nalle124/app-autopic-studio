@@ -231,8 +231,8 @@ const Auth = () => {
       }
       
       // If email confirmation is still required by Supabase (shouldn't happen with our setup)
-      if (needsEmailConfirmation) {
-        toast.success('Konto skapat! Kolla din e-post för att aktivera.');
+        if (needsEmailConfirmation) {
+          toast.success(t('auth.checkEmailToActivate'));
         setVerifying(false);
         return;
       }
