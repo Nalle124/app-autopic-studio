@@ -107,9 +107,9 @@ const Auth = () => {
       body: { email: emailToVerify, name }
     });
     
-    if (error) {
-      console.error('Error sending verification code:', error);
-      throw new Error('Kunde inte skicka verifieringskod');
+     if (error) {
+       console.error('Error sending verification code:', error);
+       throw new Error(t('auth.couldNotSendCode'));
     }
   };
 
