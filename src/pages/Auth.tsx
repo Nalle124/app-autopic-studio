@@ -527,7 +527,7 @@ const Auth = () => {
                 <div className="flex items-center gap-2">
                   <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={checked => setRememberMe(checked === true)} disabled={loading} />
                   <label htmlFor="remember-me" className="text-sm text-muted-foreground cursor-pointer">
-                    Förbli inloggad
+                    {t('auth.rememberMe')}
                   </label>
                 </div>
                 <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
