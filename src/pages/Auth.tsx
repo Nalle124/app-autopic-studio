@@ -238,7 +238,7 @@ const Auth = () => {
       }
       
       // Success!
-      toast.success('Konto skapat!');
+      toast.success(t('auth.accountCreated'));
       handleAuthSuccess();
       
     } catch (error: any) {
