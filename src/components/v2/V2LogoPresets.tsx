@@ -170,7 +170,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
 
           {/* Logo size */}
           <div className="space-y-3">
-            <h3 className="text-base font-medium text-foreground">Storlek:</h3>
+            <h3 className="text-base font-medium text-foreground">{t('v2.size')}</h3>
             <div className="flex gap-1.5">
               {LOGO_SIZES.map((size) => (
                 <button
