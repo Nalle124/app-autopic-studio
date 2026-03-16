@@ -182,7 +182,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onClick={() => downloadAsZip(results)} disabled={downloading}>
                     <FolderDown className="w-4 h-4 mr-2" />
-                    {downloading ? 'Skapar ZIP...' : 'Ladda ner som ZIP'}
+                    {downloading ? t('v2.creatingZip') : t('v2.downloadAsZip')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => downloadOneByOne(results)}>
                     <ListOrdered className="w-4 h-4 mr-2" />
