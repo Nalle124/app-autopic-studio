@@ -443,10 +443,10 @@ const Auth = () => {
                   <Mail className="w-8 h-8 text-primary" />
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  Vi har skickat ett mail till <strong>{email}</strong>. Klicka på länken i mailet för att återställa ditt lösenord.
+                  {t('auth.resetEmailSent')} <strong>{email}</strong>. {t('auth.clickLinkToReset')}
                 </p>
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400">
-                  <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+                  {t('auth.checkSpam')}
                 </div>
                 <Button 
                   variant="outline" 
