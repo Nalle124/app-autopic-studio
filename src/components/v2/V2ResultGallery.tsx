@@ -229,7 +229,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               }}
             />
             <label htmlFor="select-all-v2" className="text-sm text-foreground/70 dark:text-muted-foreground cursor-pointer whitespace-nowrap">
-              Markera alla ({results.length})
+              {t('v2.selectAll')} ({results.length})
             </label>
             {selectedImages.size > 0 && (
               <span className="text-sm text-primary font-medium ml-auto">
