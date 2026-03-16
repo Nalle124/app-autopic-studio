@@ -99,7 +99,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
     <div className="space-y-6">
       {/* Header row with format toggle and grid view */}
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
+        <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.chooseBackground')}</h2>
         <div className="flex items-center gap-2">
           {/* Format toggle — lighter, more subtle */}
           <div className="flex gap-0.5 border border-border rounded-full p-0.5">
