@@ -194,7 +194,7 @@ const Auth = () => {
     }
     
     if (!pendingSignupData) {
-      toast.error('Något gick fel, försök igen');
+      toast.error(t('auth.somethingWentWrong'));
       setShowEmailVerification(false);
       return;
     }
