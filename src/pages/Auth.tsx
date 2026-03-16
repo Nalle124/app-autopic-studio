@@ -539,8 +539,8 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Namn</Label>
-                  <Input id="signup-name" type="text" placeholder="Ditt namn" value={fullName} onChange={e => setFullName(e.target.value)} disabled={loading} />
+                  <Label htmlFor="signup-name">{t('auth.name')}</Label>
+                  <Input id="signup-name" type="text" placeholder={t('auth.namePlaceholder')} value={fullName} onChange={e => setFullName(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">E-post</Label>
