@@ -547,10 +547,10 @@ const Auth = () => {
                   <Input id="signup-email" type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Lösenord</Label>
-                  <PasswordInput id="signup-password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
+                  <Label htmlFor="signup-password">{t('auth.password')}</Label>
+                  <PasswordInput id="signup-password" placeholder={t('auth.passwordPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                   <p className="text-xs text-muted-foreground">
-                    Minst 6 tecken
+                    {t('auth.minChars')}
                   </p>
                 </div>
                 <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
