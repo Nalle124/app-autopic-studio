@@ -405,7 +405,7 @@ const Auth = () => {
                 className="text-muted-foreground"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Ändra e-post
+                {t('auth.changeEmail')}
               </Button>
             </div>
           </CardContent>
