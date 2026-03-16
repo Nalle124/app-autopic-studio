@@ -522,7 +522,7 @@ const Auth = () => {
                       {t('auth.forgotPassword')}
                     </button>
                   </div>
-                  <PasswordInput id="login-password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
+                  <PasswordInput id="login-password" placeholder={t('auth.passwordPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={checked => setRememberMe(checked === true)} disabled={loading} />
