@@ -261,7 +261,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
           {plateConfig.style === 'custom-logo' && plateConfig.customLogoBase64 && (
             <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
               <img src={plateConfig.customLogoBase64} alt="Custom" className="h-6 w-auto object-contain" />
-              <span className="text-xs text-muted-foreground">Egen logotyp vald</span>
+              <span className="text-xs text-muted-foreground">{t('v2.customLogoSelected')}</span>
             </div>
           )}
           <input
