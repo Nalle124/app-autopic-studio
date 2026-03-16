@@ -127,7 +127,7 @@ const Auth = () => {
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      toast.error('Ange en giltig e-postadress');
+      toast.error(t('auth.invalidEmail'));
       return;
     }
     
