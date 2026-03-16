@@ -312,7 +312,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
                 <img
                   src={previewUrl}
-                  alt="Förhandsgranskning"
+                  alt={t('v2.preview')}
                   className="max-w-full max-h-[calc(90vh-80px)] object-contain"
                 />
                 {results.length > 1 && (
