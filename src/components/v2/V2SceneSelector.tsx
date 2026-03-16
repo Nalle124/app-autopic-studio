@@ -111,7 +111,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Liggande
+              {t('v2.landscape')}
             </button>
             <button
               onClick={() => onOutputFormatChange('portrait')}
@@ -121,7 +121,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Stående
+              {t('v2.portrait')}
             </button>
           </div>
           {/* Grid toggle */}
