@@ -208,8 +208,8 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                   className="text-muted-foreground"
                   onClick={() => setSelectedImages(new Set())}
                 >
-                  <X className="w-4 h-4 mr-1" />
-                  Avmarkera
+                   <X className="w-4 h-4 mr-1" />
+                   {t('v2.deselect')}
                 </Button>
               )}
             </div>
