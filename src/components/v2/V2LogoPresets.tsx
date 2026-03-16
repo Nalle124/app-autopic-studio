@@ -124,11 +124,12 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
     reader.readAsDataURL(file);
   }, [plateConfig, onPlateConfigChange]);
 
-  const selectedPresetLabel = PRESETS.find(p => p.id === config.preset)?.label || 'Välj';
+  const selectedPreset = PRESET_KEYS.find(p => p.id === config.preset);
+  const selectedPresetLabel = selectedPreset ? t(selectedPreset.key) : t('v2.choosePlacement');
 
   return (
     <div className="space-y-5">
-      <h2 className="font-sans font-medium text-lg text-foreground">Logo & skyltar</h2>
+      <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.logoAndPlates')}</h2>
 
       {/* Logo toggle */}
       <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
