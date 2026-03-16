@@ -242,7 +242,7 @@ const Auth = () => {
       handleAuthSuccess();
       
     } catch (error: any) {
-      toast.error('Något gick fel, försök igen');
+      toast.error(t('auth.somethingWentWrong'));
     } finally {
       setVerifying(false);
     }
