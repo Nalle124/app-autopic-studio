@@ -482,8 +482,8 @@ export const V2GenerateStep = ({
       {/* Summary card with grey gradient matching V1 export & V2 results */}
       <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 shadow-sm relative overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
         <div className="space-y-1 relative z-10">
-          <h2 className="font-sans font-medium text-lg text-foreground dark:text-white">Redo att generera</h2>
-          <p className="text-sm text-foreground/60 dark:text-white/60">{totalImages} bilder redo att bearbetas</p>
+          <h2 className="font-sans font-medium text-lg text-foreground dark:text-white">{t('v2.readyToGenerate')}</h2>
+          <p className="text-sm text-foreground/60 dark:text-white/60">{t('v2.imagesReady', { count: totalImages })}</p>
         </div>
 
         {/* Subtle divider between heading and details */}
