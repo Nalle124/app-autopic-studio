@@ -201,14 +201,14 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
               className={`relative rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/40 ${thumbAspect} flex flex-col items-center justify-center gap-2 bg-muted/30 transition-all`}
             >
               <img src="/favicon.png" alt="" className="h-6 w-6 object-contain dark:invert" />
-              <p className="text-xs font-medium text-foreground">Skapa egen</p>
-              <p className="text-[10px] text-muted-foreground">via AI Studio</p>
+              <p className="text-xs font-medium text-foreground">{t('v2.createOwn')}</p>
+              <p className="text-[10px] text-muted-foreground">{t('v2.viaAiStudio')}</p>
             </button>
           </div>
 
           {activeCategory === 'user' && userScenes.length === 0 && (
             <p className="text-center text-sm text-muted-foreground py-4">
-              Du har inga egna scener ännu. Skapa en via AI Studio!
+              {t('v2.noUserScenes')}
             </p>
           )}
         </>

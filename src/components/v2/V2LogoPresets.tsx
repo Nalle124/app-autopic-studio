@@ -280,7 +280,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
           <VisuallyHidden><DialogTitle>{t('v2.choosePlacementTitle')}</DialogTitle></VisuallyHidden>
           <h3 className="text-lg font-medium text-foreground mb-4">{t('v2.choosePlacementTitle')}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {PRESETS.map((preset) => (
+            {PRESET_KEYS.map((preset) => (
               <button
                 key={preset.id}
                 onClick={() => {
@@ -297,7 +297,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                   {renderPresetMockup(preset.id)}
                 </div>
                 <span className="text-[10px] text-muted-foreground whitespace-nowrap font-medium">
-                  {preset.label}
+                  {t(preset.key)}
                 </span>
               </button>
             ))}
