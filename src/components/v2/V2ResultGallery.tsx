@@ -306,7 +306,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       {/* Preview dialog */}
       <Dialog open={previewIndex !== null && !editingImage} onOpenChange={(open) => !open && setPreviewIndex(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
-          <VisuallyHidden><DialogTitle>Förhandsgranskning</DialogTitle></VisuallyHidden>
+          <VisuallyHidden><DialogTitle>{t('v2.preview')}</DialogTitle></VisuallyHidden>
           {previewImg && (
             <div className="flex flex-col h-full max-h-[90vh]">
               <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
