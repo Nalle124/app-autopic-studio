@@ -366,7 +366,7 @@ const Auth = () => {
               className={`w-full ${verifying ? 'btn-processing' : ''}`}
               disabled={verifying || verificationCode.length !== 4}
             >
-              Verifiera & skapa konto
+              {t('auth.verifyAndCreate')}
             </Button>
             
             {/* Spam folder tip */}
