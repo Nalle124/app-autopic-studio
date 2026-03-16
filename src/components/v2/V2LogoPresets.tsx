@@ -157,14 +157,14 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         <div className="space-y-6 pl-2 border-l-2 border-primary/20 ml-2">
           {/* Placement — button that opens modal */}
           <div className="space-y-3">
-            <h3 className="text-base font-medium text-foreground">Placering:</h3>
+            <h3 className="text-base font-medium text-foreground">{t('v2.placement')}</h3>
             <Button
               variant="outline"
               className="w-full justify-between"
               onClick={() => setShowPlacementModal(true)}
             >
               <span>{selectedPresetLabel}</span>
-              <span className="text-xs text-muted-foreground">Välj placering</span>
+              <span className="text-xs text-muted-foreground">{t('v2.choosePlacement')}</span>
             </Button>
           </div>
 
