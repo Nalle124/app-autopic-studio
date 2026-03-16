@@ -489,12 +489,12 @@ const Auth = () => {
         
         <CardHeader>
           <CardTitle className="text-2xl text-center">
-            {selectedPlan ? 'Skapa konto för att fortsätta' : 'Välkommen'}
+            {selectedPlan ? t('auth.createAccountToContinue') : t('auth.welcome')}
           </CardTitle>
           <CardDescription className="text-center">
             {selectedPlan 
-              ? 'Fyll i dina uppgifter så tar vi dig direkt till betalningen'
-              : 'Logga in eller skapa ett konto för att fortsätta'
+              ? t('auth.fillDetailsForPayment')
+              : t('auth.loginOrSignup')
             }
           </CardDescription>
         </CardHeader>
