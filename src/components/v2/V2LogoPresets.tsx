@@ -140,9 +140,9 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
             <div className="h-5 w-5 rounded bg-muted shrink-0" />
           )}
           <div>
-            <p className="text-sm font-medium text-foreground">Logo på bilderna</p>
+            <p className="text-sm font-medium text-foreground">{t('v2.logoOnImages')}</p>
             <p className="text-[11px] text-muted-foreground">
-              {logoUrl ? 'Din logotyp appliceras' : 'Ladda upp i din profil'}
+              {logoUrl ? t('v2.logoApplied') : t('v2.uploadInProfile')}
             </p>
           </div>
         </div>
