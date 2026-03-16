@@ -143,7 +143,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 variant="outline"
                 size="icon"
                 className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
-                title="Redigera"
+                title={t('v2.adjust')}
                 onClick={() => {
                   if (results.length > 0) {
                     const idx = previewIndex ?? 0;
