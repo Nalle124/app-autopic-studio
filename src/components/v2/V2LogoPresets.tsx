@@ -91,6 +91,7 @@ const renderPresetMockup = (presetId: string) => {
 };
 
 export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange }: Props) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [showPlacementModal, setShowPlacementModal] = useState(false);
