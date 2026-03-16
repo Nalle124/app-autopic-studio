@@ -508,8 +508,8 @@ const Auth = () => {
             <TabsContent value="login">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">E-post</Label>
-                  <Input id="login-email" type="email" placeholder="din@email.se" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
+                  <Label htmlFor="login-email">{t('auth.email')}</Label>
+                  <Input id="login-email" type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
