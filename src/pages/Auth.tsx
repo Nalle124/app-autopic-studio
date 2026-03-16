@@ -513,13 +513,13 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="login-password">Lösenord</Label>
+                    <Label htmlFor="login-password">{t('auth.password')}</Label>
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
                       className="text-xs text-primary hover:underline"
                     >
-                      Glömt lösenord?
+                      {t('auth.forgotPassword')}
                     </button>
                   </div>
                   <PasswordInput id="login-password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
