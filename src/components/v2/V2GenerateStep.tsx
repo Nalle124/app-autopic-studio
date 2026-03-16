@@ -401,20 +401,20 @@ export const V2GenerateStep = ({
     const userEmail = (() => { try { const u = JSON.parse(localStorage.getItem('sb-cfsyxrokdemwkklqflnb-auth-token') || '{}'); return u?.user?.email; } catch { return null; } })();
     return (
       <div className="space-y-6 py-8">
-        <h2 className="text-lg font-medium text-foreground">Dina bilder genereras!</h2>
+        <h2 className="text-lg font-medium text-foreground">{t('v2.imagesBeingGenerated')}</h2>
         <p className="text-sm text-muted-foreground">
-          Du får ett mail med nedladdningslänkar inom ett par minuter{userEmail ? ` till ${userEmail}` : ''}. Du kan stänga ner sidan eller skapa ett nytt projekt.
+          {t('v2.emailNotice')}{userEmail ? ` ${t('v2.emailNoticeTo', { email: userEmail })}` : ''}. {t('v2.canClosePage')}
         </p>
         <p className="text-xs text-muted-foreground/70">
-          💡 Tips: Kolla din skräppost om du inte hittar mailet i inkorgen.
+          {t('v2.checkSpamTip')}
         </p>
         <div className="flex gap-3 flex-wrap">
           <Button onClick={onStartOver}>
             <Plus className="h-4 w-4 mr-2" />
-            Nytt projekt
+            {t('common.newProject')}
           </Button>
           <Button variant="outline" onClick={() => navigate('/?tab=history')}>
-            Gå till galleriet
+            {t('common.goToGallery')}
           </Button>
         </div>
       </div>
