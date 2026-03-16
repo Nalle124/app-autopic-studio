@@ -17,22 +17,22 @@ interface Props {
   onPlateConfigChange: (config: V2PlateConfig) => void;
 }
 
-const PRESETS = [
-  { id: 'top-left', label: 'Uppe vänster' },
-  { id: 'top-center', label: 'Uppe center' },
-  { id: 'bottom-right', label: 'Nere höger' },
-  { id: 'bottom-left', label: 'Nere vänster' },
-  { id: 'bottom-center-banner', label: 'Banner nere' },
-  { id: 'top-center-banner', label: 'Banner uppe' },
-  { id: 'top-banner-left', label: 'Banner vänster' },
-  { id: 'top-banner-right', label: 'Banner höger' },
+const PRESET_KEYS = [
+  { id: 'top-left', key: 'v2.presets.topLeft' },
+  { id: 'top-center', key: 'v2.presets.topCenter' },
+  { id: 'bottom-right', key: 'v2.presets.bottomRight' },
+  { id: 'bottom-left', key: 'v2.presets.bottomLeft' },
+  { id: 'bottom-center-banner', key: 'v2.presets.bannerBottom' },
+  { id: 'top-center-banner', key: 'v2.presets.bannerTop' },
+  { id: 'top-banner-left', key: 'v2.presets.bannerLeft' },
+  { id: 'top-banner-right', key: 'v2.presets.bannerRight' },
 ] as const;
 
-const APPLY_OPTIONS = [
-  { id: 'all' as const, label: 'Alla bilder' },
-  { id: 'first' as const, label: 'Första bilden' },
-  { id: 'first-last' as const, label: 'Första & sista' },
-  { id: 'first-3-last' as const, label: 'Första 3 + sista' },
+const APPLY_OPTION_KEYS = [
+  { id: 'all' as const, key: 'v2.applyOptions.all' },
+  { id: 'first' as const, key: 'v2.applyOptions.first' },
+  { id: 'first-last' as const, key: 'v2.applyOptions.firstLast' },
+  { id: 'first-3-last' as const, key: 'v2.applyOptions.first3Last' },
 ];
 
 const LOGO_SIZES = [
@@ -41,11 +41,11 @@ const LOGO_SIZES = [
   { id: 'large' as const, label: 'L' },
 ];
 
-const PLATE_STYLES = [
-  { id: 'blur-dark' as const, label: 'Mörk inlay' },
-  { id: 'blur-light' as const, label: 'Ljus inlay' },
-  { id: 'logo' as const, label: 'Din logotyp' },
-  { id: 'custom-logo' as const, label: 'Ladda upp' },
+const PLATE_STYLE_KEYS = [
+  { id: 'blur-dark' as const, key: 'v2.plateStyles.darkInlay' },
+  { id: 'blur-light' as const, key: 'v2.plateStyles.lightInlay' },
+  { id: 'logo' as const, key: 'v2.plateStyles.yourLogo' },
+  { id: 'custom-logo' as const, key: 'v2.plateStyles.upload' },
 ];
 
 const renderPresetMockup = (presetId: string) => {
