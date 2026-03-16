@@ -275,11 +275,11 @@ const Auth = () => {
     setLoading(false);
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        toast.error('Felaktiga inloggningsuppgifter');
+        toast.error(t('auth.invalidCredentials'));
       } else if (error.message.includes('Email not confirmed')) {
-        toast.error('E-postadressen är inte verifierad');
+        toast.error(t('auth.emailNotConfirmed'));
       } else {
-        toast.error(error.message || 'Kunde inte logga in');
+        toast.error(error.message || t('auth.couldNotLogin'));
       }
     } else {
       handleAuthSuccess();
