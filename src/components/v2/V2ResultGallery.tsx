@@ -186,7 +186,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => downloadOneByOne(results)}>
                     <ListOrdered className="w-4 h-4 mr-2" />
-                    Ladda ner en och en
+                    {t('v2.downloadOneByOne')}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     disabled={selectedImages.size === 0}
