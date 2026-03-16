@@ -574,7 +574,7 @@ export const V2GenerateStep = ({
         onClick={handleGenerate}
         disabled={processing}
       >
-        {processing ? 'Bearbetar...' : `Generera ${totalImages} bilder`}
+        {processing ? t('v2.processing') : t('v2.generateImages', { count: totalImages })}
       </Button>
     </div>
   );
