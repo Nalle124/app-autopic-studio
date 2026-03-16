@@ -360,7 +360,7 @@ export const V2GenerateStep = ({
         } catch (err: any) {
           console.error(`Error processing image ${img.id}:`, err);
           if (err?.message?.includes('402') || err?.message?.includes('Otillräckliga')) {
-            toast.error('Krediterna tog slut — bearbetningen avbröts'); break;
+            toast.error(t('v2.creditsRanOut')); break;
           }
           resultImages.push({ ...img, status: 'error', error: err.message });
         }
