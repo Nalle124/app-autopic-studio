@@ -159,7 +159,7 @@ const Auth = () => {
           return;
         }
         
-        toast.success('Konto skapat!');
+        toast.success(t('auth.accountCreated'));
         handleAuthSuccess();
       } catch (error: any) {
         localStorage.removeItem('isInviteSignup');
