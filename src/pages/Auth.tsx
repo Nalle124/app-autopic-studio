@@ -455,7 +455,7 @@ const Auth = () => {
                     setEmail('');
                   }}
                 >
-                  Skicka igen
+                  {t('auth.sendAgain')}
                 </Button>
               </div>
             ) : (
