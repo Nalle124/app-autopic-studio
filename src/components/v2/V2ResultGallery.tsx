@@ -196,7 +196,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                     }}
                   >
                     <CheckSquare className="w-4 h-4 mr-2" />
-                    Ladda ner markerade{selectedImages.size > 0 ? ` (${selectedImages.size})` : ''}
+                    {t('v2.downloadSelected')}{selectedImages.size > 0 ? ` (${selectedImages.size})` : ''}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
