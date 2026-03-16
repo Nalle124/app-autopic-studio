@@ -467,7 +467,7 @@ export const V2GenerateStep = ({
               <div className="relative overflow-hidden rounded-[10px] border border-border bg-card col-span-full">
                 <div className="p-4 flex items-center justify-center gap-4 bg-muted/50">
                   <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm font-medium text-foreground">Genererar {liveResults.length + 1} av {totalImages}...</p>
+                  <p className="text-sm font-medium text-foreground">{t('v2.generating', { current: liveResults.length + 1, total: totalImages })}</p>
                 </div>
               </div>
             )
