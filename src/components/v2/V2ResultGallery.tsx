@@ -59,7 +59,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      toast.error('Nedladdning misslyckades');
+      toast.error(t('v2.downloadFailed'));
     }
   };
 
