@@ -154,7 +154,7 @@ const Auth = () => {
         
         if (needsEmailConfirmation) {
           localStorage.removeItem('isInviteSignup');
-          toast.success('Konto skapat! Kolla din e-post för att aktivera.');
+          toast.success(t('auth.checkEmailToActivate'));
           setLoading(false);
           return;
         }
