@@ -543,8 +543,8 @@ const Auth = () => {
                   <Input id="signup-name" type="text" placeholder={t('auth.namePlaceholder')} value={fullName} onChange={e => setFullName(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">E-post</Label>
-                  <Input id="signup-email" type="email" placeholder="din@email.se" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
+                  <Label htmlFor="signup-email">{t('auth.email')}</Label>
+                  <Input id="signup-email" type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Lösenord</Label>
