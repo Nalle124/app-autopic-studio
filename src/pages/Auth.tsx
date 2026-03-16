@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ import { PRICING_TIERS, type PricingTier } from '@/config/pricing';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const Auth = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const planParam = searchParams.get('plan') as PricingTier | null;
   const selectedPlan = planParam && PRICING_TIERS[planParam] ? planParam : null;
@@ -84,7 +86,7 @@ const Auth = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Startar betalning...</p>
+          <p className="text-muted-foreground">{t('auth.startingPayment')}</p>
         </div>
       </div>
     );
@@ -105,27 +107,27 @@ const Auth = () => {
       body: { email: emailToVerify, name }
     });
     
-    if (error) {
-      console.error('Error sending verification code:', error);
-      throw new Error('Kunde inte skicka verifieringskod');
+     if (error) {
+       console.error('Error sending verification code:', error);
+       throw new Error(t('auth.couldNotSendCode'));
     }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !fullName) {
-      toast.error('Fyll i alla fält');
+      toast.error(t('auth.fillAllFields'));
       return;
     }
     if (password.length < 6) {
-      toast.error('Lösenordet måste vara minst 6 tecken');
+      toast.error(t('auth.passwordMinLength'));
       return;
     }
     
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      toast.error('Ange en giltig e-postadress');
+      toast.error(t('auth.invalidEmail'));
       return;
     }
     
@@ -142,9 +144,9 @@ const Auth = () => {
         if (signUpError) {
           localStorage.removeItem('isInviteSignup');
           if (signUpError.message.includes('already registered')) {
-            toast.error('E-postadressen är redan registrerad');
+            toast.error(t('auth.alreadyRegistered'));
           } else {
-            toast.error(signUpError.message || 'Kunde inte skapa konto');
+            toast.error(signUpError.message || t('auth.couldNotCreateAccount'));
           }
           setLoading(false);
           return;
@@ -152,16 +154,16 @@ const Auth = () => {
         
         if (needsEmailConfirmation) {
           localStorage.removeItem('isInviteSignup');
-          toast.success('Konto skapat! Kolla din e-post för att aktivera.');
+          toast.success(t('auth.checkEmailToActivate'));
           setLoading(false);
           return;
         }
         
-        toast.success('Konto skapat!');
+        toast.success(t('auth.accountCreated'));
         handleAuthSuccess();
       } catch (error: any) {
         localStorage.removeItem('isInviteSignup');
-        toast.error('Något gick fel, försök igen');
+        toast.error(t('auth.somethingWentWrong'));
       } finally {
         setLoading(false);
       }
@@ -179,7 +181,7 @@ const Auth = () => {
       
       // UI handles state indication - no toast needed
     } catch (error: any) {
-      toast.error(error.message || 'Kunde inte skicka verifieringskod');
+      toast.error(error.message || t('auth.couldNotSendCode'));
     } finally {
       setLoading(false);
     }
@@ -187,12 +189,12 @@ const Auth = () => {
 
   const handleVerifyCode = async () => {
     if (verificationCode.length !== 4) {
-      toast.error('Ange en 4-siffrig kod');
+      toast.error(t('auth.enter4digitCode'));
       return;
     }
     
     if (!pendingSignupData) {
-      toast.error('Något gick fel, försök igen');
+      toast.error(t('auth.somethingWentWrong'));
       setShowEmailVerification(false);
       return;
     }
@@ -206,7 +208,7 @@ const Auth = () => {
       });
       
       if (error || !data?.valid) {
-        toast.error(data?.error || 'Fel verifieringskod');
+        toast.error(data?.error || t('auth.wrongCode'));
         setVerifying(false);
         return;
       }
@@ -220,27 +222,27 @@ const Auth = () => {
       
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
-          toast.error('E-postadressen är redan registrerad');
+          toast.error(t('auth.alreadyRegistered'));
         } else {
-          toast.error(signUpError.message || 'Kunde inte skapa konto');
+          toast.error(signUpError.message || t('auth.couldNotCreateAccount'));
         }
         setVerifying(false);
         return;
       }
       
       // If email confirmation is still required by Supabase (shouldn't happen with our setup)
-      if (needsEmailConfirmation) {
-        toast.success('Konto skapat! Kolla din e-post för att aktivera.');
+        if (needsEmailConfirmation) {
+          toast.success(t('auth.checkEmailToActivate'));
         setVerifying(false);
         return;
       }
       
       // Success!
-      toast.success('Konto skapat!');
+      toast.success(t('auth.accountCreated'));
       handleAuthSuccess();
       
     } catch (error: any) {
-      toast.error('Något gick fel, försök igen');
+      toast.error(t('auth.somethingWentWrong'));
     } finally {
       setVerifying(false);
     }
@@ -256,7 +258,7 @@ const Auth = () => {
       setVerificationCode('');
       // UI handles state indication - no toast needed
     } catch (error: any) {
-      toast.error(error.message || 'Kunde inte skicka ny kod');
+      toast.error(error.message || t('auth.couldNotSendNewCode'));
     } finally {
       setLoading(false);
     }
@@ -265,7 +267,7 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Fyll i e-post och lösenord');
+      toast.error(t('auth.fillEmailAndPassword'));
       return;
     }
     setLoading(true);
@@ -273,11 +275,11 @@ const Auth = () => {
     setLoading(false);
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        toast.error('Felaktiga inloggningsuppgifter');
+        toast.error(t('auth.invalidCredentials'));
       } else if (error.message.includes('Email not confirmed')) {
-        toast.error('E-postadressen är inte verifierad');
+        toast.error(t('auth.emailNotConfirmed'));
       } else {
-        toast.error(error.message || 'Kunde inte logga in');
+        toast.error(error.message || t('auth.couldNotLogin'));
       }
     } else {
       handleAuthSuccess();
@@ -301,7 +303,7 @@ const Auth = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      toast.error('Ange din e-postadress');
+      toast.error(t('auth.enterEmail'));
       return;
     }
     setLoading(true);
@@ -315,7 +317,7 @@ const Auth = () => {
     setLoading(false);
     
     if (error) {
-      toast.error(error.message || 'Kunde inte skicka återställningsmail');
+      toast.error(error.message || t('auth.couldNotSendReset'));
     } else {
       setResetEmailSent(true);
     }
@@ -334,9 +336,9 @@ const Auth = () => {
             <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <Mail className="w-8 h-8 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Verifiera din e-post</CardTitle>
+             <CardTitle className="text-2xl">{t('auth.verifyEmail')}</CardTitle>
             <CardDescription>
-              Vi har skickat en 4-siffrig kod till
+              {t('auth.codeSentTo')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -364,29 +366,29 @@ const Auth = () => {
               className={`w-full ${verifying ? 'btn-processing' : ''}`}
               disabled={verifying || verificationCode.length !== 4}
             >
-              Verifiera & skapa konto
+              {t('auth.verifyAndCreate')}
             </Button>
             
             {/* Spam folder tip */}
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
-                <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+                <strong>{t('auth.checkSpam').split('!')[0]}!</strong> {t('auth.checkSpam').split('! ')[1]}
               </div>
             </div>
             
             {/* Resend code */}
             <div className="text-center text-sm text-muted-foreground">
-              Fick du ingen kod?{' '}
+              {t('auth.noCode')}{' '}
               {resendCooldown > 0 ? (
-                <span>Vänta {resendCooldown}s</span>
+                <span>{t('auth.waitSeconds', { seconds: resendCooldown })}</span>
               ) : (
                 <button 
                   onClick={handleResendCode}
                   disabled={loading}
                   className="text-primary hover:underline font-medium"
                 >
-                  {loading ? 'Skickar...' : 'Skicka ny kod'}
+                  {loading ? t('auth.sending') : t('auth.resendCode')}
                 </button>
               )}
             </div>
@@ -403,7 +405,7 @@ const Auth = () => {
                 className="text-muted-foreground"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Ändra e-post
+                {t('auth.changeEmail')}
               </Button>
             </div>
           </CardContent>
@@ -441,10 +443,10 @@ const Auth = () => {
                   <Mail className="w-8 h-8 text-primary" />
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  Vi har skickat ett mail till <strong>{email}</strong>. Klicka på länken i mailet för att återställa ditt lösenord.
+                  {t('auth.resetEmailSent')} <strong>{email}</strong>. {t('auth.clickLinkToReset')}
                 </p>
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400">
-                  <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+                  {t('auth.checkSpam')}
                 </div>
                 <Button 
                   variant="outline" 
@@ -453,7 +455,7 @@ const Auth = () => {
                     setEmail('');
                   }}
                 >
-                  Skicka igen
+                  {t('auth.sendAgain')}
                 </Button>
               </div>
             ) : (
@@ -470,7 +472,7 @@ const Auth = () => {
                   />
                 </div>
                 <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
-                  Skicka återställningslänk
+                  {t('auth.sendResetLink')}
                 </Button>
               </form>
             )}
@@ -487,49 +489,49 @@ const Auth = () => {
         
         <CardHeader>
           <CardTitle className="text-2xl text-center">
-            {selectedPlan ? 'Skapa konto för att fortsätta' : 'Välkommen'}
+            {selectedPlan ? t('auth.createAccountToContinue') : t('auth.welcome')}
           </CardTitle>
           <CardDescription className="text-center">
             {selectedPlan 
-              ? 'Fyll i dina uppgifter så tar vi dig direkt till betalningen'
-              : 'Logga in eller skapa ett konto för att fortsätta'
+              ? t('auth.fillDetailsForPayment')
+              : t('auth.loginOrSignup')
             }
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue={selectedPlan ? "signup" : "login"} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Logga in</TabsTrigger>
-              <TabsTrigger value="signup">Skapa konto</TabsTrigger>
+              <TabsTrigger value="login">{t('auth.login')}</TabsTrigger>
+              <TabsTrigger value="signup">{t('auth.signup')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">E-post</Label>
-                  <Input id="login-email" type="email" placeholder="din@email.se" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
+                  <Label htmlFor="login-email">{t('auth.email')}</Label>
+                  <Input id="login-email" type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="login-password">Lösenord</Label>
+                    <Label htmlFor="login-password">{t('auth.password')}</Label>
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
                       className="text-xs text-primary hover:underline"
                     >
-                      Glömt lösenord?
+                      {t('auth.forgotPassword')}
                     </button>
                   </div>
-                  <PasswordInput id="login-password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
+                  <PasswordInput id="login-password" placeholder={t('auth.passwordPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={checked => setRememberMe(checked === true)} disabled={loading} />
                   <label htmlFor="remember-me" className="text-sm text-muted-foreground cursor-pointer">
-                    Förbli inloggad
+                    {t('auth.rememberMe')}
                   </label>
                 </div>
                 <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
-                  Logga in
+                  {t('auth.login')}
                 </Button>
               </form>
             </TabsContent>
@@ -537,31 +539,31 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Namn</Label>
-                  <Input id="signup-name" type="text" placeholder="Ditt namn" value={fullName} onChange={e => setFullName(e.target.value)} disabled={loading} />
+                  <Label htmlFor="signup-name">{t('auth.name')}</Label>
+                  <Input id="signup-name" type="text" placeholder={t('auth.namePlaceholder')} value={fullName} onChange={e => setFullName(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">E-post</Label>
-                  <Input id="signup-email" type="email" placeholder="din@email.se" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
+                  <Label htmlFor="signup-email">{t('auth.email')}</Label>
+                  <Input id="signup-email" type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={e => setEmail(e.target.value)} disabled={loading} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Lösenord</Label>
-                  <PasswordInput id="signup-password" placeholder="••••••" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
+                  <Label htmlFor="signup-password">{t('auth.password')}</Label>
+                  <PasswordInput id="signup-password" placeholder={t('auth.passwordPlaceholder')} value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                   <p className="text-xs text-muted-foreground">
-                    Minst 6 tecken
+                    {t('auth.minChars')}
                   </p>
                 </div>
                 <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
-                  {selectedPlan ? `Skapa konto & fortsätt` : 'Skapa konto'}
+                  {selectedPlan ? t('auth.createAccountAndContinue') : t('auth.signup')}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  Genom att skapa konto godkänner du våra{' '}
+                  {t('auth.termsAgree')}{' '}
                   <a href="https://www.autopic.studio/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    villkor
+                    {t('auth.terms')}
                   </a>{' '}
-                  och{' '}
+                  {t('auth.and')}{' '}
                   <a href="https://www.autopic.studio/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    integritetspolicy
+                    {t('auth.privacyPolicy')}
                   </a>
                 </p>
               </form>
@@ -575,6 +577,7 @@ const Auth = () => {
 
 // Separate component for resetting password after clicking email link
 const ResetPasswordForm = () => {
+  const { t } = useTranslation();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -584,17 +587,17 @@ const ResetPasswordForm = () => {
     e.preventDefault();
     
     if (!newPassword || !confirmPassword) {
-      toast.error('Fyll i båda fälten');
+      toast.error(t('auth.fillBothFields'));
       return;
     }
     
     if (newPassword.length < 6) {
-      toast.error('Lösenordet måste vara minst 6 tecken');
+      toast.error(t('auth.passwordMinLength'));
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      toast.error('Lösenorden matchar inte');
+      toast.error(t('auth.passwordsDontMatch'));
       return;
     }
     
@@ -607,10 +610,9 @@ const ResetPasswordForm = () => {
     setLoading(false);
     
     if (error) {
-      toast.error(error.message || 'Kunde inte uppdatera lösenord');
+      toast.error(error.message || t('auth.couldNotUpdatePassword'));
     } else {
-      toast.success('Lösenord uppdaterat! Logga in med ditt nya lösenord.');
-      // Sign out to clear the recovery session, then redirect to clean login
+      toast.success(t('auth.passwordUpdated'));
       await supabase.auth.signOut();
       window.location.href = '/auth';
     }
@@ -620,35 +622,35 @@ const ResetPasswordForm = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Nytt lösenord</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('auth.newPasswordTitle')}</CardTitle>
           <CardDescription className="text-center">
-            Ange ditt nya lösenord
+            {t('auth.enterNewPassword')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">Nytt lösenord</Label>
+              <Label htmlFor="new-password">{t('auth.newPassword')}</Label>
               <PasswordInput
                 id="new-password"
-                placeholder="••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 disabled={loading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Bekräfta lösenord</Label>
+              <Label htmlFor="confirm-password">{t('auth.confirmPassword')}</Label>
               <PasswordInput
                 id="confirm-password"
-                placeholder="••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 disabled={loading}
               />
             </div>
             <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
-              Uppdatera lösenord
+              {t('auth.updatePassword')}
             </Button>
           </form>
         </CardContent>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Mail, Sun, Palette, Plus, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -241,6 +242,7 @@ export const V2GenerateStep = ({
   images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat,
   onImagesUpdate, onComplete, onRefetchCredits, onStartOver, onTriggerPaywall,
 }: Props) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -274,7 +276,7 @@ export const V2GenerateStep = ({
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
 
     try {
-      setStatusText('Analyserar bilder...');
+      setStatusText(t('v2.analyzingImages'));
       const imageData = await Promise.all(
         images.map(async (img) => {
           const ab = await img.file.arrayBuffer();
@@ -290,7 +292,7 @@ export const V2GenerateStep = ({
 
       if (deliveryMode === 'email') { 
         setEmailSent(true);
-        toast.success('Bilderna bearbetas — du får ett mail strax!');
+        toast.success(t('v2.imagesProcessing'));
       }
 
       const scene = await fetchScene(sceneId);
@@ -330,20 +332,20 @@ export const V2GenerateStep = ({
           let processedUrl: string;
           const isExterior = img.classification === 'exterior' || img.classification === 'detail';
           if (isExterior) {
-            setStatusText(`Genererar ${i + 1} av ${totalSteps}...`);
+            setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
             processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
-            setStatusText(`Beskär ${i + 1} av ${totalSteps}...`);
+            setStatusText(t('v2.cropping', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.4) / totalSteps) * 100));
             processedUrl = await autoCropImage(processedUrl, targetAspect);
             if (plateConfig.enabled) {
-              setStatusText(`Döljer skyltar ${i + 1} av ${totalSteps}...`);
+              setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
               setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
               try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); }
               catch (plateErr: any) { console.error('Plate blur failed for image', i, plateErr); }
             }
           } else {
-            setStatusText(`Maskerar interiör ${i + 1} av ${totalSteps}...`);
+            setStatusText(t('v2.maskingInterior', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
             processedUrl = await processInteriorImage(img, interiorBgType);
           }
@@ -358,7 +360,7 @@ export const V2GenerateStep = ({
         } catch (err: any) {
           console.error(`Error processing image ${img.id}:`, err);
           if (err?.message?.includes('402') || err?.message?.includes('Otillräckliga')) {
-            toast.error('Krediterna tog slut — bearbetningen avbröts'); break;
+            toast.error(t('v2.creditsRanOut')); break;
           }
           resultImages.push({ ...img, status: 'error', error: err.message });
         }
@@ -388,7 +390,7 @@ export const V2GenerateStep = ({
       }
     } catch (err: any) {
       console.error('Generation error:', err);
-      toast.error('Hoppsan, något gick fel. Testa igen!');
+      toast.error(t('v2.somethingWentWrong'));
     } finally {
       setProcessing(false);
     }
@@ -399,20 +401,20 @@ export const V2GenerateStep = ({
     const userEmail = (() => { try { const u = JSON.parse(localStorage.getItem('sb-cfsyxrokdemwkklqflnb-auth-token') || '{}'); return u?.user?.email; } catch { return null; } })();
     return (
       <div className="space-y-6 py-8">
-        <h2 className="text-lg font-medium text-foreground">Dina bilder genereras!</h2>
+        <h2 className="text-lg font-medium text-foreground">{t('v2.imagesBeingGenerated')}</h2>
         <p className="text-sm text-muted-foreground">
-          Du får ett mail med nedladdningslänkar inom ett par minuter{userEmail ? ` till ${userEmail}` : ''}. Du kan stänga ner sidan eller skapa ett nytt projekt.
+          {t('v2.emailNotice')}{userEmail ? ` ${t('v2.emailNoticeTo', { email: userEmail })}` : ''}. {t('v2.canClosePage')}
         </p>
         <p className="text-xs text-muted-foreground/70">
-          💡 Tips: Kolla din skräppost om du inte hittar mailet i inkorgen.
+          {t('v2.checkSpamTip')}
         </p>
         <div className="flex gap-3 flex-wrap">
           <Button onClick={onStartOver}>
             <Plus className="h-4 w-4 mr-2" />
-            Nytt projekt
+            {t('common.newProject')}
           </Button>
           <Button variant="outline" onClick={() => navigate('/?tab=history')}>
-            Gå till galleriet
+            {t('common.goToGallery')}
           </Button>
         </div>
       </div>
@@ -442,7 +444,7 @@ export const V2GenerateStep = ({
           {liveResults.map((img, i) => (
             <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all" onClick={() => setPreviewUrl(img.processedUrl || img.previewUrl)}>
               <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                <img src={img.processedUrl || img.previewUrl} alt={`Klar ${i + 1}`} className="w-full h-full object-cover animate-in fade-in duration-500" />
+                <img src={img.processedUrl || img.previewUrl} alt={`${t('v2.imagesDone', { current: i + 1 })}`} className="w-full h-full object-cover animate-in fade-in duration-500" />
               </div>
             </div>
           ))}
@@ -455,7 +457,7 @@ export const V2GenerateStep = ({
                       <div className="absolute inset-0 animate-premium-shimmer" />
                     ) : (
                       <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
-                        <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">Väntar...</div>
+                        <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">{t('common.waiting')}</div>
                       </div>
                     )}
                   </div>
@@ -465,7 +467,7 @@ export const V2GenerateStep = ({
               <div className="relative overflow-hidden rounded-[10px] border border-border bg-card col-span-full">
                 <div className="p-4 flex items-center justify-center gap-4 bg-muted/50">
                   <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm font-medium text-foreground">Genererar {liveResults.length + 1} av {totalImages}...</p>
+                  <p className="text-sm font-medium text-foreground">{t('v2.generating', { current: liveResults.length + 1, total: totalImages })}</p>
                 </div>
               </div>
             )
@@ -480,8 +482,8 @@ export const V2GenerateStep = ({
       {/* Summary card with grey gradient matching V1 export & V2 results */}
       <div className="rounded-[10px] border border-border/30 p-5 sm:p-6 shadow-sm relative overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
         <div className="space-y-1 relative z-10">
-          <h2 className="font-sans font-medium text-lg text-foreground dark:text-white">Redo att generera</h2>
-          <p className="text-sm text-foreground/60 dark:text-white/60">{totalImages} bilder redo att bearbetas</p>
+          <h2 className="font-sans font-medium text-lg text-foreground dark:text-white">{t('v2.readyToGenerate')}</h2>
+          <p className="text-sm text-foreground/60 dark:text-white/60">{t('v2.imagesReady', { count: totalImages })}</p>
         </div>
 
         {/* Subtle divider between heading and details */}
@@ -490,23 +492,23 @@ export const V2GenerateStep = ({
         <div className="space-y-2 relative z-10">
           {projectName && (
             <div className="flex justify-between text-sm">
-              <span className="text-foreground/50 dark:text-white/50">Projekt</span>
+              <span className="text-foreground/50 dark:text-white/50">{t('v2.project')}</span>
               <span className="text-foreground dark:text-white font-medium">{projectName}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">
-              <span className="text-foreground/50 dark:text-white/50">Logo</span>
+              <span className="text-foreground/50 dark:text-white/50">{t('v2.logo')}</span>
               <span className="text-foreground dark:text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
           </div>
           {plateConfig.enabled && (
             <div className="flex justify-between text-sm">
-              <span className="text-foreground/50 dark:text-white/50">Skyltar</span>
-              <span className="text-foreground dark:text-white font-medium">Döljs — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
+              <span className="text-foreground/50 dark:text-white/50">{t('v2.plates')}</span>
+              <span className="text-foreground dark:text-white font-medium">{t('v2.platesHidden')} — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">
-              <span className="text-foreground/50 dark:text-white/50">Format</span>
-              <span className="text-foreground dark:text-white font-medium">{outputFormat === 'landscape' ? 'Liggande' : 'Stående'}</span>
+              <span className="text-foreground/50 dark:text-white/50">{t('v2.format')}</span>
+              <span className="text-foreground dark:text-white font-medium">{outputFormat === 'landscape' ? t('v2.landscape') : t('v2.portrait')}</span>
           </div>
         </div>
       </div>
@@ -517,8 +519,8 @@ export const V2GenerateStep = ({
           <div className="flex items-center gap-3">
             <Sun className="h-5 w-5 text-amber-500 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-foreground">Ljusboost</p>
-              <p className="text-[11px] text-muted-foreground">Automatisk ljusförbättring för mörka bilder</p>
+              <p className="text-sm font-medium text-foreground">{t('v2.lightBoost')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('v2.lightBoostDesc')}</p>
             </div>
           </div>
           <Switch checked={lightBoost} onCheckedChange={setLightBoost} />
@@ -530,18 +532,18 @@ export const V2GenerateStep = ({
           <div className="flex items-center gap-3">
             <Palette className="h-5 w-5 text-blue-500 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-foreground">Lätt redigering</p>
-              <p className="text-[11px] text-muted-foreground">Ökad kontrast, skarpare skuggor — proffsig finish</p>
+              <p className="text-sm font-medium text-foreground">{t('v2.lightEdit')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('v2.lightEditDesc')}</p>
             </div>
           </div>
           <Switch checked={lightEdit} onCheckedChange={setLightEdit} />
         </div>
-        <p className="text-[10px] text-muted-foreground/70 px-1">Utan att ändra bilens originalskick.</p>
+        <p className="text-[10px] text-muted-foreground/70 px-1">{t('v2.noAlteration')}</p>
       </div>
 
       {/* Delivery mode */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-foreground">Leveranssätt</h3>
+        <h3 className="text-sm font-medium text-foreground">{t('v2.deliveryMethod')}</h3>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setDeliveryMode('direct')}
@@ -549,8 +551,8 @@ export const V2GenerateStep = ({
               deliveryMode === 'direct' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
-            <p className="text-sm font-medium text-foreground">Direkt</p>
-            <p className="text-[10px] text-muted-foreground">Se bilderna genereras</p>
+            <p className="text-sm font-medium text-foreground">{t('v2.direct')}</p>
+            <p className="text-[10px] text-muted-foreground">{t('v2.directDesc')}</p>
           </button>
           <button
             onClick={() => setDeliveryMode('email')}
@@ -558,8 +560,8 @@ export const V2GenerateStep = ({
               deliveryMode === 'email' ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
             }`}
           >
-            <p className="text-sm font-medium text-foreground">E-post</p>
-            <p className="text-[10px] text-muted-foreground">Få länk på email inom 2 min</p>
+            <p className="text-sm font-medium text-foreground">{t('v2.emailDelivery')}</p>
+            <p className="text-[10px] text-muted-foreground">{t('v2.emailDesc')}</p>
           </button>
         </div>
       </div>
@@ -572,7 +574,7 @@ export const V2GenerateStep = ({
         onClick={handleGenerate}
         disabled={processing}
       >
-        {processing ? 'Bearbetar...' : `Generera ${totalImages} bilder`}
+        {processing ? t('v2.processing') : t('v2.generateImages', { count: totalImages })}
       </Button>
     </div>
   );

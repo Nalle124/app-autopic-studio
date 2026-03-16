@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export const V2ResultGallery = ({ results, onStartOver }: Props) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
@@ -57,7 +59,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      toast.error('Nedladdning misslyckades');
+      toast.error(t('v2.downloadFailed'));
     }
   };
 
@@ -83,7 +85,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Kunde inte skapa ZIP');
+      toast.error(t('v2.couldNotCreateZip'));
     } finally {
       setDownloading(false);
     }
@@ -116,7 +118,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
         {/* Header row */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h2 className="font-sans font-medium text-lg text-foreground">Färdiga bilder</h2>
+            <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.finishedImages')}</h2>
             
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               {/* Crop tool */}
@@ -124,7 +126,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 variant="outline"
                 size="icon"
                 className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
-                title="Beskär"
+                title={t('v2.crop')}
                 onClick={() => {
                   if (results.length > 0) {
                     const idx = previewIndex ?? 0;
@@ -141,7 +143,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 variant="outline"
                 size="icon"
                 className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
-                title="Redigera"
+                title={t('v2.adjust')}
                 onClick={() => {
                   if (results.length > 0) {
                     const idx = previewIndex ?? 0;
@@ -173,18 +175,18 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               {/* Download dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Ladda ner">
+                  <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={t('common.download')}>
                     <Download className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onClick={() => downloadAsZip(results)} disabled={downloading}>
                     <FolderDown className="w-4 h-4 mr-2" />
-                    {downloading ? 'Skapar ZIP...' : 'Ladda ner som ZIP'}
+                    {downloading ? t('v2.creatingZip') : t('v2.downloadAsZip')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => downloadOneByOne(results)}>
                     <ListOrdered className="w-4 h-4 mr-2" />
-                    Ladda ner en och en
+                    {t('v2.downloadOneByOne')}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     disabled={selectedImages.size === 0}
@@ -194,7 +196,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                     }}
                   >
                     <CheckSquare className="w-4 h-4 mr-2" />
-                    Ladda ner markerade{selectedImages.size > 0 ? ` (${selectedImages.size})` : ''}
+                    {t('v2.downloadSelected')}{selectedImages.size > 0 ? ` (${selectedImages.size})` : ''}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -206,8 +208,8 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                   className="text-muted-foreground"
                   onClick={() => setSelectedImages(new Set())}
                 >
-                  <X className="w-4 h-4 mr-1" />
-                  Avmarkera
+                   <X className="w-4 h-4 mr-1" />
+                   {t('v2.deselect')}
                 </Button>
               )}
             </div>
@@ -227,11 +229,11 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               }}
             />
             <label htmlFor="select-all-v2" className="text-sm text-foreground/70 dark:text-muted-foreground cursor-pointer whitespace-nowrap">
-              Markera alla ({results.length})
+              {t('v2.selectAll')} ({results.length})
             </label>
             {selectedImages.size > 0 && (
               <span className="text-sm text-primary font-medium ml-auto">
-                {selectedImages.size} vald{selectedImages.size !== 1 ? 'a' : ''}
+                {selectedImages.size} {selectedImages.size !== 1 ? t('v2.selectedPlural') : t('v2.selected')}
               </span>
             )}
           </div>
@@ -260,7 +262,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                 <img
                   src={img.processedUrl || img.previewUrl}
-                  alt={`Resultat ${i + 1}`}
+                  alt={`${t('v2.result')} ${i + 1}`}
                   className="w-full h-full object-cover"
                 />
                 {selectedImages.has(i) && (
@@ -293,24 +295,24 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       {/* Action buttons */}
       <div className="flex gap-3 justify-center flex-wrap">
         <Button variant="outline" onClick={() => navigate('/?tab=history')}>
-          Gå till galleriet
+          {t('common.goToGallery')}
         </Button>
         <Button variant="outline" onClick={onStartOver}>
           <RotateCcw className="h-4 w-4 mr-2" />
-          Börja om
+          {t('v2.startOver')}
         </Button>
       </div>
 
       {/* Preview dialog */}
       <Dialog open={previewIndex !== null && !editingImage} onOpenChange={(open) => !open && setPreviewIndex(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
-          <VisuallyHidden><DialogTitle>Förhandsgranskning</DialogTitle></VisuallyHidden>
+          <VisuallyHidden><DialogTitle>{t('v2.preview')}</DialogTitle></VisuallyHidden>
           {previewImg && (
             <div className="flex flex-col h-full max-h-[90vh]">
               <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
                 <img
                   src={previewUrl}
-                  alt="Förhandsgranskning"
+                  alt={t('v2.preview')}
                   className="max-w-full max-h-[calc(90vh-80px)] object-contain"
                 />
                 {results.length > 1 && (
@@ -340,13 +342,13 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               
               <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" title="Justera" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
+                  <Button size="sm" variant="outline" title={t('v2.adjust')} onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
                     <Sliders className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Justera</span>
+                    <span className="hidden sm:inline ml-1">{t('v2.adjust')}</span>
                   </Button>
-                  <Button size="sm" variant="outline" title="Beskär" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
+                  <Button size="sm" variant="outline" title={t('v2.crop')} onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
                     <Scissors className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Beskär</span>
+                    <span className="hidden sm:inline ml-1">{t('v2.crop')}</span>
                   </Button>
                   <Button size="sm" variant="outline" title="Redigera fritt" onClick={() => {
                     const imgUrl = previewUrl;
@@ -361,7 +363,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 
                 <Button size="sm" onClick={() => handleDownload(previewUrl, `bild-${(previewIndex ?? 0) + 1}.jpg`)}>
                   <Share2 className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Dela</span>
+                  <span className="hidden sm:inline ml-1">{t('v2.share')}</span>
                 </Button>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Shield, Upload } from 'lucide-react';
@@ -16,22 +17,22 @@ interface Props {
   onPlateConfigChange: (config: V2PlateConfig) => void;
 }
 
-const PRESETS = [
-  { id: 'top-left', label: 'Uppe vänster' },
-  { id: 'top-center', label: 'Uppe center' },
-  { id: 'bottom-right', label: 'Nere höger' },
-  { id: 'bottom-left', label: 'Nere vänster' },
-  { id: 'bottom-center-banner', label: 'Banner nere' },
-  { id: 'top-center-banner', label: 'Banner uppe' },
-  { id: 'top-banner-left', label: 'Banner vänster' },
-  { id: 'top-banner-right', label: 'Banner höger' },
+const PRESET_KEYS = [
+  { id: 'top-left', key: 'v2.presets.topLeft' },
+  { id: 'top-center', key: 'v2.presets.topCenter' },
+  { id: 'bottom-right', key: 'v2.presets.bottomRight' },
+  { id: 'bottom-left', key: 'v2.presets.bottomLeft' },
+  { id: 'bottom-center-banner', key: 'v2.presets.bannerBottom' },
+  { id: 'top-center-banner', key: 'v2.presets.bannerTop' },
+  { id: 'top-banner-left', key: 'v2.presets.bannerLeft' },
+  { id: 'top-banner-right', key: 'v2.presets.bannerRight' },
 ] as const;
 
-const APPLY_OPTIONS = [
-  { id: 'all' as const, label: 'Alla bilder' },
-  { id: 'first' as const, label: 'Första bilden' },
-  { id: 'first-last' as const, label: 'Första & sista' },
-  { id: 'first-3-last' as const, label: 'Första 3 + sista' },
+const APPLY_OPTION_KEYS = [
+  { id: 'all' as const, key: 'v2.applyOptions.all' },
+  { id: 'first' as const, key: 'v2.applyOptions.first' },
+  { id: 'first-last' as const, key: 'v2.applyOptions.firstLast' },
+  { id: 'first-3-last' as const, key: 'v2.applyOptions.first3Last' },
 ];
 
 const LOGO_SIZES = [
@@ -40,11 +41,11 @@ const LOGO_SIZES = [
   { id: 'large' as const, label: 'L' },
 ];
 
-const PLATE_STYLES = [
-  { id: 'blur-dark' as const, label: 'Mörk inlay' },
-  { id: 'blur-light' as const, label: 'Ljus inlay' },
-  { id: 'logo' as const, label: 'Din logotyp' },
-  { id: 'custom-logo' as const, label: 'Ladda upp' },
+const PLATE_STYLE_KEYS = [
+  { id: 'blur-dark' as const, key: 'v2.plateStyles.darkInlay' },
+  { id: 'blur-light' as const, key: 'v2.plateStyles.lightInlay' },
+  { id: 'logo' as const, key: 'v2.plateStyles.yourLogo' },
+  { id: 'custom-logo' as const, key: 'v2.plateStyles.upload' },
 ];
 
 const renderPresetMockup = (presetId: string) => {
@@ -90,6 +91,7 @@ const renderPresetMockup = (presetId: string) => {
 };
 
 export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange }: Props) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [showPlacementModal, setShowPlacementModal] = useState(false);
@@ -123,11 +125,12 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
     reader.readAsDataURL(file);
   }, [plateConfig, onPlateConfigChange]);
 
-  const selectedPresetLabel = PRESETS.find(p => p.id === config.preset)?.label || 'Välj';
+  const selectedPreset = PRESET_KEYS.find(p => p.id === config.preset);
+  const selectedPresetLabel = selectedPreset ? t(selectedPreset.key) : t('v2.choosePlacement');
 
   return (
     <div className="space-y-5">
-      <h2 className="font-sans font-medium text-lg text-foreground">Logo & skyltar</h2>
+      <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.logoAndPlates')}</h2>
 
       {/* Logo toggle */}
       <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
@@ -138,9 +141,9 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
             <div className="h-5 w-5 rounded bg-muted shrink-0" />
           )}
           <div>
-            <p className="text-sm font-medium text-foreground">Logo på bilderna</p>
+            <p className="text-sm font-medium text-foreground">{t('v2.logoOnImages')}</p>
             <p className="text-[11px] text-muted-foreground">
-              {logoUrl ? 'Din logotyp appliceras' : 'Ladda upp i din profil'}
+              {logoUrl ? t('v2.logoApplied') : t('v2.uploadInProfile')}
             </p>
           </div>
         </div>
@@ -155,20 +158,20 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         <div className="space-y-6 pl-2 border-l-2 border-primary/20 ml-2">
           {/* Placement — button that opens modal */}
           <div className="space-y-3">
-            <h3 className="text-base font-medium text-foreground">Placering:</h3>
+            <h3 className="text-base font-medium text-foreground">{t('v2.placement')}</h3>
             <Button
               variant="outline"
               className="w-full justify-between"
               onClick={() => setShowPlacementModal(true)}
             >
               <span>{selectedPresetLabel}</span>
-              <span className="text-xs text-muted-foreground">Välj placering</span>
+              <span className="text-xs text-muted-foreground">{t('v2.choosePlacement')}</span>
             </Button>
           </div>
 
           {/* Logo size */}
           <div className="space-y-3">
-            <h3 className="text-base font-medium text-foreground">Storlek:</h3>
+            <h3 className="text-base font-medium text-foreground">{t('v2.size')}</h3>
             <div className="flex gap-1.5">
               {LOGO_SIZES.map((size) => (
                 <button
@@ -188,9 +191,9 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
 
           {/* Apply to */}
           <div className="space-y-3">
-            <h3 className="text-base font-medium text-foreground">Applicera på:</h3>
+            <h3 className="text-base font-medium text-foreground">{t('v2.applyTo')}</h3>
             <div className="flex flex-wrap gap-1.5">
-              {APPLY_OPTIONS.map((opt) => (
+              {APPLY_OPTION_KEYS.map((opt) => (
                 <button
                   key={opt.id}
                   onClick={() => onConfigChange({ ...config, applyTo: opt.id })}
@@ -200,7 +203,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                       : 'border-border text-foreground hover:border-primary/40'
                   }`}
                 >
-                  {opt.label}
+                  {t(opt.key)}
                 </button>
               ))}
             </div>
@@ -216,8 +219,8 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         <div className="flex items-center gap-3">
           <Shield className="h-5 w-5 text-primary shrink-0" />
           <div>
-            <p className="text-sm font-medium text-foreground">Dölj registreringsskyltar</p>
-            <p className="text-[11px] text-muted-foreground">+1 kredit per exteriörbild</p>
+            <p className="text-sm font-medium text-foreground">{t('v2.hidePlates')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('v2.platesCost')}</p>
           </div>
         </div>
         <Switch
@@ -230,7 +233,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
       {plateConfig.enabled && (
         <div className="pl-2 border-l-2 border-primary/20 ml-2 space-y-3">
           <div className="grid grid-cols-4 gap-2">
-            {PLATE_STYLES.map((style) => (
+            {PLATE_STYLE_KEYS.map((style) => (
               <button
                 key={style.id}
                 onClick={() => {
@@ -252,14 +255,14 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                   {style.id === 'logo' && <div className="w-8 h-3 rounded bg-primary/30" />}
                   {style.id === 'custom-logo' && <Upload className="w-3.5 h-3.5 text-muted-foreground" />}
                 </div>
-                <p className="text-[10px] font-medium text-foreground">{style.label}</p>
+                <p className="text-[10px] font-medium text-foreground">{t(style.key)}</p>
               </button>
             ))}
           </div>
           {plateConfig.style === 'custom-logo' && plateConfig.customLogoBase64 && (
             <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
               <img src={plateConfig.customLogoBase64} alt="Custom" className="h-6 w-auto object-contain" />
-              <span className="text-xs text-muted-foreground">Egen logotyp vald</span>
+              <span className="text-xs text-muted-foreground">{t('v2.customLogoSelected')}</span>
             </div>
           )}
           <input
@@ -275,10 +278,10 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
       {/* Placement modal */}
       <Dialog open={showPlacementModal} onOpenChange={setShowPlacementModal}>
         <DialogContent className="max-w-md">
-          <VisuallyHidden><DialogTitle>Välj placering</DialogTitle></VisuallyHidden>
-          <h3 className="text-lg font-medium text-foreground mb-4">Välj logotypplacering</h3>
+          <VisuallyHidden><DialogTitle>{t('v2.choosePlacementTitle')}</DialogTitle></VisuallyHidden>
+          <h3 className="text-lg font-medium text-foreground mb-4">{t('v2.choosePlacementTitle')}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {PRESETS.map((preset) => (
+            {PRESET_KEYS.map((preset) => (
               <button
                 key={preset.id}
                 onClick={() => {
@@ -295,7 +298,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                   {renderPresetMockup(preset.id)}
                 </div>
                 <span className="text-[10px] text-muted-foreground whitespace-nowrap font-medium">
-                  {preset.label}
+                  {t(preset.key)}
                 </span>
               </button>
             ))}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle2, RefreshCw, LayoutGrid, Grid2x2 } from 'lucide-react';
@@ -20,18 +21,19 @@ interface Props {
   onOutputFormatChange: (format: 'landscape' | 'portrait') => void;
 }
 
-const CATEGORIES = [
-  { id: 'popular', label: 'Populära' },
-  { id: 'studio-light', label: 'Studio ljus' },
-  { id: 'studio-dark', label: 'Studio mörk' },
-  { id: 'outdoor', label: 'Utomhus' },
-  { id: 'premium', label: 'Premium' },
-  { id: 'autumn', label: 'Höst' },
-  { id: 'kreativa', label: 'Kreativa' },
-  { id: 'user', label: 'Mina scener' },
+const CATEGORY_KEYS: { id: string; key: string }[] = [
+  { id: 'popular', key: 'v2.categories.popular' },
+  { id: 'studio-light', key: 'v2.categories.studioLight' },
+  { id: 'studio-dark', key: 'v2.categories.studioDark' },
+  { id: 'outdoor', key: 'v2.categories.outdoor' },
+  { id: 'premium', key: 'v2.categories.premium' },
+  { id: 'autumn', key: 'v2.categories.autumn' },
+  { id: 'kreativa', key: 'v2.categories.creative' },
+  { id: 'user', key: 'v2.categories.myScenes' },
 ];
 
 export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange }: Props) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -97,7 +99,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
     <div className="space-y-6">
       {/* Header row with format toggle and grid view */}
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-sans font-medium text-lg text-foreground">Välj bakgrund</h2>
+        <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.chooseBackground')}</h2>
         <div className="flex items-center gap-2">
           {/* Format toggle — lighter, more subtle */}
           <div className="flex gap-0.5 border border-border rounded-full p-0.5">
@@ -109,7 +111,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Liggande
+              {t('v2.landscape')}
             </button>
             <button
               onClick={() => onOutputFormatChange('portrait')}
@@ -119,7 +121,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Stående
+              {t('v2.portrait')}
             </button>
           </div>
           {/* Grid toggle */}
@@ -134,7 +136,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
 
       {/* Category tabs — extra spacing before gallery */}
       <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-hide">
-        {CATEGORIES.map(cat => (
+        {CATEGORY_KEYS.map(cat => (
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}
@@ -144,17 +146,17 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
-            {cat.label}
+            {t(cat.key)}
           </button>
         ))}
       </div>
 
       {error ? (
         <div className="flex flex-col items-center justify-center py-10 gap-3">
-          <p className="text-sm text-muted-foreground">Kunde inte ladda bakgrunder</p>
+          <p className="text-sm text-muted-foreground">{t('v2.couldNotLoadBackgrounds')}</p>
           <Button variant="outline" size="sm" onClick={loadScenes}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Försök igen
+            {t('v2.tryAgain')}
           </Button>
         </div>
       ) : loading ? (
@@ -199,14 +201,14 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
               className={`relative rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/40 ${thumbAspect} flex flex-col items-center justify-center gap-2 bg-muted/30 transition-all`}
             >
               <img src="/favicon.png" alt="" className="h-6 w-6 object-contain dark:invert" />
-              <p className="text-xs font-medium text-foreground">Skapa egen</p>
-              <p className="text-[10px] text-muted-foreground">via AI Studio</p>
+              <p className="text-xs font-medium text-foreground">{t('v2.createOwn')}</p>
+              <p className="text-[10px] text-muted-foreground">{t('v2.viaAiStudio')}</p>
             </button>
           </div>
 
           {activeCategory === 'user' && userScenes.length === 0 && (
             <p className="text-center text-sm text-muted-foreground py-4">
-              Du har inga egna scener ännu. Skapa en via AI Studio!
+              {t('v2.noUserScenes')}
             </p>
           )}
         </>
