@@ -163,7 +163,7 @@ const Auth = () => {
         handleAuthSuccess();
       } catch (error: any) {
         localStorage.removeItem('isInviteSignup');
-        toast.error('Något gick fel, försök igen');
+        toast.error(t('auth.somethingWentWrong'));
       } finally {
         setLoading(false);
       }
