@@ -292,7 +292,7 @@ export const V2GenerateStep = ({
 
       if (deliveryMode === 'email') { 
         setEmailSent(true);
-        toast.success('Bilderna bearbetas — du får ett mail strax!');
+        toast.success(t('v2.imagesProcessing'));
       }
 
       const scene = await fetchScene(sceneId);
