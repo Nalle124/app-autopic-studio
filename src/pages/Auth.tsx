@@ -373,7 +373,7 @@ const Auth = () => {
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-sm text-amber-600 dark:text-amber-400 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
-                <strong>Tips!</strong> Kolla skräpposten om du inte hittar mailet.
+                <strong>{t('auth.checkSpam').split('!')[0]}!</strong> {t('auth.checkSpam').split('! ')[1]}
               </div>
             </div>
             
