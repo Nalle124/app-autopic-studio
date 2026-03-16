@@ -175,7 +175,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               {/* Download dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title="Ladda ner">
+                  <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={t('common.download')}>
                     <Download className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
