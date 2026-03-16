@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle2, RefreshCw, LayoutGrid, Grid2x2 } from 'lucide-react';
@@ -20,15 +21,15 @@ interface Props {
   onOutputFormatChange: (format: 'landscape' | 'portrait') => void;
 }
 
-const CATEGORIES = [
-  { id: 'popular', label: 'Populära' },
-  { id: 'studio-light', label: 'Studio ljus' },
-  { id: 'studio-dark', label: 'Studio mörk' },
-  { id: 'outdoor', label: 'Utomhus' },
-  { id: 'premium', label: 'Premium' },
-  { id: 'autumn', label: 'Höst' },
-  { id: 'kreativa', label: 'Kreativa' },
-  { id: 'user', label: 'Mina scener' },
+const CATEGORY_KEYS: { id: string; key: string }[] = [
+  { id: 'popular', key: 'v2.categories.popular' },
+  { id: 'studio-light', key: 'v2.categories.studioLight' },
+  { id: 'studio-dark', key: 'v2.categories.studioDark' },
+  { id: 'outdoor', key: 'v2.categories.outdoor' },
+  { id: 'premium', key: 'v2.categories.premium' },
+  { id: 'autumn', key: 'v2.categories.autumn' },
+  { id: 'kreativa', key: 'v2.categories.creative' },
+  { id: 'user', key: 'v2.categories.myScenes' },
 ];
 
 export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange }: Props) => {
