@@ -116,7 +116,7 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !fullName) {
-      toast.error('Fyll i alla fält');
+      toast.error(t('auth.fillAllFields'));
       return;
     }
     if (password.length < 6) {
