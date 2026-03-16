@@ -342,13 +342,13 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
               
               <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" title="Justera" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
+                  <Button size="sm" variant="outline" title={t('v2.adjust')} onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
                     <Sliders className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Justera</span>
+                    <span className="hidden sm:inline ml-1">{t('v2.adjust')}</span>
                   </Button>
-                  <Button size="sm" variant="outline" title="Beskär" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
+                  <Button size="sm" variant="outline" title={t('v2.crop')} onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
                     <Scissors className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Beskär</span>
+                    <span className="hidden sm:inline ml-1">{t('v2.crop')}</span>
                   </Button>
                   <Button size="sm" variant="outline" title="Redigera fritt" onClick={() => {
                     const imgUrl = previewUrl;
