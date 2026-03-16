@@ -379,16 +379,16 @@ const Auth = () => {
             
             {/* Resend code */}
             <div className="text-center text-sm text-muted-foreground">
-              Fick du ingen kod?{' '}
+              {t('auth.noCode')}{' '}
               {resendCooldown > 0 ? (
-                <span>Vänta {resendCooldown}s</span>
+                <span>{t('auth.waitSeconds', { seconds: resendCooldown })}</span>
               ) : (
                 <button 
                   onClick={handleResendCode}
                   disabled={loading}
                   className="text-primary hover:underline font-medium"
                 >
-                  {loading ? 'Skickar...' : 'Skicka ny kod'}
+                  {loading ? t('auth.sending') : t('auth.resendCode')}
                 </button>
               )}
             </div>
