@@ -233,7 +233,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
             </label>
             {selectedImages.size > 0 && (
               <span className="text-sm text-primary font-medium ml-auto">
-                {selectedImages.size} vald{selectedImages.size !== 1 ? 'a' : ''}
+                {selectedImages.size} {selectedImages.size !== 1 ? t('v2.selectedPlural') : t('v2.selected')}
               </span>
             )}
           </div>
