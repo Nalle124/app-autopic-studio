@@ -181,7 +181,7 @@ const Auth = () => {
       
       // UI handles state indication - no toast needed
     } catch (error: any) {
-      toast.error(error.message || 'Kunde inte skicka verifieringskod');
+      toast.error(error.message || t('auth.couldNotSendCode'));
     } finally {
       setLoading(false);
     }
