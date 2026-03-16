@@ -363,7 +363,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 
                 <Button size="sm" onClick={() => handleDownload(previewUrl, `bild-${(previewIndex ?? 0) + 1}.jpg`)}>
                   <Share2 className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Dela</span>
+                  <span className="hidden sm:inline ml-1">{t('v2.share')}</span>
                 </Button>
               </div>
             </div>
