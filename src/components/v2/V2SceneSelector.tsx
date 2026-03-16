@@ -33,6 +33,7 @@ const CATEGORY_KEYS: { id: string; key: string }[] = [
 ];
 
 export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange }: Props) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [scenes, setScenes] = useState<Scene[]>([]);
