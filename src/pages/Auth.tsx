@@ -120,7 +120,7 @@ const Auth = () => {
       return;
     }
     if (password.length < 6) {
-      toast.error('Lösenordet måste vara minst 6 tecken');
+      toast.error(t('auth.passwordMinLength'));
       return;
     }
     
