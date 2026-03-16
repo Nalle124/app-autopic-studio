@@ -531,7 +531,7 @@ const Auth = () => {
                   </label>
                 </div>
                 <Button type="submit" className={`w-full ${loading ? 'btn-processing' : ''}`} disabled={loading}>
-                  Logga in
+                  {t('auth.login')}
                 </Button>
               </form>
             </TabsContent>
