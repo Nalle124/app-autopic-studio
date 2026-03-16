@@ -317,7 +317,7 @@ const Auth = () => {
     setLoading(false);
     
     if (error) {
-      toast.error(error.message || 'Kunde inte skicka återställningsmail');
+      toast.error(error.message || t('auth.couldNotSendReset'));
     } else {
       setResetEmailSent(true);
     }
