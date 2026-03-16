@@ -189,7 +189,7 @@ const Auth = () => {
 
   const handleVerifyCode = async () => {
     if (verificationCode.length !== 4) {
-      toast.error('Ange en 4-siffrig kod');
+      toast.error(t('auth.enter4digitCode'));
       return;
     }
     
