@@ -222,9 +222,9 @@ const Auth = () => {
       
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
-          toast.error('E-postadressen är redan registrerad');
+          toast.error(t('auth.alreadyRegistered'));
         } else {
-          toast.error(signUpError.message || 'Kunde inte skapa konto');
+          toast.error(signUpError.message || t('auth.couldNotCreateAccount'));
         }
         setVerifying(false);
         return;
