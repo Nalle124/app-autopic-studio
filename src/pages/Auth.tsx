@@ -16,6 +16,7 @@ import { PRICING_TIERS, type PricingTier } from '@/config/pricing';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const Auth = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const planParam = searchParams.get('plan') as PricingTier | null;
   const selectedPlan = planParam && PRICING_TIERS[planParam] ? planParam : null;
