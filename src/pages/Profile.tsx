@@ -352,7 +352,7 @@ const ProfileContent = () => {
                     </TabsTrigger>
                     <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
                       <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
-                      AI Studio
+                      {t('nav.aiStudio')}
                     </TabsTrigger>
                     <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
                       <History className="w-4 h-4" />
