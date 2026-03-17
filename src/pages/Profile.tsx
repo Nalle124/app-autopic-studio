@@ -724,7 +724,7 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
       }, 2500);
     } catch (error) {
       console.error('Error submitting bug report:', error);
-      toast.error('Kunde inte skicka. Försök igen.');
+      toast.error(t('profile.couldNotSendBug'));
     } finally {
       setIsSubmitting(false);
     }
