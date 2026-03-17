@@ -388,9 +388,9 @@ const ProfileContent = () => {
       
       <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl pb-[env(safe-area-inset-bottom)]">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-3xl font-bold text-foreground font-heading">Profil</h1>
+          <h1 className="text-3xl sm:text-3xl font-bold text-foreground font-heading">{t('profile.title')}</h1>
           <p className="text-base sm:text-base text-muted-foreground font-small mt-1 sm:mt-2">
-            Hantera dina uppgifter och inställningar
+            {t('profile.subtitle')}
           </p>
         </div>
 
