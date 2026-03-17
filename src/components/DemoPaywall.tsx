@@ -599,7 +599,7 @@ export const DemoPaywall = () => {
                     className="w-full font-semibold bg-foreground text-background hover:bg-foreground/90 transition-all"
                     size="lg"
                   >
-                    Beräkna
+                    {t('paywall.calculate')}
                   </Button>
                   <button
                     onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
