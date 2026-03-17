@@ -269,7 +269,7 @@ export const DemoPaywall = () => {
                     className="w-2/3 font-semibold transition-all bg-white/10 backdrop-blur-sm text-white border-2 border-white/60 hover:bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.12)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]"
                     size="default"
                   >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isSubscriber ? 'Uppgradera' : 'Välj paket')}
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isSubscriber ? t('paywall.upgrade') : t('paywall.selectPlan'))}
                   </Button>
                 </div>
               </div>
