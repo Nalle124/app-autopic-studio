@@ -24,17 +24,17 @@ const CREDIT_PACKS = {
   creditPack300: { name: '300 credits', price: 899, credits: 300, priceId: 'price_1TAGWRR5EFc7nWvhkemhzZsB', estimate: '20–37 annonser' }
 } as const;
 
-const getAnnonsEstimate = (credits: number) => {
+const getAnnonsEstimateKey = (credits: number) => {
   const low = Math.floor(credits / 15);
   const high = Math.floor(credits / 8);
-  return `ca ${low}–${high} annonser/mån`;
+  return { low, high };
 };
 
-const PLAN_FEATURES: Record<string, string[]> = {
-  start: [getAnnonsEstimate(100), '100 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
-  pro: [getAnnonsEstimate(300), '300 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
-  business: [getAnnonsEstimate(600), '600 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)'],
-  scale: [getAnnonsEstimate(800), '800 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)']
+const PLAN_FEATURE_KEYS: Record<string, string[]> = {
+  start: ['annonsEstimate:100', 'imagesMonth:100', 'features.allBackgrounds', 'features.applyLogo', 'features.blurPlates', 'features.createBackground', 'features.aiChat'],
+  pro: ['annonsEstimate:300', 'imagesMonth:300', 'features.allBackgrounds', 'features.applyLogo', 'features.blurPlates', 'features.createBackground', 'features.aiChat'],
+  business: ['annonsEstimate:600', 'imagesMonth:600', 'features.allBackgrounds', 'features.applyLogo', 'features.blurPlates', 'features.createBackground', 'features.aiChat', 'features.apiAccess'],
+  scale: ['annonsEstimate:800', 'imagesMonth:800', 'features.allBackgrounds', 'features.applyLogo', 'features.blurPlates', 'features.createBackground', 'features.aiChat', 'features.apiAccess']
 };
 
 type PlanKey = keyof typeof PRICING_PLANS;
