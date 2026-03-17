@@ -346,7 +346,7 @@ export const DemoPaywall = () => {
               {hasUpgrades &&
                 <div className="px-6 pt-2 pb-1">
                   {renderTabToggle(
-                    [{ key: 'topup', label: 'Fyll på' }, { key: 'upgrade', label: 'Uppgradera' }],
+                    [{ key: 'topup', label: t('paywall.topUp') }, { key: 'upgrade', label: t('paywall.upgrade') }],
                     subscriberTab,
                     setSubscriberTab
                   )}
