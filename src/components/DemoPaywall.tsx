@@ -381,7 +381,7 @@ export const DemoPaywall = () => {
                               <p className="text-lg font-bold text-white">+{nextPlan.credits - currentPlan.credits}</p>
                             </div>
                             <div>
-                              <p className="text-xs uppercase tracking-wider text-white/40">Prisskillnad</p>
+                              <p className="text-xs uppercase tracking-wider text-white/40">{t('paywall.priceDifference')}</p>
                               <p className="text-lg font-bold text-white">+{nextPlan.price - currentPlan.price} kr</p>
                             </div>
                           </div>
