@@ -90,6 +90,7 @@ const isOnHighestTier = (currentProductId: string | null) => {
 
 // ── Component ──────────────────────────────────────────────────────
 export const DemoPaywall = () => {
+  const { t } = useTranslation();
   const { showPaywall, setShowPaywall, paywallTrigger, isSubscribed, currentProductId } = useDemo();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
 
