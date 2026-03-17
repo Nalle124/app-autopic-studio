@@ -670,7 +670,7 @@ const ProfileContent = () => {
             onClick={handleLogout}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Logga ut
+            {t('profile.logout')}
           </Button>
         </Card>
       </main>
