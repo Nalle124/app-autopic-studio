@@ -771,7 +771,7 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
             )}
             <Textarea
               id="bug-message"
-              placeholder="Beskriv vad som hände eller vad du tycker vi borde förbättra..."
+              placeholder={t('profile.bugPlaceholder')}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               disabled={isSubmitting || isSubmitted}
