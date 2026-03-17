@@ -366,7 +366,7 @@ export const DemoPaywall = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="text-2xl font-bold text-white">{nextPlan.name}</h3>
-                            <p className="text-sm text-white/50 mt-0.5">{nextPlan.credits} bilder/månad</p>
+                            <p className="text-sm text-white/50 mt-0.5">{nextPlan.credits} {t('paywall.imagesPerMonth')}</p>
                           </div>
                           <div className="text-right">
                             <span className="text-3xl font-bold text-white">{nextPlan.price}</span>
