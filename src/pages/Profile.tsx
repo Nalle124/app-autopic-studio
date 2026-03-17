@@ -124,8 +124,7 @@ const ProfileContent = () => {
         window.location.href = data.url;
       }
     } catch (err) {
-      console.error('Error opening customer portal:', err);
-      toast.error('Kunde inte öppna prenumerationshantering');
+      toast.error(t('profile.couldNotOpenPortal'));
     } finally {
       setPortalLoading(false);
     }
