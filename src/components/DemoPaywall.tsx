@@ -482,9 +482,9 @@ export const DemoPaywall = () => {
                       style={{ background: V2_BUTTON_GRADIENT }}
                       size="lg"
                     >
-                      Fortsätt
+                      {t('paywall.continue')}
                     </Button>
-                    <p className="text-xs text-center text-muted-foreground">Ingen bindningstid</p>
+                    <p className="text-xs text-center text-muted-foreground">{t('paywall.noCommitment')}</p>
                   </div>
                 </div>
               </div>
