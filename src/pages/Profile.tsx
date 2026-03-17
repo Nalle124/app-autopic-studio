@@ -567,7 +567,7 @@ const ProfileContent = () => {
             <div className="space-y-2">
               <Label htmlFor="address" className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                Adress
+                {t('profile.address')}
               </Label>
               <Input
                 id="address"
