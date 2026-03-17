@@ -589,7 +589,7 @@ export const DemoPaywall = () => {
                 {/* Total */}
                 <div className="bg-muted/50 rounded-xl p-4 text-center">
                   <span className="text-3xl font-bold text-foreground">{carsPerMonth * imagesPerCar}</span>
-                  <span className="text-sm text-muted-foreground ml-2">bilder/månad totalt</span>
+                  <span className="text-sm text-muted-foreground ml-2">{t('paywall.imagesPerMonth')} {t('paywall.total')}</span>
                 </div>
 
                 <div className="space-y-3">
