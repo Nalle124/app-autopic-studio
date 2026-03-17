@@ -440,9 +440,9 @@ const ProfileContent = () => {
                   <Sun className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 )}
                 <div className="min-w-0">
-                  <Label className="text-sm font-medium">Ljust läge</Label>
+                  <Label className="text-sm font-medium">{t('profile.lightMode')}</Label>
                   <p className="text-sm text-muted-foreground font-small hidden sm:block">
-                    Växla mellan mörkt och ljust tema
+                    {t('profile.toggleTheme')}
                   </p>
                 </div>
               </div>
