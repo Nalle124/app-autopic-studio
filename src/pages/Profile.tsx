@@ -766,7 +766,7 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
                 ) : (
                   <CreditCard className="w-4 h-4 text-muted-foreground" />
                 )}
-                <span className="text-sm">{portalLoading ? 'Laddar...' : 'Hantera prenumeration'}</span>
+                <span className="text-sm">{portalLoading ? t('common.loading') : t('profile.manageSubscription')}</span>
               </button>
             )}
             <Textarea
