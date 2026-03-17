@@ -605,7 +605,7 @@ export const DemoPaywall = () => {
                     onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
                     className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Se alla paket direkt
+                    {t('paywall.seeAllPlans')}
                   </button>
                 </div>
               </div>
