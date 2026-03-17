@@ -291,7 +291,7 @@ export const DemoPaywall = () => {
           className="w-full p-5 py-6 rounded-xl border border-border/60 hover:border-foreground/20 transition-all flex items-center justify-between bg-card"
         >
           <div className="text-left">
-            <p className="font-bold text-lg text-foreground">{pack.credits} credits</p>
+            <p className="font-bold text-lg text-foreground">{pack.credits} {t('paywall.credits')}</p>
             <p className="text-sm text-muted-foreground">{pack.estimate}</p>
           </div>
           <div className="flex items-center gap-3">
