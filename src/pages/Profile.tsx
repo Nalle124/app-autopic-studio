@@ -625,7 +625,7 @@ const ProfileContent = () => {
             <LogoUploadSection 
               type="light" 
               logo={profileData.logo_light} 
-              label="Primär logotyp" 
+              label={t('profile.logoLight')} 
             />
             
             {/* Secondary logo - collapsed hint */}
