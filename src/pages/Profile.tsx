@@ -600,7 +600,7 @@ const ProfileContent = () => {
 
             <div className="pt-4">
               <Button variant="outline" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Sparar...' : 'Spara ändringar'}
+                {isSaving ? t('profile.saving') : t('profile.saveChanges')}
               </Button>
             </div>
           </div>
