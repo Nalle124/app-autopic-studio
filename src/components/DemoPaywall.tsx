@@ -503,7 +503,7 @@ export const DemoPaywall = () => {
                       onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
                       className="group relative bg-muted hover:bg-muted/80 p-5 text-center transition-all flex flex-col items-center justify-center rounded-xl min-h-[100px]"
                     >
-                      <h3 className="font-semibold text-foreground text-base">Se alla paket direkt</h3>
+                      <h3 className="font-semibold text-foreground text-base">{t('paywall.seeAllPlans')}</h3>
                     </button>
 
                     {/* Quiz option — highlighted with gradient nudge + quiz badge on edge */}
