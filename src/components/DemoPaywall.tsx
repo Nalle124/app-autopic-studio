@@ -362,7 +362,7 @@ export const DemoPaywall = () => {
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
                       <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
                       <div className="relative z-10 p-5 py-6">
-                        <p className="text-xs uppercase tracking-widest text-white/50 font-medium mb-1">Uppgradera till</p>
+                        <p className="text-xs uppercase tracking-widest text-white/50 font-medium mb-1">{t('paywall.upgradeTo')}</p>
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="text-2xl font-bold text-white">{nextPlan.name}</h3>
