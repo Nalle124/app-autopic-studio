@@ -1,82 +1,60 @@
+import { useTranslation } from 'react-i18next';
 import { Camera, Sun, Car, Smartphone, Check, X } from 'lucide-react';
 
-const tips = [
-  {
-    icon: Car,
-    title: 'Parkera på jämn yta',
-    desc: 'Undvik lutningar och ojämnt underlag. Bilen ska stå plant.',
-  },
-  {
-    icon: Camera,
-    title: 'Fotografera i ögonhöjd',
-    desc: 'Håll kameran i midjehöjd, rakt mot bilen. Undvik fågel- eller grodperspektiv.',
-  },
-  {
-    icon: Sun,
-    title: 'Undvik motljus',
-    desc: 'Ha solen bakom dig eller i sidan. Molnig dag ger jämnast ljus.',
-  },
-  {
-    icon: Smartphone,
-    title: 'Håll telefonen rakt',
-    desc: 'Undvik att luta telefonen — raka linjer ger bäst resultat.',
-  },
-];
-
-const doList = [
-  'Fotografera alla 4 sidor + snett framifrån',
-  'Ta minst 2 interiörbilder (ratt + baksäte)',
-  'Fota detaljer: fälgar, strålkastare, emblem',
-  'Använd landskapsläge (liggande format)',
-];
-
-const dontList = [
-  'Fota i motljus eller mörker',
-  'Luta telefonen (skeva linjer)',
-  'Ha andra bilar/objekt i vägen',
-  'Zooma in digitalt (ger sämre kvalitet)',
-];
-
 const goodExamples = [
-  { src: '/v2-guide/bmw-good-angle.png', label: 'Bra vinkel — ögonhöjd, rakt' },
-  { src: '/v2-guide/bmw-good-crop.png', label: 'Bra beskärning — fokus på bilen' },
+  { src: '/v2-guide/bmw-good-angle.png', key: 'guide.goodAngle' },
+  { src: '/v2-guide/bmw-good-crop.png', key: 'guide.goodCrop' },
 ];
 
 const badExamples = [
-  { src: '/v2-guide/bmw-example-1.jpg', label: 'Referensbild — snett framifrån' },
-  { src: '/v2-guide/bmw-example-2.jpg', label: 'Referensbild — sidovy' },
+  { src: '/v2-guide/bmw-example-1.jpg', key: 'guide.refAngle' },
+  { src: '/v2-guide/bmw-example-2.jpg', key: 'guide.refSide' },
 ];
 
 export const V2CameraGuide = () => {
+  const { t } = useTranslation();
+
+  const tips = [
+    { icon: Car, title: t('guide.tipParkTitle'), desc: t('guide.tipParkDesc') },
+    { icon: Camera, title: t('guide.tipEyeTitle'), desc: t('guide.tipEyeDesc') },
+    { icon: Sun, title: t('guide.tipLightTitle'), desc: t('guide.tipLightDesc') },
+    { icon: Smartphone, title: t('guide.tipStraightTitle'), desc: t('guide.tipStraightDesc') },
+  ];
+
+  const doList = [
+    t('guide.do1'), t('guide.do2'), t('guide.do3'), t('guide.do4'),
+  ];
+
+  const dontList = [
+    t('guide.dont1'), t('guide.dont2'), t('guide.dont3'), t('guide.dont4'),
+  ];
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-foreground">Innan du börjar</h2>
-        <p className="text-muted-foreground">
-          Några snabba tips för att få bästa möjliga resultat
-        </p>
+        <h2 className="text-2xl font-bold text-foreground">{t('guide.beforeYouStart')}</h2>
+        <p className="text-muted-foreground">{t('guide.tipsForBest')}</p>
       </div>
 
-      {/* Visual examples */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Check className="h-4 w-4 text-green-500" /> Exempelbilder
+          <Check className="h-4 w-4 text-green-500" /> {t('guide.examples')}
         </h3>
         <div className="grid grid-cols-2 gap-3">
           {goodExamples.map((ex) => (
-            <div key={ex.label} className="rounded-card overflow-hidden border-2 border-green-500/30">
+            <div key={ex.key} className="rounded-card overflow-hidden border-2 border-green-500/30">
               <div className="aspect-[4/3] bg-muted">
-                <img src={ex.src} alt={ex.label} className="w-full h-full object-cover" />
+                <img src={ex.src} alt={t(ex.key)} className="w-full h-full object-cover" />
               </div>
-              <p className="text-[11px] text-muted-foreground p-2 text-center">{ex.label}</p>
+              <p className="text-[11px] text-muted-foreground p-2 text-center">{t(ex.key)}</p>
             </div>
           ))}
           {badExamples.map((ex) => (
-            <div key={ex.label} className="rounded-card overflow-hidden border border-border">
+            <div key={ex.key} className="rounded-card overflow-hidden border border-border">
               <div className="aspect-[4/3] bg-muted">
-                <img src={ex.src} alt={ex.label} className="w-full h-full object-cover" />
+                <img src={ex.src} alt={t(ex.key)} className="w-full h-full object-cover" />
               </div>
-              <p className="text-[11px] text-muted-foreground p-2 text-center">{ex.label}</p>
+              <p className="text-[11px] text-muted-foreground p-2 text-center">{t(ex.key)}</p>
             </div>
           ))}
         </div>
@@ -84,10 +62,7 @@ export const V2CameraGuide = () => {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {tips.map((tip) => (
-          <div
-            key={tip.title}
-            className="rounded-card border border-border bg-card p-5 space-y-2"
-          >
+          <div key={tip.title} className="rounded-card border border-border bg-card p-5 space-y-2">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <tip.icon className="h-5 w-5 text-primary" />
@@ -99,11 +74,10 @@ export const V2CameraGuide = () => {
         ))}
       </div>
 
-      {/* Do / Don't lists */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-card border border-border bg-card p-4 space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Check className="h-4 w-4 text-green-500" /> Gör så här
+            <Check className="h-4 w-4 text-green-500" /> {t('guide.doThis')}
           </h3>
           <ul className="space-y-1.5">
             {doList.map(item => (
@@ -116,7 +90,7 @@ export const V2CameraGuide = () => {
         </div>
         <div className="rounded-card border border-border bg-card p-4 space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <X className="h-4 w-4 text-destructive" /> Undvik
+            <X className="h-4 w-4 text-destructive" /> {t('guide.avoid')}
           </h3>
           <ul className="space-y-1.5">
             {dontList.map(item => (
@@ -131,8 +105,7 @@ export const V2CameraGuide = () => {
 
       <div className="rounded-card border border-border bg-muted/30 p-4 text-center">
         <p className="text-sm text-muted-foreground">
-          <strong>Interiörbilder?</strong> Fotografera ratt, instrumentpanel och baksäte rakt framifrån.
-          Systemet identifierar och bearbetar dem automatiskt.
+          <strong>{t('guide.interiorTitle')}</strong> {t('guide.interiorDesc')}
         </p>
       </div>
     </div>
