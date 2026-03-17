@@ -459,7 +459,7 @@ const ProfileContent = () => {
                 <button className="w-full flex items-center justify-between py-2">
                   <div className="flex items-center gap-3">
                     <Smartphone className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm font-medium">Installera app</span>
+                    <span className="text-sm font-medium">{t('profile.installApp')}</span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </button>
