@@ -298,7 +298,7 @@ export const DemoPaywall = () => {
             <span className="font-bold text-2xl text-foreground">{pack.price} <span className="text-sm font-normal text-muted-foreground">kr</span></span>
             {loadingTier === key
               ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              : <span className="bg-foreground text-background text-sm font-semibold px-4 py-2 rounded-lg">Köp</span>
+              : <span className="bg-foreground text-background text-sm font-semibold px-4 py-2 rounded-lg">{t('paywall.buy')}</span>
             }
           </div>
         </button>
