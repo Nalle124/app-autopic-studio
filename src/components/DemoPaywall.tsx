@@ -411,9 +411,9 @@ export const DemoPaywall = () => {
                 {/* Contact for highest tier */}
                 {onHighest &&
                   <div className="text-center pt-2 text-sm text-muted-foreground">
-                    <p>Behöver du fler credits regelbundet?</p>
+                    <p>{t('paywall.needMoreRegularly')}</p>
                     <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      Kontakta oss för företagsanpassad lösning
+                      {t('paywall.contactForEnterprise')}
                     </a>
                   </div>
                 }
