@@ -507,10 +507,10 @@ const ProfileContent = () => {
             </div>
             <div>
               <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
-                {isCompany ? 'Företagsuppgifter' : 'Kontaktuppgifter'}
+                {isCompany ? t('profile.customerInfo') : t('profile.customerInfo')}
               </h2>
               <p className="text-sm sm:text-sm text-muted-foreground font-small">
-                {isCompany ? 'Ditt företags information' : 'Din personliga information'}
+                {t('profile.manageInfo')}
               </p>
             </div>
           </div>
