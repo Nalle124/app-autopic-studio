@@ -588,7 +588,7 @@ const ProfileContent = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">Ort</Label>
+                <Label htmlFor="city">{t('profile.city')}</Label>
                 <Input
                   id="city"
                   value={profileData.city || ''}
