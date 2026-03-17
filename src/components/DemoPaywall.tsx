@@ -370,7 +370,7 @@ export const DemoPaywall = () => {
                           </div>
                           <div className="text-right">
                             <span className="text-3xl font-bold text-white">{nextPlan.price}</span>
-                            <span className="text-sm text-white/50"> kr/mån</span>
+                            <span className="text-sm text-white/50"> {t('paywall.perMonth')}</span>
                           </div>
                         </div>
 
