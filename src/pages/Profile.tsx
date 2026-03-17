@@ -614,9 +614,9 @@ const ProfileContent = () => {
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-foreground font-heading">
-                Logotyp
+                {t('profile.logos')}
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground font-small">Din standard-logotyp för bilder</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-small">{t('profile.logosDesc')}</p>
             </div>
           </div>
 
