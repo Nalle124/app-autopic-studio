@@ -789,7 +789,7 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
               ) : isSubmitted ? (
                 <Check className="mr-2 h-4 w-4" />
               ) : null}
-              {isSubmitted ? 'Skickat!' : 'Skicka feedback'}
+              {isSubmitted ? t('profile.bugSent') : t('profile.sendReport')}
             </Button>
           </div>
         </CollapsibleContent>
