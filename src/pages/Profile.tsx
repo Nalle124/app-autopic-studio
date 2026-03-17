@@ -520,7 +520,7 @@ const ProfileContent = () => {
               <>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="company_name">Företagsnamn</Label>
+                    <Label htmlFor="company_name">{t('profile.companyName')}</Label>
                     <Input
                       id="company_name"
                       value={profileData.company_name || ''}
