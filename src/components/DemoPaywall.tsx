@@ -394,7 +394,7 @@ export const DemoPaywall = () => {
                           className="w-2/3 bg-white/10 backdrop-blur-sm text-white border-2 border-white/60 hover:bg-white/20 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.12)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] transition-all"
                           size="default"
                         >
-                          {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Uppgradera'}
+                          {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : t('paywall.upgrade')}
                         </Button>
                         </div>
                       </div>
