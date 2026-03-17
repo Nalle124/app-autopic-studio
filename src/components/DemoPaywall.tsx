@@ -377,7 +377,7 @@ export const DemoPaywall = () => {
                         {currentPlan &&
                           <div className="flex gap-6 mt-3 border-t border-white/10 pt-3">
                             <div>
-                              <p className="text-xs uppercase tracking-wider text-white/40">Fler bilder</p>
+                              <p className="text-xs uppercase tracking-wider text-white/40">{t('paywall.moreImages')}</p>
                               <p className="text-lg font-bold text-white">+{nextPlan.credits - currentPlan.credits}</p>
                             </div>
                             <div>
