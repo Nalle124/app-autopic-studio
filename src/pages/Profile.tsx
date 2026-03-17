@@ -554,7 +554,7 @@ const ProfileContent = () => {
             <div className="space-y-2">
               <Label htmlFor="phone" className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                Telefon
+                {t('profile.phone')}
               </Label>
               <Input
                 id="phone"
