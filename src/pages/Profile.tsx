@@ -467,12 +467,12 @@ const ProfileContent = () => {
               <CollapsibleContent>
                 <div className="mt-2 p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-3">
-                    Lägg till AutoPic på din hemskärm för snabb åtkomst:
+                    {t('profile.installAppDesc')}
                   </p>
                   <ol className="text-sm text-muted-foreground space-y-1.5">
-                    <li>1. Tryck på delningsikonen i din webbläsare</li>
-                    <li>2. Välj "Lägg till på hemskärmen"</li>
-                    <li>3. Klart! Appen finns nu på din hemskärm</li>
+                    <li>{t('profile.installStep1')}</li>
+                    <li>{t('profile.installStep2')}</li>
+                    <li>{t('profile.installStep3')}</li>
                   </ol>
                 </div>
               </CollapsibleContent>
