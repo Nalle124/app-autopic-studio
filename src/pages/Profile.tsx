@@ -529,7 +529,7 @@ const ProfileContent = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="organization_number">Org.nummer</Label>
+                    <Label htmlFor="organization_number">{t('profile.orgNumber')}</Label>
                     <Input
                       id="organization_number"
                       value={profileData.organization_number || ''}
