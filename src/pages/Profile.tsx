@@ -541,7 +541,7 @@ const ProfileContent = () => {
               </>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="full_name">Namn</Label>
+                <Label htmlFor="full_name">{t('profile.fullName')}</Label>
                 <Input
                   id="full_name"
                   value={profileData.full_name || ''}
