@@ -634,7 +634,7 @@ export const DemoPaywall = () => {
                 {/* Toggle */}
                 <div>
                   {renderTabToggle(
-                    [{ key: 'subscription', label: 'Abonnemang' }, { key: 'onetime', label: 'Engångsköp' }],
+                    [{ key: 'subscription', label: t('paywall.subscription') }, { key: 'onetime', label: t('paywall.oneTimePurchase') }],
                     coldTab,
                     setColdTab
                   )}
