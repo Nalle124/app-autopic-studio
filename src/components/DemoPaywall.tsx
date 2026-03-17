@@ -133,7 +133,7 @@ export const DemoPaywall = () => {
       if (error) throw new Error(error.message);
       if (data?.url) window.location.href = data.url;
     } catch {
-      toast.error('Kunde inte starta betalning. Försök igen.');
+      toast.error(t('paywall.couldNotStartPayment'));
     } finally {
       setLoadingTier(null);
     }
