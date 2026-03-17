@@ -207,7 +207,7 @@ const ProfileContent = () => {
 
   const handleLogoUpload = (file: File, type: 'light' | 'dark') => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Vänligen välj en bildfil');
+      toast.error(t('profile.selectImageFile'));
       return;
     }
 
