@@ -303,7 +303,7 @@ export const DemoPaywall = () => {
           </div>
         </button>
       )}
-      <p className="text-sm text-center text-muted-foreground pt-1">Credits förfaller inte — använd dem när du vill</p>
+      <p className="text-sm text-center text-muted-foreground pt-1">{t('paywall.creditsDontExpire')}</p>
     </div>;
 
   // ── Subscriber / Profile buy flow ──────────────────────────────
