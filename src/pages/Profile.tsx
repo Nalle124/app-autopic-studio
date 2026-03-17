@@ -690,7 +690,7 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
 
   const handleSubmit = async () => {
     if (!message.trim()) {
-      toast.error('Skriv ett meddelande');
+      toast.error(t('profile.couldNotSendBug'));
       return;
     }
     
