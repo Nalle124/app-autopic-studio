@@ -232,7 +232,7 @@ export const DemoPaywall = () => {
                 <div className="flex items-center gap-2">
                   <div className="text-right">
                     <span className={`text-2xl font-bold ${textColor}`}>{plan.price}</span>
-                    <span className={`text-sm ${subTextColor}`}> kr/mån</span>
+                    <span className={`text-sm ${subTextColor}`}> {t('paywall.perMonth')}</span>
                   </div>
                   <ChevronDown className={`w-5 h-5 transition-transform text-white/40 ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
