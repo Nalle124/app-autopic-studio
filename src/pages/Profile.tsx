@@ -404,10 +404,10 @@ const ProfileContent = () => {
                 </div>
                 <div>
                   <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
-                    {isSubscribed ? getCurrentPlanName() : 'Dina credits'}
+                    {isSubscribed ? getCurrentPlanName() : t('profile.yourCredits')}
                   </h2>
                   <p className="text-sm sm:text-sm text-muted-foreground font-small">
-                    {credits} credits kvar
+                    {t('profile.creditsLeft', { count: credits })}
                   </p>
                 </div>
               </div>
