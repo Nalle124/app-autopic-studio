@@ -425,9 +425,9 @@ const ProfileContent = () => {
             </div>
             <div className="min-w-0">
               <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
-                Utseende
+                {t('profile.appearance')}
               </h2>
-              <p className="text-sm sm:text-sm text-muted-foreground font-small">Anpassa appens utseende</p>
+              <p className="text-sm sm:text-sm text-muted-foreground font-small">{t('profile.customizeApp')}</p>
             </div>
           </div>
 
