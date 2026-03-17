@@ -329,11 +329,11 @@ export const DemoPaywall = () => {
               <div className="px-6 pt-8 pb-3 text-center">
                 {!isProfileBuy &&
                   <span className="inline-block text-sm font-medium text-foreground/70 bg-muted px-3 py-1 rounded-full mb-3">
-                    Credits förbrukade
+                    {t('paywall.creditsUsed')}
                   </span>
                 }
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                  Fyll på och fortsätt
+                  {t('paywall.topUpAndContinue')}
                 </h2>
                 {!isProfileBuy && currentPlan &&
                   <p className="text-base text-muted-foreground mt-1">
