@@ -262,12 +262,12 @@ const ProfileContent = () => {
             <div className={`p-4 rounded-lg ${type === 'light' ? 'bg-white' : 'bg-black'}`}>
               <img src={logo} alt={`Logo ${type}`} className="max-h-20 object-contain" />
             </div>
-            <Button
+              <Button
               variant="outline"
               size="sm"
               onClick={() => document.getElementById(`logo-${type}`)?.click()}
             >
-              Byt logo
+              {t('profile.changeLogo')}
             </Button>
           </div>
         ) : (
