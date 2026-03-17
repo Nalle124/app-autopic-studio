@@ -273,7 +273,7 @@ const ProfileContent = () => {
         ) : (
           <div className="flex flex-col items-center gap-3 text-center">
             <Upload className="w-8 h-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground font-small">Ingen logo vald</p>
+            <p className="text-sm text-muted-foreground font-small">{t('profile.noLogoSelected')}</p>
             <Button
               variant="outline"
               size="sm"
