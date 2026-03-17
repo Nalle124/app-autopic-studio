@@ -619,9 +619,9 @@ export const DemoPaywall = () => {
                 {/* If calculation exceeds Scale */}
                 {recommendedPlan && carsPerMonth * imagesPerCar > 800 &&
                   <div className="rounded-xl border border-border/60 bg-muted/30 p-5 text-center space-y-3">
-                    <h3 className="text-lg font-bold text-foreground">Skräddarsytt paket</h3>
+                    <h3 className="text-lg font-bold text-foreground">{t('paywall.customPackage')}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Ditt behov överstiger standardpaketen. Vi sätter ihop ett erbjudande.
+                      {t('paywall.customPackageDesc')}
                     </p>
                     <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="block">
                       <Button className="w-full bg-foreground text-background hover:bg-foreground/90 font-semibold" size="lg">
