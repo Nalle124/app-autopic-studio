@@ -168,7 +168,7 @@ export const DemoPaywall = () => {
   const renderContactLink = () =>
     <div className="text-center pt-3 pb-1">
       <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline">
-        Kontakta oss för skräddarsydd lösning
+        {t('paywall.contactUs')}
       </a>
     </div>;
 
