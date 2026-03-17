@@ -226,7 +226,7 @@ export const DemoPaywall = () => {
                       <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">{t('paywall.popular')}</span>
                     }
                   </div>
-                  <p className={`text-sm mt-0.5 ${subTextColor}`}>{plan.credits} bilder/månad</p>
+                  <p className={`text-sm mt-0.5 ${subTextColor}`}>{plan.credits} {t('paywall.imagesPerMonth')}</p>
                 </div>
                 {/* Price + dropdown arrow on the right */}
                 <div className="flex items-center gap-2">
