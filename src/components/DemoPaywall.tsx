@@ -449,7 +449,7 @@ export const DemoPaywall = () => {
 
                 <div className="px-6 pb-7 space-y-5 pt-2">
                    <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight text-center">
-                    Hitta ditt paket
+                    {t('paywall.findYourPlan')}
                   </h2>
 
                   {/* 3 Bullet points */}
