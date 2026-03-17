@@ -524,7 +524,7 @@ export const DemoPaywall = () => {
                   <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
                   <div className="relative z-10 px-8 py-8 text-center text-white">
                     <p className="text-base md:text-lg italic leading-relaxed text-white/90">
-                      " Förr lade vi timmar i månaden på bilderna/annonsering. Nu blir det bra direkt "
+                      {t('paywall.socialProofQuote')}
                     </p>
                     <div className="flex justify-center gap-0.5 mt-3">
                       {[1, 2, 3, 4, 5].map((i) =>
