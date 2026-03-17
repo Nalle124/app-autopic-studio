@@ -124,8 +124,7 @@ const ProfileContent = () => {
         window.location.href = data.url;
       }
     } catch (err) {
-      console.error('Error opening customer portal:', err);
-      toast.error('Kunde inte öppna prenumerationshantering');
+      toast.error(t('profile.couldNotOpenPortal'));
     } finally {
       setPortalLoading(false);
     }
@@ -200,7 +199,7 @@ const ProfileContent = () => {
       if (error) throw error;
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast.error('Kunde inte spara profil');
+      toast.error(t('profile.couldNotSave'));
     } finally {
       setIsSaving(false);
     }
@@ -208,7 +207,7 @@ const ProfileContent = () => {
 
   const handleLogoUpload = (file: File, type: 'light' | 'dark') => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Vänligen välj en bildfil');
+      toast.error(t('profile.selectImageFile'));
       return;
     }
 
@@ -240,7 +239,7 @@ const ProfileContent = () => {
       if (error) throw error;
     } catch (error) {
       console.error('Error saving logo:', error);
-      toast.error('Kunde inte spara logo');
+      toast.error(t('profile.couldNotSaveLogo'));
     }
   };
 
@@ -263,24 +262,24 @@ const ProfileContent = () => {
             <div className={`p-4 rounded-lg ${type === 'light' ? 'bg-white' : 'bg-black'}`}>
               <img src={logo} alt={`Logo ${type}`} className="max-h-20 object-contain" />
             </div>
-            <Button
+              <Button
               variant="outline"
               size="sm"
               onClick={() => document.getElementById(`logo-${type}`)?.click()}
             >
-              Byt logo
+              {t('profile.changeLogo')}
             </Button>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 text-center">
             <Upload className="w-8 h-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground font-small">Ingen logo vald</p>
+            <p className="text-sm text-muted-foreground font-small">{t('profile.noLogoSelected')}</p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => document.getElementById(`logo-${type}`)?.click()}
             >
-              Välj logo
+              {t('profile.selectLogo')}
             </Button>
           </div>
         )}
@@ -349,15 +348,15 @@ const ProfileContent = () => {
                   <TabsList className="bg-background/80 backdrop-blur-sm">
                     <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
                       <Plus className="w-4 h-4" />
-                      Projekt
+                      {t('nav.project')}
                     </TabsTrigger>
                     <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
                       <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
-                      AI Studio
+                      {t('nav.aiStudio')}
                     </TabsTrigger>
                     <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
                       <History className="w-4 h-4" />
-                      Galleri
+                      {t('nav.gallery')}
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -372,10 +371,10 @@ const ProfileContent = () => {
                   <SelectValue placeholder="Meny" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-[60]">
-                  <SelectItem value="profile" className="hidden">Meny</SelectItem>
-                  <SelectItem value="new">Projekt</SelectItem>
-                  <SelectItem value="ai-studio">AI Studio</SelectItem>
-                  <SelectItem value="history">Galleri</SelectItem>
+                  <SelectItem value="profile" className="hidden">{t('nav.profile')}</SelectItem>
+                  <SelectItem value="new">{t('nav.project')}</SelectItem>
+                  <SelectItem value="ai-studio">{t('nav.aiStudio')}</SelectItem>
+                  <SelectItem value="history">{t('nav.gallery')}</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -389,9 +388,9 @@ const ProfileContent = () => {
       
       <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-4xl pb-[env(safe-area-inset-bottom)]">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-3xl font-bold text-foreground font-heading">Profil</h1>
+          <h1 className="text-3xl sm:text-3xl font-bold text-foreground font-heading">{t('profile.title')}</h1>
           <p className="text-base sm:text-base text-muted-foreground font-small mt-1 sm:mt-2">
-            Hantera dina uppgifter och inställningar
+            {t('profile.subtitle')}
           </p>
         </div>
 
@@ -405,15 +404,15 @@ const ProfileContent = () => {
                 </div>
                 <div>
                   <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
-                    {isSubscribed ? getCurrentPlanName() : 'Dina credits'}
+                    {isSubscribed ? getCurrentPlanName() : t('profile.yourCredits')}
                   </h2>
                   <p className="text-sm sm:text-sm text-muted-foreground font-small">
-                    {credits} credits kvar
+                    {t('profile.creditsLeft', { count: credits })}
                   </p>
                 </div>
               </div>
               <Button variant="outline" size="sm" className="text-sm" onClick={handleBuyCredits}>
-                {isSubscribed ? 'Köp credits' : 'Skaffa Pro'}
+                {isSubscribed ? t('profile.buyCredits') : t('profile.getPro')}
               </Button>
             </div>
           </div>
@@ -426,9 +425,9 @@ const ProfileContent = () => {
             </div>
             <div className="min-w-0">
               <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
-                Utseende
+                {t('profile.appearance')}
               </h2>
-              <p className="text-sm sm:text-sm text-muted-foreground font-small">Anpassa appens utseende</p>
+              <p className="text-sm sm:text-sm text-muted-foreground font-small">{t('profile.customizeApp')}</p>
             </div>
           </div>
 
@@ -441,9 +440,9 @@ const ProfileContent = () => {
                   <Sun className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 )}
                 <div className="min-w-0">
-                  <Label className="text-sm font-medium">Ljust läge</Label>
+                  <Label className="text-sm font-medium">{t('profile.lightMode')}</Label>
                   <p className="text-sm text-muted-foreground font-small hidden sm:block">
-                    Växla mellan mörkt och ljust tema
+                    {t('profile.toggleTheme')}
                   </p>
                 </div>
               </div>
@@ -460,7 +459,7 @@ const ProfileContent = () => {
                 <button className="w-full flex items-center justify-between py-2">
                   <div className="flex items-center gap-3">
                     <Smartphone className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm font-medium">Installera app</span>
+                    <span className="text-sm font-medium">{t('profile.installApp')}</span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </button>
@@ -468,12 +467,12 @@ const ProfileContent = () => {
               <CollapsibleContent>
                 <div className="mt-2 p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-3">
-                    Lägg till AutoPic på din hemskärm för snabb åtkomst:
+                    {t('profile.installAppDesc')}
                   </p>
                   <ol className="text-sm text-muted-foreground space-y-1.5">
-                    <li>1. Tryck på delningsikonen i din webbläsare</li>
-                    <li>2. Välj "Lägg till på hemskärmen"</li>
-                    <li>3. Klart! Appen finns nu på din hemskärm</li>
+                    <li>{t('profile.installStep1')}</li>
+                    <li>{t('profile.installStep2')}</li>
+                    <li>{t('profile.installStep3')}</li>
                   </ol>
                 </div>
               </CollapsibleContent>
@@ -508,10 +507,10 @@ const ProfileContent = () => {
             </div>
             <div>
               <h2 className="text-lg sm:text-lg font-semibold text-foreground font-heading">
-                {isCompany ? 'Företagsuppgifter' : 'Kontaktuppgifter'}
+                {isCompany ? t('profile.customerInfo') : t('profile.customerInfo')}
               </h2>
               <p className="text-sm sm:text-sm text-muted-foreground font-small">
-                {isCompany ? 'Ditt företags information' : 'Din personliga information'}
+                {t('profile.manageInfo')}
               </p>
             </div>
           </div>
@@ -521,7 +520,7 @@ const ProfileContent = () => {
               <>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="company_name">Företagsnamn</Label>
+                    <Label htmlFor="company_name">{t('profile.companyName')}</Label>
                     <Input
                       id="company_name"
                       value={profileData.company_name || ''}
@@ -530,7 +529,7 @@ const ProfileContent = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="organization_number">Org.nummer</Label>
+                    <Label htmlFor="organization_number">{t('profile.orgNumber')}</Label>
                     <Input
                       id="organization_number"
                       value={profileData.organization_number || ''}
@@ -542,7 +541,7 @@ const ProfileContent = () => {
               </>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="full_name">Namn</Label>
+                <Label htmlFor="full_name">{t('profile.fullName')}</Label>
                 <Input
                   id="full_name"
                   value={profileData.full_name || ''}
@@ -555,7 +554,7 @@ const ProfileContent = () => {
             <div className="space-y-2">
               <Label htmlFor="phone" className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                Telefon
+                {t('profile.phone')}
               </Label>
               <Input
                 id="phone"
@@ -568,7 +567,7 @@ const ProfileContent = () => {
             <div className="space-y-2">
               <Label htmlFor="address" className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                Adress
+                {t('profile.address')}
               </Label>
               <Input
                 id="address"
@@ -580,7 +579,7 @@ const ProfileContent = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="postal_code">Postnummer</Label>
+                <Label htmlFor="postal_code">{t('profile.postalCode')}</Label>
                 <Input
                   id="postal_code"
                   value={profileData.postal_code || ''}
@@ -589,7 +588,7 @@ const ProfileContent = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">Ort</Label>
+                <Label htmlFor="city">{t('profile.city')}</Label>
                 <Input
                   id="city"
                   value={profileData.city || ''}
@@ -601,7 +600,7 @@ const ProfileContent = () => {
 
             <div className="pt-4">
               <Button variant="outline" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Sparar...' : 'Spara ändringar'}
+                {isSaving ? t('profile.saving') : t('profile.saveChanges')}
               </Button>
             </div>
           </div>
@@ -615,9 +614,9 @@ const ProfileContent = () => {
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-foreground font-heading">
-                Logotyp
+                {t('profile.logos')}
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground font-small">Din standard-logotyp för bilder</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-small">{t('profile.logosDesc')}</p>
             </div>
           </div>
 
@@ -626,7 +625,7 @@ const ProfileContent = () => {
             <LogoUploadSection 
               type="light" 
               logo={profileData.logo_light} 
-              label="Primär logotyp" 
+              label={t('profile.logoLight')} 
             />
             
             {/* Secondary logo - collapsed hint */}
@@ -654,7 +653,7 @@ const ProfileContent = () => {
               <LogoUploadSection 
                 type="dark" 
                 logo={profileData.logo_dark} 
-                label="Logo för mörka bakgrunder" 
+                label={t('profile.logoDark')} 
               />
             )}
           </div>
@@ -671,7 +670,7 @@ const ProfileContent = () => {
             onClick={handleLogout}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Logga ut
+            {t('profile.logout')}
           </Button>
         </Card>
       </main>
@@ -684,6 +683,7 @@ const ProfileContent = () => {
 
 // Bug Report Component - Collapsible dropdown version
 const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLoading }: { userId?: string; isSubscribed?: boolean; onManageSubscription?: () => void; portalLoading?: boolean }) => {
+  const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -691,7 +691,7 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
 
   const handleSubmit = async () => {
     if (!message.trim()) {
-      toast.error('Skriv ett meddelande');
+      toast.error(t('profile.couldNotSendBug'));
       return;
     }
     
@@ -725,7 +725,7 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
       }, 2500);
     } catch (error) {
       console.error('Error submitting bug report:', error);
-      toast.error('Kunde inte skicka. Försök igen.');
+      toast.error(t('profile.couldNotSendBug'));
     } finally {
       setIsSubmitting(false);
     }
@@ -742,10 +742,10 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
               </div>
               <div>
                 <h2 className="text-sm font-medium text-foreground">
-                  Feedback & Support
+                  {t('profile.bugReport')}
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Rapportera problem eller ge feedback
+                  {t('profile.bugReportDesc')}
                 </p>
               </div>
             </div>
@@ -766,12 +766,12 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
                 ) : (
                   <CreditCard className="w-4 h-4 text-muted-foreground" />
                 )}
-                <span className="text-sm">{portalLoading ? 'Laddar...' : 'Hantera prenumeration'}</span>
+                <span className="text-sm">{portalLoading ? t('common.loading') : t('profile.manageSubscription')}</span>
               </button>
             )}
             <Textarea
               id="bug-message"
-              placeholder="Beskriv vad som hände eller vad du tycker vi borde förbättra..."
+              placeholder={t('profile.bugPlaceholder')}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               disabled={isSubmitting || isSubmitted}
@@ -789,7 +789,7 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
               ) : isSubmitted ? (
                 <Check className="mr-2 h-4 w-4" />
               ) : null}
-              {isSubmitted ? 'Skickat!' : 'Skicka feedback'}
+              {isSubmitted ? t('profile.bugSent') : t('profile.sendReport')}
             </Button>
           </div>
         </CollapsibleContent>

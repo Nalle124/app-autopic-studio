@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
@@ -23,17 +24,17 @@ const CREDIT_PACKS = {
   creditPack300: { name: '300 credits', price: 899, credits: 300, priceId: 'price_1TAGWRR5EFc7nWvhkemhzZsB', estimate: '20–37 annonser' }
 } as const;
 
-const getAnnonsEstimate = (credits: number) => {
+const getAnnonsEstimateKey = (credits: number) => {
   const low = Math.floor(credits / 15);
   const high = Math.floor(credits / 8);
-  return `ca ${low}–${high} annonser/mån`;
+  return { low, high };
 };
 
-const PLAN_FEATURES: Record<string, string[]> = {
-  start: [getAnnonsEstimate(100), '100 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
-  pro: [getAnnonsEstimate(300), '300 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt'],
-  business: [getAnnonsEstimate(600), '600 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)'],
-  scale: [getAnnonsEstimate(800), '800 bilder/månad', 'Alla bakgrunder', 'Applicera logo', 'Blurra regplåtar', 'Skapa egen bakgrund', 'AI chatt', 'API-åtkomst (kommer snart)']
+const PLAN_FEATURE_KEYS: Record<string, string[]> = {
+  start: ['annonsEstimate:100', 'imagesMonth:100', 'features.allBackgrounds', 'features.applyLogo', 'features.blurPlates', 'features.createBackground', 'features.aiChat'],
+  pro: ['annonsEstimate:300', 'imagesMonth:300', 'features.allBackgrounds', 'features.applyLogo', 'features.blurPlates', 'features.createBackground', 'features.aiChat'],
+  business: ['annonsEstimate:600', 'imagesMonth:600', 'features.allBackgrounds', 'features.applyLogo', 'features.blurPlates', 'features.createBackground', 'features.aiChat', 'features.apiAccess'],
+  scale: ['annonsEstimate:800', 'imagesMonth:800', 'features.allBackgrounds', 'features.applyLogo', 'features.blurPlates', 'features.createBackground', 'features.aiChat', 'features.apiAccess']
 };
 
 type PlanKey = keyof typeof PRICING_PLANS;
@@ -89,6 +90,7 @@ const isOnHighestTier = (currentProductId: string | null) => {
 
 // ── Component ──────────────────────────────────────────────────────
 export const DemoPaywall = () => {
+  const { t } = useTranslation();
   const { showPaywall, setShowPaywall, paywallTrigger, isSubscribed, currentProductId } = useDemo();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
 
@@ -131,7 +133,7 @@ export const DemoPaywall = () => {
       if (error) throw new Error(error.message);
       if (data?.url) window.location.href = data.url;
     } catch {
-      toast.error('Kunde inte starta betalning. Försök igen.');
+      toast.error(t('paywall.couldNotStartPayment'));
     } finally {
       setLoadingTier(null);
     }
@@ -166,7 +168,7 @@ export const DemoPaywall = () => {
   const renderContactLink = () =>
     <div className="text-center pt-3 pb-1">
       <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline">
-        Kontakta oss för skräddarsydd lösning
+        {t('paywall.contactUs')}
       </a>
     </div>;
 
@@ -218,19 +220,19 @@ export const DemoPaywall = () => {
                   <div className="flex items-center gap-2">
                     <h3 className={`text-lg font-bold ${textColor}`}>{plan.name}</h3>
                     {isRecommended &&
-                      <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">Rekommenderad</span>
+                      <span className="text-[10px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full font-medium">{t('paywall.recommended')}</span>
                     }
                     {isPopular && !isRecommended &&
-                      <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">Populär</span>
+                      <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">{t('paywall.popular')}</span>
                     }
                   </div>
-                  <p className={`text-sm mt-0.5 ${subTextColor}`}>{plan.credits} bilder/månad</p>
+                  <p className={`text-sm mt-0.5 ${subTextColor}`}>{plan.credits} {t('paywall.imagesPerMonth')}</p>
                 </div>
                 {/* Price + dropdown arrow on the right */}
                 <div className="flex items-center gap-2">
                   <div className="text-right">
                     <span className={`text-2xl font-bold ${textColor}`}>{plan.price}</span>
-                    <span className={`text-sm ${subTextColor}`}> kr/mån</span>
+                    <span className={`text-sm ${subTextColor}`}> {t('paywall.perMonth')}</span>
                   </div>
                   <ChevronDown className={`w-5 h-5 transition-transform text-white/40 ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
@@ -240,12 +242,25 @@ export const DemoPaywall = () => {
             {isExpanded &&
               <div className="px-5 pb-5 pt-0 border-t border-white/10">
                 <ul className="space-y-2 pt-4">
-                  {PLAN_FEATURES[tier]?.map((f, i) =>
-                    <li key={i} className={`text-[15px] flex items-start gap-2.5 text-white/85`}>
-                      <Check className={`w-4 h-4 mt-0.5 shrink-0 text-white/60`} />
-                      {f}
-                    </li>
-                  )}
+                  {PLAN_FEATURE_KEYS[tier]?.map((fKey, i) => {
+                    let label = '';
+                    if (fKey.startsWith('annonsEstimate:')) {
+                      const credits = parseInt(fKey.split(':')[1]);
+                      const { low, high } = getAnnonsEstimateKey(credits);
+                      label = t('paywall.annonsEstimate', { low, high });
+                    } else if (fKey.startsWith('imagesMonth:')) {
+                      const credits = fKey.split(':')[1];
+                      label = `${credits} ${t('paywall.imagesPerMonth')}`;
+                    } else {
+                      label = t(`paywall.${fKey}`);
+                    }
+                    return (
+                      <li key={i} className={`text-[15px] flex items-start gap-2.5 text-white/85`}>
+                        <Check className={`w-4 h-4 mt-0.5 shrink-0 text-white/60`} />
+                        {label}
+                      </li>
+                    );
+                  })}
                 </ul>
                 <div className="flex justify-center mt-5">
                   <Button
@@ -254,7 +269,7 @@ export const DemoPaywall = () => {
                     className="w-2/3 font-semibold transition-all bg-white/10 backdrop-blur-sm text-white border-2 border-white/60 hover:bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.12)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]"
                     size="default"
                   >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isSubscriber ? 'Uppgradera' : 'Välj paket')}
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isSubscriber ? t('paywall.upgrade') : t('paywall.selectPlan'))}
                   </Button>
                 </div>
               </div>
@@ -276,19 +291,19 @@ export const DemoPaywall = () => {
           className="w-full p-5 py-6 rounded-xl border border-border/60 hover:border-foreground/20 transition-all flex items-center justify-between bg-card"
         >
           <div className="text-left">
-            <p className="font-bold text-lg text-foreground">{pack.credits} credits</p>
+            <p className="font-bold text-lg text-foreground">{pack.credits} {t('paywall.credits')}</p>
             <p className="text-sm text-muted-foreground">{pack.estimate}</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="font-bold text-2xl text-foreground">{pack.price} <span className="text-sm font-normal text-muted-foreground">kr</span></span>
             {loadingTier === key
               ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              : <span className="bg-foreground text-background text-sm font-semibold px-4 py-2 rounded-lg">Köp</span>
+              : <span className="bg-foreground text-background text-sm font-semibold px-4 py-2 rounded-lg">{t('paywall.buy')}</span>
             }
           </div>
         </button>
       )}
-      <p className="text-sm text-center text-muted-foreground pt-1">Credits förfaller inte — använd dem när du vill</p>
+      <p className="text-sm text-center text-muted-foreground pt-1">{t('paywall.creditsDontExpire')}</p>
     </div>;
 
   // ── Subscriber / Profile buy flow ──────────────────────────────
@@ -314,11 +329,11 @@ export const DemoPaywall = () => {
               <div className="px-6 pt-8 pb-3 text-center">
                 {!isProfileBuy &&
                   <span className="inline-block text-sm font-medium text-foreground/70 bg-muted px-3 py-1 rounded-full mb-3">
-                    Credits förbrukade
+                    {t('paywall.creditsUsed')}
                   </span>
                 }
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                  Fyll på och fortsätt
+                  {t('paywall.topUpAndContinue')}
                 </h2>
                 {!isProfileBuy && currentPlan &&
                   <p className="text-base text-muted-foreground mt-1">
@@ -331,7 +346,7 @@ export const DemoPaywall = () => {
               {hasUpgrades &&
                 <div className="px-6 pt-2 pb-1">
                   {renderTabToggle(
-                    [{ key: 'topup', label: 'Fyll på' }, { key: 'upgrade', label: 'Uppgradera' }],
+                    [{ key: 'topup', label: t('paywall.topUp') }, { key: 'upgrade', label: t('paywall.upgrade') }],
                     subscriberTab,
                     setSubscriberTab
                   )}
@@ -347,26 +362,26 @@ export const DemoPaywall = () => {
                       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent pointer-events-none" />
                       <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
                       <div className="relative z-10 p-5 py-6">
-                        <p className="text-xs uppercase tracking-widest text-white/50 font-medium mb-1">Uppgradera till</p>
+                        <p className="text-xs uppercase tracking-widest text-white/50 font-medium mb-1">{t('paywall.upgradeTo')}</p>
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="text-2xl font-bold text-white">{nextPlan.name}</h3>
-                            <p className="text-sm text-white/50 mt-0.5">{nextPlan.credits} bilder/månad</p>
+                            <p className="text-sm text-white/50 mt-0.5">{nextPlan.credits} {t('paywall.imagesPerMonth')}</p>
                           </div>
                           <div className="text-right">
                             <span className="text-3xl font-bold text-white">{nextPlan.price}</span>
-                            <span className="text-sm text-white/50"> kr/mån</span>
+                            <span className="text-sm text-white/50"> {t('paywall.perMonth')}</span>
                           </div>
                         </div>
 
                         {currentPlan &&
                           <div className="flex gap-6 mt-3 border-t border-white/10 pt-3">
                             <div>
-                              <p className="text-xs uppercase tracking-wider text-white/40">Fler bilder</p>
+                              <p className="text-xs uppercase tracking-wider text-white/40">{t('paywall.moreImages')}</p>
                               <p className="text-lg font-bold text-white">+{nextPlan.credits - currentPlan.credits}</p>
                             </div>
                             <div>
-                              <p className="text-xs uppercase tracking-wider text-white/40">Prisskillnad</p>
+                              <p className="text-xs uppercase tracking-wider text-white/40">{t('paywall.priceDifference')}</p>
                               <p className="text-lg font-bold text-white">+{nextPlan.price - currentPlan.price} kr</p>
                             </div>
                           </div>
@@ -379,7 +394,7 @@ export const DemoPaywall = () => {
                           className="w-2/3 bg-white/10 backdrop-blur-sm text-white border-2 border-white/60 hover:bg-white/20 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.12)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] transition-all"
                           size="default"
                         >
-                          {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Uppgradera'}
+                          {loadingTier === nextTier ? <Loader2 className="w-4 h-4 animate-spin" /> : t('paywall.upgrade')}
                         </Button>
                         </div>
                       </div>
@@ -396,9 +411,9 @@ export const DemoPaywall = () => {
                 {/* Contact for highest tier */}
                 {onHighest &&
                   <div className="text-center pt-2 text-sm text-muted-foreground">
-                    <p>Behöver du fler credits regelbundet?</p>
+                    <p>{t('paywall.needMoreRegularly')}</p>
                     <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      Kontakta oss för företagsanpassad lösning
+                      {t('paywall.contactForEnterprise')}
                     </a>
                   </div>
                 }
@@ -434,7 +449,7 @@ export const DemoPaywall = () => {
 
                 <div className="px-6 pb-7 space-y-5 pt-2">
                    <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight text-center">
-                    Hitta ditt paket
+                    {t('paywall.findYourPlan')}
                   </h2>
 
                   {/* 3 Bullet points */}
@@ -443,19 +458,19 @@ export const DemoPaywall = () => {
                       <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 text-foreground/60" />
                       </div>
-                      Proffsiga bakgrunder på minuter
+                      {t('paywall.heroBullet1')}
                     </li>
                     <li className="flex items-center gap-2.5">
                       <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 text-foreground/60" />
                       </div>
-                      Blurra regskyltar & applicera logo
+                      {t('paywall.heroBullet2')}
                     </li>
                     <li className="flex items-center gap-2.5">
                       <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 text-foreground/60" />
                       </div>
-                      Utvecklad av och för bilhandlare
+                      {t('paywall.heroBullet3')}
                     </li>
                   </ul>
 
@@ -467,9 +482,9 @@ export const DemoPaywall = () => {
                       style={{ background: V2_BUTTON_GRADIENT }}
                       size="lg"
                     >
-                      Fortsätt
+                      {t('paywall.continue')}
                     </Button>
-                    <p className="text-xs text-center text-muted-foreground">Ingen bindningstid</p>
+                    <p className="text-xs text-center text-muted-foreground">{t('paywall.noCommitment')}</p>
                   </div>
                 </div>
               </div>
@@ -480,7 +495,7 @@ export const DemoPaywall = () => {
               <div>
                 {/* White card area */}
                 <div className="px-6 pt-10 pb-6">
-                  <h2 className="text-2xl font-bold text-foreground text-center mb-5">Hur vill du välja?</h2>
+                  <h2 className="text-2xl font-bold text-foreground text-center mb-5">{t('paywall.howToChoose')}</h2>
 
                   <div className="grid grid-cols-2 gap-3">
                     {/* See all option */}
@@ -488,7 +503,7 @@ export const DemoPaywall = () => {
                       onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
                       className="group relative bg-muted hover:bg-muted/80 p-5 text-center transition-all flex flex-col items-center justify-center rounded-xl min-h-[100px]"
                     >
-                      <h3 className="font-semibold text-foreground text-base">Se alla paket direkt</h3>
+                      <h3 className="font-semibold text-foreground text-base">{t('paywall.seeAllPlans')}</h3>
                     </button>
 
                     {/* Quiz option — highlighted with gradient nudge + quiz badge on edge */}
@@ -498,7 +513,7 @@ export const DemoPaywall = () => {
                       style={{ background: 'linear-gradient(135deg, hsl(220, 15%, 92%) 0%, hsl(25, 20%, 92%) 100%)' }}
                     >
                       <span className="absolute -top-2.5 right-3 text-[9px] uppercase tracking-widest font-bold text-white bg-primary px-2.5 py-1 rounded-full shadow-sm z-10">Quiz</span>
-                      <h3 className="font-semibold text-foreground text-base">Beräkna min plan</h3>
+                      <h3 className="font-semibold text-foreground text-base">{t('paywall.calculateMyPlan')}</h3>
                     </button>
                   </div>
                 </div>
@@ -509,7 +524,7 @@ export const DemoPaywall = () => {
                   <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
                   <div className="relative z-10 px-8 py-8 text-center text-white">
                     <p className="text-base md:text-lg italic leading-relaxed text-white/90">
-                      " Förr lade vi timmar i månaden på bilderna/annonsering. Nu blir det bra direkt "
+                      {t('paywall.socialProofQuote')}
                     </p>
                     <div className="flex justify-center gap-0.5 mt-3">
                       {[1, 2, 3, 4, 5].map((i) =>
@@ -529,7 +544,7 @@ export const DemoPaywall = () => {
                   {/* Cars per month slider */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <label className="text-base font-medium text-foreground">Bilar per månad</label>
+                      <label className="text-base font-medium text-foreground">{t('paywall.carsPerMonth')}</label>
                       <span className="text-2xl font-bold text-foreground tabular-nums">{carsPerMonth}</span>
                     </div>
                     <Slider
@@ -551,7 +566,7 @@ export const DemoPaywall = () => {
                   {/* Images per car slider */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <label className="text-base font-medium text-foreground">Bilder per bil</label>
+                      <label className="text-base font-medium text-foreground">{t('paywall.imagesPerCar')}</label>
                       <span className="text-2xl font-bold text-foreground tabular-nums">{imagesPerCar}</span>
                     </div>
                     <Slider
@@ -574,7 +589,7 @@ export const DemoPaywall = () => {
                 {/* Total */}
                 <div className="bg-muted/50 rounded-xl p-4 text-center">
                   <span className="text-3xl font-bold text-foreground">{carsPerMonth * imagesPerCar}</span>
-                  <span className="text-sm text-muted-foreground ml-2">bilder/månad totalt</span>
+                  <span className="text-sm text-muted-foreground ml-2">{t('paywall.imagesPerMonth')} {t('paywall.total')}</span>
                 </div>
 
                 <div className="space-y-3">
@@ -584,13 +599,13 @@ export const DemoPaywall = () => {
                     className="w-full font-semibold bg-foreground text-background hover:bg-foreground/90 transition-all"
                     size="lg"
                   >
-                    Beräkna
+                    {t('paywall.calculate')}
                   </Button>
                   <button
                     onClick={() => { setRecommendedPlan(null); setStep('plans'); }}
                     className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Se alla paket direkt
+                    {t('paywall.seeAllPlans')}
                   </button>
                 </div>
               </div>
@@ -599,14 +614,14 @@ export const DemoPaywall = () => {
             {/* ── Step 3b: Plans with toggle ── */}
             {step === 'plans' &&
               <div className="px-6 pt-10 pb-6 space-y-4">
-                <h2 className="text-2xl font-bold text-foreground text-center">Välj din plan</h2>
+                <h2 className="text-2xl font-bold text-foreground text-center">{t('paywall.chooseYourPlan')}</h2>
 
                 {/* If calculation exceeds Scale */}
                 {recommendedPlan && carsPerMonth * imagesPerCar > 800 &&
                   <div className="rounded-xl border border-border/60 bg-muted/30 p-5 text-center space-y-3">
-                    <h3 className="text-lg font-bold text-foreground">Skräddarsytt paket</h3>
+                    <h3 className="text-lg font-bold text-foreground">{t('paywall.customPackage')}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Ditt behov överstiger standardpaketen. Vi sätter ihop ett erbjudande.
+                      {t('paywall.customPackageDesc')}
                     </p>
                     <a href="https://www.autopic.studio/kontakt" target="_blank" rel="noopener noreferrer" className="block">
                       <Button className="w-full bg-foreground text-background hover:bg-foreground/90 font-semibold" size="lg">
@@ -619,7 +634,7 @@ export const DemoPaywall = () => {
                 {/* Toggle */}
                 <div>
                   {renderTabToggle(
-                    [{ key: 'subscription', label: 'Abonnemang' }, { key: 'onetime', label: 'Engångsköp' }],
+                    [{ key: 'subscription', label: t('paywall.subscription') }, { key: 'onetime', label: t('paywall.oneTimePurchase') }],
                     coldTab,
                     setColdTab
                   )}
