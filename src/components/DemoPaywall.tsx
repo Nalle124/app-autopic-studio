@@ -458,19 +458,19 @@ export const DemoPaywall = () => {
                       <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 text-foreground/60" />
                       </div>
-                      Proffsiga bakgrunder på minuter
+                      {t('paywall.heroBullet1')}
                     </li>
                     <li className="flex items-center gap-2.5">
                       <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 text-foreground/60" />
                       </div>
-                      Blurra regskyltar & applicera logo
+                      {t('paywall.heroBullet2')}
                     </li>
                     <li className="flex items-center gap-2.5">
                       <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 text-foreground/60" />
                       </div>
-                      Utvecklad av och för bilhandlare
+                      {t('paywall.heroBullet3')}
                     </li>
                   </ul>
 
