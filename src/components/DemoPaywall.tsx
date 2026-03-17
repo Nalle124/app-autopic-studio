@@ -242,12 +242,25 @@ export const DemoPaywall = () => {
             {isExpanded &&
               <div className="px-5 pb-5 pt-0 border-t border-white/10">
                 <ul className="space-y-2 pt-4">
-                  {PLAN_FEATURES[tier]?.map((f, i) =>
-                    <li key={i} className={`text-[15px] flex items-start gap-2.5 text-white/85`}>
-                      <Check className={`w-4 h-4 mt-0.5 shrink-0 text-white/60`} />
-                      {f}
-                    </li>
-                  )}
+                  {PLAN_FEATURE_KEYS[tier]?.map((fKey, i) => {
+                    let label = '';
+                    if (fKey.startsWith('annonsEstimate:')) {
+                      const credits = parseInt(fKey.split(':')[1]);
+                      const { low, high } = getAnnonsEstimateKey(credits);
+                      label = t('paywall.annonsEstimate', { low, high });
+                    } else if (fKey.startsWith('imagesMonth:')) {
+                      const credits = fKey.split(':')[1];
+                      label = `${credits} ${t('paywall.imagesPerMonth')}`;
+                    } else {
+                      label = t(`paywall.${fKey}`);
+                    }
+                    return (
+                      <li key={i} className={`text-[15px] flex items-start gap-2.5 text-white/85`}>
+                        <Check className={`w-4 h-4 mt-0.5 shrink-0 text-white/60`} />
+                        {label}
+                      </li>
+                    );
+                  })}
                 </ul>
                 <div className="flex justify-center mt-5">
                   <Button
