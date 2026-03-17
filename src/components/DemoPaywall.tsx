@@ -544,7 +544,7 @@ export const DemoPaywall = () => {
                   {/* Cars per month slider */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <label className="text-base font-medium text-foreground">Bilar per månad</label>
+                      <label className="text-base font-medium text-foreground">{t('paywall.carsPerMonth')}</label>
                       <span className="text-2xl font-bold text-foreground tabular-nums">{carsPerMonth}</span>
                     </div>
                     <Slider
