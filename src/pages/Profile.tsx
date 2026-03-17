@@ -356,7 +356,7 @@ const ProfileContent = () => {
                     </TabsTrigger>
                     <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
                       <History className="w-4 h-4" />
-                      Galleri
+                      {t('nav.gallery')}
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
