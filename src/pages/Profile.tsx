@@ -239,7 +239,7 @@ const ProfileContent = () => {
       if (error) throw error;
     } catch (error) {
       console.error('Error saving logo:', error);
-      toast.error('Kunde inte spara logo');
+      toast.error(t('profile.couldNotSaveLogo'));
     }
   };
 
