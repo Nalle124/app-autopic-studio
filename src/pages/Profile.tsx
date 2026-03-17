@@ -653,7 +653,7 @@ const ProfileContent = () => {
               <LogoUploadSection 
                 type="dark" 
                 logo={profileData.logo_dark} 
-                label="Logo för mörka bakgrunder" 
+                label={t('profile.logoDark')} 
               />
             )}
           </div>
