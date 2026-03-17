@@ -199,7 +199,7 @@ const ProfileContent = () => {
       if (error) throw error;
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast.error('Kunde inte spara profil');
+      toast.error(t('profile.couldNotSave'));
     } finally {
       setIsSaving(false);
     }
