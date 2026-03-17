@@ -742,10 +742,10 @@ const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLo
               </div>
               <div>
                 <h2 className="text-sm font-medium text-foreground">
-                  Feedback & Support
+                  {t('profile.bugReport')}
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Rapportera problem eller ge feedback
+                  {t('profile.bugReportDesc')}
                 </p>
               </div>
             </div>
