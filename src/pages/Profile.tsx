@@ -579,7 +579,7 @@ const ProfileContent = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="postal_code">Postnummer</Label>
+                <Label htmlFor="postal_code">{t('profile.postalCode')}</Label>
                 <Input
                   id="postal_code"
                   value={profileData.postal_code || ''}
