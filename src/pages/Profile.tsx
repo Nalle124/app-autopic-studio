@@ -683,6 +683,7 @@ const ProfileContent = () => {
 
 // Bug Report Component - Collapsible dropdown version
 const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLoading }: { userId?: string; isSubscribed?: boolean; onManageSubscription?: () => void; portalLoading?: boolean }) => {
+  const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
