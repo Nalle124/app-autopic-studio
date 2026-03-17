@@ -279,7 +279,7 @@ const ProfileContent = () => {
               size="sm"
               onClick={() => document.getElementById(`logo-${type}`)?.click()}
             >
-              Välj logo
+              {t('profile.selectLogo')}
             </Button>
           </div>
         )}
