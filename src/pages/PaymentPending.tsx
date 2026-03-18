@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { PRICING_TIERS, type PricingTier } from '@/config/pricing';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CreditCard, ArrowRight, Sparkles } from 'lucide-react';
 
 const PaymentPending = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<'loading' | 'redirecting' | 'error' | 'cancelled'>('loading');
@@ -15,23 +17,11 @@ const PaymentPending = () => {
   const [selectedPlan, setSelectedPlan] = useState<PricingTier | null>(null);
 
   useEffect(() => {
-    // Wait for auth to load
     if (authLoading) return;
+    if (!user) { navigate('/auth'); return; }
 
-    // Check if user is logged in
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
-    // Get pending plan from localStorage
     const pendingPlan = localStorage.getItem('pendingPlan') as PricingTier | null;
-    
-    if (!pendingPlan || !PRICING_TIERS[pendingPlan]) {
-      // No valid pending plan, go to demo
-      navigate('/');
-      return;
-    }
+    if (!pendingPlan || !PRICING_TIERS[pendingPlan]) { navigate('/'); return; }
 
     setSelectedPlan(pendingPlan);
     initiateCheckout(pendingPlan);
@@ -39,48 +29,30 @@ const PaymentPending = () => {
 
   const initiateCheckout = async (plan: PricingTier) => {
     setStatus('redirecting');
-
     try {
       const tier = PRICING_TIERS[plan];
       const mode = tier.oneTime ? 'payment' : 'subscription';
-
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          priceId: tier.priceId,
-          mode 
-        },
+        body: { priceId: tier.priceId, mode },
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
+      if (error) throw new Error(error.message);
       if (data?.url) {
-        // Clear pending plan before redirect
-        // We'll set it again if user returns without completing
         window.location.href = data.url;
       } else if (data?.error) {
         throw new Error(data.error);
       } else {
-        throw new Error('Ingen checkout-URL mottogs');
+        throw new Error(t('payment.noCheckoutUrl'));
       }
     } catch (err) {
       console.error('Checkout error:', err);
       setStatus('error');
-      setError(err instanceof Error ? err.message : 'Kunde inte starta betalningen');
+      setError(err instanceof Error ? err.message : t('payment.couldNotStartPayment'));
     }
   };
 
-  const handleRetry = () => {
-    if (selectedPlan) {
-      initiateCheckout(selectedPlan);
-    }
-  };
-
-  const handleSkip = () => {
-    localStorage.removeItem('pendingPlan');
-    navigate('/');
-  };
+  const handleRetry = () => { if (selectedPlan) initiateCheckout(selectedPlan); };
+  const handleSkip = () => { localStorage.removeItem('pendingPlan'); navigate('/'); };
 
   const getPlanDisplayName = () => {
     if (!selectedPlan) return '';
@@ -99,8 +71,8 @@ const PaymentPending = () => {
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center space-y-4">
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-            <h2 className="text-xl font-semibold">Förbereder betalning...</h2>
-            <p className="text-muted-foreground text-sm">Vänligen vänta</p>
+            <h2 className="text-xl font-semibold">{t('payment.preparingPayment')}</h2>
+            <p className="text-muted-foreground text-sm">{t('payment.pleaseWaitShort')}</p>
           </CardContent>
         </Card>
       </div>
@@ -111,36 +83,25 @@ const PaymentPending = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full overflow-hidden">
-          {/* Gradient header */}
           <div className="h-24 gradient-premium flex items-center justify-center">
             <div className="w-14 h-14 rounded-full bg-background/20 backdrop-blur-sm flex items-center justify-center border border-white/20">
               <CreditCard className="h-7 w-7 text-white" />
             </div>
           </div>
-          
           <CardContent className="p-6 text-center space-y-4">
             <div>
               <h2 className="text-xl font-semibold text-foreground">
-                Öppnar betalning för {getPlanDisplayName()}
+                {t('payment.openingPaymentFor', { plan: getPlanDisplayName() })}
               </h2>
-              <p className="text-muted-foreground mt-1">
-                {getPlanPrice()}
-              </p>
+              <p className="text-muted-foreground mt-1">{getPlanPrice()}</p>
             </div>
-            
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Omdirigerar till Stripe...</span>
+              <span>{t('payment.redirectingToStripe')}</span>
             </div>
-
             <div className="pt-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleSkip}
-                className="text-muted-foreground"
-              >
-                Avbryt och fortsätt till appen
+              <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground">
+                {t('payment.cancelAndContinue')}
               </Button>
             </div>
           </CardContent>
@@ -158,16 +119,12 @@ const PaymentPending = () => {
               <CreditCard className="h-8 w-8 text-destructive" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Något gick fel</h2>
+              <h2 className="text-xl font-semibold text-foreground">{t('payment.somethingWentWrong')}</h2>
               <p className="text-muted-foreground mt-1">{error}</p>
             </div>
             <div className="space-y-2">
-              <Button onClick={handleRetry} className="w-full">
-                Försök igen
-              </Button>
-              <Button onClick={handleSkip} variant="outline" className="w-full">
-                Fortsätt till appen
-              </Button>
+              <Button onClick={handleRetry} className="w-full">{t('payment.retryPayment')}</Button>
+              <Button onClick={handleSkip} variant="outline" className="w-full">{t('payment.continueToApp')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -175,7 +132,6 @@ const PaymentPending = () => {
     );
   }
 
-  // Cancelled state (user returned without completing)
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="max-w-md w-full overflow-hidden">
@@ -184,25 +140,19 @@ const PaymentPending = () => {
             <Sparkles className="h-7 w-7 text-white" />
           </div>
         </div>
-        
         <CardContent className="p-6 text-center space-y-4">
           <div>
-            <h2 className="text-xl font-semibold text-foreground">
-              Välkommen till AutoPic!
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              Ditt konto är skapat. Du kan alltid uppgradera senare.
-            </p>
+            <h2 className="text-xl font-semibold text-foreground">{t('payment.welcomeToAutoPic')}</h2>
+            <p className="text-muted-foreground mt-1">{t('payment.accountCreated')}</p>
           </div>
-          
           <div className="space-y-2">
             {selectedPlan && (
               <Button onClick={handleRetry} variant="outline" className="w-full">
-                Slutför betalning för {getPlanDisplayName()}
+                {t('payment.completePaymentFor', { plan: getPlanDisplayName() })}
               </Button>
             )}
             <Button onClick={handleSkip} className="w-full">
-              Börja använda AutoPic
+              {t('payment.startUsingAutoPic')}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -9,6 +10,7 @@ import { CheckCircle, Loader2, XCircle, Sparkles } from 'lucide-react';
 import auraGradient2 from '@/assets/aura-gradient-2.jpg';
 
 const PaymentSuccess = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -21,13 +23,12 @@ const PaymentSuccess = () => {
   const hasVerified = useRef(false);
 
   useEffect(() => {
-    // Prevent duplicate verification calls
     if (hasVerified.current) return;
     
     const sessionId = searchParams.get('session_id');
     if (!sessionId || !user) {
       setStatus('error');
-      setError('Ingen betalningssession hittades');
+      setError(t('payment.noSessionFound'));
       return;
     }
 
@@ -35,9 +36,7 @@ const PaymentSuccess = () => {
 
     const verifyPayment = async () => {
       try {
-        // Clear any pending plan
         localStorage.removeItem('pendingPlan');
-        // Mark that user just paid (for onboarding congratulations)
         localStorage.setItem('cameFromPayment', 'true');
 
         const { data, error } = await supabase.functions.invoke('verify-payment', {
@@ -54,7 +53,6 @@ const PaymentSuccess = () => {
           setMode(data.mode || 'payment');
           await refetchCredits();
           
-          // Check if user needs onboarding
           const { data: profile } = await supabase
             .from('profiles')
             .select('onboarding_completed')
@@ -64,12 +62,12 @@ const PaymentSuccess = () => {
           setNeedsOnboarding(!profile?.onboarding_completed);
         } else {
           setStatus('error');
-          setError(data.message || 'Betalningen kunde inte verifieras');
+          setError(data.message || t('payment.somethingWentWrong'));
         }
       } catch (err) {
         console.error('Payment verification error:', err);
         setStatus('error');
-        setError(err instanceof Error ? err.message : 'Ett fel uppstod');
+        setError(err instanceof Error ? err.message : t('payment.somethingWentWrong'));
       }
     };
 
@@ -90,14 +88,13 @@ const PaymentSuccess = () => {
         {status === 'verifying' && (
           <CardContent className="p-8 text-center space-y-4">
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-            <h2 className="text-xl font-semibold">Verifierar betalning...</h2>
-            <p className="text-muted-foreground text-sm">Vänligen vänta medan vi bekräftar din betalning</p>
+            <h2 className="text-xl font-semibold">{t('payment.verifying')}</h2>
+            <p className="text-muted-foreground text-sm">{t('payment.pleaseWait')}</p>
           </CardContent>
         )}
         
         {status === 'success' && (
           <>
-            {/* Aura gradient header */}
             <div className="relative h-32 overflow-hidden">
               <div 
                 className="absolute inset-0 bg-cover bg-center"
@@ -113,9 +110,9 @@ const PaymentSuccess = () => {
             
             <CardContent className="p-6 pt-4 text-center space-y-4">
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Betalning genomförd!</h2>
+                <h2 className="text-2xl font-bold text-foreground">{t('payment.paymentDone')}</h2>
                 <p className="text-muted-foreground mt-1">
-                  Ditt konto har uppdaterats.
+                  {t('payment.accountUpdated')}
                 </p>
               </div>
               
@@ -130,7 +127,7 @@ const PaymentSuccess = () => {
                 onClick={handleContinue} 
                 className="w-full bg-[hsl(0,38%,34%)] hover:bg-[hsl(0,38%,38%)]"
               >
-                {needsOnboarding ? 'Slutför registrering' : 'Börja skapa bilder'}
+                {needsOnboarding ? t('payment.completeRegistration') : t('payment.startCreating')}
               </Button>
             </CardContent>
           </>
@@ -142,11 +139,11 @@ const PaymentSuccess = () => {
               <XCircle className="h-8 w-8 text-destructive" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Något gick fel</h2>
+              <h2 className="text-xl font-semibold text-foreground">{t('payment.somethingWentWrong')}</h2>
               <p className="text-muted-foreground mt-1">{error}</p>
             </div>
             <Button onClick={() => navigate('/profil')} variant="outline" className="w-full">
-              Försök igen
+              {t('payment.tryAgain')}
             </Button>
           </CardContent>
         )}
