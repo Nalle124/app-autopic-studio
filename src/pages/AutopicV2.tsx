@@ -263,6 +263,7 @@ const AutopicV2Content = () => {
               projectName={projectName}
               credits={credits}
               outputFormat={outputFormat}
+              autoCropEnabled={autoCropEnabled}
               onImagesUpdate={setImages}
               onComplete={handleGenerationComplete}
               onRefetchCredits={refetchCredits}
