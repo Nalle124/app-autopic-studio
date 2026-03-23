@@ -261,6 +261,8 @@ const TryV2Content = () => {
               onConfigChange={setLogoConfig}
               plateConfig={plateConfig}
               onPlateConfigChange={setPlateConfig}
+              autoCropEnabled={autoCropEnabled}
+              onAutoCropChange={setAutoCropEnabled}
             />
           </section>
         )}
