@@ -58,6 +58,7 @@ const TryV2Content = () => {
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState('');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
+  const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
 
