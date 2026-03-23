@@ -225,11 +225,17 @@ function shouldApplyLogo(index: number, total: number, applyTo: V2LogoConfig['ap
   return false;
 }
 
-const LOGO_APPLY_LABELS: Record<string, string> = {
-  'none': 'Ingen', 'all': 'Alla bilder', 'first': 'Första bilden', 'first-last': 'Första & sista', 'first-3-last': 'Första 3 + sista',
+const getLogoApplyLabel = (key: string, t: any) => {
+  const labels: Record<string, string> = {
+    'none': t('v2.applyNone'), 'all': t('v2.applyOptions.all'), 'first': t('v2.applyOptions.first'), 'first-last': t('v2.applyOptions.firstLast'), 'first-3-last': t('v2.applyOptions.first3Last'),
+  };
+  return labels[key] || key;
 };
-const PLATE_STYLE_LABELS: Record<string, string> = {
-  'blur-dark': 'Mörk blur', 'blur-light': 'Ljus blur', 'logo': 'Din logotyp', 'custom-logo': 'Egen logotyp',
+const getPlateStyleLabel = (key: string, t: any) => {
+  const labels: Record<string, string> = {
+    'blur-dark': t('v2.plateStyles.darkInlay'), 'blur-light': t('v2.plateStyles.lightInlay'), 'logo': t('v2.plateStyles.yourLogo'), 'custom-logo': t('v2.plateStyles.customLogoSelected'),
+  };
+  return labels[key] || key;
 };
 
 function getTargetAspect(format: 'landscape' | 'portrait'): number {
