@@ -79,15 +79,23 @@ const AutopicV2Content = () => {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    setImages([]);
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
     setMaxStepReached(0);
-    setProjectName('');
     setSelectedSceneId('');
     setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
+    setAutoCropEnabled(true);
+  }, []);
+
+  const handleTryAnotherBackground = useCallback(() => {
+    setResults([]);
+    setShowResults(false);
+    setCurrentStep(1);
+    setMaxStepReached(prev => Math.max(prev, 1));
+    setSelectedSceneId('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const goToStep = useCallback((step: number) => {
