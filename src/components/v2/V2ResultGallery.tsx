@@ -22,9 +22,10 @@ import { CarAdjustments } from '@/types/scene';
 interface Props {
   results: V2Image[];
   onStartOver: () => void;
+  onTryAnotherBackground: () => void;
 }
 
-export const V2ResultGallery = ({ results, onStartOver }: Props) => {
+export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
