@@ -41,7 +41,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
         const blob = await response.blob();
         const file = new File([blob], fileName, { type: 'image/jpeg' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Spara till Bilder' });
+          await navigator.share({ files: [file], title: t('v2.saveToPhotos') });
           return;
         }
       } catch (error: any) {
