@@ -377,7 +377,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
 
       {editingImage?.type === 'crop' && (
         <ImageCropEditor
-          image={{ id: String(editingImage.index), finalUrl: editingImage.url, fileName: `bild-${editingImage.index + 1}` }}
+          image={{ id: String(editingImage.index), finalUrl: editingImage.url, fileName: `image-${editingImage.index + 1}` }}
           onClose={() => setEditingImage(null)}
           onSave={(_id, croppedUrl) => {
             results[editingImage.index].processedUrl = croppedUrl;
