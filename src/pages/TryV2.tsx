@@ -276,6 +276,7 @@ const TryV2Content = () => {
               projectName={projectName}
               credits={availableCredits}
               outputFormat={outputFormat}
+              autoCropEnabled={autoCropEnabled}
               onImagesUpdate={setImages}
               onComplete={handleGenerationComplete}
               onRefetchCredits={async () => {}}
