@@ -92,7 +92,7 @@ const renderPresetMockup = (presetId: string) => {
   );
 };
 
-export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange }: Props) => {
+export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropEnabled, onAutoCropChange }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
