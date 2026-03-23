@@ -15,6 +15,8 @@ interface Props {
   onConfigChange: (config: V2LogoConfig) => void;
   plateConfig: V2PlateConfig;
   onPlateConfigChange: (config: V2PlateConfig) => void;
+  autoCropEnabled: boolean;
+  onAutoCropChange: (enabled: boolean) => void;
 }
 
 const PRESET_KEYS = [
