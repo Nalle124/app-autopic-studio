@@ -65,6 +65,7 @@ const AutopicV2Content = () => {
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
+  const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -78,15 +79,23 @@ const AutopicV2Content = () => {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    setImages([]);
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
     setMaxStepReached(0);
-    setProjectName('');
     setSelectedSceneId('');
     setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
+    setAutoCropEnabled(true);
+  }, []);
+
+  const handleTryAnotherBackground = useCallback(() => {
+    setResults([]);
+    setShowResults(false);
+    setCurrentStep(1);
+    setMaxStepReached(prev => Math.max(prev, 1));
+    setSelectedSceneId('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const goToStep = useCallback((step: number) => {
@@ -199,6 +208,7 @@ const AutopicV2Content = () => {
         <V2ResultGallery
           results={results}
           onStartOver={handleStartOver}
+          onTryAnotherBackground={handleTryAnotherBackground}
         />
       </div>
     );
@@ -238,6 +248,8 @@ const AutopicV2Content = () => {
               onConfigChange={setLogoConfig}
               plateConfig={plateConfig}
               onPlateConfigChange={setPlateConfig}
+              autoCropEnabled={autoCropEnabled}
+              onAutoCropChange={setAutoCropEnabled}
             />
           </section>
         )}
@@ -251,6 +263,7 @@ const AutopicV2Content = () => {
               projectName={projectName}
               credits={credits}
               outputFormat={outputFormat}
+              autoCropEnabled={autoCropEnabled}
               onImagesUpdate={setImages}
               onComplete={handleGenerationComplete}
               onRefetchCredits={refetchCredits}

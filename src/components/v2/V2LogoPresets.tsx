@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield, Upload } from 'lucide-react';
+import { Shield, Upload, Crop } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -15,6 +15,8 @@ interface Props {
   onConfigChange: (config: V2LogoConfig) => void;
   plateConfig: V2PlateConfig;
   onPlateConfigChange: (config: V2PlateConfig) => void;
+  autoCropEnabled: boolean;
+  onAutoCropChange: (enabled: boolean) => void;
 }
 
 const PRESET_KEYS = [
@@ -90,7 +92,7 @@ const renderPresetMockup = (presetId: string) => {
   );
 };
 
-export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange }: Props) => {
+export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropEnabled, onAutoCropChange }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -274,6 +276,24 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
           />
         </div>
       )}
+
+      {/* Divider */}
+      <div className="border-t border-border" />
+
+      {/* Auto-crop toggle */}
+      <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
+        <div className="flex items-center gap-3">
+          <Crop className="h-5 w-5 text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">{t('v2.autoCrop')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('v2.autoCropDesc')}</p>
+          </div>
+        </div>
+        <Switch
+          checked={autoCropEnabled}
+          onCheckedChange={onAutoCropChange}
+        />
+      </div>
 
       {/* Placement modal */}
       <Dialog open={showPlacementModal} onOpenChange={setShowPlacementModal}>

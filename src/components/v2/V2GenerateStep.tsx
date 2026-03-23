@@ -17,6 +17,7 @@ interface Props {
   projectName: string;
   credits: number;
   outputFormat: 'landscape' | 'portrait';
+  autoCropEnabled: boolean;
   onImagesUpdate: (images: V2Image[]) => void;
   onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
@@ -224,11 +225,17 @@ function shouldApplyLogo(index: number, total: number, applyTo: V2LogoConfig['ap
   return false;
 }
 
-const LOGO_APPLY_LABELS: Record<string, string> = {
-  'none': 'Ingen', 'all': 'Alla bilder', 'first': 'Första bilden', 'first-last': 'Första & sista', 'first-3-last': 'Första 3 + sista',
+const getLogoApplyLabel = (key: string, t: any) => {
+  const labels: Record<string, string> = {
+    'none': t('v2.applyNone'), 'all': t('v2.applyOptions.all'), 'first': t('v2.applyOptions.first'), 'first-last': t('v2.applyOptions.firstLast'), 'first-3-last': t('v2.applyOptions.first3Last'),
+  };
+  return labels[key] || key;
 };
-const PLATE_STYLE_LABELS: Record<string, string> = {
-  'blur-dark': 'Mörk blur', 'blur-light': 'Ljus blur', 'logo': 'Din logotyp', 'custom-logo': 'Egen logotyp',
+const getPlateStyleLabel = (key: string, t: any) => {
+  const labels: Record<string, string> = {
+    'blur-dark': t('v2.plateStyles.darkInlay'), 'blur-light': t('v2.plateStyles.lightInlay'), 'logo': t('v2.plateStyles.yourLogo'), 'custom-logo': t('v2.plateStyles.customLogoSelected'),
+  };
+  return labels[key] || key;
 };
 
 function getTargetAspect(format: 'landscape' | 'portrait'): number {
@@ -239,7 +246,7 @@ function getTargetAspect(format: 'landscape' | 'portrait'): number {
 // --- component ---
 
 export const V2GenerateStep = ({
-  images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat,
+  images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat, autoCropEnabled,
   onImagesUpdate, onComplete, onRefetchCredits, onStartOver, onTriggerPaywall,
 }: Props) => {
   const { t } = useTranslation();
@@ -335,9 +342,11 @@ export const V2GenerateStep = ({
             setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
             processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
-            setStatusText(t('v2.cropping', { current: i + 1, total: totalSteps }));
-            setProgress(Math.round(((i + 0.4) / totalSteps) * 100));
-            processedUrl = await autoCropImage(processedUrl, targetAspect);
+            if (autoCropEnabled) {
+              setStatusText(t('v2.cropping', { current: i + 1, total: totalSteps }));
+              setProgress(Math.round(((i + 0.4) / totalSteps) * 100));
+              processedUrl = await autoCropImage(processedUrl, targetAspect);
+            }
             if (plateConfig.enabled) {
               setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
               setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
@@ -498,12 +507,12 @@ export const V2GenerateStep = ({
           )}
           <div className="flex justify-between text-sm">
               <span className="text-foreground/50 dark:text-white/50">{t('v2.logo')}</span>
-              <span className="text-foreground dark:text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
+              <span className="text-foreground dark:text-white font-medium">{getLogoApplyLabel(logoConfig.applyTo, t)}</span>
           </div>
           {plateConfig.enabled && (
             <div className="flex justify-between text-sm">
               <span className="text-foreground/50 dark:text-white/50">{t('v2.plates')}</span>
-              <span className="text-foreground dark:text-white font-medium">{t('v2.platesHidden')} — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
+              <span className="text-foreground dark:text-white font-medium">{t('v2.platesHidden')} — {getPlateStyleLabel(plateConfig.style, t)}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">

@@ -58,6 +58,7 @@ const TryV2Content = () => {
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState('');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
+  const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
 
@@ -202,7 +203,7 @@ const TryV2Content = () => {
     return (
       <div className="min-h-screen bg-background">
         {renderHeader()}
-        <V2ResultGallery results={results} onStartOver={handleStartOver} />
+        <V2ResultGallery results={results} onStartOver={handleStartOver} onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }} />
       </div>
     );
   }
@@ -260,6 +261,8 @@ const TryV2Content = () => {
               onConfigChange={setLogoConfig}
               plateConfig={plateConfig}
               onPlateConfigChange={setPlateConfig}
+              autoCropEnabled={autoCropEnabled}
+              onAutoCropChange={setAutoCropEnabled}
             />
           </section>
         )}
@@ -273,6 +276,7 @@ const TryV2Content = () => {
               projectName={projectName}
               credits={availableCredits}
               outputFormat={outputFormat}
+              autoCropEnabled={autoCropEnabled}
               onImagesUpdate={setImages}
               onComplete={handleGenerationComplete}
               onRefetchCredits={async () => {}}

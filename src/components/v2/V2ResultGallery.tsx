@@ -22,9 +22,10 @@ import { CarAdjustments } from '@/types/scene';
 interface Props {
   results: V2Image[];
   onStartOver: () => void;
+  onTryAnotherBackground: () => void;
 }
 
-export const V2ResultGallery = ({ results, onStartOver }: Props) => {
+export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
@@ -40,7 +41,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
         const blob = await response.blob();
         const file = new File([blob], fileName, { type: 'image/jpeg' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Spara till Bilder' });
+          await navigator.share({ files: [file], title: t('v2.saveToPhotos') });
           return;
         }
       } catch (error: any) {
@@ -94,7 +95,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
   const downloadOneByOne = async (imagesToDownload: V2Image[]) => {
     for (let i = 0; i < imagesToDownload.length; i++) {
       const url = imagesToDownload[i].processedUrl || imagesToDownload[i].previewUrl;
-      await handleDownload(url, `bild-${i + 1}.jpg`);
+      await handleDownload(url, `image-${i + 1}.jpg`);
       await new Promise(resolve => setTimeout(resolve, 500));
     }
   };
@@ -160,7 +161,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                 variant="outline" 
                 size="icon" 
                 className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
-                title="Redigera fritt"
+                title={t('v2.editFreely')}
                 onClick={() => {
                   const idx = previewIndex ?? 0;
                   const imgUrl = results[idx]?.processedUrl || results[idx]?.previewUrl || '';
@@ -297,6 +298,9 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
         <Button variant="outline" onClick={() => navigate('/?tab=history')}>
           {t('common.goToGallery')}
         </Button>
+        <Button variant="outline" onClick={onTryAnotherBackground}>
+          {t('v2.tryAnotherBackground')}
+        </Button>
         <Button variant="outline" onClick={onStartOver}>
           <RotateCcw className="h-4 w-4 mr-2" />
           {t('v2.startOver')}
@@ -350,7 +354,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                     <Scissors className="w-4 h-4" />
                     <span className="hidden sm:inline ml-1">{t('v2.crop')}</span>
                   </Button>
-                  <Button size="sm" variant="outline" title="Redigera fritt" onClick={() => {
+                  <Button size="sm" variant="outline" title={t('v2.editFreely')} onClick={() => {
                     const imgUrl = previewUrl;
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                     sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
@@ -361,7 +365,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
                   </Button>
                 </div>
                 
-                <Button size="sm" onClick={() => handleDownload(previewUrl, `bild-${(previewIndex ?? 0) + 1}.jpg`)}>
+                <Button size="sm" onClick={() => handleDownload(previewUrl, `image-${(previewIndex ?? 0) + 1}.jpg`)}>
                   <Share2 className="w-4 h-4" />
                   <span className="hidden sm:inline ml-1">{t('v2.share')}</span>
                 </Button>
@@ -373,7 +377,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
 
       {editingImage?.type === 'crop' && (
         <ImageCropEditor
-          image={{ id: String(editingImage.index), finalUrl: editingImage.url, fileName: `bild-${editingImage.index + 1}` }}
+          image={{ id: String(editingImage.index), finalUrl: editingImage.url, fileName: `image-${editingImage.index + 1}` }}
           onClose={() => setEditingImage(null)}
           onSave={(_id, croppedUrl) => {
             results[editingImage.index].processedUrl = croppedUrl;
@@ -386,7 +390,7 @@ export const V2ResultGallery = ({ results, onStartOver }: Props) => {
       {editingImage?.type === 'adjust' && (
         <OriginalImageEditor
           imageUrl={editingImage.url}
-          imageName={`bild-${editingImage.index + 1}`}
+          imageName={`image-${editingImage.index + 1}`}
           open={true}
           onClose={() => setEditingImage(null)}
           onSave={(adjustedUrl: string, _adjustments: CarAdjustments) => {
