@@ -298,6 +298,9 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
         <Button variant="outline" onClick={() => navigate('/?tab=history')}>
           {t('common.goToGallery')}
         </Button>
+        <Button variant="outline" onClick={onTryAnotherBackground}>
+          {t('v2.tryAnotherBackground')}
+        </Button>
         <Button variant="outline" onClick={onStartOver}>
           <RotateCcw className="h-4 w-4 mr-2" />
           {t('v2.startOver')}
