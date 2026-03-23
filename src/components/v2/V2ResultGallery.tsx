@@ -354,7 +354,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                     <Scissors className="w-4 h-4" />
                     <span className="hidden sm:inline ml-1">{t('v2.crop')}</span>
                   </Button>
-                  <Button size="sm" variant="outline" title="Redigera fritt" onClick={() => {
+                  <Button size="sm" variant="outline" title={t('v2.editFreely')} onClick={() => {
                     const imgUrl = previewUrl;
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                     sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
