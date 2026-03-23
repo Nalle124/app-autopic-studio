@@ -390,7 +390,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
       {editingImage?.type === 'adjust' && (
         <OriginalImageEditor
           imageUrl={editingImage.url}
-          imageName={`bild-${editingImage.index + 1}`}
+          imageName={`image-${editingImage.index + 1}`}
           open={true}
           onClose={() => setEditingImage(null)}
           onSave={(adjustedUrl: string, _adjustments: CarAdjustments) => {

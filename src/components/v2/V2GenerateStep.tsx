@@ -512,7 +512,7 @@ export const V2GenerateStep = ({
           {plateConfig.enabled && (
             <div className="flex justify-between text-sm">
               <span className="text-foreground/50 dark:text-white/50">{t('v2.plates')}</span>
-              <span className="text-foreground dark:text-white font-medium">{t('v2.platesHidden')} — {PLATE_STYLE_LABELS[plateConfig.style]}</span>
+              <span className="text-foreground dark:text-white font-medium">{t('v2.platesHidden')} — {getPlateStyleLabel(plateConfig.style, t)}</span>
             </div>
           )}
           <div className="flex justify-between text-sm">

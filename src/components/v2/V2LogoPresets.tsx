@@ -277,6 +277,24 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         </div>
       )}
 
+      {/* Divider */}
+      <div className="border-t border-border" />
+
+      {/* Auto-crop toggle */}
+      <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
+        <div className="flex items-center gap-3">
+          <Crop className="h-5 w-5 text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">{t('v2.autoCrop')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('v2.autoCropDesc')}</p>
+          </div>
+        </div>
+        <Switch
+          checked={autoCropEnabled}
+          onCheckedChange={onAutoCropChange}
+        />
+      </div>
+
       {/* Placement modal */}
       <Dialog open={showPlacementModal} onOpenChange={setShowPlacementModal}>
         <DialogContent className="max-w-md">
