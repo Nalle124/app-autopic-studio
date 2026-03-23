@@ -507,7 +507,7 @@ export const V2GenerateStep = ({
           )}
           <div className="flex justify-between text-sm">
               <span className="text-foreground/50 dark:text-white/50">{t('v2.logo')}</span>
-              <span className="text-foreground dark:text-white font-medium">{LOGO_APPLY_LABELS[logoConfig.applyTo] || logoConfig.applyTo}</span>
+              <span className="text-foreground dark:text-white font-medium">{getLogoApplyLabel(logoConfig.applyTo, t)}</span>
           </div>
           {plateConfig.enabled && (
             <div className="flex justify-between text-sm">
