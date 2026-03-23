@@ -246,7 +246,7 @@ function getTargetAspect(format: 'landscape' | 'portrait'): number {
 // --- component ---
 
 export const V2GenerateStep = ({
-  images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat,
+  images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat, autoCropEnabled,
   onImagesUpdate, onComplete, onRefetchCredits, onStartOver, onTriggerPaywall,
 }: Props) => {
   const { t } = useTranslation();
