@@ -17,6 +17,7 @@ interface Props {
   projectName: string;
   credits: number;
   outputFormat: 'landscape' | 'portrait';
+  autoCropEnabled: boolean;
   onImagesUpdate: (images: V2Image[]) => void;
   onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
