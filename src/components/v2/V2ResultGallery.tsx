@@ -95,7 +95,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
   const downloadOneByOne = async (imagesToDownload: V2Image[]) => {
     for (let i = 0; i < imagesToDownload.length; i++) {
       const url = imagesToDownload[i].processedUrl || imagesToDownload[i].previewUrl;
-      await handleDownload(url, `bild-${i + 1}.jpg`);
+      await handleDownload(url, `image-${i + 1}.jpg`);
       await new Promise(resolve => setTimeout(resolve, 500));
     }
   };
