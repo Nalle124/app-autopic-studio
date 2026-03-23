@@ -208,6 +208,7 @@ const AutopicV2Content = () => {
         <V2ResultGallery
           results={results}
           onStartOver={handleStartOver}
+          onTryAnotherBackground={handleTryAnotherBackground}
         />
       </div>
     );
