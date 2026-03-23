@@ -161,7 +161,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                 variant="outline" 
                 size="icon" 
                 className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
-                title="Redigera fritt"
+                title={t('v2.editFreely')}
                 onClick={() => {
                   const idx = previewIndex ?? 0;
                   const imgUrl = results[idx]?.processedUrl || results[idx]?.previewUrl || '';
