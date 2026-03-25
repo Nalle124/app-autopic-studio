@@ -101,7 +101,10 @@ const AutopicV2Content = () => {
   const goToStep = useCallback((step: number) => {
     setCurrentStep(step);
     setMaxStepReached(prev => Math.max(prev, step));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Use setTimeout to ensure DOM has updated before scrolling
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 50);
   }, []);
 
   const handleTabChange = (value: string) => {
