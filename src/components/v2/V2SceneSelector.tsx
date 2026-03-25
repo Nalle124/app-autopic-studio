@@ -99,10 +99,18 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
 
   const getDisplayScenes = () => {
     if (activeCategory === 'user') return userScenes;
-    const filtered = scenes.filter(s => s.category === activeCategory);
-    if (filtered.length > 0) return filtered;
-    const popular = scenes.filter(s => s.category === 'popular');
-    return popular.length > 0 ? popular : scenes.slice(0, 12);
+    if (activeCategory === 'popular') {
+      return scenes.filter(s => POPULAR_SCENE_IDS.includes(s.id));
+    }
+    return scenes.filter(s => s.category === activeCategory);
+  };
+
+  const getVisibleCategories = () => {
+    return CATEGORY_KEYS.filter(cat => {
+      if (cat.id === 'user') return userScenes.length > 0 || !!user;
+      if (cat.id === 'popular') return scenes.some(s => POPULAR_SCENE_IDS.includes(s.id));
+      return scenes.some(s => s.category === cat.id);
+    });
   };
 
   const displayScenes = getDisplayScenes();
