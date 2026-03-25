@@ -122,9 +122,9 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         <label className="text-[10px] text-muted-foreground mb-1 block">{t('v2.carName')}</label>
         <Input
           value={projectName}
-          onChange={(e) => onProjectNameChange(e.target.value)}
+          onChange={(e) => onProjectNameChange(e.target.value.toUpperCase())}
           placeholder="ABC123"
-          className="h-8 text-sm"
+          className="h-8 text-sm uppercase"
         />
       </div>
 
