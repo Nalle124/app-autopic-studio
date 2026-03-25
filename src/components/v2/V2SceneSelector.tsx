@@ -21,13 +21,27 @@ interface Props {
   onOutputFormatChange: (format: 'landscape' | 'portrait') => void;
 }
 
+const POPULAR_SCENE_IDS = [
+  'netgrey-light',
+  'vit-rundad-studio',
+  'lightroom-studio',
+  'kullerstengata',
+  'vit-kakel',
+  'outdoor-park',
+  'anthracite-studio'
+];
+
 const CATEGORY_KEYS: { id: string; key: string }[] = [
   { id: 'popular', key: 'v2.categories.popular' },
+  { id: 'studio-basic', key: 'v2.categories.studioBasic' },
   { id: 'studio-light', key: 'v2.categories.studioLight' },
   { id: 'studio-dark', key: 'v2.categories.studioDark' },
+  { id: 'studio-colored', key: 'v2.categories.studioColored' },
+  { id: 'autumn', key: 'v2.categories.autumn' },
+  { id: 'winter', key: 'v2.categories.winter' },
   { id: 'outdoor', key: 'v2.categories.outdoor' },
   { id: 'premium', key: 'v2.categories.premium' },
-  { id: 'autumn', key: 'v2.categories.autumn' },
+  { id: 'exakt', key: 'v2.categories.exact' },
   { id: 'kreativa', key: 'v2.categories.creative' },
   { id: 'user', key: 'v2.categories.myScenes' },
 ];
@@ -85,10 +99,18 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
 
   const getDisplayScenes = () => {
     if (activeCategory === 'user') return userScenes;
-    const filtered = scenes.filter(s => s.category === activeCategory);
-    if (filtered.length > 0) return filtered;
-    const popular = scenes.filter(s => s.category === 'popular');
-    return popular.length > 0 ? popular : scenes.slice(0, 12);
+    if (activeCategory === 'popular') {
+      return scenes.filter(s => POPULAR_SCENE_IDS.includes(s.id));
+    }
+    return scenes.filter(s => s.category === activeCategory);
+  };
+
+  const getVisibleCategories = () => {
+    return CATEGORY_KEYS.filter(cat => {
+      if (cat.id === 'user') return userScenes.length > 0 || !!user;
+      if (cat.id === 'popular') return scenes.some(s => POPULAR_SCENE_IDS.includes(s.id));
+      return scenes.some(s => s.category === cat.id);
+    });
   };
 
   const displayScenes = getDisplayScenes();
@@ -136,7 +158,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
 
       {/* Category tabs — extra spacing before gallery */}
       <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-hide">
-        {CATEGORY_KEYS.map(cat => (
+        {getVisibleCategories().map(cat => (
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}
