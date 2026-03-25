@@ -21,13 +21,27 @@ interface Props {
   onOutputFormatChange: (format: 'landscape' | 'portrait') => void;
 }
 
+const POPULAR_SCENE_IDS = [
+  'netgrey-light',
+  'vit-rundad-studio',
+  'lightroom-studio',
+  'kullerstengata',
+  'vit-kakel',
+  'outdoor-park',
+  'anthracite-studio'
+];
+
 const CATEGORY_KEYS: { id: string; key: string }[] = [
   { id: 'popular', key: 'v2.categories.popular' },
+  { id: 'studio-basic', key: 'v2.categories.studioBasic' },
   { id: 'studio-light', key: 'v2.categories.studioLight' },
   { id: 'studio-dark', key: 'v2.categories.studioDark' },
+  { id: 'studio-colored', key: 'v2.categories.studioColored' },
+  { id: 'autumn', key: 'v2.categories.autumn' },
+  { id: 'winter', key: 'v2.categories.winter' },
   { id: 'outdoor', key: 'v2.categories.outdoor' },
   { id: 'premium', key: 'v2.categories.premium' },
-  { id: 'autumn', key: 'v2.categories.autumn' },
+  { id: 'exakt', key: 'v2.categories.exact' },
   { id: 'kreativa', key: 'v2.categories.creative' },
   { id: 'user', key: 'v2.categories.myScenes' },
 ];
