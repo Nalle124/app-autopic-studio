@@ -299,7 +299,6 @@ export const V2GenerateStep = ({
 
       if (deliveryMode === 'email') { 
         setEmailSent(true);
-        toast.success(t('v2.imagesProcessing'));
       }
 
       const scene = await fetchScene(sceneId);
@@ -452,7 +451,7 @@ export const V2GenerateStep = ({
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {liveResults.map((img, i) => (
             <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all" onClick={() => setPreviewUrl(img.processedUrl || img.previewUrl)}>
-              <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+              <div className="aspect-auto bg-muted relative overflow-hidden">
                 <img src={img.processedUrl || img.previewUrl} alt={`${t('v2.imagesDone', { current: i + 1 })}`} className="w-full h-full object-cover animate-in fade-in duration-500" />
               </div>
             </div>

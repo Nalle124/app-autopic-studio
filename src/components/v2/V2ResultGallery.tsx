@@ -260,7 +260,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                 toggleSelection(i);
               }}
             >
-              <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+              <div className="aspect-auto bg-muted relative overflow-hidden">
                 <img
                   src={img.processedUrl || img.previewUrl}
                   alt={`${t('v2.result')} ${i + 1}`}
