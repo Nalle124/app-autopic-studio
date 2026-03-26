@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield, Upload, Crop } from 'lucide-react';
+import { Shield, Upload, Crop, ImageIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -98,6 +98,7 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [showPlacementModal, setShowPlacementModal] = useState(false);
   const customLogoInputRef = useRef<HTMLInputElement>(null);
+  const logoUploadInputRef = useRef<HTMLInputElement>(null);
   const logoEnabled = config.applyTo !== 'none';
 
   useEffect(() => {
@@ -111,6 +112,33 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         if (data) setLogoUrl(data.logo_light || data.logo_dark || null);
       });
   }, [user]);
+
+  const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Max 5MB');
+      return;
+    }
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${user.id}/logo-light.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('processed-cars')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage
+        .from('processed-cars')
+        .getPublicUrl(path);
+      const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+      await supabase.from('profiles').update({ logo_light: urlWithCacheBust }).eq('id', user.id);
+      setLogoUrl(urlWithCacheBust);
+    } catch (err) {
+      console.error('Logo upload error:', err);
+      toast.error(t('profile.couldNotSaveLogo'));
+    }
+    e.target.value = '';
+  }, [user, t]);
 
   const handleCustomLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,15 +165,27 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
       {/* Logo toggle */}
       <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
         <div className="flex items-center gap-3">
-          {logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="h-5 w-5 object-contain shrink-0" />
-          ) : (
-            <div className="h-5 w-5 rounded bg-muted shrink-0" />
-          )}
+          <button
+            onClick={() => logoUploadInputRef.current?.click()}
+            className="relative h-8 w-8 rounded-lg bg-muted shrink-0 overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-primary/40 transition-all cursor-pointer group"
+            title={t('v2.changeLogo')}
+          >
+            {logoUrl ? (
+              <>
+                <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Upload className="h-3.5 w-3.5 text-white" />
+                </div>
+              </>
+            ) : (
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+          <input ref={logoUploadInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
           <div>
             <p className="text-sm font-medium text-foreground">{t('v2.logoOnImages')}</p>
             <p className="text-[11px] text-muted-foreground">
-              {logoUrl ? t('v2.logoApplied') : t('v2.uploadInProfile')}
+              {logoUrl ? t('v2.logoApplied') : t('v2.clickToUpload')}
             </p>
           </div>
         </div>

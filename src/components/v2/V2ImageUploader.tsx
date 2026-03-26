@@ -76,13 +76,21 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
     );
     for (const result of results) {
       if (result.status === 'fulfilled') {
-        newImages.push(result.value);
+        // Deduplicate by file name + size to avoid duplicates on reload
+        const exists = images.some(
+          img => img.file.name === result.value.file.name && img.file.size === result.value.file.size
+        );
+        if (!exists) {
+          newImages.push(result.value);
+        }
       } else {
         toast.error(t('v2.couldNotRead'));
       }
     }
 
-    onImagesChange([...images, ...newImages]);
+    if (newImages.length > 0) {
+      onImagesChange([...images, ...newImages]);
+    }
   }, [images, onImagesChange]);
 
   const removeImage = (id: string) => {
