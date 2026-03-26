@@ -3706,7 +3706,24 @@ export const CreateSceneModal = ({
 
         {/* Input area */}
         {chatMode &&
-    <div className="px-4 py-3 border-t border-border/50 bg-card flex-shrink-0">
+    <div className="px-4 py-3 border-t border-border/50 bg-card flex-shrink-0"
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDrop={(e) => {
+        e.preventDefault(); e.stopPropagation();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          const file = files[0];
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              setReferenceImage(ev.target?.result as string);
+              setReferenceFile(file);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }}
+    >
             <div className="flex items-end gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
