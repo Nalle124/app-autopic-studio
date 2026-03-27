@@ -46,7 +46,7 @@ const TryV2Content = () => {
   // Redirect logged-in users to main app
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/autopic-v2');
+      navigate('/');
     }
   }, [user, authLoading, navigate]);
 
