@@ -70,7 +70,8 @@ function App() {
             <AuthProvider>
               <Sonner />
               <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<ProtectedRoute><AutopicV2 /></ProtectedRoute>} />
+              <Route path="/classic" element={<Index />} />
               <Route path="/try" element={<TryV2 />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />

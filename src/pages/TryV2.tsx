@@ -46,7 +46,7 @@ const TryV2Content = () => {
   // Redirect logged-in users to main app
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/autopic-v2');
+      navigate('/');
     }
   }, [user, authLoading, navigate]);
 
@@ -123,8 +123,8 @@ const TryV2Content = () => {
 
   const handleTabChange = (value: string) => {
     if (value === 'new') navigate('/');
-    else if (value === 'ai-studio') navigate('/?tab=ai-studio');
-    else if (value === 'history') navigate('/?tab=history');
+    else if (value === 'ai-studio') navigate('/classic?tab=ai-studio');
+    else if (value === 'history') navigate('/classic?tab=history');
     else if (value === 'pro') triggerPaywall('signup');
   };
 
