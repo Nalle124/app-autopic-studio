@@ -350,11 +350,11 @@ const ProfileContent = () => {
                       <Plus className="w-4 h-4" />
                       {t('nav.project')}
                     </TabsTrigger>
-                    <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/?tab=ai-studio')}>
+                    <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/classic?tab=ai-studio')}>
                       <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
                       {t('nav.aiStudio')}
                     </TabsTrigger>
-                    <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/?tab=gallery')}>
+                    <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/classic?tab=gallery')}>
                       <History className="w-4 h-4" />
                       {t('nav.gallery')}
                     </TabsTrigger>
@@ -364,8 +364,8 @@ const ProfileContent = () => {
             ) : (
               <Select value="profile" onValueChange={(v) => {
                 if (v === 'new') navigate('/');
-                else if (v === 'ai-studio') navigate('/?tab=ai-studio');
-                else if (v === 'history') navigate('/?tab=gallery');
+                else if (v === 'ai-studio') navigate('/classic?tab=ai-studio');
+                else if (v === 'history') navigate('/classic?tab=gallery');
               }}>
                 <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
                   <SelectValue placeholder="Meny" />
