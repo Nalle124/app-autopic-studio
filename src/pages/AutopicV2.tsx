@@ -139,13 +139,13 @@ const AutopicV2Content = () => {
           />
         </button>
         <div className="flex items-center gap-2">
-          <Select value="v2" onValueChange={handleTabChange}>
+          <Select value="new" onValueChange={handleTabChange}>
             <SelectTrigger className={`${isMobile ? 'w-[120px] h-8 text-xs' : 'w-[150px] h-9 text-sm'} bg-background/80 backdrop-blur-sm`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-popover z-[60]">
-              <SelectItem value="v2">{t('nav.project')}</SelectItem>
-              <SelectItem value="new">{t('nav.projectV1')}</SelectItem>
+              <SelectItem value="new">{t('nav.project')}</SelectItem>
+              <SelectItem value="classic">{t('nav.projectV1')}</SelectItem>
               <SelectItem value="ai-studio">{t('nav.aiStudio')}</SelectItem>
               <SelectItem value="history">{t('nav.gallery')}</SelectItem>
             </SelectContent>
