@@ -92,22 +92,45 @@ serve(async (req) => {
 
     console.log(`Blur plates: style=${effectiveStyle} (original: ${style}), sending to AI gateway`);
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
-        messages,
-        modalities: ["image", "text"],
-      }),
-    });
+    let aiResponse: Response | null = null;
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`AI gateway attempt ${attempt}/${maxRetries}`);
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3.1-flash-image-preview",
+          messages,
+          modalities: ["image", "text"],
+        }),
+      });
 
-    if (!aiResponse.ok) {
+      if (aiResponse.ok) break;
+
       const errorText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errorText);
+      console.error(`AI gateway error (attempt ${attempt}):`, aiResponse.status, errorText);
+
+      if (aiResponse.status === 429 && attempt < maxRetries) {
+        const delay = attempt * 3000;
+        console.log(`Rate limited, waiting ${delay}ms before retry...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      if (aiResponse.status === 502 && attempt < maxRetries) {
+        const delay = attempt * 2000;
+        console.log(`502 error, waiting ${delay}ms before retry...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+
+      // All retries exhausted or non-retryable error — refund credit
+      console.log("Refunding credit due to AI failure");
+      await supabase.rpc("admin_add_credits", { target_user_id: user.id, amount: 1, description: "Refund: plate blur AI failure" }).catch(() => {});
+
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded, try again later" }), {
           status: 429,
@@ -121,6 +144,12 @@ serve(async (req) => {
         });
       }
       throw new Error(`AI gateway error: ${aiResponse.status}`);
+    }
+
+    if (!aiResponse || !aiResponse.ok) {
+      console.log("Refunding credit — all retries failed");
+      await supabase.rpc("admin_add_credits", { target_user_id: user.id, amount: 1, description: "Refund: plate blur all retries failed" }).catch(() => {});
+      throw new Error("AI gateway failed after retries");
     }
 
     const aiResult = await aiResponse.json();
