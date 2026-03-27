@@ -10,8 +10,10 @@ const logStep = (step: string, details?: any) => {
 
 // Product to credits mapping - includes both old and new product IDs for backward compat
 const PRODUCT_CREDITS: Record<string, number> = {
-  "prod_TYcMOi23KMqOh6": 100, // Start (399 kr)
-  "prod_TYcNnx01K8TR0F": 300, // Pro (699 kr)
+  "prod_TYcMOi23KMqOh6": 100, // Start v1 (old subscribers)
+  "prod_UDyh1oj0y7Iqce": 100, // Start v2 (399 kr)
+  "prod_TYcNnx01K8TR0F": 300, // Pro v1 (old subscribers)
+  "prod_UDyhY7a6ry2MpV": 300, // Pro v2 (699 kr)
   "prod_TYcO3bE3Ec2Amv": 600, // Business v1 (1299 kr) - old subscribers
   "prod_TvOxn4SrvfgY12": 800, // Scale v1 (1499 kr) - old subscribers
   "prod_U8XXaqL2BD1ieM": 600, // Business v2 (1499 kr) - new subscribers
