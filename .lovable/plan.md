@@ -1,89 +1,88 @@
 
 
-# Plan: V2 Flow Improvements — Retain Images, Skip Unnecessary Steps, Fix Translations, Add "Try Another Background"
+# V2 Completeness Audit, E-post-limit & Stripe-länkar
 
-## Issues Identified
+## Stripe Guest Checkout URLs (redo att kopiera)
 
-### 1. Auto-crop runs on EVERY exterior image — adds significant time
-The pipeline at line 340 always calls `autoCropImage()` which invokes an AI edge function (Gemini analysis). This adds ~3-5s per image even when cropping isn't needed. The user wants this to be **optional**.
+**Prenumerationer:**
+- Start (399 kr/mån): `https://app-autopic-studio.lovable.app/guest-checkout?plan=start`
+- Pro (699 kr/mån): `https://app-autopic-studio.lovable.app/guest-checkout?plan=pro`
+- Business (1 499 kr/mån): `https://app-autopic-studio.lovable.app/guest-checkout?plan=business`
+- Scale (1 999 kr/mån): `https://app-autopic-studio.lovable.app/guest-checkout?plan=scale`
 
-### 2. Plate blur runs even when disabled — FALSE
-Looking at line 341: `if (plateConfig.enabled)` — this is correctly gated. The plate blur only runs when enabled. The slowness is from the **auto-crop** step (always runs) and the **classification** step (always runs, calls another edge function).
+**Engångsköp:**
+- 30 credits (129 kr): `https://app-autopic-studio.lovable.app/guest-checkout?plan=creditPack30`
+- 100 credits (399 kr): `https://app-autopic-studio.lovable.app/guest-checkout?plan=creditPack100`
+- 300 credits (899 kr): `https://app-autopic-studio.lovable.app/guest-checkout?plan=creditPack300`
 
-### 3. Pipeline breakdown (per exterior image):
-1. **Classification** (~2-3s for batch) — AI call to classify all images
-2. **PhotoRoom background swap** (~5-8s) — core processing
-3. **Auto-crop** (~3-5s) — AI call to detect car bounds ← **always runs, should be optional**
-4. **Plate blur** (~3-5s) — only if enabled ✓
-5. **Logo/light boost** — client-side, fast
+---
 
-So if user just wants background swap: steps 1+2 = ~8-11s per image. Currently it's 1+2+3 = ~11-16s. Making auto-crop optional saves ~3-5s per image.
+## BUG: Start v2 & Pro v2 saknas i guest checkout
 
-### 4. Untranslated strings found:
-- `LOGO_APPLY_LABELS` and `PLATE_STYLE_LABELS` in V2GenerateStep.tsx — hardcoded Swedish
-- `title="Redigera fritt"` in V2ResultGallery.tsx — hardcoded Swedish
-- `'Spara till Bilder'` in share calls
-- `bild-` prefix in download filenames
-- Various strings in `DemoPaywall.tsx` that may still be hardcoded
+De nya pris-ID:na (`price_1TFWjtR5EFc7nWvhylmuUUsb` och `price_1TFWkRR5EFc7nWvhPgMasQKT`) saknas i `VALID_PRICE_IDS` i `supabase/functions/create-guest-checkout/index.ts`. Det betyder att **guest checkout för Start och Pro planerna inte fungerar just nu**. Fix: lägga till de två nya pris-ID:na i whitelisten.
 
-### 5. "Start over" clears images — user wants to keep them
-### 6. No "try another background" option in results
+---
 
-## Implementation Plan
+## E-post: hur många bilder kan skickas?
 
-### A. Make Auto-Crop Optional (speed fix)
-**File:** `src/pages/AutopicV2.tsx`
-- Add `autoCropEnabled` state (default: `true`)
-- Pass to V2GenerateStep
+`send-images-email` edge function har **ingen explicit gräns** — den loopar genom alla `imageUrls` och laddar upp dem en i taget till storage. Praktiska begränsningar:
+- **Edge function timeout** (~60s) begränsar hur många stora bilder som kan laddas ner + laddas upp
+- Realistiskt: **~15-25 bilder** innan timeout
+- Resend har gräns på e-poststorlek men funktionen skickar bara länkar, inte bilagor, så det är ok
 
-**File:** `src/components/v2/V2LogoPresets.tsx`
-- Add an "Auto-crop" toggle in the logo/plates step (or add a new section)
+**Rekommendation**: lägg till en soft cap på t.ex. 50 bilder, med tydlig feedback om batchen är för stor.
 
-**File:** `src/components/v2/V2GenerateStep.tsx`
-- Skip `autoCropImage()` call when `autoCropEnabled` is false (line 340)
-- Still show it in summary card
+---
 
-### B. "Start Over" Retains Images + "Try Another Background" Button
-**File:** `src/pages/AutopicV2.tsx`
-- Add `handleTryAnotherBackground` callback that:
-  - Keeps `images` state intact
-  - Resets `selectedSceneId`, `results`, `showResults`
-  - Sets `currentStep` to 1 (background selector)
-  - Keeps `logoConfig`, `plateConfig`, `projectName`
+## Vad som saknas för komplett V2
 
-**File:** `src/components/v2/V2ResultGallery.tsx`
-- Add prop `onTryAnotherBackground`
-- Add button "Try another background" next to "Start over" in action buttons section
+### Redan gjort ✓
+- `/` pekar på V2 (ProtectedRoute)
+- `/classic` finns kvar för V1
+- `/try` använder TryV2
+- Navigation med dropdown (Projekt, Classic, AI Studio, Galleri)
+- "Try another background"-funktion
+- Bild-duplikat-fix
+- Auto-crop toggle
+- Logo-upload i flödet
+- Scroll-to-top vid stegbyte
+- Uppercase bilnamn
+- Stripe v2 products skapade
 
-### C. Fix All Untranslated Strings
-**File:** `src/components/v2/V2GenerateStep.tsx`
-- Replace `LOGO_APPLY_LABELS` with `t()` calls using existing keys
-- Replace `PLATE_STYLE_LABELS` with `t()` calls using existing keys
+### Kvarvarande issues att fixa
 
-**File:** `src/components/v2/V2ResultGallery.tsx`
-- Replace `title="Redigera fritt"` → `title={t('v2.editFreely')}` (add key)
-- Replace `'Spara till Bilder'` → `t('v2.saveToPhotos')` (add key)
-- Replace `bild-` → `t('v2.imagePrefix')` or use `image-` universally
+1. **Guest checkout whitelist** — Start v2 och Pro v2 pris-ID:n saknas (se ovan)
 
-**Files:** `src/locales/sv.json`, `en.json`, `de.json`, `pl.json`
-- Add missing keys: `v2.editFreely`, `v2.saveToPhotos`, `v2.tryAnotherBackground`, `v2.autoCrop`, `v2.autoCropDesc`, `v2.none` (for logo label)
+2. **AI Studio saknar V2-ingång** — AI Studio (redigera fritt, logotyp, blur-skyltar, fix interiör) nås bara via `/classic?tab=ai-studio`. Det fungerar men kräver att V1-sidan laddas. Okej kortsiktigt, men kan integreras direkt i V2 framöver.
 
-### D. V1→V2 Transition Discussion
-This is a strategic discussion, not implementation. Key considerations:
-- V2 is nearly feature-complete; main gaps are scene creation (handled via AI Studio redirect) and any V1-specific edge cases
-- Migration path: change default route from V1 to V2, keep V1 accessible via dropdown
-- Existing users: no breaking changes since both flows use the same backend
-- Recommended approach: swap the default in the nav dropdown (V2 becomes "Project", V1 becomes "Project (Classic)") and monitor
+3. **Galleri/historik** — Historiken nås via `/classic?tab=history`. Samma som ovan — fungerar men V1-beroende. Bilderna som genereras i V2 sparas i processed-cars storage men visas inte i en V2-native gallerivy.
 
-## Files Changed
-- `src/pages/AutopicV2.tsx` — add autoCrop state, tryAnotherBackground handler
-- `src/components/v2/V2GenerateStep.tsx` — conditional auto-crop, fix hardcoded labels
-- `src/components/v2/V2ResultGallery.tsx` — add tryAnotherBackground button, fix strings
-- `src/components/v2/V2LogoPresets.tsx` — add auto-crop toggle
-- `src/locales/sv.json`, `en.json`, `de.json`, `pl.json` — add missing keys
+4. **Onboarding-flöde** — Onboarding-sidan (`/onboarding`) existerar men kontrollera att den leder tillbaka till `/` (V2) och inte `/classic`.
 
-## Next Steps After This
-1. **Session 2b**: Translate remaining hardcoded strings in CreateSceneModal and Index (if keeping)
-2. **V1→V2 swap**: Change default route, rename nav labels
-3. **Smart positioning**: AI detects car position and normalizes spacing across batch (future enhancement — requires modifying the auto-crop algorithm to enforce consistent margins)
+5. **Guide-sida** — `/guide` kan ha V1-centrerade instruktioner som behöver uppdateras.
+
+### Plan för implementation (2 steg)
+
+**Steg 1 — Kritisk fix (gör nu)**
+- Lägg till `price_1TFWjtR5EFc7nWvhylmuUUsb` (start) och `price_1TFWkRR5EFc7nWvhPgMasQKT` (pro) i `VALID_PRICE_IDS` i `create-guest-checkout/index.ts`
+- Deploy edge function
+
+**Steg 2 — Verifiera flöden**
+- Kontrollera att onboarding redirectar till `/` 
+- Kontrollera att payment-success redirectar till `/`
+- Kontrollera att signup-after-payment redirectar till `/`
+
+### Framtida förbättringar (inte blockers)
+- Native V2 galleri-vy (ersätt `/classic?tab=history`)
+- Native V2 AI Studio
+- Smart car positioning (AI normaliserar avstånd)
+
+---
+
+## Teknisk sammanfattning
+
+| Fil | Ändring |
+|-----|---------|
+| `supabase/functions/create-guest-checkout/index.ts` | Lägg till 2 nya pris-ID:n i VALID_PRICE_IDS |
+| Verifiera redirect-URLs i onboarding/payment flows | Säkerställ att alla pekar på `/` |
 
