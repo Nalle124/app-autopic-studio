@@ -13,6 +13,8 @@ const logStep = (step: string, details?: any) => {
 const VALID_PRICE_IDS: Record<string, string> = {
   "price_1SbV8AR5EFc7nWvhDcyFNiMe": "start",
   "price_1SbV94R5EFc7nWvhHlWgPKsp": "pro",
+  "price_1TFWjtR5EFc7nWvhylmuUUsb": "start_v2",
+  "price_1TFWkRR5EFc7nWvhPgMasQKT": "pro_v2",
   "price_1SbV9KR5EFc7nWvhAvP0jDbX": "business_v1",
   "price_1SbV9dR5EFc7nWvhOwgnPGX0": "creditPack_v1",
   "price_1SxY9GR5EFc7nWvhCAxK4pEr": "scale_v1",
