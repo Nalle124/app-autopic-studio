@@ -129,7 +129,7 @@ serve(async (req) => {
 
       // All retries exhausted or non-retryable error — refund credit
       console.log("Refunding credit due to AI failure");
-      await supabase.rpc("admin_add_credits", { target_user_id: user.id, amount: 1, description: "Refund: plate blur AI failure" }).catch(() => {});
+      try { await supabase.rpc("admin_add_credits", { target_user_id: user.id, amount: 1, description: "Refund: plate blur AI failure" }); } catch (refundErr) { console.error("Refund failed:", refundErr); }
 
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded, try again later" }), {
