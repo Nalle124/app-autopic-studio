@@ -148,7 +148,7 @@ serve(async (req) => {
 
     if (!aiResponse || !aiResponse.ok) {
       console.log("Refunding credit — all retries failed");
-      await supabase.rpc("admin_add_credits", { target_user_id: user.id, amount: 1, description: "Refund: plate blur all retries failed" }).catch(() => {});
+      try { await supabase.rpc("admin_add_credits", { target_user_id: user.id, amount: 1, description: "Refund: plate blur all retries failed" }); } catch (refundErr) { console.error("Refund failed:", refundErr); }
       throw new Error("AI gateway failed after retries");
     }
 

@@ -358,7 +358,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                     const imgUrl = previewUrl;
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                     sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
-                    navigate('/?tab=ai-studio');
+                    navigate('/classic?tab=ai-studio');
                   }}>
                     <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
                     <span className="hidden sm:inline ml-1">AI</span>

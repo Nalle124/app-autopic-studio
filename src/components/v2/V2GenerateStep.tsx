@@ -421,7 +421,7 @@ export const V2GenerateStep = ({
             <Plus className="h-4 w-4 mr-2" />
             {t('common.newProject')}
           </Button>
-          <Button variant="outline" onClick={() => navigate('/classic?tab=history')}>
+          <Button variant="outline" onClick={() => navigate('/')}>
             {t('common.goToGallery')}
           </Button>
         </div>
