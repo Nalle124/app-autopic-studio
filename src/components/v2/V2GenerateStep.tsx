@@ -525,7 +525,7 @@ export const V2GenerateStep = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
           <div className="flex items-center gap-3">
-            <Sun className="h-5 w-5 text-amber-500 shrink-0" />
+            <Sun className="h-5 w-5 text-foreground shrink-0" />
             <div>
               <p className="text-sm font-medium text-foreground">{t('v2.lightBoost')}</p>
               <p className="text-[11px] text-muted-foreground">{t('v2.lightBoostDesc')}</p>
