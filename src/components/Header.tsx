@@ -1,108 +1,68 @@
-import { LogOut, Shield, User, Sparkles } from "lucide-react";
+import { User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import autopicLogoDark from "@/assets/autopic-logo-dark.png";
 import autopicLogoWhite from "@/assets/autopic-logo-white.png";
 
 interface HeaderProps {
   onUpgradeClick?: () => void;
+  activeTab?: string;
 }
 
-export const Header = ({ onUpgradeClick }: HeaderProps) => {
-  const { user, isAdmin, signOut } = useAuth();
+export const Header = ({ onUpgradeClick, activeTab = "history" }: HeaderProps) => {
+  const { user } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { t } = useTranslation();
 
-  const getInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase();
+  const handleTabChange = (value: string) => {
+    if (value === 'new') navigate('/');
+    else if (value === 'ai-studio') navigate('/classic?tab=ai-studio');
+    else if (value === 'history') navigate('/classic?tab=history');
   };
 
   return (
     <header className="border-b border-border/30 bg-card/90 backdrop-blur-md sticky top-0 z-50 pt-[max(env(safe-area-inset-top),12px)] before:absolute before:inset-x-0 before:-top-20 before:bottom-0 before:bg-card/90 before:-z-10">
-      <div className="container mx-auto px-6 py-3">
-        <div className="flex items-center justify-between">
-          <button 
-            onClick={() => navigate('/')}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-          >
-            <img 
-              src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} 
-              alt="AutoPic" 
-              className="h-6 w-auto"
-            />
-          </button>
-          
-          <nav className="flex items-center gap-4">
-            {user ? (
-              <>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {getInitials(user.email || 'U')}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.email}</p>
-                        {isAdmin && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Shield className="w-3 h-3" />
-                            Admin
-                          </div>
-                        )}
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate('/profil')}>
-                      <User className="mr-2 h-4 w-4" />
-                      {t('nav.profile')}
-                    </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem onClick={() => navigate('/admin')}>
-                        <Shield className="mr-2 h-4 w-4" />
-                        Admin Dashboard
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Button 
-                  variant="ghost"
-                  onClick={() => navigate('/auth')}
-                >
-                  {t('nav.login')}
-                </Button>
-                <Button 
-                  variant="premium"
-                  onClick={() => navigate('/auth')}
-                >
-                  {t('nav.tryFree')}
-                  <Sparkles className="ml-2 w-4 h-4" />
-                </Button>
-              </div>
-            )}
-          </nav>
+      <div className="container mx-auto px-4 py-2 sm:py-3 flex items-center justify-between">
+        <button 
+          onClick={() => navigate('/')}
+          className="hover:opacity-80 transition-opacity"
+        >
+          <img 
+            src={theme === 'light' ? autopicLogoDark : autopicLogoWhite} 
+            alt="AutoPic" 
+            className="h-[26px] sm:h-8 w-auto"
+          />
+        </button>
+        
+        <div className="flex items-center gap-2">
+          <Select value={activeTab} onValueChange={handleTabChange}>
+            <SelectTrigger className={`${isMobile ? 'w-[120px] h-8 text-xs' : 'w-[150px] h-9 text-sm'} bg-background/80 backdrop-blur-sm`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-[60]">
+              <SelectItem value="new">{t('nav.project')}</SelectItem>
+              <SelectItem value="ai-studio">{t('nav.aiStudio')}</SelectItem>
+              <SelectItem value="history">{t('nav.gallery')}</SelectItem>
+            </SelectContent>
+          </Select>
+          {user && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/profil')} title="Profil">
+              <User className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
     </header>
