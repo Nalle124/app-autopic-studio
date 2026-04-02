@@ -295,7 +295,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
 
       {/* Action buttons */}
       <div className="flex gap-3 justify-center flex-wrap">
-        <Button variant="outline" onClick={() => navigate('/classic?tab=history')}>
+        <Button variant="outline" onClick={() => navigate('/')}>
           {t('common.goToGallery')}
         </Button>
         <Button variant="outline" onClick={onTryAnotherBackground}>
