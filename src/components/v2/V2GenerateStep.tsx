@@ -604,6 +604,16 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   formData.append('backgroundUrl', backgroundUrl);
   formData.append('orientation', outputFormat === 'portrait' ? 'portrait' : 'landscape');
 
+  // Send original dimensions so edge function preserves aspect ratio
+  const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+    const image = new window.Image();
+    image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
+    image.onerror = () => resolve({ w: 4000, h: 2667 });
+    image.src = URL.createObjectURL(img.file);
+  });
+  formData.append('originalWidth', dims.w.toString());
+  formData.append('originalHeight', dims.h.toString());
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
   try {
