@@ -891,6 +891,19 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       <Focus className="w-4 h-4" />
                       <span className="hidden sm:inline ml-1">Blur</span>
                     </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        sessionStorage.setItem('ai-studio-initial-image', currentJob.final_url!);
+                        sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
+                        window.location.href = '/classic?tab=ai-studio';
+                      }}
+                      title="AI Studio"
+                    >
+                      <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
+                      <span className="hidden sm:inline ml-1">AI</span>
+                    </Button>
                   </div>
                   
                   <div className="flex gap-2">
