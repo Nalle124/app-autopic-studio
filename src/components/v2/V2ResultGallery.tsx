@@ -167,7 +167,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                   const imgUrl = results[idx]?.processedUrl || results[idx]?.previewUrl || '';
                   sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                   sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
-                  navigate('/?tab=ai-studio');
+                  navigate('/classic?tab=ai-studio');
                 }}
               >
                 <img src="/favicon.png" alt="" className="w-7 h-7 object-contain dark:invert" />
@@ -295,7 +295,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
 
       {/* Action buttons */}
       <div className="flex gap-3 justify-center flex-wrap">
-        <Button variant="outline" onClick={() => navigate('/classic?tab=history')}>
+        <Button variant="outline" onClick={() => navigate('/')}>
           {t('common.goToGallery')}
         </Button>
         <Button variant="outline" onClick={onTryAnotherBackground}>
@@ -358,7 +358,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                     const imgUrl = previewUrl;
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                     sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
-                    navigate('/?tab=ai-studio');
+                    navigate('/classic?tab=ai-studio');
                   }}>
                     <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
                     <span className="hidden sm:inline ml-1">AI</span>

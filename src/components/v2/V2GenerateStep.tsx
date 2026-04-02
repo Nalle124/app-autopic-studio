@@ -421,7 +421,7 @@ export const V2GenerateStep = ({
             <Plus className="h-4 w-4 mr-2" />
             {t('common.newProject')}
           </Button>
-          <Button variant="outline" onClick={() => navigate('/classic?tab=history')}>
+          <Button variant="outline" onClick={() => navigate('/')}>
             {t('common.goToGallery')}
           </Button>
         </div>
@@ -525,7 +525,7 @@ export const V2GenerateStep = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
           <div className="flex items-center gap-3">
-            <Sun className="h-5 w-5 text-amber-500 shrink-0" />
+            <Sun className="h-5 w-5 text-foreground shrink-0" />
             <div>
               <p className="text-sm font-medium text-foreground">{t('v2.lightBoost')}</p>
               <p className="text-[11px] text-muted-foreground">{t('v2.lightBoostDesc')}</p>
@@ -538,7 +538,7 @@ export const V2GenerateStep = ({
 
         <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
           <div className="flex items-center gap-3">
-            <Palette className="h-5 w-5 text-blue-500 shrink-0" />
+            <Palette className="h-5 w-5 text-foreground shrink-0" />
             <div>
               <p className="text-sm font-medium text-foreground">{t('v2.lightEdit')}</p>
               <p className="text-[11px] text-muted-foreground">{t('v2.lightEditDesc')}</p>
@@ -603,6 +603,16 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
     : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${scene.full_res_url}`;
   formData.append('backgroundUrl', backgroundUrl);
   formData.append('orientation', outputFormat === 'portrait' ? 'portrait' : 'landscape');
+
+  // Send original dimensions so edge function preserves aspect ratio
+  const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+    const image = new window.Image();
+    image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
+    image.onerror = () => resolve({ w: 4000, h: 2667 });
+    image.src = URL.createObjectURL(img.file);
+  });
+  formData.append('originalWidth', dims.w.toString());
+  formData.append('originalHeight', dims.h.toString());
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);

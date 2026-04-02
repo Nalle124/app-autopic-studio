@@ -145,7 +145,6 @@ const AutopicV2Content = () => {
             </SelectTrigger>
             <SelectContent className="bg-popover z-[60]">
               <SelectItem value="new">{t('nav.project')}</SelectItem>
-              <SelectItem value="classic">{t('nav.projectV1')}</SelectItem>
               <SelectItem value="ai-studio">{t('nav.aiStudio')}</SelectItem>
               <SelectItem value="history">{t('nav.gallery')}</SelectItem>
             </SelectContent>
