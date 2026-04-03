@@ -74,7 +74,6 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         if (error) throw error;
         onSuccess();
         onClose();
-        window.location.reload();
       } else {
         // Sign up - first validate
         if (!fullName) {
@@ -192,7 +191,6 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
       toast.success('Konto skapat!');
       onSuccess();
       onClose();
-      window.location.reload();
       
     } catch (error: any) {
       toast.error('Något gick fel, försök igen');
@@ -235,7 +233,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
           <div className="relative overflow-hidden">
             <div 
               className="absolute inset-0 opacity-80"
-              style={{ background: 'linear-gradient(135deg, hsl(210, 60%, 75%) 0%, hsl(25, 80%, 60%) 50%, hsl(40, 80%, 75%) 100%)' }}
+              style={{ background: 'linear-gradient(135deg, hsl(210, 70%, 80%) 0%, hsl(220, 60%, 65%) 50%, hsl(210, 50%, 75%) 100%)' }}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card" />
             
