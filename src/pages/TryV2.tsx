@@ -46,12 +46,15 @@ const TryV2Content = () => {
   // Force light theme
   useEffect(() => { setTheme('light'); }, [setTheme]);
 
-  // Redirect logged-in users to main app
+  // Track if user signed up during this session (to avoid redirecting)
+  const [signedUpHere, setSignedUpHere] = useState(false);
+
+  // Redirect logged-in users to main app (unless they just signed up here)
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !signedUpHere) {
       navigate('/');
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, signedUpHere]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [maxStepReached, setMaxStepReached] = useState(0);
