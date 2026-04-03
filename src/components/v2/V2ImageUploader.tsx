@@ -230,11 +230,11 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
             <div className="relative bg-black">
               <img
                 src={previewImage.previewUrl}
-                alt={previewImage.file.name}
+                alt={previewImage.file?.name || previewImage.id}
                 className="w-full max-h-[70vh] object-contain"
               />
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                <p className="text-xs text-white/80 truncate">{previewImage.file.name}</p>
+                <p className="text-xs text-white/80 truncate">{previewImage.file?.name || previewImage.id}</p>
               </div>
             </div>
           )}
