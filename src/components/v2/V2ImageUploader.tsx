@@ -163,7 +163,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
               className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted cursor-pointer"
               onClick={() => setPreviewImage(img)}
             >
-              <ImageThumb src={img.previewUrl} alt={img.file.name} />
+              <ImageThumb src={img.previewUrl} alt={img.file?.name || img.id} />
               <button
                 onClick={(e) => { e.stopPropagation(); removeImage(img.id); }}
                 className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
