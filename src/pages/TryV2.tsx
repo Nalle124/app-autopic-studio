@@ -129,8 +129,14 @@ const TryV2Content = () => {
 
   const handleTabChange = (value: string) => {
     if (value === 'new') navigate('/');
-    else if (value === 'ai-studio') navigate('/classic?tab=ai-studio');
-    else if (value === 'history') navigate('/classic?tab=history');
+    else if (value === 'ai-studio') {
+      if (!user) {
+        setShowSignupModal(true);
+      } else {
+        navigate('/?tab=ai-studio');
+      }
+    }
+    else if (value === 'history') navigate('/?tab=history');
     else if (value === 'pro') {
       triggerPaywall('signup');
     }
