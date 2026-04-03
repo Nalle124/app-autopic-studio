@@ -2,13 +2,13 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield, Upload, Crop, ImageIcon } from 'lucide-react';
+import { Shield, Upload, Crop, ImageIcon, Check } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { toast } from 'sonner';
-import type { V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
+import type { V2LogoConfig, V2PlateConfig, V2Image } from '@/pages/AutopicV2';
 
 interface Props {
   config: V2LogoConfig;
@@ -17,6 +17,7 @@ interface Props {
   onPlateConfigChange: (config: V2PlateConfig) => void;
   autoCropEnabled: boolean;
   onAutoCropChange: (enabled: boolean) => void;
+  images: V2Image[];
 }
 
 const PRESET_KEYS = [
@@ -29,13 +30,6 @@ const PRESET_KEYS = [
   { id: 'top-banner-left', key: 'v2.presets.bannerLeft' },
   { id: 'top-banner-right', key: 'v2.presets.bannerRight' },
 ] as const;
-
-const APPLY_OPTION_KEYS = [
-  { id: 'all' as const, key: 'v2.applyOptions.all' },
-  { id: 'first' as const, key: 'v2.applyOptions.first' },
-  { id: 'first-last' as const, key: 'v2.applyOptions.firstLast' },
-  { id: 'first-3-last' as const, key: 'v2.applyOptions.first3Last' },
-];
 
 const LOGO_SIZES = [
   { id: 'small' as const, label: 'S' },
@@ -92,11 +86,13 @@ const renderPresetMockup = (presetId: string) => {
   );
 };
 
-export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropEnabled, onAutoCropChange }: Props) => {
+export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropEnabled, onAutoCropChange, images }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [showPlacementModal, setShowPlacementModal] = useState(false);
+  const [showImageSelectModal, setShowImageSelectModal] = useState(false);
+  const [tempSelectedIds, setTempSelectedIds] = useState<Set<string>>(new Set());
   const customLogoInputRef = useRef<HTMLInputElement>(null);
   const logoUploadInputRef = useRef<HTMLInputElement>(null);
   const logoEnabled = config.applyTo !== 'none';
@@ -155,6 +151,49 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
     reader.readAsDataURL(file);
   }, [plateConfig, onPlateConfigChange]);
 
+  const openImageSelectModal = () => {
+    // Pre-populate with current selection
+    const current = new Set(config.selectedImageIds || []);
+    // If applyTo is 'all', select all
+    if (config.applyTo === 'all') {
+      setTempSelectedIds(new Set(images.map(img => img.id)));
+    } else {
+      setTempSelectedIds(current);
+    }
+    setShowImageSelectModal(true);
+  };
+
+  const toggleTempImage = (id: string) => {
+    setTempSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const confirmImageSelection = () => {
+    const ids = Array.from(tempSelectedIds);
+    if (ids.length === 0) {
+      onConfigChange({ ...config, applyTo: 'none', selectedImageIds: [] });
+    } else if (ids.length === images.length) {
+      onConfigChange({ ...config, applyTo: 'all', selectedImageIds: ids });
+    } else {
+      onConfigChange({ ...config, applyTo: 'selected', selectedImageIds: ids });
+    }
+    setShowImageSelectModal(false);
+  };
+
+  const getApplyLabel = () => {
+    if (config.applyTo === 'none') return t('v2.applyNone');
+    if (config.applyTo === 'all') return t('v2.applyOptions.all');
+    if (config.applyTo === 'selected') {
+      const count = config.selectedImageIds?.length || 0;
+      return `${count} ${count === 1 ? t('v2.selected') : t('v2.selectedPlural')}`;
+    }
+    return t('v2.applyNone');
+  };
+
   const selectedPreset = PRESET_KEYS.find(p => p.id === config.preset);
   const selectedPresetLabel = selectedPreset ? t(selectedPreset.key) : t('v2.choosePlacement');
 
@@ -191,7 +230,13 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         </div>
         <Switch
           checked={logoEnabled}
-          onCheckedChange={(checked) => onConfigChange({ ...config, applyTo: checked ? 'first' : 'none' })}
+          onCheckedChange={(checked) => {
+            if (checked) {
+              onConfigChange({ ...config, applyTo: 'all', selectedImageIds: images.map(i => i.id) });
+            } else {
+              onConfigChange({ ...config, applyTo: 'none', selectedImageIds: [] });
+            }
+          }}
         />
       </div>
 
@@ -231,24 +276,17 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
             </div>
           </div>
 
-          {/* Apply to */}
+          {/* Apply to — image selection button */}
           <div className="space-y-3">
             <h3 className="text-base font-medium text-foreground">{t('v2.applyTo')}</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {APPLY_OPTION_KEYS.map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => onConfigChange({ ...config, applyTo: opt.id })}
-                  className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
-                    config.applyTo === opt.id
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border text-foreground hover:border-primary/40'
-                  }`}
-                >
-                  {t(opt.key)}
-                </button>
-              ))}
-            </div>
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              onClick={openImageSelectModal}
+            >
+              <span>{getApplyLabel()}</span>
+              <span className="text-xs text-muted-foreground">{t('v2.chooseImages')}</span>
+            </Button>
           </div>
         </div>
       )}
@@ -362,6 +400,68 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
                 </span>
               </button>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image selection modal for logo application */}
+      <Dialog open={showImageSelectModal} onOpenChange={setShowImageSelectModal}>
+        <DialogContent className="max-w-lg">
+          <VisuallyHidden><DialogTitle>{t('v2.chooseImagesTitle')}</DialogTitle></VisuallyHidden>
+          <h3 className="text-lg font-medium text-foreground mb-1">{t('v2.chooseImagesTitle')}</h3>
+          <p className="text-sm text-muted-foreground mb-4">{t('v2.chooseImagesDesc')}</p>
+          
+          {/* Select all / none */}
+          <div className="flex gap-2 mb-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTempSelectedIds(new Set(images.map(i => i.id)))}
+            >
+              {t('v2.selectAll')} ({images.length})
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTempSelectedIds(new Set())}
+            >
+              {t('v2.deselectAll')}
+            </Button>
+          </div>
+
+          {/* Image grid */}
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[50vh] overflow-y-auto">
+            {images.map((img) => (
+              <button
+                key={img.id}
+                onClick={() => toggleTempImage(img.id)}
+                className={`relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all ${
+                  tempSelectedIds.has(img.id)
+                    ? 'border-primary ring-2 ring-primary/20'
+                    : 'border-border hover:border-primary/40'
+                }`}
+              >
+                <img src={img.previewUrl} alt="" className="w-full h-full object-cover" />
+                {tempSelectedIds.has(img.id) && (
+                  <>
+                    <div className="absolute inset-0 bg-black/30" />
+                    <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="w-3 h-3 text-primary-foreground" />
+                    </div>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Confirm */}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowImageSelectModal(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={confirmImageSelection}>
+              {t('v2.confirmSelection')} ({tempSelectedIds.size})
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
