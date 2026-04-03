@@ -227,11 +227,15 @@ function shouldApplyLogo(imgId: string, index: number, total: number, config: { 
   return false;
 }
 
-const getLogoApplyLabel = (key: string, t: any) => {
+const getLogoApplyLabel = (config: { applyTo: string; selectedImageIds?: string[] }, t: any) => {
+  if (config.applyTo === 'selected') {
+    const count = config.selectedImageIds?.length || 0;
+    return `${count} ${count === 1 ? t('v2.selected') : t('v2.selectedPlural')}`;
+  }
   const labels: Record<string, string> = {
     'none': t('v2.applyNone'), 'all': t('v2.applyOptions.all'), 'first': t('v2.applyOptions.first'), 'first-last': t('v2.applyOptions.firstLast'), 'first-3-last': t('v2.applyOptions.first3Last'),
   };
-  return labels[key] || key;
+  return labels[config.applyTo] || config.applyTo;
 };
 const getPlateStyleLabel = (key: string, t: any) => {
   const labels: Record<string, string> = {
