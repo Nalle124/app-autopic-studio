@@ -31,7 +31,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
-  const [editingImage, setEditingImage] = useState<{ url: string; index: number; type: 'crop' | 'adjust' } | null>(null);
+  const [editingImage, setEditingImage] = useState<{ url: string; index: number; type: 'crop' | 'adjust' | 'blur' } | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<number>>(new Set());
 
   const handleDownload = async (imageUrl: string, fileName: string) => {
