@@ -421,6 +421,32 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
           }}
         />
       )}
+
+      {editingImage?.type === 'blur' && (
+        <BackgroundBlurEditor
+          imageUrl={editingImage.url}
+          open={true}
+          onClose={() => setEditingImage(null)}
+          onSave={(blurredUrl: string) => {
+            results[editingImage.index].processedUrl = blurredUrl;
+            setEditingImage(null);
+          }}
+          onApplyToAll={(blurredUrl, blurSettings) => {
+            // Apply same blur to all results - for now just save current
+            results[editingImage.index].processedUrl = blurredUrl;
+          }}
+          currentIndex={editingImage.index}
+          totalCount={results.length}
+          onPrevious={editingImage.index > 0 ? () => {
+            const newIdx = editingImage.index - 1;
+            setEditingImage({ url: results[newIdx].processedUrl || results[newIdx].previewUrl, index: newIdx, type: 'blur' });
+          } : undefined}
+          onNext={editingImage.index < results.length - 1 ? () => {
+            const newIdx = editingImage.index + 1;
+            setEditingImage({ url: results[newIdx].processedUrl || results[newIdx].previewUrl, index: newIdx, type: 'blur' });
+          } : undefined}
+        />
+      )}
     </div>
   );
 };
