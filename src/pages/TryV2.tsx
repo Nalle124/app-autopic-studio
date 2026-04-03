@@ -13,15 +13,18 @@ import { V2GenerateStep } from '@/components/v2/V2GenerateStep';
 import { V2ResultGallery } from '@/components/v2/V2ResultGallery';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
+import { DemoSignupModal } from '@/components/DemoSignupModal';
 import { toast } from 'sonner';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
-import exampleBefore from '@/assets/paywall/bmw-before.jpg';
-import exampleAfter from '@/assets/paywall/bmw-after.jpg';
+import example1 from '@/assets/try/example-1.png';
+import example2 from '@/assets/try/example-2.jpg';
+import example3 from '@/assets/try/example-3.png';
 import type { V2Image, V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
 
 const EXAMPLE_IMAGES: V2Image[] = [
-  { id: 'example-1', file: null as any, previewUrl: exampleBefore, status: 'pending' },
-  { id: 'example-2', file: null as any, previewUrl: exampleAfter, status: 'pending' },
+  { id: 'example-1', file: null as any, previewUrl: example1, status: 'pending' },
+  { id: 'example-2', file: null as any, previewUrl: example2, status: 'pending' },
+  { id: 'example-3', file: null as any, previewUrl: example3, status: 'pending' },
 ];
 
 const STEPS = [
@@ -61,18 +64,15 @@ const TryV2Content = () => {
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
-
-  // Limit uploads to available credits (max 3 for free users)
-  const availableCredits = Math.min(credits, MAX_FREE_CREDITS);
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
   const handleImagesChange = useCallback((newImages: V2Image[]) => {
-    if (newImages.length > availableCredits) {
-      toast.error(`Du kan ladda upp max ${availableCredits} bilder med gratiskrediter`);
-      triggerPaywall('limit');
+    if (newImages.length > MAX_FREE_CREDITS) {
+      toast.error(`Du kan ladda upp max ${MAX_FREE_CREDITS} bilder med gratiskrediter`);
       return;
     }
     setImages(newImages);
-  }, [availableCredits, triggerPaywall]);
+  }, []);
 
   const handleGenerationComplete = useCallback((resultImages: V2Image[]) => {
     setResults(resultImages);
@@ -91,21 +91,12 @@ const TryV2Content = () => {
     setPlateConfig({ enabled: false, style: 'blur-dark' });
   }, []);
 
+  // Allow browsing all steps freely
   const goToStep = useCallback((step: number) => {
-    // If trying to go forward past upload without images, show toast
-    if (step > 0 && images.length === 0) {
-      toast.info('Ladda upp bilder först för att fortsätta');
-      setCurrentStep(0);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
     setCurrentStep(step);
-    // Only mark steps as reached if going forward sequentially
-    if (step > 0 && images.length > 0) {
-      setMaxStepReached(prev => Math.max(prev, step));
-    }
+    setMaxStepReached(prev => Math.max(prev, step));
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [images.length]);
+  }, []);
 
   const canGoNext = () => {
     switch (currentStep) {
@@ -117,15 +108,27 @@ const TryV2Content = () => {
     }
   };
 
+  // When user tries to generate: if not logged in, show signup modal
+  // If logged in but no credits, show paywall
   const handleTriggerPaywall = useCallback(() => {
-    triggerPaywall('limit');
-  }, [triggerPaywall]);
+    if (!user) {
+      setShowSignupModal(true);
+    } else {
+      triggerPaywall('limit');
+    }
+  }, [user, triggerPaywall]);
 
   const handleTabChange = (value: string) => {
     if (value === 'new') navigate('/');
     else if (value === 'ai-studio') navigate('/classic?tab=ai-studio');
     else if (value === 'history') navigate('/classic?tab=history');
-    else if (value === 'pro') triggerPaywall('signup');
+    else if (value === 'pro') {
+      if (!user) {
+        setShowSignupModal(true);
+      } else {
+        triggerPaywall('signup');
+      }
+    }
   };
 
   const renderHeader = () => (
@@ -141,7 +144,6 @@ const TryV2Content = () => {
             </SelectTrigger>
             <SelectContent className="bg-popover z-[60]">
               <SelectItem value="v2">Projekt</SelectItem>
-              <SelectItem value="new">Projekt (V1)</SelectItem>
               <SelectItem value="ai-studio">AI Studio</SelectItem>
               <SelectItem value="history">Galleri</SelectItem>
               <SelectItem value="pro">
@@ -149,7 +151,10 @@ const TryV2Content = () => {
               </SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/profil')} title="Profil">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+            if (!user) setShowSignupModal(true);
+            else navigate('/profil');
+          }} title="Profil">
             <User className="w-4 h-4" />
           </Button>
         </div>
@@ -248,7 +253,13 @@ const TryV2Content = () => {
           <section className="border border-border rounded-[10px] p-6">
             <V2SceneSelector
               selectedSceneId={selectedSceneId}
-              onSelect={setSelectedSceneId}
+              onSelect={(id) => {
+                if (images.length === 0) {
+                  toast.info('Ladda upp bilder först');
+                  return;
+                }
+                setSelectedSceneId(id);
+              }}
               outputFormat={outputFormat}
               onOutputFormatChange={setOutputFormat}
             />
@@ -269,21 +280,28 @@ const TryV2Content = () => {
         )}
         {currentStep === 3 && (
           <section className="border border-border rounded-[10px] p-6">
-            <V2GenerateStep
-              images={images}
-              logoConfig={logoConfig}
-              plateConfig={plateConfig}
-              sceneId={selectedSceneId}
-              projectName={projectName}
-              credits={availableCredits}
-              outputFormat={outputFormat}
-              autoCropEnabled={autoCropEnabled}
-              onImagesUpdate={setImages}
-              onComplete={handleGenerationComplete}
-              onRefetchCredits={async () => {}}
-              onStartOver={handleStartOver}
-              onTriggerPaywall={handleTriggerPaywall}
-            />
+            {images.length === 0 ? (
+              <div className="text-center py-12 space-y-3">
+                <p className="text-muted-foreground">Ladda upp bilder först för att generera</p>
+                <Button onClick={() => goToStep(0)}>Gå till uppladdning</Button>
+              </div>
+            ) : (
+              <V2GenerateStep
+                images={images}
+                logoConfig={logoConfig}
+                plateConfig={plateConfig}
+                sceneId={selectedSceneId}
+                projectName={projectName}
+                credits={credits > 0 ? Math.min(credits, MAX_FREE_CREDITS) : MAX_FREE_CREDITS}
+                outputFormat={outputFormat}
+                autoCropEnabled={autoCropEnabled}
+                onImagesUpdate={setImages}
+                onComplete={handleGenerationComplete}
+                onRefetchCredits={async () => {}}
+                onStartOver={handleStartOver}
+                onTriggerPaywall={handleTriggerPaywall}
+              />
+            )}
           </section>
         )}
       </div>
@@ -304,7 +322,6 @@ const TryV2Content = () => {
             <Button
               size={isMobile ? 'sm' : 'default'}
               onClick={() => goToStep(currentStep + 1)}
-              disabled={!canGoNext()}
             >
               Nästa
               <ChevronRight className="ml-1 h-4 w-4" />
@@ -314,6 +331,12 @@ const TryV2Content = () => {
       </div>
 
       <DemoPaywall />
+      
+      {/* Signup modal for guests - shown when trying to generate */}
+      <DemoSignupModal 
+        open={showSignupModal} 
+        onClose={() => setShowSignupModal(false)} 
+      />
     </div>
   );
 };
