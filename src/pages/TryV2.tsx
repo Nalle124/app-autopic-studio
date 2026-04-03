@@ -91,12 +91,18 @@ const TryV2Content = () => {
     setPlateConfig({ enabled: false, style: 'blur-dark' });
   }, []);
 
-  // Allow browsing all steps freely
+  // Allow browsing all steps freely but only track maxStepReached via Nästa button
   const goToStep = useCallback((step: number) => {
     setCurrentStep(step);
-    setMaxStepReached(prev => Math.max(prev, step));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  const advanceStep = useCallback(() => {
+    const next = currentStep + 1;
+    setCurrentStep(next);
+    setMaxStepReached(prev => Math.max(prev, next));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
 
   const canGoNext = () => {
     switch (currentStep) {
