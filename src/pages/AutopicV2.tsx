@@ -110,7 +110,6 @@ const AutopicV2Content = () => {
 
   const handleTabChange = (value: string) => {
     if (value === 'new') navigate('/');
-    else if (value === 'classic') navigate('/classic');
     else if (value === 'ai-studio') navigate('/classic?tab=ai-studio');
     else if (value === 'history') navigate('/classic?tab=history');
   };
