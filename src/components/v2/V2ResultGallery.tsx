@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
+import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare, Focus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import type { V2Image } from '@/pages/AutopicV2';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
+import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 import { CarAdjustments } from '@/types/scene';
 
 interface Props {
