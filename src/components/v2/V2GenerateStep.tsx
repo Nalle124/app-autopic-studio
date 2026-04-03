@@ -292,9 +292,17 @@ export const V2GenerateStep = ({
       setStatusText(t('v2.analyzingImages'));
       const imageData = await Promise.all(
         images.map(async (img) => {
-          const ab = await img.file.arrayBuffer();
+          let file = img.file;
+          // If file is null (e.g. example images), fetch from previewUrl
+          if (!file && img.previewUrl) {
+            const resp = await fetch(img.previewUrl);
+            const blob = await resp.blob();
+            file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+          }
+          if (!file) throw new Error('Ingen bildfil tillgänglig');
+          const ab = await file.arrayBuffer();
           const b64 = btoa(new Uint8Array(ab).reduce((d, b) => d + String.fromCharCode(b), ''));
-          return { id: img.id, base64: `data:${img.file.type};base64,${b64}` };
+          return { id: img.id, base64: `data:${file.type};base64,${b64}` };
         })
       );
       const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', { body: { images: imageData } });
