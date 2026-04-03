@@ -289,6 +289,12 @@ export const V2GenerateStep = ({
   }, [liveResults.length]);
 
   const handleGenerate = async () => {
+    // Check auth first - if no session, trigger paywall/signup
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    if (!authSession?.access_token) {
+      if (onTriggerPaywall) onTriggerPaywall();
+      return;
+    }
     if (!canGenerate) {
       if (onTriggerPaywall) onTriggerPaywall();
       return;
