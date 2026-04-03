@@ -157,6 +157,23 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                 <Sliders className="w-4 h-4" />
               </Button>
 
+              {/* Blur/Bokeh tool */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
+                title="Bokeh"
+                onClick={() => {
+                  if (results.length > 0) {
+                    const idx = previewIndex ?? 0;
+                    const url = results[idx].processedUrl || results[idx].previewUrl;
+                    setEditingImage({ url, index: idx, type: 'blur' });
+                  }
+                }}
+              >
+                <Focus className="w-4 h-4" />
+              </Button>
+
               {/* AI Studio button */}
               <Button 
                 variant="outline" 
