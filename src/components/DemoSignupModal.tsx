@@ -244,7 +244,7 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
                 {showEmailVerification ? 'Verifiera din e-post' : 'Skapa gratis konto'}
               </h2>
               <p className="text-sm text-foreground/70">
-                {showEmailVerification ? 'Ange koden du fick på mail' : 'Testa 2 bilder helt gratis'}
+                {showEmailVerification ? 'Ange koden du fick på mail' : 'Testa 3 bilder helt gratis'}
               </p>
             </div>
           </div>
