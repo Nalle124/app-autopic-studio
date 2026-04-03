@@ -32,8 +32,9 @@ export interface V2Image {
 
 export interface V2LogoConfig {
   preset: string;
-  applyTo: 'all' | 'first' | 'first-3-last' | 'first-last' | 'none';
+  applyTo: 'all' | 'first' | 'first-3-last' | 'first-last' | 'none' | 'selected';
   logoSize: 'small' | 'medium' | 'large';
+  selectedImageIds?: string[];
 }
 
 export interface V2PlateConfig {
