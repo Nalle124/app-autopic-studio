@@ -74,7 +74,6 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         if (error) throw error;
         onSuccess();
         onClose();
-        window.location.reload();
       } else {
         // Sign up - first validate
         if (!fullName) {
