@@ -80,7 +80,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
     for (const result of results) {
       if (result.status === 'fulfilled') {
         const exists = images.some(
-          img => img.file.name === result.value.file.name && img.file.size === result.value.file.size
+          img => img.file && result.value.file && img.file.name === result.value.file.name && img.file.size === result.value.file.size
         );
         if (!exists) {
           newImages.push(result.value);
@@ -163,7 +163,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
               className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-muted cursor-pointer"
               onClick={() => setPreviewImage(img)}
             >
-              <ImageThumb src={img.previewUrl} alt={img.file.name} />
+              <ImageThumb src={img.previewUrl} alt={img.file?.name || img.id} />
               <button
                 onClick={(e) => { e.stopPropagation(); removeImage(img.id); }}
                 className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -230,11 +230,11 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
             <div className="relative bg-black">
               <img
                 src={previewImage.previewUrl}
-                alt={previewImage.file.name}
+                alt={previewImage.file?.name || previewImage.id}
                 className="w-full max-h-[70vh] object-contain"
               />
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                <p className="text-xs text-white/80 truncate">{previewImage.file.name}</p>
+                <p className="text-xs text-white/80 truncate">{previewImage.file?.name || previewImage.id}</p>
               </div>
             </div>
           )}
