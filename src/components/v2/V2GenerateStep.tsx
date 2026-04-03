@@ -603,8 +603,16 @@ export const V2GenerateStep = ({
 };
 
 async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait'): Promise<string> {
+  let file = img.file;
+  // If file is null (e.g. example images), fetch from previewUrl
+  if (!file && img.previewUrl) {
+    const resp = await fetch(img.previewUrl);
+    const blob = await resp.blob();
+    file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+  }
+  if (!file) throw new Error('Ingen bildfil tillgänglig');
   const formData = new FormData();
-  formData.append('image', img.file, img.file.name);
+  formData.append('image', file, file.name);
   const scenePayload = {
     id: scene.id, name: scene.name, horizonY: scene.horizon_y, baselineY: scene.baseline_y, defaultScale: scene.default_scale,
     shadowPreset: { enabled: scene.shadow_enabled, strength: scene.shadow_strength, blur: scene.shadow_blur, offsetX: scene.shadow_offset_x, offsetY: scene.shadow_offset_y },
