@@ -350,7 +350,10 @@ const TryV2Content = () => {
       <DemoSignupModal 
         open={showSignupModal} 
         onClose={() => setShowSignupModal(false)}
-        onSuccess={() => setShowSignupModal(false)}
+        onSuccess={() => {
+          setSignedUpHere(true);
+          setShowSignupModal(false);
+        }}
       />
     </div>
   );
