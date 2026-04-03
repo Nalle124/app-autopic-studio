@@ -200,13 +200,15 @@ function IndexContent() {
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
   
 
-  // Handle tab changes — AI Studio is now an inline tab
+  // Handle tab changes — route to V2 for new project
   const handleTabChange = (value: string) => {
-    if (value === 'ai-studio') {
+    if (value === 'new') {
+      navigate('/');
+    } else if (value === 'ai-studio') {
       setActiveTab('ai-studio');
       setAiModalInitialImage(null);
     } else {
-      setActiveTab(value as 'new' | 'history');
+      setActiveTab(value as 'history');
     }
   };
   const [sceneSelectorKey, setSceneSelectorKey] = useState(0);
@@ -949,39 +951,17 @@ function IndexContent() {
             )}
 
             
-            {/* Desktop: Tabs */}
-            {!isMobile && (
-              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-auto">
-                <TabsList className="bg-background/80 backdrop-blur-sm">
-                  <TabsTrigger value="new" className="gap-2">
-                    <Plus className="w-4 h-4" />
-                    Projekt
-                  </TabsTrigger>
-                  <TabsTrigger value="ai-studio" className="gap-2">
-                    <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
-                    AI Studio
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-2">
-                    <History className="w-4 h-4" />
-                    Galleri
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-
-            {/* Mobile: Select dropdown */}
-            {isMobile && (
-              <Select value={activeTab} onValueChange={handleTabChange}>
-                <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-[60]">
-                  <SelectItem value="new">Projekt</SelectItem>
-                  <SelectItem value="ai-studio">AI Studio</SelectItem>
-                  <SelectItem value="history">Galleri</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            {/* Always dropdown - matches V2 style */}
+            <Select value={activeTab} onValueChange={handleTabChange}>
+              <SelectTrigger className={`${isMobile ? 'w-[120px] h-8 text-xs' : 'w-[150px] h-9 text-sm'} bg-background/80 backdrop-blur-sm`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-[60]">
+                <SelectItem value="new">Projekt</SelectItem>
+                <SelectItem value="ai-studio">AI Studio</SelectItem>
+                <SelectItem value="history">Galleri</SelectItem>
+              </SelectContent>
+            </Select>
             
             {user && (
               <Button

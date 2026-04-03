@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare } from 'lucide-react';
+import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare, Focus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import type { V2Image } from '@/pages/AutopicV2';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
+import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 import { CarAdjustments } from '@/types/scene';
 
 interface Props {
@@ -30,7 +31,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
-  const [editingImage, setEditingImage] = useState<{ url: string; index: number; type: 'crop' | 'adjust' } | null>(null);
+  const [editingImage, setEditingImage] = useState<{ url: string; index: number; type: 'crop' | 'adjust' | 'blur' } | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<number>>(new Set());
 
   const handleDownload = async (imageUrl: string, fileName: string) => {
@@ -154,6 +155,23 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                 }}
               >
                 <Sliders className="w-4 h-4" />
+              </Button>
+
+              {/* Blur/Bokeh tool */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
+                title="Bokeh"
+                onClick={() => {
+                  if (results.length > 0) {
+                    const idx = previewIndex ?? 0;
+                    const url = results[idx].processedUrl || results[idx].previewUrl;
+                    setEditingImage({ url, index: idx, type: 'blur' });
+                  }
+                }}
+              >
+                <Focus className="w-4 h-4" />
               </Button>
 
               {/* AI Studio button */}
@@ -354,6 +372,10 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                     <Scissors className="w-4 h-4" />
                     <span className="hidden sm:inline ml-1">{t('v2.crop')}</span>
                   </Button>
+                  <Button size="sm" variant="outline" title="Bokeh" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'blur' })}>
+                    <Focus className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Bokeh</span>
+                  </Button>
                   <Button size="sm" variant="outline" title={t('v2.editFreely')} onClick={() => {
                     const imgUrl = previewUrl;
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
@@ -397,6 +419,32 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
             results[editingImage.index].processedUrl = adjustedUrl;
             setEditingImage(null);
           }}
+        />
+      )}
+
+      {editingImage?.type === 'blur' && (
+        <BackgroundBlurEditor
+          imageUrl={editingImage.url}
+          open={true}
+          onClose={() => setEditingImage(null)}
+          onSave={(blurredUrl: string) => {
+            results[editingImage.index].processedUrl = blurredUrl;
+            setEditingImage(null);
+          }}
+          onApplyToAll={(blurredUrl, blurSettings) => {
+            // Apply same blur to all results - for now just save current
+            results[editingImage.index].processedUrl = blurredUrl;
+          }}
+          currentIndex={editingImage.index}
+          totalCount={results.length}
+          onPrevious={editingImage.index > 0 ? () => {
+            const newIdx = editingImage.index - 1;
+            setEditingImage({ url: results[newIdx].processedUrl || results[newIdx].previewUrl, index: newIdx, type: 'blur' });
+          } : undefined}
+          onNext={editingImage.index < results.length - 1 ? () => {
+            const newIdx = editingImage.index + 1;
+            setEditingImage({ url: results[newIdx].processedUrl || results[newIdx].previewUrl, index: newIdx, type: 'blur' });
+          } : undefined}
         />
       )}
     </div>
