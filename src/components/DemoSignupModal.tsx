@@ -191,7 +191,6 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
       toast.success('Konto skapat!');
       onSuccess();
       onClose();
-      window.location.reload();
       
     } catch (error: any) {
       toast.error('Något gick fel, försök igen');
