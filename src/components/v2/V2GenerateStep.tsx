@@ -179,8 +179,15 @@ function applyLightBoost(imageUrl: string): Promise<string> {
 }
 
 async function processInteriorImage(img: V2Image, bgType: string): Promise<string> {
-  const arrayBuffer = await img.file.arrayBuffer();
-  const base64 = `data:${img.file.type};base64,${btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''))}`;
+  let file = img.file;
+  if (!file && img.previewUrl) {
+    const resp = await fetch(img.previewUrl);
+    const blob = await resp.blob();
+    file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+  }
+  if (!file) throw new Error('Ingen bildfil tillgänglig');
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = `data:${file.type};base64,${btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''))}`;
   const dims = await new Promise<{ w: number; h: number }>((resolve) => {
     const image = new window.Image();
     image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
