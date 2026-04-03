@@ -631,7 +631,7 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
     const image = new window.Image();
     image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
     image.onerror = () => resolve({ w: 4000, h: 2667 });
-    image.src = URL.createObjectURL(img.file);
+    image.src = file ? URL.createObjectURL(file) : img.previewUrl;
   });
   formData.append('originalWidth', dims.w.toString());
   formData.append('originalHeight', dims.h.toString());
