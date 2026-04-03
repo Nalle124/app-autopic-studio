@@ -335,7 +335,8 @@ const TryV2Content = () => {
       {/* Signup modal for guests - shown when trying to generate */}
       <DemoSignupModal 
         open={showSignupModal} 
-        onClose={() => setShowSignupModal(false)} 
+        onClose={() => setShowSignupModal(false)}
+        onSuccess={() => setShowSignupModal(false)}
       />
     </div>
   );
