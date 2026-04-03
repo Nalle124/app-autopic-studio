@@ -46,6 +46,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
   const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
   const [showTips, setShowTips] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter(f => {
@@ -61,8 +62,10 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       return;
     }
 
+    // Show skeleton placeholders immediately
+    setPendingCount(validFiles.length);
+
     const newImages: V2Image[] = [];
-    // Process files in parallel for faster perceived upload
     const results = await Promise.allSettled(
       validFiles.map(async (file) => {
         const converted = await ensureApiCompatibleFormat(file);
@@ -76,7 +79,6 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
     );
     for (const result of results) {
       if (result.status === 'fulfilled') {
-        // Deduplicate by file name + size to avoid duplicates on reload
         const exists = images.some(
           img => img.file.name === result.value.file.name && img.file.size === result.value.file.size
         );
@@ -88,6 +90,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       }
     }
 
+    setPendingCount(0);
     if (newImages.length > 0) {
       onImagesChange([...images, ...newImages]);
     }
