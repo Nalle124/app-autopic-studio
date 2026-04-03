@@ -155,7 +155,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         </p>
       </div>
 
-      {images.length > 0 && (
+      {(images.length > 0 || pendingCount > 0) && (
         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5">
           {images.map((img) => (
             <div
@@ -170,6 +170,15 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
               >
                 <X className="h-3 w-3" />
               </button>
+            </div>
+          ))}
+          {/* Shimmer skeletons for files being converted */}
+          {pendingCount > 0 && Array.from({ length: pendingCount }).map((_, i) => (
+            <div key={`pending-${i}`} className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted">
+              <div className="absolute inset-0 animate-pulse bg-muted">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-background/20 to-transparent animate-[shimmer_1.5s_infinite]" 
+                  style={{ animationTimingFunction: 'ease-in-out' }} />
+              </div>
             </div>
           ))}
         </div>
