@@ -200,13 +200,15 @@ function IndexContent() {
   const [logoDesignOpen, setLogoDesignOpen] = useState(false);
   
 
-  // Handle tab changes — AI Studio is now an inline tab
+  // Handle tab changes — route to V2 for new project
   const handleTabChange = (value: string) => {
-    if (value === 'ai-studio') {
+    if (value === 'new') {
+      navigate('/');
+    } else if (value === 'ai-studio') {
       setActiveTab('ai-studio');
       setAiModalInitialImage(null);
     } else {
-      setActiveTab(value as 'new' | 'history');
+      setActiveTab(value as 'history');
     }
   };
   const [sceneSelectorKey, setSceneSelectorKey] = useState(0);
