@@ -361,7 +361,7 @@ export const V2GenerateStep = ({
           }
           if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
           if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
-          if (logoUrl && shouldApplyLogo(i, totalSteps, logoConfig.applyTo)) {
+          if (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig)) {
             processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset, logoConfig.logoSize);
           }
           const result = { ...img, processedUrl, status: 'done' as const };
