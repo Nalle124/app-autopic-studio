@@ -372,6 +372,10 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
                     <Scissors className="w-4 h-4" />
                     <span className="hidden sm:inline ml-1">{t('v2.crop')}</span>
                   </Button>
+                  <Button size="sm" variant="outline" title="Bokeh" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'blur' })}>
+                    <Focus className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Bokeh</span>
+                  </Button>
                   <Button size="sm" variant="outline" title={t('v2.editFreely')} onClick={() => {
                     const imgUrl = previewUrl;
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
