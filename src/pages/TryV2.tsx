@@ -132,11 +132,7 @@ const TryV2Content = () => {
     else if (value === 'ai-studio') navigate('/classic?tab=ai-studio');
     else if (value === 'history') navigate('/classic?tab=history');
     else if (value === 'pro') {
-      if (!user) {
-        setShowSignupModal(true);
-      } else {
-        triggerPaywall('signup');
-      }
+      triggerPaywall('signup');
     }
   };
 
