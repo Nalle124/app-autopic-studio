@@ -80,7 +80,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
     for (const result of results) {
       if (result.status === 'fulfilled') {
         const exists = images.some(
-          img => img.file.name === result.value.file.name && img.file.size === result.value.file.size
+          img => img.file && result.value.file && img.file.name === result.value.file.name && img.file.size === result.value.file.size
         );
         if (!exists) {
           newImages.push(result.value);
