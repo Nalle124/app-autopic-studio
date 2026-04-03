@@ -172,39 +172,44 @@ const TryV2Content = () => {
     <div className="border-b border-border bg-white">
       <div className="max-w-5xl mx-auto px-4 py-4 sm:py-5">
         <div className="flex items-center justify-between">
-          {STEPS.map((step, i) => (
+          {STEPS.map((step, i) => {
+            const isCompleted = i < currentStep && i <= maxStepReached && (i === 0 ? images.length > 0 : true);
+            const isActive = i === currentStep;
+            return (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <button
                 onClick={() => goToStep(i)}
                 className="flex flex-col items-center gap-1 cursor-pointer"
               >
                 <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
-                  i < currentStep ? 'bg-primary border-primary'
-                    : i === currentStep ? 'border-primary bg-background'
-                    : i <= maxStepReached ? 'bg-primary/20 border-primary/50'
-                    : 'border-muted-foreground/30 bg-background'
+                  isCompleted
+                    ? 'bg-primary border-primary'
+                    : isActive
+                      ? 'border-primary bg-background'
+                      : 'border-muted-foreground/30 bg-background'
                 }`}>
-                  {i < currentStep ? (
+                  {isCompleted ? (
                     <Check className="w-2.5 h-2.5 text-primary-foreground" />
                   ) : (
                     <div className={`w-1.5 h-1.5 rounded-full ${
-                      i === currentStep ? 'bg-primary' : i <= maxStepReached ? 'bg-primary/50' : 'bg-muted-foreground/20'
+                      isActive ? 'bg-primary' : 'bg-muted-foreground/20'
                     }`} />
                   )}
                 </div>
                 <span className={`text-[9px] whitespace-nowrap ${
-                  i <= currentStep || i <= maxStepReached ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  isActive || isCompleted ? 'text-foreground font-medium' : 'text-muted-foreground'
                 }`}>
                   {step.label}
                 </span>
               </button>
               {i < STEPS.length - 1 && (
                 <div className={`flex-1 h-[1.5px] mx-1.5 mt-[-14px] ${
-                  i < currentStep ? 'bg-primary' : i < maxStepReached ? 'bg-primary/30' : 'bg-muted-foreground/20'
+                  isCompleted ? 'bg-primary' : 'bg-muted-foreground/20'
                 }`} />
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
