@@ -199,11 +199,11 @@ export const OriginalImageEditor = ({ imageUrl, imageName, open, onClose, onSave
               </Button>
             )}
             
-            <div className="flex-1 relative bg-muted rounded-lg overflow-hidden max-h-[40vh] sm:max-h-[50vh] lg:max-h-[70vh]">
+            <div className="flex-1 relative bg-muted rounded-lg overflow-hidden max-h-[40vh] sm:max-h-[50vh] lg:max-h-[70vh] flex items-center justify-center">
               <img
                 src={imageUrl}
                 alt="Preview"
-                className="w-full h-auto max-h-full object-contain"
+                className="max-w-full max-h-[40vh] sm:max-h-[50vh] lg:max-h-[70vh] object-contain"
                 style={{ filter: getCssFilter() }}
               />
               

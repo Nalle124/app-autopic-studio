@@ -332,7 +332,7 @@ const TryV2Content = () => {
           {currentStep < STEPS.length - 1 && (
             <Button
               size={isMobile ? 'sm' : 'default'}
-              onClick={() => goToStep(currentStep + 1)}
+              onClick={advanceStep}
             >
               Nästa
               <ChevronRight className="ml-1 h-4 w-4" />

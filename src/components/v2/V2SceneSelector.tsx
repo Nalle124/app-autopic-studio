@@ -219,7 +219,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
 
             {/* Create own background */}
             <button
-              onClick={() => navigate('/?tab=ai-studio')}
+              onClick={() => navigate('/classic?tab=ai-studio')}
               className={`relative rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/40 ${thumbAspect} flex flex-col items-center justify-center gap-2 bg-muted/30 transition-all`}
             >
               <img src="/favicon.png" alt="" className="h-6 w-6 object-contain dark:invert" />
