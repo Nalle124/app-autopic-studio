@@ -179,8 +179,15 @@ function applyLightBoost(imageUrl: string): Promise<string> {
 }
 
 async function processInteriorImage(img: V2Image, bgType: string): Promise<string> {
-  const arrayBuffer = await img.file.arrayBuffer();
-  const base64 = `data:${img.file.type};base64,${btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''))}`;
+  let file = img.file;
+  if (!file && img.previewUrl) {
+    const resp = await fetch(img.previewUrl);
+    const blob = await resp.blob();
+    file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+  }
+  if (!file) throw new Error('Ingen bildfil tillgänglig');
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = `data:${file.type};base64,${btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''))}`;
   const dims = await new Promise<{ w: number; h: number }>((resolve) => {
     const image = new window.Image();
     image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
@@ -282,6 +289,12 @@ export const V2GenerateStep = ({
   }, [liveResults.length]);
 
   const handleGenerate = async () => {
+    // Check auth first - if no session, trigger paywall/signup
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    if (!authSession?.access_token) {
+      if (onTriggerPaywall) onTriggerPaywall();
+      return;
+    }
     if (!canGenerate) {
       if (onTriggerPaywall) onTriggerPaywall();
       return;
@@ -292,9 +305,17 @@ export const V2GenerateStep = ({
       setStatusText(t('v2.analyzingImages'));
       const imageData = await Promise.all(
         images.map(async (img) => {
-          const ab = await img.file.arrayBuffer();
+          let file = img.file;
+          // If file is null (e.g. example images), fetch from previewUrl
+          if (!file && img.previewUrl) {
+            const resp = await fetch(img.previewUrl);
+            const blob = await resp.blob();
+            file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+          }
+          if (!file) throw new Error('Ingen bildfil tillgänglig');
+          const ab = await file.arrayBuffer();
           const b64 = btoa(new Uint8Array(ab).reduce((d, b) => d + String.fromCharCode(b), ''));
-          return { id: img.id, base64: `data:${img.file.type};base64,${b64}` };
+          return { id: img.id, base64: `data:${file.type};base64,${b64}` };
         })
       );
       const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', { body: { images: imageData } });
@@ -595,8 +616,16 @@ export const V2GenerateStep = ({
 };
 
 async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait'): Promise<string> {
+  let file = img.file;
+  // If file is null (e.g. example images), fetch from previewUrl
+  if (!file && img.previewUrl) {
+    const resp = await fetch(img.previewUrl);
+    const blob = await resp.blob();
+    file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+  }
+  if (!file) throw new Error('Ingen bildfil tillgänglig');
   const formData = new FormData();
-  formData.append('image', img.file, img.file.name);
+  formData.append('image', file, file.name);
   const scenePayload = {
     id: scene.id, name: scene.name, horizonY: scene.horizon_y, baselineY: scene.baseline_y, defaultScale: scene.default_scale,
     shadowPreset: { enabled: scene.shadow_enabled, strength: scene.shadow_strength, blur: scene.shadow_blur, offsetX: scene.shadow_offset_x, offsetY: scene.shadow_offset_y },
@@ -615,7 +644,7 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
     const image = new window.Image();
     image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
     image.onerror = () => resolve({ w: 4000, h: 2667 });
-    image.src = URL.createObjectURL(img.file);
+    image.src = file ? URL.createObjectURL(file) : img.previewUrl;
   });
   formData.append('originalWidth', dims.w.toString());
   formData.append('originalHeight', dims.h.toString());

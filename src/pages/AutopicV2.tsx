@@ -110,7 +110,6 @@ const AutopicV2Content = () => {
 
   const handleTabChange = (value: string) => {
     if (value === 'new') navigate('/');
-    else if (value === 'classic') navigate('/classic');
     else if (value === 'ai-studio') navigate('/classic?tab=ai-studio');
     else if (value === 'history') navigate('/classic?tab=history');
   };
@@ -164,42 +163,48 @@ const AutopicV2Content = () => {
     <div className="border-b border-border bg-card">
       <div className="max-w-5xl mx-auto px-4 py-4 sm:py-5">
         <div className="flex items-center justify-between">
-          {STEPS.map((step, i) => (
+          {STEPS.map((step, i) => {
+            // A step is "completed" only if user advanced past it using Nästa (currentStep > i)
+            const isCompleted = i < currentStep;
+            const isActive = i === currentStep;
+            const isReachable = i <= maxStepReached;
+            return (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <button
-                onClick={() => { if (i <= maxStepReached) goToStep(i); }}
-                className={`flex flex-col items-center gap-1 ${i <= maxStepReached ? 'cursor-pointer' : 'cursor-default'}`}
+                onClick={() => { if (isReachable) goToStep(i); }}
+                className={`flex flex-col items-center gap-1 ${isReachable ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
-                  i < currentStep
+                  isCompleted
                     ? 'bg-primary border-primary'
-                    : i === currentStep
+                    : isActive
                       ? 'border-primary bg-background'
-                      : i <= maxStepReached
-                        ? 'bg-primary/20 border-primary/50'
+                      : isReachable
+                        ? 'border-primary/50 bg-background'
                         : 'border-muted-foreground/30 bg-background'
                 }`}>
-                  {i < currentStep ? (
+                  {isCompleted ? (
                     <Check className="w-2.5 h-2.5 text-primary-foreground" />
                   ) : (
                     <div className={`w-1.5 h-1.5 rounded-full ${
-                      i === currentStep ? 'bg-primary' : i <= maxStepReached ? 'bg-primary/50' : 'bg-muted-foreground/20'
+                      isActive ? 'bg-primary' : isReachable ? 'bg-primary/50' : 'bg-muted-foreground/20'
                     }`} />
                   )}
                 </div>
                 <span className={`text-[9px] whitespace-nowrap ${
-                  i <= maxStepReached ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  isActive || isCompleted ? 'text-foreground font-medium' : 'text-muted-foreground'
                 }`}>
                   {step.label}
                 </span>
               </button>
               {i < STEPS.length - 1 && (
                 <div className={`flex-1 h-[1.5px] mx-1.5 mt-[-14px] ${
-                  i < currentStep ? 'bg-primary' : i < maxStepReached ? 'bg-primary/30' : 'bg-muted-foreground/20'
+                  isCompleted ? 'bg-primary' : 'bg-muted-foreground/20'
                 }`} />
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
