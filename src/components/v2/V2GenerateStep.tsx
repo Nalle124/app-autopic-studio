@@ -216,9 +216,11 @@ async function blurPlatesOnImage(imageUrl: string, style: string, logoBase64: st
   return data.imageUrl;
 }
 
-function shouldApplyLogo(index: number, total: number, applyTo: V2LogoConfig['applyTo']): boolean {
+function shouldApplyLogo(imgId: string, index: number, total: number, config: { applyTo: string; selectedImageIds?: string[] }): boolean {
+  const { applyTo, selectedImageIds } = config;
   if (applyTo === 'none') return false;
   if (applyTo === 'all') return true;
+  if (applyTo === 'selected') return (selectedImageIds || []).includes(imgId);
   if (applyTo === 'first') return index === 0;
   if (applyTo === 'first-last') return index === 0 || index === total - 1;
   if (applyTo === 'first-3-last') return index < 3 || index === total - 1;
