@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import example1 from '@/assets/try/example-1.png';
 import example2 from '@/assets/try/example-2.jpg';
-import example3 from '@/assets/try/example-3.png';
+import example3 from '@/assets/try/example-3.jpg';
 import type { V2Image, V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
 
 const EXAMPLE_IMAGES: V2Image[] = [
