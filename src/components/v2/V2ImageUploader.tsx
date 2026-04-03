@@ -46,6 +46,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
   const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
   const [showTips, setShowTips] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter(f => {
@@ -61,8 +62,10 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       return;
     }
 
+    // Show skeleton placeholders immediately
+    setPendingCount(validFiles.length);
+
     const newImages: V2Image[] = [];
-    // Process files in parallel for faster perceived upload
     const results = await Promise.allSettled(
       validFiles.map(async (file) => {
         const converted = await ensureApiCompatibleFormat(file);
@@ -76,7 +79,6 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
     );
     for (const result of results) {
       if (result.status === 'fulfilled') {
-        // Deduplicate by file name + size to avoid duplicates on reload
         const exists = images.some(
           img => img.file.name === result.value.file.name && img.file.size === result.value.file.size
         );
@@ -88,6 +90,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       }
     }
 
+    setPendingCount(0);
     if (newImages.length > 0) {
       onImagesChange([...images, ...newImages]);
     }
@@ -152,7 +155,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         </p>
       </div>
 
-      {images.length > 0 && (
+      {(images.length > 0 || pendingCount > 0) && (
         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5">
           {images.map((img) => (
             <div
@@ -167,6 +170,15 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
               >
                 <X className="h-3 w-3" />
               </button>
+            </div>
+          ))}
+          {/* Shimmer skeletons for files being converted */}
+          {pendingCount > 0 && Array.from({ length: pendingCount }).map((_, i) => (
+            <div key={`pending-${i}`} className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted">
+              <div className="absolute inset-0 animate-pulse bg-muted">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-background/20 to-transparent animate-[shimmer_1.5s_infinite]" 
+                  style={{ animationTimingFunction: 'ease-in-out' }} />
+              </div>
             </div>
           ))}
         </div>

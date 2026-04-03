@@ -216,20 +216,26 @@ async function blurPlatesOnImage(imageUrl: string, style: string, logoBase64: st
   return data.imageUrl;
 }
 
-function shouldApplyLogo(index: number, total: number, applyTo: V2LogoConfig['applyTo']): boolean {
+function shouldApplyLogo(imgId: string, index: number, total: number, config: { applyTo: string; selectedImageIds?: string[] }): boolean {
+  const { applyTo, selectedImageIds } = config;
   if (applyTo === 'none') return false;
   if (applyTo === 'all') return true;
+  if (applyTo === 'selected') return (selectedImageIds || []).includes(imgId);
   if (applyTo === 'first') return index === 0;
   if (applyTo === 'first-last') return index === 0 || index === total - 1;
   if (applyTo === 'first-3-last') return index < 3 || index === total - 1;
   return false;
 }
 
-const getLogoApplyLabel = (key: string, t: any) => {
+const getLogoApplyLabel = (config: { applyTo: string; selectedImageIds?: string[] }, t: any) => {
+  if (config.applyTo === 'selected') {
+    const count = config.selectedImageIds?.length || 0;
+    return `${count} ${count === 1 ? t('v2.selected') : t('v2.selectedPlural')}`;
+  }
   const labels: Record<string, string> = {
     'none': t('v2.applyNone'), 'all': t('v2.applyOptions.all'), 'first': t('v2.applyOptions.first'), 'first-last': t('v2.applyOptions.firstLast'), 'first-3-last': t('v2.applyOptions.first3Last'),
   };
-  return labels[key] || key;
+  return labels[config.applyTo] || config.applyTo;
 };
 const getPlateStyleLabel = (key: string, t: any) => {
   const labels: Record<string, string> = {
@@ -359,7 +365,7 @@ export const V2GenerateStep = ({
           }
           if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
           if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
-          if (logoUrl && shouldApplyLogo(i, totalSteps, logoConfig.applyTo)) {
+          if (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig)) {
             processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset, logoConfig.logoSize);
           }
           const result = { ...img, processedUrl, status: 'done' as const };
@@ -506,7 +512,7 @@ export const V2GenerateStep = ({
           )}
           <div className="flex justify-between text-sm">
               <span className="text-foreground/50 dark:text-white/50">{t('v2.logo')}</span>
-              <span className="text-foreground dark:text-white font-medium">{getLogoApplyLabel(logoConfig.applyTo, t)}</span>
+              <span className="text-foreground dark:text-white font-medium">{getLogoApplyLabel(logoConfig, t)}</span>
           </div>
           {plateConfig.enabled && (
             <div className="flex justify-between text-sm">
