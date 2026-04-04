@@ -155,6 +155,8 @@ const AutopicV2Content = () => {
     setPlateConfig({ enabled: false, style: 'blur-dark' });
     setAutoCropEnabled(true);
     draftsLoadedRef.current = false;
+    sessionStorage.removeItem('v2-current-step');
+    sessionStorage.removeItem('v2-selected-scene');
   }, [user?.id, deleteAllDrafts]);
 
   const handleTryAnotherBackground = useCallback(() => {
