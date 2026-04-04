@@ -1,14 +1,18 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Trash2, ChevronDown, Check } from 'lucide-react';
+import { Upload, X, Trash2, ChevronDown, Check, Scissors, Sliders, Focus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { toast } from 'sonner';
 import { isSupportedImageFormat, ensureApiCompatibleFormat } from '@/utils/heicConverter';
+import { ImageCropEditor } from '@/components/ImageCropEditor';
+import { OriginalImageEditor } from '@/components/OriginalImageEditor';
 import type { V2Image } from '@/pages/AutopicV2';
+import type { CarAdjustments } from '@/types/scene';
 
 function generateId() {
   return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
