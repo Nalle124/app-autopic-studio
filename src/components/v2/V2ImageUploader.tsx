@@ -278,12 +278,13 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       {editingImage?.type === 'crop' && (
         <ImageCropEditor
           image={{ id: editingImage.id, finalUrl: editingImage.url, fileName: `upload-${editingImage.id}` }}
-          onSave={(croppedUrl) => {
+          aspectRatio="landscape"
+          onSave={(_imageId: string, croppedUrl: string) => {
             onImagesChange(images.map(img => img.id === editingImage.id ? { ...img, croppedUrl } : img));
             setEditingImage(null);
             setPreviewImage(prev => prev && prev.id === editingImage.id ? { ...prev, croppedUrl } : prev);
           }}
-          onCancel={() => setEditingImage(null)}
+          onClose={() => setEditingImage(null)}
         />
       )}
 
@@ -291,12 +292,14 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       {editingImage?.type === 'adjust' && (
         <OriginalImageEditor
           imageUrl={editingImage.url}
+          imageName={`upload-${editingImage.id}`}
+          open={true}
           onSave={(adjustedUrl: string, _adjustments: CarAdjustments) => {
             onImagesChange(images.map(img => img.id === editingImage.id ? { ...img, croppedUrl: adjustedUrl } : img));
             setEditingImage(null);
             setPreviewImage(prev => prev && prev.id === editingImage.id ? { ...prev, croppedUrl: adjustedUrl } : prev);
           }}
-          onCancel={() => setEditingImage(null)}
+          onClose={() => setEditingImage(null)}
         />
       )}
     </div>
