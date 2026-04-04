@@ -105,7 +105,7 @@ const TryV2Content = () => {
     setMaxStepReached(0);
     setProjectName('');
     setSelectedSceneId('');
-    setLogoConfig({ preset: 'top-left', applyTo: 'all', logoSize: 'medium' });
+    setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
     sessionStorage.removeItem('try-current-step');
     sessionStorage.removeItem('try-selected-scene');
