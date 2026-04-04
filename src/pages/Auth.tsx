@@ -56,7 +56,7 @@ const Auth = () => {
     if (isResetMode) return;
     
     if (selectedPlan && !user) {
-      window.location.href = `/guest-checkout?plan=${selectedPlan}`;
+      navigate(`/guest-checkout?plan=${selectedPlan}`);
       return;
     }
     if (user) {
