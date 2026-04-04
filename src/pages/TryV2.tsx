@@ -262,7 +262,7 @@ const TryV2Content = () => {
                 onProjectNameChange={setProjectName}
               />
             </section>
-
+          </div>
         )}
         {currentStep === 1 && (
           <section className="border border-border rounded-[10px] p-6">
