@@ -46,7 +46,7 @@ const CATEGORY_KEYS: { id: string; key: string }[] = [
   { id: 'user', key: 'v2.categories.myScenes' },
 ];
 
-export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange }: Props) => {
+export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange, isTryFlow }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
