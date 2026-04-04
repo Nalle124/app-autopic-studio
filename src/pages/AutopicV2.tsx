@@ -295,6 +295,8 @@ const AutopicV2Content = () => {
               onImagesChange={handleImagesUploaded}
               projectName={projectName}
               onProjectNameChange={setProjectName}
+              onDeleteDraft={(draftId) => deleteDraft(draftId)}
+              onClearAllDrafts={() => { if (user?.id) deleteAllDrafts(user.id); }}
             />
           </section>
         )}
