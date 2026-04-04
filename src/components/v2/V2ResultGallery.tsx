@@ -24,6 +24,7 @@ interface Props {
   results: V2Image[];
   onStartOver: () => void;
   onTryAnotherBackground: () => void;
+  onFindPlan?: () => void;
 }
 
 export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }: Props) => {
