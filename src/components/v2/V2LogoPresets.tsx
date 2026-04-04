@@ -18,6 +18,7 @@ interface Props {
   autoCropEnabled: boolean;
   onAutoCropChange: (enabled: boolean) => void;
   images: V2Image[];
+  fallbackLogoUrl?: string;
 }
 
 const PRESET_KEYS = [
