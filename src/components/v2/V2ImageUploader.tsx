@@ -50,7 +50,9 @@ interface Props {
 
 export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, onDeleteDraft, onClearAllDrafts }: Props) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
+  const [editingImage, setEditingImage] = useState<{ url: string; id: string; type: 'crop' | 'adjust' } | null>(null);
   const [showTips, setShowTips] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
