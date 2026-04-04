@@ -101,10 +101,8 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         
         // Store signup data for after verification
         setPendingSignupData({ email, password, fullName });
-        setShowEmailVerification(true);
         setResendCooldown(60);
-        
-        // UI handles state indication - no toast needed
+        setShowEmailVerification(true);
       }
     } catch (error: any) {
       console.error('Auth error:', error);

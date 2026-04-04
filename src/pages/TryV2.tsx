@@ -67,7 +67,7 @@ const TryV2Content = () => {
   });
   const [images, setImages] = useState<V2Image[]>(EXAMPLE_IMAGES);
   const [projectName, setProjectName] = useState('');
-  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'all', logoSize: 'medium' });
+  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState(() => sessionStorage.getItem('try-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
@@ -105,7 +105,7 @@ const TryV2Content = () => {
     setMaxStepReached(0);
     setProjectName('');
     setSelectedSceneId('');
-    setLogoConfig({ preset: 'top-left', applyTo: 'all', logoSize: 'medium' });
+    setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
     sessionStorage.removeItem('try-current-step');
     sessionStorage.removeItem('try-selected-scene');
@@ -148,7 +148,7 @@ const TryV2Content = () => {
     if (value === 'new') navigate('/');
     else if (value === 'ai-studio') {
       if (!user) {
-        setShowSignupModal(true);
+        toast.info('AI Studio är en premiumfunktion. Skapa ett konto och uppgradera för att använda den.');
       } else {
         navigate('/?tab=ai-studio');
       }
@@ -241,7 +241,12 @@ const TryV2Content = () => {
     return (
       <div className="min-h-screen bg-background">
         {renderHeader()}
-        <V2ResultGallery results={results} onStartOver={handleStartOver} onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }} />
+        <V2ResultGallery 
+          results={results} 
+          onStartOver={handleStartOver} 
+          onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }}
+          onFindPlan={() => triggerPaywall('signup')}
+        />
       </div>
     );
   }
@@ -267,6 +272,7 @@ const TryV2Content = () => {
         {currentStep === 1 && (
           <section className="border border-border rounded-[10px] p-6">
             <V2SceneSelector
+              isTryFlow
               selectedSceneId={selectedSceneId}
               onSelect={(id) => {
                 if (images.length === 0) {

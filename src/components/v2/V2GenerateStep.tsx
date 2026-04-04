@@ -336,8 +336,14 @@ export const V2GenerateStep = ({
       const logos = await fetchUserLogo(session.user.id);
       if (logoConfig.applyTo !== 'none') { logoUrl = logos.light || logos.dark; }
       const sceneName = (scene.name || '').toLowerCase();
-      const isDarkScene = sceneName.includes('mörk') || sceneName.includes('dark') || sceneName.includes('midnight');
-      const interiorBgType = isDarkScene ? 'dark neutral black/charcoal' : 'clean white';
+      const sceneCategory = (scene.category || '').toLowerCase();
+      const isDarkScene = sceneName.includes('mörk') || sceneName.includes('dark') || sceneName.includes('midnight') 
+        || sceneName.includes('anthracite') || sceneName.includes('svart') || sceneName.includes('black')
+        || sceneName.includes('charcoal') || sceneName.includes('natt') || sceneName.includes('night')
+        || sceneCategory === 'dark';
+      const isGreyScene = sceneName.includes('grå') || sceneName.includes('grey') || sceneName.includes('gray')
+        || sceneName.includes('betong') || sceneName.includes('concrete') || sceneName.includes('netgrey');
+      const interiorBgType = isDarkScene ? 'dark neutral black/charcoal' : isGreyScene ? 'neutral mid-grey' : 'clean white';
       const targetAspect = getTargetAspect(outputFormat);
 
       let plateLogoBase64: string | null = null;

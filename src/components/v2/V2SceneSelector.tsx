@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { CheckCircle2, RefreshCw, LayoutGrid, Grid2x2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ interface Props {
   onSelect: (id: string) => void;
   outputFormat: 'landscape' | 'portrait';
   onOutputFormatChange: (format: 'landscape' | 'portrait') => void;
+  isTryFlow?: boolean;
 }
 
 const POPULAR_SCENE_IDS = [
@@ -45,7 +47,7 @@ const CATEGORY_KEYS: { id: string; key: string }[] = [
   { id: 'user', key: 'v2.categories.myScenes' },
 ];
 
-export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange }: Props) => {
+export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange, isTryFlow }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -219,6 +221,10 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
             {/* Create own background */}
             <button
               onClick={() => {
+                if (isTryFlow) {
+                  toast.info('AI Studio är en premiumfunktion. Skapa ett konto och uppgradera för att använda den.');
+                  return;
+                }
                 sessionStorage.setItem('ai-studio-initial-mode', 'background-studio');
                 navigate('/classic?tab=ai-studio');
               }}

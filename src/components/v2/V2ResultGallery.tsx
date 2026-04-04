@@ -24,9 +24,10 @@ interface Props {
   results: V2Image[];
   onStartOver: () => void;
   onTryAnotherBackground: () => void;
+  onFindPlan?: () => void;
 }
 
-export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }: Props) => {
+export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
@@ -313,6 +314,11 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }
 
       {/* Action buttons */}
       <div className="flex gap-3 justify-center flex-wrap">
+        {onFindPlan && (
+          <Button onClick={onFindPlan} className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
+            ✨ Hitta ditt paket
+          </Button>
+        )}
         <Button variant="outline" onClick={() => navigate('/')}>
           {t('common.goToGallery')}
         </Button>
