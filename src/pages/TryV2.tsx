@@ -241,7 +241,12 @@ const TryV2Content = () => {
     return (
       <div className="min-h-screen bg-background">
         {renderHeader()}
-        <V2ResultGallery results={results} onStartOver={handleStartOver} onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }} />
+        <V2ResultGallery 
+          results={results} 
+          onStartOver={handleStartOver} 
+          onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }}
+          onFindPlan={() => triggerPaywall('signup')}
+        />
       </div>
     );
   }

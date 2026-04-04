@@ -220,6 +220,11 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
             {/* Create own background */}
             <button
               onClick={() => {
+                if (isTryFlow) {
+                  const { toast: sonnerToast } = require('sonner');
+                  sonnerToast.info('AI Studio är en premiumfunktion. Skapa ett konto och uppgradera för att använda den.');
+                  return;
+                }
                 sessionStorage.setItem('ai-studio-initial-mode', 'background-studio');
                 navigate('/classic?tab=ai-studio');
               }}
