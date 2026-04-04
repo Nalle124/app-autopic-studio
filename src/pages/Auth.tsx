@@ -614,7 +614,7 @@ const ResetPasswordForm = () => {
     } else {
       toast.success(t('auth.passwordUpdated'));
       await supabase.auth.signOut();
-      window.location.href = '/auth';
+      navigate('/auth', { replace: true });
     }
   };
 
