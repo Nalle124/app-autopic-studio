@@ -308,6 +308,7 @@ const TryV2Content = () => {
               autoCropEnabled={autoCropEnabled}
               onAutoCropChange={setAutoCropEnabled}
               images={images}
+              fallbackLogoUrl={autopicLogoDark}
             />
           </section>
         )}
