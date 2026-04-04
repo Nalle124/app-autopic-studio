@@ -272,6 +272,7 @@ const TryV2Content = () => {
         {currentStep === 1 && (
           <section className="border border-border rounded-[10px] p-6">
             <V2SceneSelector
+              isTryFlow
               selectedSceneId={selectedSceneId}
               onSelect={(id) => {
                 if (images.length === 0) {
