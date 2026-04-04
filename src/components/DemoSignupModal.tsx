@@ -100,12 +100,14 @@ export const DemoSignupModal = ({ open, onClose, onSuccess }: DemoSignupModalPro
         await sendVerificationCode(email, fullName);
         
         // Store signup data for after verification
+        // Set loading to false before showing verification to avoid render conflicts
+        setIsLoading(false);
         setPendingSignupData({ email, password, fullName });
-        setShowEmailVerification(true);
         setResendCooldown(60);
+        setShowEmailVerification(true);
         
-        // UI handles state indication - no toast needed
-      }
+        // Return early to skip the finally block's setIsLoading(false)
+        return;
     } catch (error: any) {
       console.error('Auth error:', error);
       if (error.message?.includes('already registered')) {
