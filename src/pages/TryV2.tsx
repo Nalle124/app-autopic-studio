@@ -16,6 +16,7 @@ import { DemoPaywall } from '@/components/DemoPaywall';
 import { DemoSignupModal } from '@/components/DemoSignupModal';
 import { toast } from 'sonner';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
+import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import example1 from '@/assets/try/example-1.png';
 import example2 from '@/assets/try/example-2.jpg';
 import example3 from '@/assets/try/example-3.jpg';
@@ -56,18 +57,32 @@ const TryV2Content = () => {
     }
   }, [user, authLoading, navigate, signedUpHere]);
 
-  const [currentStep, setCurrentStep] = useState(0);
-  const [maxStepReached, setMaxStepReached] = useState(0);
-  const [images, setImages] = useState<V2Image[]>([]);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const saved = sessionStorage.getItem('try-current-step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [maxStepReached, setMaxStepReached] = useState(() => {
+    const saved = sessionStorage.getItem('try-current-step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [images, setImages] = useState<V2Image[]>(EXAMPLE_IMAGES);
   const [projectName, setProjectName] = useState('');
-  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
+  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'all', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
-  const [selectedSceneId, setSelectedSceneId] = useState('');
+  const [selectedSceneId, setSelectedSceneId] = useState(() => sessionStorage.getItem('try-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+
+  // Persist step & scene to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('try-current-step', String(currentStep));
+  }, [currentStep]);
+  useEffect(() => {
+    sessionStorage.setItem('try-selected-scene', selectedSceneId);
+  }, [selectedSceneId]);
 
   const handleImagesChange = useCallback((newImages: V2Image[]) => {
     if (newImages.length > MAX_FREE_CREDITS) {
@@ -83,15 +98,17 @@ const TryV2Content = () => {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    setImages([]);
+    setImages(EXAMPLE_IMAGES);
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
     setMaxStepReached(0);
     setProjectName('');
     setSelectedSceneId('');
-    setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
+    setLogoConfig({ preset: 'top-left', applyTo: 'all', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
+    sessionStorage.removeItem('try-current-step');
+    sessionStorage.removeItem('try-selected-scene');
   }, []);
 
   // Allow browsing all steps freely but only track maxStepReached via Nästa button
@@ -245,24 +262,6 @@ const TryV2Content = () => {
                 onProjectNameChange={setProjectName}
               />
             </section>
-
-            {images.length === 0 && (
-              <section className="bg-card border border-border rounded-[10px] p-5">
-                <p className="text-sm font-medium text-foreground mb-1">Eller testa med exempelbilder</p>
-                <p className="text-xs text-muted-foreground mb-3">Klicka för att ladda in färdiga bilder direkt</p>
-                <button
-                  onClick={() => handleImagesChange(EXAMPLE_IMAGES)}
-                  className="flex gap-2 items-center group"
-                >
-                  {EXAMPLE_IMAGES.map((img) => (
-                    <div key={img.id} className="w-20 h-14 rounded-md overflow-hidden border border-border group-hover:border-primary/50 transition-colors">
-                      <img src={img.previewUrl} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                  <span className="text-xs text-primary font-medium ml-1">Använd dessa →</span>
-                </button>
-              </section>
-            )}
           </div>
         )}
         {currentStep === 1 && (
@@ -291,6 +290,7 @@ const TryV2Content = () => {
               autoCropEnabled={autoCropEnabled}
               onAutoCropChange={setAutoCropEnabled}
               images={images}
+              fallbackLogoUrl={autopicLogoDark}
             />
           </section>
         )}

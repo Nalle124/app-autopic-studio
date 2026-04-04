@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -59,21 +59,46 @@ const AutopicV2Content = () => {
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { triggerPaywall } = useDemo();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [maxStepReached, setMaxStepReached] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const saved = sessionStorage.getItem('v2-current-step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [maxStepReached, setMaxStepReached] = useState(() => {
+    const saved = sessionStorage.getItem('v2-current-step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
-  const [selectedSceneId, setSelectedSceneId] = useState<string>('');
+  const [selectedSceneId, setSelectedSceneId] = useState<string>(() => sessionStorage.getItem('v2-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
   const draftsLoadedRef = useRef(false);
   const { uploadDraft, fetchDrafts, deleteDraft, deleteAllDrafts } = useDraftImages();
+
+  // Persist step & scene to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('v2-current-step', String(currentStep));
+  }, [currentStep]);
+  useEffect(() => {
+    sessionStorage.setItem('v2-selected-scene', selectedSceneId);
+  }, [selectedSceneId]);
+
+  // Handle scene-category query param (e.g. from AI Studio "Mina scener" link)
+  useEffect(() => {
+    const sceneCategory = searchParams.get('scene-category');
+    if (sceneCategory) {
+      setCurrentStep(1); // Go to scene selector
+      searchParams.delete('scene-category');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
   // Load persisted drafts on mount
   useEffect(() => {
@@ -141,6 +166,8 @@ const AutopicV2Content = () => {
     setPlateConfig({ enabled: false, style: 'blur-dark' });
     setAutoCropEnabled(true);
     draftsLoadedRef.current = false;
+    sessionStorage.removeItem('v2-current-step');
+    sessionStorage.removeItem('v2-selected-scene');
   }, [user?.id, deleteAllDrafts]);
 
   const handleTryAnotherBackground = useCallback(() => {
