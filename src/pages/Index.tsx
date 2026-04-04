@@ -28,7 +28,7 @@ import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import JSZip from 'jszip';
 import {
   DropdownMenu,
