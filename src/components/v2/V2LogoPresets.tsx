@@ -87,7 +87,7 @@ const renderPresetMockup = (presetId: string) => {
   );
 };
 
-export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropEnabled, onAutoCropChange, images }: Props) => {
+export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropEnabled, onAutoCropChange, images, fallbackLogoUrl }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -99,16 +99,24 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
   const logoEnabled = config.applyTo !== 'none';
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      // Use fallback logo for guests (e.g. try flow)
+      if (fallbackLogoUrl) setLogoUrl(fallbackLogoUrl);
+      return;
+    }
     supabase
       .from('profiles')
       .select('logo_light, logo_dark')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
-        if (data) setLogoUrl(data.logo_light || data.logo_dark || null);
+        if (data && (data.logo_light || data.logo_dark)) {
+          setLogoUrl(data.logo_light || data.logo_dark || null);
+        } else if (fallbackLogoUrl) {
+          setLogoUrl(fallbackLogoUrl);
+        }
       });
-  }, [user]);
+  }, [user, fallbackLogoUrl]);
 
   const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
