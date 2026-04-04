@@ -23,7 +23,6 @@ interface Props {
 
 const POPULAR_SCENE_IDS = [
   'netgrey-light',
-  'vit-rundad-studio',
   'lightroom-studio',
   'kullerstengata',
   'vit-kakel',
