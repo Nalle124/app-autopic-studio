@@ -1009,12 +1009,8 @@ function IndexContent() {
               onSceneCreated={() => {}}
               onNavigateToMyScenes={() => {
                 setAiModalInitialImage(null);
-                setActiveTab('new');
-                setSceneSelectorDefaultCategory('my-scenes');
-                setSceneSelectorKey(prev => prev + 1);
-                setTimeout(() => {
-                  document.getElementById('explore-scenes-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
+                // Navigate to V2 project flow with scene selector showing user scenes
+                navigate('/?scene-category=user');
               }}
               uploadedImages={uploadedImages}
               completedImages={uploadedImages.filter(img => img.status === 'completed')}
