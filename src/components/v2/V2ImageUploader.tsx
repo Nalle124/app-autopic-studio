@@ -44,7 +44,7 @@ interface Props {
   onClearAllDrafts?: () => void;
 }
 
-export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange }: Props) => {
+export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, onDeleteDraft, onClearAllDrafts }: Props) => {
   const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
   const [showTips, setShowTips] = useState(false);
