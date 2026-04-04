@@ -40,6 +40,8 @@ interface Props {
   onImagesChange: (images: V2Image[]) => void;
   projectName: string;
   onProjectNameChange: (name: string) => void;
+  onDeleteDraft?: (draftId: string) => void;
+  onClearAllDrafts?: () => void;
 }
 
 export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange }: Props) => {
