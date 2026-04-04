@@ -59,6 +59,7 @@ const AutopicV2Content = () => {
   const { credits, refetch: refetchCredits } = useUserCredits();
   const { triggerPaywall } = useDemo();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
   const [currentStep, setCurrentStep] = useState(() => {
