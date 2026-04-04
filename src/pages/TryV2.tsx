@@ -16,6 +16,7 @@ import { DemoPaywall } from '@/components/DemoPaywall';
 import { DemoSignupModal } from '@/components/DemoSignupModal';
 import { toast } from 'sonner';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
+import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import example1 from '@/assets/try/example-1.png';
 import example2 from '@/assets/try/example-2.jpg';
 import example3 from '@/assets/try/example-3.jpg';
