@@ -61,7 +61,10 @@ const AutopicV2Content = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const saved = sessionStorage.getItem('v2-current-step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const [maxStepReached, setMaxStepReached] = useState(0);
   const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
