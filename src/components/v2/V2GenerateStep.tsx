@@ -180,7 +180,7 @@ function applyLightBoost(imageUrl: string): Promise<string> {
 
 async function processInteriorImage(img: V2Image, bgType: string): Promise<string> {
   let file = img.file;
-  if (!file && img.previewUrl) {
+  if ((!file || file.size === 0) && img.previewUrl) {
     const resp = await fetch(img.previewUrl);
     const blob = await resp.blob();
     file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
