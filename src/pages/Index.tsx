@@ -28,7 +28,7 @@ import { BackgroundBlurEditor } from '@/components/BackgroundBlurEditor';
 import { applyCarAdjustments } from '@/utils/imageAdjustments';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import JSZip from 'jszip';
 import {
   DropdownMenu,
@@ -93,7 +93,7 @@ const AiNoticeDropdown = () => {
 
 function IndexContent() {
   const navigate = useNavigate();
-  const location = window.location;
+  const routerLocation = useLocation();
   const { theme } = useTheme();
   const {
     user,
@@ -213,6 +213,21 @@ function IndexContent() {
   };
   const [sceneSelectorKey, setSceneSelectorKey] = useState(0);
   const [sceneSelectorDefaultCategory, setSceneSelectorDefaultCategory] = useState('popular');
+
+  // Re-read tab + sessionStorage on route changes (e.g. navigating from V2 results)
+  useEffect(() => {
+    const params = new URLSearchParams(routerLocation.search);
+    const tab = params.get('tab');
+    if (tab === 'ai-studio') {
+      setActiveTab('ai-studio');
+      const storedImg = sessionStorage.getItem('ai-studio-initial-image');
+      if (storedImg) { sessionStorage.removeItem('ai-studio-initial-image'); setAiModalInitialImage(storedImg); }
+      const storedMode = sessionStorage.getItem('ai-studio-initial-mode');
+      if (storedMode) { sessionStorage.removeItem('ai-studio-initial-mode'); setAiChatMode(storedMode); }
+    } else if (tab === 'gallery' || tab === 'history') {
+      setActiveTab('history');
+    }
+  }, [routerLocation.search]);
   // Unauthenticated users are redirected to /auth in the Index wrapper
 
   // Load draft images from cloud on mount (cross-device persistence)

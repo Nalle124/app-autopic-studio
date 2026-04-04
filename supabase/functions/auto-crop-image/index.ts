@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    const padding = typeof paddingPercent === 'number' ? paddingPercent : 0.08;
+    const padding = typeof paddingPercent === 'number' ? paddingPercent : 0.03;
 
     console.log('Auto-crop: analyzing image for car bounds');
 
@@ -31,7 +31,7 @@ serve(async (req) => {
           content: [
             {
               type: "text",
-              text: `Analyze this car photograph. Find the bounding box that contains the ENTIRE vehicle including ALL wheels (where tires touch ground), ALL side mirrors, roof, antenna, and any protruding parts like tow bars or spoilers. IMPORTANT: The bounding box must be SYMMETRICALLY padded — the car should appear CENTERED within the box with roughly equal space on both sides. Add approximately 5-8% padding on each side of the car so it has breathing room. The bottom of the box should be just below where the tires meet the ground. The top should have similar padding above the roof. Return ONLY a JSON object with normalized values (0 to 1): {"left": <number>, "top": <number>, "right": <number>, "bottom": <number>}`
+              text: `Analyze this car photograph. Find the TIGHT bounding box that contains the ENTIRE vehicle including ALL wheels (where tires touch ground), ALL side mirrors, roof, and any protruding parts. The bounding box should be as TIGHT as possible while still including the complete car. Add only about 2-3% padding on each side — just enough so nothing is cut off, but keep it tight and close to the car. The car should be roughly centered. Return ONLY a JSON object with normalized values (0 to 1): {"left": <number>, "top": <number>, "right": <number>, "bottom": <number>}`
             },
             {
               type: "image_url",

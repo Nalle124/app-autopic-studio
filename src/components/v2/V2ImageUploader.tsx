@@ -40,9 +40,11 @@ interface Props {
   onImagesChange: (images: V2Image[]) => void;
   projectName: string;
   onProjectNameChange: (name: string) => void;
+  onDeleteDraft?: (draftId: string) => void;
+  onClearAllDrafts?: () => void;
 }
 
-export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange }: Props) => {
+export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, onDeleteDraft, onClearAllDrafts }: Props) => {
   const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
   const [showTips, setShowTips] = useState(false);
@@ -98,7 +100,10 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
 
   const removeImage = (id: string) => {
     const img = images.find(i => i.id === id);
-    if (img) URL.revokeObjectURL(img.previewUrl);
+    if (img) {
+      URL.revokeObjectURL(img.previewUrl);
+      if (img.draftId && onDeleteDraft) onDeleteDraft(img.draftId);
+    }
     onImagesChange(images.filter(i => i.id !== id));
   };
 
@@ -119,6 +124,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
             className="text-muted-foreground hover:text-destructive"
             onClick={() => {
               images.forEach(img => URL.revokeObjectURL(img.previewUrl));
+              if (onClearAllDrafts) onClearAllDrafts();
               onImagesChange([]);
             }}
           >

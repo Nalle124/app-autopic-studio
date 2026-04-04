@@ -165,7 +165,11 @@ export const SceneSelector = ({
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'slideshow' | 'grid'>('grid');
   const [activeCategory, setActiveCategory] = useState<string>('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(() => {
+    const flag = sessionStorage.getItem('open-create-scene');
+    if (flag) { sessionStorage.removeItem('open-create-scene'); return true; }
+    return false;
+  });
   const isMobile = useIsMobile();
   const { isSubscribed, triggerPaywall } = useDemo();
   const { user } = useAuth();

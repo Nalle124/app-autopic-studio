@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCredits } from '@/hooks/useUserCredits';
@@ -15,6 +15,8 @@ import { V2GenerateStep } from '@/components/v2/V2GenerateStep';
 import { V2ResultGallery } from '@/components/v2/V2ResultGallery';
 import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
+import { useDraftImages } from '@/hooks/useDraftImages';
+import { supabase } from '@/integrations/supabase/client';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 
@@ -28,6 +30,7 @@ export interface V2Image {
   finalUrl?: string;
   status: 'pending' | 'classifying' | 'processing' | 'done' | 'error';
   error?: string;
+  draftId?: string; // cloud draft ID for persistence
 }
 
 export interface V2LogoConfig {
@@ -69,10 +72,56 @@ const AutopicV2Content = () => {
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const draftsLoadedRef = useRef(false);
+  const { uploadDraft, fetchDrafts, deleteDraft, deleteAllDrafts } = useDraftImages();
 
-  const handleImagesUploaded = useCallback((newImages: V2Image[]) => {
+  // Load persisted drafts on mount
+  useEffect(() => {
+    if (!user?.id || draftsLoadedRef.current) return;
+    draftsLoadedRef.current = true;
+    
+    (async () => {
+      const { data, error } = await supabase
+        .from('draft_images')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      
+      if (error || !data || data.length === 0) return;
+      
+      const restored: V2Image[] = data.map(row => ({
+        id: row.id,
+        file: new File([], row.original_filename, { type: 'image/jpeg' }),
+        previewUrl: row.cropped_url || row.public_url,
+        status: 'pending' as const,
+        draftId: row.id,
+      }));
+      
+      setImages(prev => {
+        if (prev.length > 0) return prev; // Don't overwrite if user already added images
+        return restored;
+      });
+    })();
+  }, [user?.id]);
+
+  const handleImagesUploaded = useCallback(async (newImages: V2Image[]) => {
     setImages(newImages);
-  }, []);
+    
+    // Upload new images (those without draftId) to cloud
+    if (!user?.id) return;
+    
+    for (const img of newImages) {
+      if (img.draftId || img.file.size === 0) continue; // Already persisted or restored stub
+      
+      const result = await uploadDraft(img.file, user.id, { sortOrder: newImages.indexOf(img) });
+      if (result) {
+        setImages(prev => prev.map(i => 
+          i.id === img.id ? { ...i, draftId: result.draftId } : i
+        ));
+      }
+    }
+  }, [user?.id, uploadDraft]);
 
   const handleGenerationComplete = useCallback((resultImages: V2Image[]) => {
     setResults(resultImages);
@@ -80,6 +129,9 @@ const AutopicV2Content = () => {
   }, []);
 
   const handleStartOver = useCallback(() => {
+    // Clear cloud drafts
+    if (user?.id) deleteAllDrafts(user.id);
+    setImages([]);
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
@@ -88,7 +140,8 @@ const AutopicV2Content = () => {
     setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
     setAutoCropEnabled(true);
-  }, []);
+    draftsLoadedRef.current = false;
+  }, [user?.id, deleteAllDrafts]);
 
   const handleTryAnotherBackground = useCallback(() => {
     setResults([]);
@@ -123,6 +176,11 @@ const AutopicV2Content = () => {
       default: return false;
     }
   };
+
+  // Allow free navigation to all steps (like Try flow)
+  const handleStepClick = useCallback((step: number) => {
+    goToStep(step);
+  }, [goToStep]);
 
   const handleTriggerPaywall = useCallback(() => {
     triggerPaywall('subscriber-limit');
@@ -167,12 +225,12 @@ const AutopicV2Content = () => {
             // A step is "completed" only if user advanced past it using Nästa (currentStep > i)
             const isCompleted = i < currentStep;
             const isActive = i === currentStep;
-            const isReachable = i <= maxStepReached;
+            const isReachable = true; // Allow free navigation to all steps
             return (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <button
-                onClick={() => { if (isReachable) goToStep(i); }}
-                className={`flex flex-col items-center gap-1 ${isReachable ? 'cursor-pointer' : 'cursor-default'}`}
+                onClick={() => handleStepClick(i)}
+                className="flex flex-col items-center gap-1 cursor-pointer"
               >
                 <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
                   isCompleted
@@ -237,6 +295,8 @@ const AutopicV2Content = () => {
               onImagesChange={handleImagesUploaded}
               projectName={projectName}
               onProjectNameChange={setProjectName}
+              onDeleteDraft={(draftId) => deleteDraft(draftId)}
+              onClearAllDrafts={() => { if (user?.id) deleteAllDrafts(user.id); }}
             />
           </section>
         )}
