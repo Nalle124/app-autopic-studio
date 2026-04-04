@@ -100,7 +100,10 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
 
   const removeImage = (id: string) => {
     const img = images.find(i => i.id === id);
-    if (img) URL.revokeObjectURL(img.previewUrl);
+    if (img) {
+      URL.revokeObjectURL(img.previewUrl);
+      if (img.draftId && onDeleteDraft) onDeleteDraft(img.draftId);
+    }
     onImagesChange(images.filter(i => i.id !== id));
   };
 
