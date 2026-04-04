@@ -98,15 +98,17 @@ const TryV2Content = () => {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    setImages([]);
+    setImages(EXAMPLE_IMAGES);
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
     setMaxStepReached(0);
     setProjectName('');
     setSelectedSceneId('');
-    setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
+    setLogoConfig({ preset: 'top-left', applyTo: 'all', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
+    sessionStorage.removeItem('try-current-step');
+    sessionStorage.removeItem('try-selected-scene');
   }, []);
 
   // Allow browsing all steps freely but only track maxStepReached via Nästa button
