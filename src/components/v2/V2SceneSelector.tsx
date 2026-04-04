@@ -19,6 +19,7 @@ interface Props {
   onSelect: (id: string) => void;
   outputFormat: 'landscape' | 'portrait';
   onOutputFormatChange: (format: 'landscape' | 'portrait') => void;
+  isTryFlow?: boolean;
 }
 
 const POPULAR_SCENE_IDS = [
