@@ -81,6 +81,14 @@ const AutopicV2Content = () => {
   const draftsLoadedRef = useRef(false);
   const { uploadDraft, fetchDrafts, deleteDraft, deleteAllDrafts } = useDraftImages();
 
+  // Persist step & scene to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('v2-current-step', String(currentStep));
+  }, [currentStep]);
+  useEffect(() => {
+    sessionStorage.setItem('v2-selected-scene', selectedSceneId);
+  }, [selectedSceneId]);
+
   // Load persisted drafts on mount
   useEffect(() => {
     if (!user?.id || draftsLoadedRef.current) return;
