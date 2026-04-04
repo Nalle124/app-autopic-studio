@@ -67,7 +67,7 @@ const TryV2Content = () => {
   });
   const [images, setImages] = useState<V2Image[]>(EXAMPLE_IMAGES);
   const [projectName, setProjectName] = useState('');
-  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'all', logoSize: 'medium' });
+  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState(() => sessionStorage.getItem('try-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
