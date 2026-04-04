@@ -899,7 +899,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       onClick={() => {
                         sessionStorage.setItem('ai-studio-initial-image', currentJob.final_url!);
                         sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
-                        window.location.href = '/classic?tab=ai-studio';
+                        galleryNavigate('/classic?tab=ai-studio');
                       }}
                       title="AI Studio"
                     >
