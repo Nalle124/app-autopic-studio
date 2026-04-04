@@ -93,7 +93,7 @@ const AiNoticeDropdown = () => {
 
 function IndexContent() {
   const navigate = useNavigate();
-  const location = window.location;
+  const routerLocation = useLocation();
   const { theme } = useTheme();
   const {
     user,
