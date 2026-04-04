@@ -27,7 +27,7 @@ interface Props {
   onFindPlan?: () => void;
 }
 
-export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground }: Props) => {
+export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
