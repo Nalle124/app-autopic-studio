@@ -73,7 +73,7 @@ const AutopicV2Content = () => {
   const [projectName, setProjectName] = useState('');
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
-  const [selectedSceneId, setSelectedSceneId] = useState<string>('');
+  const [selectedSceneId, setSelectedSceneId] = useState<string>(() => sessionStorage.getItem('v2-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
