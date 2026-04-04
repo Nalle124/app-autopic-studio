@@ -73,11 +73,36 @@ Return ONLY valid JSON, no markdown or explanation. Example:
       },
     ];
 
-    // Add each image
+    // Add each image - validate and clean base64 data URLs
     for (const img of images) {
+      let dataUrl = img.base64;
+      
+      // Ensure it's a valid data URL
+      if (!dataUrl || typeof dataUrl !== 'string') {
+        console.warn(`Skipping image ${img.id}: no base64 data`);
+        continue;
+      }
+      
+      // Must start with data: prefix
+      if (!dataUrl.startsWith('data:')) {
+        // Try to wrap raw base64 as JPEG data URL
+        dataUrl = `data:image/jpeg;base64,${dataUrl}`;
+      }
+      
+      // Validate the data URL has proper structure: data:mime;base64,actualdata
+      const match = dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/s);
+      if (!match || match[2].trim().length < 100) {
+        console.warn(`Skipping image ${img.id}: invalid or too-short data URL`);
+        continue;
+      }
+      
+      // Clean whitespace/newlines from base64 portion
+      const cleanedBase64 = match[2].replace(/\s/g, '');
+      dataUrl = `data:${match[1]};base64,${cleanedBase64}`;
+      
       userContent.push({
         type: "image_url",
-        image_url: { url: img.base64 },
+        image_url: { url: dataUrl },
       });
     }
 
