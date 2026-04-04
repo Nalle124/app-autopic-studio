@@ -57,18 +57,32 @@ const TryV2Content = () => {
     }
   }, [user, authLoading, navigate, signedUpHere]);
 
-  const [currentStep, setCurrentStep] = useState(0);
-  const [maxStepReached, setMaxStepReached] = useState(0);
-  const [images, setImages] = useState<V2Image[]>([]);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const saved = sessionStorage.getItem('try-current-step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [maxStepReached, setMaxStepReached] = useState(() => {
+    const saved = sessionStorage.getItem('try-current-step');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [images, setImages] = useState<V2Image[]>(EXAMPLE_IMAGES);
   const [projectName, setProjectName] = useState('');
-  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
+  const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'all', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
-  const [selectedSceneId, setSelectedSceneId] = useState('');
+  const [selectedSceneId, setSelectedSceneId] = useState(() => sessionStorage.getItem('try-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
   const [results, setResults] = useState<V2Image[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+
+  // Persist step & scene to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('try-current-step', String(currentStep));
+  }, [currentStep]);
+  useEffect(() => {
+    sessionStorage.setItem('try-selected-scene', selectedSceneId);
+  }, [selectedSceneId]);
 
   const handleImagesChange = useCallback((newImages: V2Image[]) => {
     if (newImages.length > MAX_FREE_CREDITS) {
