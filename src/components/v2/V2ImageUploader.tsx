@@ -124,6 +124,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
             className="text-muted-foreground hover:text-destructive"
             onClick={() => {
               images.forEach(img => URL.revokeObjectURL(img.previewUrl));
+              if (onClearAllDrafts) onClearAllDrafts();
               onImagesChange([]);
             }}
           >
