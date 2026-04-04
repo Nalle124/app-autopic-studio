@@ -147,6 +147,7 @@ const DialogJobCard = ({
 };
 
 export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
+  const galleryNavigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [orphanJobs, setOrphanJobs] = useState<OrphanJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
