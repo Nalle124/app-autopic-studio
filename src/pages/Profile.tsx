@@ -333,51 +333,21 @@ const ProfileContent = () => {
           </button>
           
           <div className="flex items-center gap-2">
-            {!isMobile ? (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate('/')}
-                  title="Tillbaka"
-                  className="flex-shrink-0"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-                <Tabs value="profile" className="w-auto flex-shrink-0">
-                  <TabsList className="bg-background/80 backdrop-blur-sm">
-                    <TabsTrigger value="new" className="gap-2" onClick={() => navigate('/')}>
-                      <Plus className="w-4 h-4" />
-                      {t('nav.project')}
-                    </TabsTrigger>
-                    <TabsTrigger value="ai-studio" className="gap-2" onClick={() => navigate('/classic?tab=ai-studio')}>
-                      <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
-                      {t('nav.aiStudio')}
-                    </TabsTrigger>
-                    <TabsTrigger value="history" className="gap-2" onClick={() => navigate('/classic?tab=gallery')}>
-                      <History className="w-4 h-4" />
-                      {t('nav.gallery')}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </>
-            ) : (
-              <Select value="profile" onValueChange={(v) => {
-                if (v === 'new') navigate('/');
-                else if (v === 'ai-studio') navigate('/classic?tab=ai-studio');
-                else if (v === 'history') navigate('/classic?tab=gallery');
-              }}>
-                <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm h-9 text-sm">
-                  <SelectValue placeholder="Meny" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-[60]">
-                  <SelectItem value="profile" className="hidden">{t('nav.profile')}</SelectItem>
-                  <SelectItem value="new">{t('nav.project')}</SelectItem>
-                  <SelectItem value="ai-studio">{t('nav.aiStudio')}</SelectItem>
-                  <SelectItem value="history">{t('nav.gallery')}</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            <Select value="profile" onValueChange={(v) => {
+              if (v === 'new') navigate('/');
+              else if (v === 'ai-studio') navigate('/classic?tab=ai-studio');
+              else if (v === 'history') navigate('/classic?tab=history');
+            }}>
+              <SelectTrigger className={`${isMobile ? 'w-[120px] h-8 text-xs' : 'w-[150px] h-9 text-sm'} bg-background/80 backdrop-blur-sm`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-[60]">
+                <SelectItem value="profile" className="hidden">{t('nav.profile')}</SelectItem>
+                <SelectItem value="new">{t('nav.project')}</SelectItem>
+                <SelectItem value="ai-studio">{t('nav.aiStudio')}</SelectItem>
+                <SelectItem value="history">{t('nav.gallery')}</SelectItem>
+              </SelectContent>
+            </Select>
             
             <Button variant="ghost" size="icon" className="bg-primary/10 flex-shrink-0">
               <User className="w-5 h-5" />

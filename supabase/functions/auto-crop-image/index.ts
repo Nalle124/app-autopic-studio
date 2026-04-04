@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    const padding = typeof paddingPercent === 'number' ? paddingPercent : 0.08;
+    const padding = typeof paddingPercent === 'number' ? paddingPercent : 0.03;
 
     console.log('Auto-crop: analyzing image for car bounds');
 

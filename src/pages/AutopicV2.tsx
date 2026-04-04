@@ -124,6 +124,11 @@ const AutopicV2Content = () => {
     }
   };
 
+  // Allow free navigation to all steps (like Try flow)
+  const handleStepClick = useCallback((step: number) => {
+    goToStep(step);
+  }, [goToStep]);
+
   const handleTriggerPaywall = useCallback(() => {
     triggerPaywall('subscriber-limit');
   }, [triggerPaywall]);
