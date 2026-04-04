@@ -219,7 +219,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
             {/* Create own background */}
             <button
               onClick={() => {
-                sessionStorage.setItem('open-create-scene', 'true');
+                sessionStorage.setItem('ai-studio-initial-mode', 'background-studio');
                 navigate('/classic?tab=ai-studio');
               }}
               className={`relative rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/40 ${thumbAspect} flex flex-col items-center justify-center gap-2 bg-muted/30 transition-all`}
