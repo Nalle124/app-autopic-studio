@@ -1,148 +1,100 @@
 
+Mest sannolikt är detta inte ett problem i `vite.config.ts`. Den filen ser normal ut och innehåller inget uppenbart som i sig borde ge en vit preview.
 
-# V2 Komplett Optimeringsplan
+Vad jag såg
+- `vite.config.ts` är enkel och korrekt:
+  - React-plugin
+  - alias `@ -> ./src`
+  - server host/port
+  - inget konstigt med base path, proxy, plugins eller build-inställningar
+- `tailwind.config.ts` ser också syntaktiskt korrekt ut. Jag såg ingen sådan felkälla som brukar maskeras som CSS/Vite-fel.
+- `main.tsx` mountar appen normalt via `createRoot(...).render(<App />)`.
+- `App.tsx` renderar via `ErrorBoundary`, `ThemeProvider`, `QueryClientProvider`, `BrowserRouter` och `AuthProvider`.
 
-## Översikt
-15 issues att åtgärda för att göra V2 produktionsklar. Grupperat efter prioritet.
+Min bedömning
+Det här ser mer ut som ett runtime-/routing-problem i appen än ett Vite-problem. Alltså: previewn blir blank för att appen renderar “ingenting”, inte för att Vite-konfigurationen är trasig.
 
----
+Troliga orsaker i appen
+1. `ProtectedRoute` kan rendera `null`
+- I `src/components/ProtectedRoute.tsx`:
+  - medan auth laddar visas spinner
+  - om ingen användare finns: `return null`
+  - redirect till `/auth` sker i en `useEffect`
+- Det betyder att appen kan vara tom ett ögonblick eller fastna blank om navigationen inte hinner/slår fel i previewmiljön.
 
-## Kritiska buggar
+2. Startsidan `/` är skyddad direkt
+- I `src/App.tsx` pekar `/` till:
+  - `<ProtectedRoute><AutopicV2 /></ProtectedRoute>`
+- Om auth/session strular i previewn blir första sidan blank istället för att säkert visa login eller try-flöde.
 
-### 1. `blur-license-plates` kraschar med `.catch is not a function`
-**Orsak:** Supabase JS v2 `.rpc()` returnerar en `PostgrestFilterBuilder`, inte ett native Promise. `.catch()` finns inte på den. Rad 132 och 151 i `blur-license-plates/index.ts`.
+3. Flera ställen använder hårda redirects
+- Jag såg flera `window.location.href = ...` i appen.
+- Det kan göra previewn känsligare, särskilt när auth/query-param-flöden kedjas mellan routes.
 
-**Fix:** Ersätt `.catch(() => {})` med `try/catch`-block:
-```typescript
-try { await supabase.rpc("admin_add_credits", {...}); } catch {}
-```
+4. Auth/redirect-logiken är ganska aggressiv
+- `AuthContext` och `Auth.tsx` navigerar automatiskt beroende på session, reset mode, plan-parametrar, invite osv.
+- Om någon av dessa paths kolliderar med preview-sessionen kan resultatet bli en vit sida utan att Vite egentligen är boven.
 
-### 2. Bilder blir fyrkantiga — fel format (issue 6 + 9)
-**Orsak:** `processExteriorImage()` i `V2GenerateStep.tsx` skickar INTE `originalWidth`/`originalHeight` i FormData. Edge function faller tillbaka till `4000x4000` (fyrkant).
+5. Blank screen behöver inte ge console error
+- Jag såg inga preview-console-fel i snapshoten.
+- Det stärker hypotesen att detta är “rendered null” / redirect-loop / route-state-problem snarare än bundlingfel.
 
-**Fix:** I `processExteriorImage()`, läs originalbildens dimensioner och skicka som FormData:
-```typescript
-const dims = await new Promise<{w:number,h:number}>((resolve) => {
-  const image = new Image();
-  image.onload = () => resolve({w: image.naturalWidth, h: image.naturalHeight});
-  image.src = URL.createObjectURL(img.file);
-});
-formData.append('originalWidth', dims.w.toString());
-formData.append('originalHeight', dims.h.toString());
-```
+Plan för att göra preview stabil
+1. Gör `ProtectedRoute` fail-safe
+- Visa alltid loading eller redirect-UI
+- returnera inte `null` när användare saknas
+- använd hellre `<Navigate to="/auth" replace />` än `useEffect + navigate + return null`
 
-För stående format: edge function har redan logik för `orientation === 'portrait'` men den behöver korrekta originalmått för att beräkna rätt aspect ratio. Orientering skickas redan korrekt.
+2. Mjukare startsida
+- Låt `/` routen ha ett säkrare entry-beteende:
+  - antingen en route-gate-komponent
+  - eller skicka ej inloggade direkt till `/try` eller `/auth` utan blank mellanfas
 
-### 3. Regskyltar med logo fungerar inte (issue 2)
-**Orsak:** Troligtvis att logotypen är i SVG-format, och edge function faller tillbaka till `blur-dark`. Alternativt att logotyp-URL:en inte laddas korrekt.
+3. Minska beroendet av `window.location.href`
+- Byt interna appnavigeringar till React Router där det går
+- behåll full page redirect bara för externa checkoutflöden där det verkligen behövs
 
-**Fix:** Förbättra loggning och fallback-meddelande. Konvertera SVG till PNG på klientsidan innan man skickar till edge function. Lägg till tydlig feedback till användaren om att SVG-logotyper konverteras.
+4. Lägg till tydlig fallback vid auth-init
+- Om session-kollen drar ut på tiden:
+  - visa branded loading state
+  - logga auth state transitions
+  - skydda mot lägen där `loading=false` men route fortfarande renderar tomt
 
----
+5. Lägg till diagnostik för blank-screen-lägen
+- Tillfälliga `console.log` i:
+  - `main.tsx`
+  - `App.tsx`
+  - `AuthProvider`
+  - `ProtectedRoute`
+- särskilt för:
+  - route
+  - loading/user
+  - när redirect triggas
+  - när `null` annars skulle ha returnerats
 
-## UX-förbättringar
+Teknisk slutsats
+- `vite.config.ts` verkar inte vara orsaken.
+- Preview-problemet ser ut att komma från appens startup-/auth-/routingflöde.
+- Den största konkreta risken jag ser är `ProtectedRoute` som returnerar `null` på `/`, kombinerat med att `/` är appens primära route.
 
-### 4. Skelett-gap vid bilduppladdning (issue 1)
-**Orsak:** Bilder visas först efter `ensureApiCompatibleFormat` (HEIC-konvertering). Under tiden syns inget.
+Det jag skulle ändra först när du vill att jag implementerar
+1. Refaktorera `ProtectedRoute` till render-baserad redirect med fallback-UI
+2. Göra `/` mindre skör för ej inloggad användare
+3. Byta interna `window.location.href` till router-navigation där möjligt
+4. Lägga in riktad debug-loggning för auth + route transitions så vi kan avgöra om det är blank render eller redirect-loop
 
-**Fix:** Visa skelett-placeholders omedelbart vid drop med antal filer som förväntas, innan konvertering är klar. Uppdatera till riktiga bilder progressivt.
+Om du vill kan jag i nästa steg skriva en exakt, liten fixplan för de konkreta filerna:
+- `src/components/ProtectedRoute.tsx`
+- `src/App.tsx`
+- `src/contexts/AuthContext.tsx`
+- eventuellt `src/pages/Auth.tsx`
 
-### 5. Redigera/beskära bild under generering (issue 3)
-**Orsak:** Live-galleriet under generering har inga redigerings-/beskärningsverktyg. Bilder är bara klickbara för lightbox.
-
-**Fix:** Lägg till crop/adjust-knappar på varje färdig bild i live-galleriet (hover-overlay), precis som i V2ResultGallery.
-
-### 6. Generering tar för lång tid (issue 4)
-**Analys:** Flödet kör sekventiellt: klassificering → exteriör-bearbetning → auto-crop → skyltdöljning → ljusboost → logo. Auto-crop kräver ett AI-anrop (Gemini) per bild.
-
-**Optimeringar:**
-- Skippa auto-crop om användaren inte aktiverat det (sparar ~3-5s/bild)
-- Använd PhotoRooms egen padding/scaling istället för separat auto-crop-anrop
-- Parallellisera oberoende steg där möjligt
-
-### 7. Genererings-UI: smidigare övergång (issue 8)
-**Orsak:** Två separata vyer: vit progressbar → grå "färdiga bilder". Abrupt skifte.
-
-**Fix:** Visa allt i en enda sektion med grå bakgrund från start. Skelett-placeholders i samma grid som färdiga bilder. Progress visas ovanför. När alla klara → transition till resultat-läge med action-knappar.
-
-### 8. Ikoner för ljusboost/redigering → svarta (issue 10)
-**Fix:** Ändra `text-amber-500` → `text-foreground` på Sun-ikonen, `text-blue-500` → `text-foreground` på Palette-ikonen i `V2GenerateStep.tsx`.
-
----
-
-## Navigation & routing
-
-### 9. Ta bort V1-länk från navbar dropdown (issue 7)
-**Fix:** Ta bort `<SelectItem value="classic">` från dropdown i `AutopicV2.tsx` rad 148.
-
-### 10. Navbar-stil: samma dropdown överallt (issue 7)
-**Orsak:** `Header.tsx` (används av V1/galleri/AI studio) har annan design (avatar, ingen dropdown).
-
-**Fix:** Uppdatera `Header.tsx` att använda samma dropdown-meny som V2 (Projekt, AI Studio, Galleri). Logo → `/`. Ingen V1-länk.
-
-### 11. Knappar tillbaka → V2 (issue 7)
-**Fix:** Ändra alla `navigate('/classic?tab=history')` till `navigate('/')` eller en framtida V2-gallerivy. Specifika ställen:
-- `V2GenerateStep.tsx` rad 424
-- `V2ResultGallery.tsx` rad 298, 361
-
-### 12. "Skapa egen" i V2 galleri → AI Studio (issue 11)
-**Fix:** Korrekt navigering till `/classic?tab=ai-studio`.
-
----
-
-## Auto-crop & bakgrunder
-
-### 13. Auto-crop fungerar dåligt (issue 12)
-**Nuvarande:** Gemini AI identifierar bilens position → klientsidan crop:ar. Opålitligt.
-
-**Bättre alternativ:** Använd PhotoRooms egna `padding` och `scaling` parametrar direkt — de hanterar redan centrering. Parametrarna `padding: 0.08` och `scaling: fit` finns redan i edge function. Ta bort separat auto-crop-steg och låt PhotoRoom sköta det.
-
-**Fix:** Om auto-crop är aktiverat, låt PhotoRoom göra jobbet via sina API-parametrar istället för separat AI-anrop. Ta bort `autoCropImage()`-anropet i genereringsloopen.
-
-### 14. Bakgrunder som hallucinerar (issue 13)
-**Kräver manuell granskning.** Scener utan `ai_prompt` (null) förlitar sig på default-prompt som kan ge inkonsistenta resultat. Behöver uppdatera `ai_prompt` för alla scener som saknar det. Undersöka vilka scener som hallucinerar kräver testning — jag listar de som saknar prompt.
-
----
-
-## Galleri & lagring
-
-### 15. "Visa fler projekt" gör inget + galleri-rensning (issue 15)
-**Analys:** `PROJECTS_PER_PAGE = 9` med pagination. Om det finns 50+ namnlösa projekt blir det tungt.
-
-**Fix:**
-- Fixa pagination-knappen (trolig bugg i laddningslogik)
-- Lägg till tydligt meddelande "Visar X av Y projekt"
-- Diskutera med dig: alternativ för automatisk rensning (t.ex. bilder utan namn raderas efter 30 dagar, eller max 100 projekt sparas)
-
-### 16. AI Studio-åtkomst från galleri-preview (issue 14)
-**Fix:** Lägg till AI Studio-knapp i galleriets bild-preview, liknande den i V2ResultGallery.
-
----
-
-## Filer som ändras
-
-| Fil | Ändringar |
-|-----|-----------|
-| `supabase/functions/blur-license-plates/index.ts` | Fix `.catch()` bugg, deploy |
-| `src/components/v2/V2GenerateStep.tsx` | Skicka originalWidth/Height, svarta ikoner, ta bort onödig auto-crop, smidigare genererings-UI |
-| `src/pages/AutopicV2.tsx` | Ta bort V1 från dropdown, fixa navigering |
-| `src/components/Header.tsx` | Dropdown-meny som matchar V2 |
-| `src/components/v2/V2ImageUploader.tsx` | Skelett-placeholders under konvertering |
-| `src/components/v2/V2ResultGallery.tsx` | Navigering → V2 |
-| `src/components/ProjectGallery.tsx` | AI Studio-knapp, pagination-fix |
-| DB: `scenes`-tabellen | Uppdatera saknade ai_prompts |
-
----
-
-## Prioriteringsordning
-1. Fix `.catch()` bugg i blur-license-plates (kraschar nu)
-2. Fix bildformat (fyrkant → original ratio)
-3. Svarta ikoner + ta bort V1 från navbar
-4. Navbar-enhetlighet + navigering
-5. Smidigare genererings-UI
-6. Skelett vid uppladdning
-7. Auto-crop via PhotoRoom istället
-8. Redigera under generering
-9. Galleri-förbättringar
-10. Bakgrundsprompt-granskning
-
+Tekniska detaljer
+- `vite.config.ts`: inga uppenbara fel
+- `tailwind.config.ts`: inga uppenbara syntaxfel
+- sannolik felklass: runtime blank render, inte build config error
+- mest misstänkt kod:
+  - `src/components/ProtectedRoute.tsx`
+  - `src/App.tsx`
+  - `src/contexts/AuthContext.tsx`
+  - `src/pages/Auth.tsx`
