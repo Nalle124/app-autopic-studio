@@ -235,23 +235,70 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       </button>
 
       {/* Image preview dialog */}
-      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+      <Dialog open={!!previewImage && !editingImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0">
           <VisuallyHidden><DialogTitle>{t('v2.preview')}</DialogTitle></VisuallyHidden>
           {previewImage && (
-            <div className="relative bg-black">
-              <img
-                src={previewImage.previewUrl}
-                alt={previewImage.file?.name || previewImage.id}
-                className="w-full max-h-[70vh] object-contain"
-              />
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                <p className="text-xs text-white/80 truncate">{previewImage.file?.name || previewImage.id}</p>
+            <div className="flex flex-col h-full max-h-[90vh]">
+              <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
+                <img
+                  src={previewImage.croppedUrl || previewImage.previewUrl}
+                  alt={previewImage.file?.name || previewImage.id}
+                  className="max-w-full max-h-[calc(90vh-80px)] object-contain"
+                />
+              </div>
+              <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" title={t('v2.adjust')} onClick={() => setEditingImage({ url: previewImage.croppedUrl || previewImage.previewUrl, id: previewImage.id, type: 'adjust' })}>
+                    <Sliders className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">{t('v2.adjust')}</span>
+                  </Button>
+                  <Button size="sm" variant="outline" title={t('v2.crop')} onClick={() => setEditingImage({ url: previewImage.croppedUrl || previewImage.previewUrl, id: previewImage.id, type: 'crop' })}>
+                    <Scissors className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">{t('v2.crop')}</span>
+                  </Button>
+                  <Button size="sm" variant="outline" title={t('v2.editFreely')} onClick={() => {
+                    const imgUrl = previewImage.croppedUrl || previewImage.previewUrl;
+                    sessionStorage.setItem('ai-studio-initial-image', imgUrl);
+                    sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
+                    navigate('/classic?tab=ai-studio');
+                  }}>
+                    <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
+                    <span className="hidden sm:inline ml-1">AI</span>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground truncate max-w-[150px]">{previewImage.file?.name || previewImage.id}</p>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Crop editor */}
+      {editingImage?.type === 'crop' && (
+        <ImageCropEditor
+          image={{ id: editingImage.id, finalUrl: editingImage.url, fileName: `upload-${editingImage.id}` }}
+          onSave={(croppedUrl) => {
+            onImagesChange(images.map(img => img.id === editingImage.id ? { ...img, croppedUrl } : img));
+            setEditingImage(null);
+            setPreviewImage(prev => prev && prev.id === editingImage.id ? { ...prev, croppedUrl } : prev);
+          }}
+          onCancel={() => setEditingImage(null)}
+        />
+      )}
+
+      {/* Adjust editor */}
+      {editingImage?.type === 'adjust' && (
+        <OriginalImageEditor
+          imageUrl={editingImage.url}
+          onSave={(adjustedUrl: string, _adjustments: CarAdjustments) => {
+            onImagesChange(images.map(img => img.id === editingImage.id ? { ...img, croppedUrl: adjustedUrl } : img));
+            setEditingImage(null);
+            setPreviewImage(prev => prev && prev.id === editingImage.id ? { ...prev, croppedUrl: adjustedUrl } : prev);
+          }}
+          onCancel={() => setEditingImage(null)}
+        />
+      )}
     </div>
   );
 };
