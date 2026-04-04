@@ -172,12 +172,12 @@ const AutopicV2Content = () => {
             // A step is "completed" only if user advanced past it using Nästa (currentStep > i)
             const isCompleted = i < currentStep;
             const isActive = i === currentStep;
-            const isReachable = i <= maxStepReached;
+            const isReachable = true; // Allow free navigation to all steps
             return (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               <button
-                onClick={() => { if (isReachable) goToStep(i); }}
-                className={`flex flex-col items-center gap-1 ${isReachable ? 'cursor-pointer' : 'cursor-default'}`}
+                onClick={() => handleStepClick(i)}
+                className="flex flex-col items-center gap-1 cursor-pointer"
               >
                 <div className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center transition-all ${
                   isCompleted
