@@ -221,7 +221,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
             <button
               onClick={() => {
                 sessionStorage.setItem('open-create-scene', 'true');
-                navigate('/classic');
+                navigate('/classic?tab=ai-studio');
               }}
               className={`relative rounded-lg overflow-hidden border-2 border-dashed border-border hover:border-primary/40 ${thumbAspect} flex flex-col items-center justify-center gap-2 bg-muted/30 transition-all`}
             >
