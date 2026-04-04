@@ -90,6 +90,16 @@ const AutopicV2Content = () => {
     sessionStorage.setItem('v2-selected-scene', selectedSceneId);
   }, [selectedSceneId]);
 
+  // Handle scene-category query param (e.g. from AI Studio "Mina scener" link)
+  useEffect(() => {
+    const sceneCategory = searchParams.get('scene-category');
+    if (sceneCategory) {
+      setCurrentStep(1); // Go to scene selector
+      searchParams.delete('scene-category');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
+
   // Load persisted drafts on mount
   useEffect(() => {
     if (!user?.id || draftsLoadedRef.current) return;
