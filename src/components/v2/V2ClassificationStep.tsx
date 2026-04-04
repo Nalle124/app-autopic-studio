@@ -17,16 +17,26 @@ export const V2ClassificationStep = ({ images, onClassified }: Props) => {
   const classify = async () => {
     setClassifying(true);
     try {
-      // Convert images to base64 for classification
+      // Convert images to small JPEG thumbnails for classification (AI gateway requires standard formats)
       const imageData = await Promise.all(
         images.map(async (img) => {
-          const arrayBuffer = await img.file.arrayBuffer();
-          const base64 = btoa(
-            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-          );
+          const jpegBase64 = await new Promise<string>((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d')!;
+            const image = new Image();
+            image.onload = () => {
+              const maxDim = 512;
+              const scale = Math.min(maxDim / image.width, maxDim / image.height, 1);
+              canvas.width = Math.round(image.width * scale);
+              canvas.height = Math.round(image.height * scale);
+              ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+              resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            image.src = img.previewUrl;
+          });
           return {
             id: img.id,
-            base64: `data:${img.file.type};base64,${base64}`,
+            base64: jpegBase64,
             filename: img.file.name,
           };
         })
