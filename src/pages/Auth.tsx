@@ -56,7 +56,7 @@ const Auth = () => {
     if (isResetMode) return;
     
     if (selectedPlan && !user) {
-      window.location.href = `/guest-checkout?plan=${selectedPlan}`;
+      navigate(`/guest-checkout?plan=${selectedPlan}`);
       return;
     }
     if (user) {
@@ -614,7 +614,7 @@ const ResetPasswordForm = () => {
     } else {
       toast.success(t('auth.passwordUpdated'));
       await supabase.auth.signOut();
-      window.location.href = '/auth';
+      navigate('/auth', { replace: true });
     }
   };
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -146,6 +147,7 @@ const DialogJobCard = ({
 };
 
 export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
+  const galleryNavigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [orphanJobs, setOrphanJobs] = useState<OrphanJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -897,7 +899,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
                       onClick={() => {
                         sessionStorage.setItem('ai-studio-initial-image', currentJob.final_url!);
                         sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
-                        window.location.href = '/classic?tab=ai-studio';
+                        galleryNavigate('/classic?tab=ai-studio');
                       }}
                       title="AI Studio"
                     >
