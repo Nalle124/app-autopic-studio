@@ -129,6 +129,9 @@ const AutopicV2Content = () => {
   }, []);
 
   const handleStartOver = useCallback(() => {
+    // Clear cloud drafts
+    if (user?.id) deleteAllDrafts(user.id);
+    setImages([]);
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
@@ -137,7 +140,8 @@ const AutopicV2Content = () => {
     setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
     setAutoCropEnabled(true);
-  }, []);
+    draftsLoadedRef.current = false;
+  }, [user?.id, deleteAllDrafts]);
 
   const handleTryAnotherBackground = useCallback(() => {
     setResults([]);
