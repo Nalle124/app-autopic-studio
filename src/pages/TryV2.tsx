@@ -148,7 +148,7 @@ const TryV2Content = () => {
     if (value === 'new') navigate('/');
     else if (value === 'ai-studio') {
       if (!user) {
-        setShowSignupModal(true);
+        toast.info('AI Studio är en premiumfunktion. Skapa ett konto och uppgradera för att använda den.');
       } else {
         navigate('/?tab=ai-studio');
       }
