@@ -222,8 +222,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
             <button
               onClick={() => {
                 if (isTryFlow) {
-                  const { toast: sonnerToast } = require('sonner');
-                  sonnerToast.info('AI Studio är en premiumfunktion. Skapa ett konto och uppgradera för att använda den.');
+                  toast.info('AI Studio är en premiumfunktion. Skapa ett konto och uppgradera för att använda den.');
                   return;
                 }
                 sessionStorage.setItem('ai-studio-initial-mode', 'background-studio');
