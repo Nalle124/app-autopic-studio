@@ -562,7 +562,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     );
   }
 
-  if (projects.length === 0 && orphanJobs.length === 0) {
+  if (projects.length === 0 && orphanJobs.length === 0 && pendingJobCount === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Inga projekt ännu. Skapa ditt första!</p>
