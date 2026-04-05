@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import type * as SentryType from '@sentry/react';
+
 import i18n from '@/i18n';
 
 interface AuthContextType {
