@@ -317,10 +317,10 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
       <div className="flex gap-3 justify-center flex-wrap">
         {onFindPlan && (
           <Button onClick={onFindPlan} className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-            ✨ Hitta ditt paket
+            Hitta ditt paket
           </Button>
         )}
-        <Button variant="outline" onClick={() => navigate('/')}>
+        <Button variant="outline" onClick={() => navigate(isTryFlow ? '/try?tab=history' : '/?tab=history')}>
           {t('common.goToGallery')}
         </Button>
         <Button variant="outline" onClick={onTryAnotherBackground}>
