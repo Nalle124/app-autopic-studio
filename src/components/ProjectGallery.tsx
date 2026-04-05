@@ -616,6 +616,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
             </div>
           </Card>
         )}
+        {filteredProjects.map((project) => {
           const projectJobs = project.jobs.filter(j => j.final_url);
           const firstImage = projectJobs[0];
           const isOrphan = project.id === 'orphan';
