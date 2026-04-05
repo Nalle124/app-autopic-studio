@@ -75,8 +75,19 @@ const TryV2Content = () => {
   const [selectedSceneId, setSelectedSceneId] = useState(() => sessionStorage.getItem('try-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
-  const [results, setResults] = useState<V2Image[]>([]);
-  const [showResults, setShowResults] = useState(false);
+  const [results, setResults] = useState<V2Image[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('try-results');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+  const [showResults, setShowResults] = useState(() => {
+    try {
+      return sessionStorage.getItem('try-show-results') === 'true';
+    } catch {}
+    return false;
+  });
   const [showSignupModal, setShowSignupModal] = useState(false);
 
   // Persist step & scene to sessionStorage
