@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import * as Sentry from "@sentry/react";
+
 
 interface Props {
   children: ReactNode;
@@ -23,8 +23,10 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
-    // Report error to Sentry
-    Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+    // Report error to Sentry (dynamic import to avoid bundling)
+    import('@sentry/react').then(Sentry => {
+      Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+    }).catch(() => {});
   }
 
   private handleReload = () => {

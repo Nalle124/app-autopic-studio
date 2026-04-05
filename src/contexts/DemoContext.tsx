@@ -75,28 +75,16 @@ export const DemoProvider = ({ children }: { children: ReactNode }) => {
     if (!user || credits <= 0) return false;
 
     try {
-      const newCredits = credits - 1;
-      
-      const { error } = await supabase
-        .from('user_credits')
-        .update({ credits: newCredits, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id);
+      const { data, error } = await supabase.rpc('decrement_credits', {
+        p_user_id: user.id
+      });
 
       if (error) {
         console.error('Error decrementing credits:', error);
         return false;
       }
 
-      // Log transaction
-      await supabase.from('credit_transactions').insert({
-        user_id: user.id,
-        amount: -1,
-        balance_after: newCredits,
-        transaction_type: 'demo_generation',
-        description: 'Demo image generation'
-      });
-
-      setCredits(newCredits);
+      setCredits(data ?? credits - 1);
       return true;
     } catch (err) {
       console.error('Error decrementing credits:', err);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDemo } from '@/contexts/DemoContext';
@@ -91,6 +92,7 @@ const isOnHighestTier = (currentProductId: string | null) => {
 // ── Component ──────────────────────────────────────────────────────
 export const DemoPaywall = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { showPaywall, setShowPaywall, paywallTrigger, isSubscribed, currentProductId } = useDemo();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
 
@@ -124,7 +126,7 @@ export const DemoPaywall = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         handleClose();
-        window.location.href = `/guest-checkout?plan=${tierKey}`;
+        navigate(`/guest-checkout?plan=${tierKey}`);
         return;
       }
       const { data, error } = await supabase.functions.invoke('create-checkout', {
