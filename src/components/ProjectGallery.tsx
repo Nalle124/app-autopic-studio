@@ -206,6 +206,15 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     loadProjects(1);
   }, []);
 
+  // Poll for pending jobs completion
+  useEffect(() => {
+    if (pendingJobCount <= 0) return;
+    const interval = setInterval(() => {
+      loadProjects(1);
+    }, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, [pendingJobCount]);
+
   const loadProjects = async (page: number, append = false) => {
     try {
       if (page === 1) {
