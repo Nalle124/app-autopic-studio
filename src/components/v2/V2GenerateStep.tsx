@@ -737,16 +737,6 @@ export const V2GenerateStep = ({
         {processing ? t('v2.processing') : t('v2.generateImages', { count: totalImages })}
       </Button>
 
-      {/* CTA for try/free users */}
-      {onTriggerPaywall && (
-        <Button
-          variant="outline"
-          className="w-full border-primary text-primary hover:bg-primary/5 font-semibold"
-          onClick={onTriggerPaywall}
-        >
-          Hitta ditt paket
-        </Button>
-      )}
     </div>
   );
 };
