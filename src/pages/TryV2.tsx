@@ -415,7 +415,7 @@ const TryV2Content = () => {
                 plateConfig={plateConfig}
                 sceneId={selectedSceneId}
                 projectName={projectName}
-                credits={credits > 0 ? Math.min(credits, MAX_FREE_CREDITS) : MAX_FREE_CREDITS}
+                credits={credits}
                 outputFormat={outputFormat}
                 autoCropEnabled={autoCropEnabled}
                 onImagesUpdate={setImages}
