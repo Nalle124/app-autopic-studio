@@ -153,9 +153,24 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string, log
   });
 }
 
+async function ensureDataUrl(imageUrl: string): Promise<string> {
+  if (imageUrl.startsWith('data:')) return imageUrl;
+  try {
+    const resp = await fetch(imageUrl);
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(imageUrl);
+      reader.readAsDataURL(blob);
+    });
+  } catch { return imageUrl; }
+}
+
 function applyLightEdit(imageUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image(); img.crossOrigin = 'anonymous';
+  return new Promise(async (resolve) => {
+    const safeUrl = await ensureDataUrl(imageUrl);
+    const img = new Image();
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
@@ -163,13 +178,14 @@ function applyLightEdit(imageUrl: string): Promise<string> {
         resolve(canvas.toDataURL('image/jpeg', 0.92));
       } catch { resolve(imageUrl); }
     };
-    img.onerror = () => resolve(imageUrl); img.src = imageUrl;
+    img.onerror = () => resolve(imageUrl); img.src = safeUrl;
   });
 }
 
 function applyLightBoost(imageUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image(); img.crossOrigin = 'anonymous';
+  return new Promise(async (resolve) => {
+    const safeUrl = await ensureDataUrl(imageUrl);
+    const img = new Image();
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
@@ -177,7 +193,7 @@ function applyLightBoost(imageUrl: string): Promise<string> {
         resolve(canvas.toDataURL('image/jpeg', 0.92));
       } catch { resolve(imageUrl); }
     };
-    img.onerror = () => resolve(imageUrl); img.src = imageUrl;
+    img.onerror = () => resolve(imageUrl); img.src = safeUrl;
   });
 }
 
@@ -466,6 +482,18 @@ export const V2GenerateStep = ({
             setStatusText(t('v2.maskingInterior', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
             processedUrl = await processInteriorImage(img, interiorBgType);
+            // Save interior image to processing_jobs so it appears in gallery
+            try {
+              await supabase.from('processing_jobs').insert({
+                user_id: session.user.id,
+                original_filename: img.file?.name || `${img.id}.jpg`,
+                scene_id: sceneId || 'interior',
+                status: 'completed',
+                final_url: processedUrl,
+                thumbnail_url: processedUrl,
+                completed_at: new Date().toISOString(),
+              });
+            } catch (e) { console.warn('Could not save interior job:', e); }
           }
           if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
           if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
@@ -708,6 +736,17 @@ export const V2GenerateStep = ({
       >
         {processing ? t('v2.processing') : t('v2.generateImages', { count: totalImages })}
       </Button>
+
+      {/* CTA for try/free users */}
+      {onTriggerPaywall && (
+        <Button
+          variant="outline"
+          className="w-full border-primary text-primary hover:bg-primary/5 font-semibold"
+          onClick={onTriggerPaywall}
+        >
+          Hitta ditt paket
+        </Button>
+      )}
     </div>
   );
 };
