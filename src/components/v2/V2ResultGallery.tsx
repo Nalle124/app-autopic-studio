@@ -183,6 +183,10 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                 className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
                 title={t('v2.editFreely')}
                 onClick={() => {
+                  if (isTryFlow) {
+                    toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
+                    return;
+                  }
                   const idx = previewIndex ?? 0;
                   const imgUrl = results[idx]?.processedUrl || results[idx]?.previewUrl || '';
                   sessionStorage.setItem('ai-studio-initial-image', imgUrl);
@@ -384,6 +388,10 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                     <span className="hidden sm:inline ml-1">Bokeh</span>
                   </Button>
                   <Button size="sm" variant="outline" title={t('v2.editFreely')} onClick={() => {
+                    if (isTryFlow) {
+                      toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
+                      return;
+                    }
                     const imgUrl = previewUrl;
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                     sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
