@@ -145,15 +145,13 @@ const TryV2Content = () => {
   }, [user, triggerPaywall]);
 
   const handleTabChange = (value: string) => {
-    if (value === 'new') navigate('/');
+    if (value === 'new') navigate('/try');
     else if (value === 'ai-studio') {
-      if (!user) {
-        toast.info('AI Studio är en premiumfunktion. Skapa ett konto och uppgradera för att använda den.');
-      } else {
-        navigate('/?tab=ai-studio');
-      }
+      toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
     }
-    else if (value === 'history') navigate('/?tab=history');
+    else if (value === 'history') {
+      navigate('/try?tab=history');
+    }
     else if (value === 'pro') {
       triggerPaywall('signup');
     }
