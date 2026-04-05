@@ -17,6 +17,7 @@ import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { useDraftImages } from '@/hooks/useDraftImages';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 
@@ -90,6 +91,8 @@ const AutopicV2Content = () => {
     } catch {}
     return false;
   });
+  const [regenerateImageId, setRegenerateImageId] = useState<string | null>(null);
+  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
   const draftsLoadedRef = useRef(false);
   const { uploadDraft, fetchDrafts, deleteDraft, deleteAllDrafts } = useDraftImages();
 
@@ -162,7 +165,6 @@ const AutopicV2Content = () => {
   const handleGenerationComplete = useCallback((resultImages: V2Image[]) => {
     setResults(resultImages);
     setShowResults(true);
-    // Persist results so user can navigate away and return
     try {
       const serializable = resultImages.map(img => ({
         id: img.id,
@@ -175,6 +177,34 @@ const AutopicV2Content = () => {
       sessionStorage.setItem('v2-results', JSON.stringify(serializable));
       sessionStorage.setItem('v2-show-results', 'true');
     } catch {}
+  }, []);
+
+  const handleRegenerateImage = useCallback((imageId: string) => {
+    setRegeneratingIds(prev => new Set(prev).add(imageId));
+    setRegenerateImageId(imageId);
+    // Don't leave results view - stay and show spinner on the image
+    setCurrentStep(3);
+  }, []);
+
+  const handleRegenerateComplete = useCallback((updatedImage: V2Image) => {
+    setRegenerateImageId(null);
+    setRegeneratingIds(prev => {
+      const next = new Set(prev);
+      next.delete(updatedImage.id);
+      return next;
+    });
+    setResults(prev => {
+      const updated = prev.map(r => r.id === updatedImage.id ? updatedImage : r);
+      try {
+        const serializable = updated.map(img => ({
+          id: img.id, previewUrl: img.previewUrl, processedUrl: img.processedUrl,
+          classification: img.classification, status: img.status, error: img.error,
+        }));
+        sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+      } catch {}
+      return updated;
+    });
+    toast.success('Bilden har genererats om');
   }, []);
 
   const handleStartOver = useCallback(() => {
@@ -331,7 +361,32 @@ const AutopicV2Content = () => {
           results={results}
           onStartOver={handleStartOver}
           onTryAnotherBackground={handleTryAnotherBackground}
+          onRegenerateImage={handleRegenerateImage}
+          regeneratingIds={regeneratingIds}
         />
+        {/* Hidden generate step for regeneration */}
+        {regenerateImageId && (
+          <div className="hidden">
+            <V2GenerateStep
+              images={images}
+              logoConfig={logoConfig}
+              plateConfig={plateConfig}
+              sceneId={selectedSceneId}
+              projectName={projectName}
+              credits={credits}
+              outputFormat={outputFormat}
+              autoCropEnabled={autoCropEnabled}
+              onImagesUpdate={setImages}
+              onComplete={handleGenerationComplete}
+              onRefetchCredits={refetchCredits}
+              onStartOver={handleStartOver}
+              onTriggerPaywall={handleTriggerPaywall}
+              regenerateImageId={regenerateImageId}
+              existingResults={results}
+              onRegenerateComplete={handleRegenerateComplete}
+            />
+          </div>
+        )}
       </div>
     );
   }
