@@ -68,7 +68,7 @@ const TryV2Content = () => {
     const saved = sessionStorage.getItem('try-current-step');
     return saved ? parseInt(saved, 10) : 0;
   });
-  const [images, setImages] = useState<V2Image[]>(EXAMPLE_IMAGES);
+  const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
@@ -123,7 +123,7 @@ const TryV2Content = () => {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    setImages(EXAMPLE_IMAGES);
+    setImages([]);
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
