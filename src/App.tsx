@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -6,22 +6,30 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import Index from "./pages/Index";
-import Demo from "./pages/Demo";
-import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import { Profile } from "./pages/Profile";
-import { Onboarding } from "./pages/Onboarding";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import PaymentPending from "./pages/PaymentPending";
-import GuestCheckout from "./pages/GuestCheckout";
-import SignupAfterPayment from "./pages/SignupAfterPayment";
-import NotFound from "./pages/NotFound";
-import UploadSceneImages from "./pages/UploadSceneImages";
-import InviteSignup from "./pages/InviteSignup";
-import Guide from "./pages/Guide";
-import AutopicV2 from "./pages/AutopicV2";
-import TryV2 from "./pages/TryV2";
+import { Loader2 } from "lucide-react";
+
+// Lazy load all pages for code splitting
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Profile = lazy(() => import("./pages/Profile").then(m => ({ default: m.Profile })));
+const Onboarding = lazy(() => import("./pages/Onboarding").then(m => ({ default: m.Onboarding })));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const PaymentPending = lazy(() => import("./pages/PaymentPending"));
+const GuestCheckout = lazy(() => import("./pages/GuestCheckout"));
+const SignupAfterPayment = lazy(() => import("./pages/SignupAfterPayment"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const UploadSceneImages = lazy(() => import("./pages/UploadSceneImages"));
+const InviteSignup = lazy(() => import("./pages/InviteSignup"));
+const Guide = lazy(() => import("./pages/Guide"));
+const AutopicV2 = lazy(() => import("./pages/AutopicV2"));
+const TryV2 = lazy(() => import("./pages/TryV2"));
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,20 +54,27 @@ function App() {
     }
   }, []);
 
-  // Preload AI Studio menu images
+  // Defer preloading of AI Studio menu images until after idle
   useEffect(() => {
-    const preloadImages = [
-      '/mode-previews/redigera-fritt-preview.jpg',
-      '/mode-previews/logo-apply-preview.jpg',
-      '/mode-previews/blur-plates-preview.jpg',
-      '/mode-previews/fix-interior-preview.jpg',
-      '/mode-previews/logo-preview.jpg',
-      '/mode-previews/ad-sasongsrea.png',
-    ];
-    preloadImages.forEach(src => {
-      const img = new Image();
-      img.src = src;
-    });
+    const preload = () => {
+      const preloadImages = [
+        '/mode-previews/thumbs/redigera-fritt-thumb.jpg',
+        '/mode-previews/logo-apply-preview.jpg',
+        '/mode-previews/blur-plates-preview.jpg',
+        '/mode-previews/fix-interior-preview.jpg',
+        '/mode-previews/logo-preview.jpg',
+        '/mode-previews/thumbs/ad-sasongsrea-thumb.jpg',
+      ];
+      preloadImages.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    };
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(preload);
+    } else {
+      setTimeout(preload, 3000);
+    }
   }, []);
 
   return (
@@ -69,24 +84,26 @@ function App() {
           <BrowserRouter>
             <AuthProvider>
               <Sonner />
-              <Routes>
-              <Route path="/" element={<ProtectedRoute><AutopicV2 /></ProtectedRoute>} />
-              <Route path="/classic" element={<Index />} />
-              <Route path="/try" element={<TryV2 />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-              <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-              <Route path="/payment-pending" element={<ProtectedRoute><PaymentPending /></ProtectedRoute>} />
-              <Route path="/guest-checkout" element={<GuestCheckout />} />
-              <Route path="/signup-after-payment" element={<SignupAfterPayment />} />
-              <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-              <Route path="/upload-scenes" element={<ProtectedRoute><UploadSceneImages /></ProtectedRoute>} />
-              <Route path="/invite" element={<InviteSignup />} />
-              <Route path="/guide" element={<Guide />} />
-              <Route path="/autopic-v2" element={<ProtectedRoute><AutopicV2 /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                <Route path="/" element={<ProtectedRoute><AutopicV2 /></ProtectedRoute>} />
+                <Route path="/classic" element={<Index />} />
+                <Route path="/try" element={<TryV2 />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+                <Route path="/payment-pending" element={<ProtectedRoute><PaymentPending /></ProtectedRoute>} />
+                <Route path="/guest-checkout" element={<GuestCheckout />} />
+                <Route path="/signup-after-payment" element={<SignupAfterPayment />} />
+                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+                <Route path="/upload-scenes" element={<ProtectedRoute><UploadSceneImages /></ProtectedRoute>} />
+                <Route path="/invite" element={<InviteSignup />} />
+                <Route path="/guide" element={<Guide />} />
+                <Route path="/autopic-v2" element={<ProtectedRoute><AutopicV2 /></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </AuthProvider>
           </BrowserRouter>
         </QueryClientProvider>
