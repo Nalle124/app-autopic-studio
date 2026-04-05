@@ -150,6 +150,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const galleryNavigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [orphanJobs, setOrphanJobs] = useState<OrphanJob[]>([]);
+  const [pendingJobCount, setPendingJobCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
