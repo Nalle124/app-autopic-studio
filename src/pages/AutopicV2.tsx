@@ -202,7 +202,10 @@ const AutopicV2Content = () => {
     setCurrentStep(1);
     setMaxStepReached(prev => Math.max(prev, 1));
     setSelectedSceneId('');
+    sessionStorage.removeItem('v2-results');
+    sessionStorage.removeItem('v2-show-results');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   }, []);
 
   const goToStep = useCallback((step: number) => {
