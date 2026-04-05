@@ -167,7 +167,7 @@ const TryV2Content = () => {
           <img src={autopicLogoDark} alt="AutoPic" className="h-[26px] sm:h-8 w-auto" />
         </a>
         <div className="flex items-center gap-2">
-          <Select value="v2" onValueChange={handleTabChange}>
+          <Select value={activeTab === 'history' ? 'history' : 'v2'} onValueChange={handleTabChange}>
             <SelectTrigger className={`${isMobile ? 'w-[120px] h-8 text-xs' : 'w-[150px] h-9 text-sm'} bg-background/80 backdrop-blur-sm`}>
               <SelectValue />
             </SelectTrigger>
@@ -176,7 +176,7 @@ const TryV2Content = () => {
               <SelectItem value="ai-studio">AI Studio</SelectItem>
               <SelectItem value="history">Galleri</SelectItem>
               <SelectItem value="pro">
-                <span className="bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] bg-clip-text text-transparent font-semibold">✨ Skaffa Pro</span>
+                <span className="bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] bg-clip-text text-transparent font-semibold">Skaffa Pro</span>
               </SelectItem>
             </SelectContent>
           </Select>
