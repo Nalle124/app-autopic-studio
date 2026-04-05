@@ -1,100 +1,60 @@
 
-Mest sannolikt är detta inte ett problem i `vite.config.ts`. Den filen ser normal ut och innehåller inget uppenbart som i sig borde ge en vit preview.
 
-Vad jag såg
-- `vite.config.ts` är enkel och korrekt:
-  - React-plugin
-  - alias `@ -> ./src`
-  - server host/port
-  - inget konstigt med base path, proxy, plugins eller build-inställningar
-- `tailwind.config.ts` ser också syntaktiskt korrekt ut. Jag såg ingen sådan felkälla som brukar maskeras som CSS/Vite-fel.
-- `main.tsx` mountar appen normalt via `createRoot(...).render(<App />)`.
-- `App.tsx` renderar via `ErrorBoundary`, `ThemeProvider`, `QueryClientProvider`, `BrowserRouter` och `AuthProvider`.
+## Pre-Launch Audit: Issues Found
 
-Min bedömning
-Det här ser mer ut som ett runtime-/routing-problem i appen än ett Vite-problem. Alltså: previewn blir blank för att appen renderar “ingenting”, inte för att Vite-konfigurationen är trasig.
+After reviewing the codebase, here are the issues to fix before sending real traffic, ordered by severity.
 
-Troliga orsaker i appen
-1. `ProtectedRoute` kan rendera `null`
-- I `src/components/ProtectedRoute.tsx`:
-  - medan auth laddar visas spinner
-  - om ingen användare finns: `return null`
-  - redirect till `/auth` sker i en `useEffect`
-- Det betyder att appen kan vara tom ett ögonblick eller fastna blank om navigationen inte hinner/slår fel i previewmiljön.
+---
 
-2. Startsidan `/` är skyddad direkt
-- I `src/App.tsx` pekar `/` till:
-  - `<ProtectedRoute><AutopicV2 /></ProtectedRoute>`
-- Om auth/session strular i previewn blir första sidan blank istället för att säkert visa login eller try-flöde.
+### 1. Credits silently fail on client-side (Critical)
 
-3. Flera ställen använder hårda redirects
-- Jag såg flera `window.location.href = ...` i appen.
-- Det kan göra previewn känsligare, särskilt när auth/query-param-flöden kedjas mellan routes.
+`DemoContext.decrementCredits()` does a direct `.update()` on `user_credits` — but the RLS policy **blocks UPDATE** for that table. The same function also tries `.insert()` into `credit_transactions`, which also has **no INSERT policy**. Both operations silently fail.
 
-4. Auth/redirect-logiken är ganska aggressiv
-- `AuthContext` och `Auth.tsx` navigerar automatiskt beroende på session, reset mode, plan-parametrar, invite osv.
-- Om någon av dessa paths kolliderar med preview-sessionen kan resultatet bli en vit sida utan att Vite egentligen är boven.
+**Impact**: In the old Demo flow (`Demo.tsx`), credits are never actually deducted. The V2 flow is fine because it uses server-side edge functions with `decrement_credits` RPC.
 
-5. Blank screen behöver inte ge console error
-- Jag såg inga preview-console-fel i snapshoten.
-- Det stärker hypotesen att detta är “rendered null” / redirect-loop / route-state-problem snarare än bundlingfel.
+**Fix**: Replace client-side update with an RPC call to `decrement_credits` (which already exists and is SECURITY DEFINER). Remove the client-side `credit_transactions` insert since the RPC doesn't log it either (or add logging inside the RPC).
 
-Plan för att göra preview stabil
-1. Gör `ProtectedRoute` fail-safe
-- Visa alltid loading eller redirect-UI
-- returnera inte `null` när användare saknas
-- använd hellre `<Navigate to="/auth" replace />` än `useEffect + navigate + return null`
+---
 
-2. Mjukare startsida
-- Låt `/` routen ha ett säkrare entry-beteende:
-  - antingen en route-gate-komponent
-  - eller skicka ej inloggade direkt till `/try` eller `/auth` utan blank mellanfas
+### 2. ErrorBoundary defeats Sentry lazy loading (Medium)
 
-3. Minska beroendet av `window.location.href`
-- Byt interna appnavigeringar till React Router där det går
-- behåll full page redirect bara för externa checkoutflöden där det verkligen behövs
+`ErrorBoundary.tsx` has `import * as Sentry from "@sentry/react"` at the top — a static import. Since ErrorBoundary wraps the entire app in `App.tsx`, Sentry gets pulled into the main bundle despite the lazy loading in `main.tsx`.
 
-4. Lägg till tydlig fallback vid auth-init
-- Om session-kollen drar ut på tiden:
-  - visa branded loading state
-  - logga auth state transitions
-  - skydda mot lägen där `loading=false` men route fortfarande renderar tomt
+**Fix**: Use dynamic `import('@sentry/react')` inside `componentDidCatch` instead of the static top-level import.
 
-5. Lägg till diagnostik för blank-screen-lägen
-- Tillfälliga `console.log` i:
-  - `main.tsx`
-  - `App.tsx`
-  - `AuthProvider`
-  - `ProtectedRoute`
-- särskilt för:
-  - route
-  - loading/user
-  - när redirect triggas
-  - när `null` annars skulle ha returnerats
+---
 
-Teknisk slutsats
-- `vite.config.ts` verkar inte vara orsaken.
-- Preview-problemet ser ut att komma från appens startup-/auth-/routingflöde.
-- Den största konkreta risken jag ser är `ProtectedRoute` som returnerar `null` på `/`, kombinerat med att `/` är appens primära route.
+### 3. Dark class flash on page load (Medium)
 
-Det jag skulle ändra först när du vill att jag implementerar
-1. Refaktorera `ProtectedRoute` till render-baserad redirect med fallback-UI
-2. Göra `/` mindre skör för ej inloggad användare
-3. Byta interna `window.location.href` till router-navigation där möjligt
-4. Lägga in riktad debug-loggning för auth + route transitions så vi kan avgöra om det är blank render eller redirect-loop
+`index.html` has `<html lang="sv" class="dark">` but the ThemeProvider defaults to `"light"`. This causes a brief dark-mode flash before React hydrates and switches to light.
 
-Om du vill kan jag i nästa steg skriva en exakt, liten fixplan för de konkreta filerna:
-- `src/components/ProtectedRoute.tsx`
-- `src/App.tsx`
-- `src/contexts/AuthContext.tsx`
-- eventuellt `src/pages/Auth.tsx`
+**Fix**: Change `class="dark"` to `class="light"` (or remove it entirely since ThemeProvider sets it).
 
-Tekniska detaljer
-- `vite.config.ts`: inga uppenbara fel
-- `tailwind.config.ts`: inga uppenbara syntaxfel
-- sannolik felklass: runtime blank render, inte build config error
-- mest misstänkt kod:
-  - `src/components/ProtectedRoute.tsx`
-  - `src/App.tsx`
-  - `src/contexts/AuthContext.tsx`
-  - `src/pages/Auth.tsx`
+---
+
+### 4. OG image points to lovable.dev (Low - branding)
+
+The OpenGraph and Twitter image meta tags point to `https://lovable.dev/opengraph-image-p98pqg.png` — a generic Lovable image, not AutoPic branding.
+
+**Fix**: Replace with an AutoPic-branded OG image URL (or host one in the public folder).
+
+---
+
+### 5. DemoPaywall uses `window.location.href` for internal route (Low)
+
+When an unauthenticated user clicks a plan in the paywall, it does `window.location.href = '/guest-checkout?plan=...'` — a full page reload that loses all React state. 
+
+**Fix**: Use React Router `navigate()` instead (the component already has access via the parent context).
+
+---
+
+### Summary of files to edit
+
+| File | Change |
+|------|--------|
+| `src/contexts/DemoContext.tsx` | Replace `.update()` with RPC call `decrement_credits` |
+| `src/components/ErrorBoundary.tsx` | Dynamic Sentry import in `componentDidCatch` |
+| `index.html` | Change `class="dark"` to `class="light"` |
+| `index.html` | Update OG/Twitter image URLs |
+| `src/components/DemoPaywall.tsx` | Replace `window.location.href` with `navigate()` for internal routes |
+
