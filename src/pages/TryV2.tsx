@@ -42,8 +42,10 @@ const TryV2Content = () => {
   const { user, loading: authLoading } = useAuth();
   const { credits, triggerPaywall } = useDemo();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { setTheme } = useTheme();
+  const activeTab = searchParams.get('tab') || 'project';
 
   // Force light theme
   useEffect(() => { setTheme('light'); }, [setTheme]);
