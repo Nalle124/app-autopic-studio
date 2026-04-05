@@ -297,6 +297,15 @@ const TryV2Content = () => {
           onFindPlan={() => triggerPaywall('signup')}
           isTryFlow
         />
+        <DemoPaywall />
+        <DemoSignupModal 
+          open={showSignupModal} 
+          onClose={() => setShowSignupModal(false)}
+          onSuccess={() => {
+            setSignedUpHere(true);
+            setShowSignupModal(false);
+          }}
+        />
       </div>
     );
   }
