@@ -282,6 +282,15 @@ const TryV2Content = () => {
             </div>
           )}
         </div>
+        <DemoPaywall />
+        <DemoSignupModal 
+          open={showSignupModal} 
+          onClose={() => setShowSignupModal(false)}
+          onSuccess={() => {
+            setSignedUpHere(true);
+            setShowSignupModal(false);
+          }}
+        />
       </div>
     );
   }
