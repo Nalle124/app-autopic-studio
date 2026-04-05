@@ -23,6 +23,9 @@ interface Props {
   onRefetchCredits: () => Promise<void>;
   onStartOver: () => void;
   onTriggerPaywall?: () => void;
+  regenerateImageId?: string | null;
+  existingResults?: V2Image[];
+  onRegenerateComplete?: (updatedImage: V2Image) => void;
 }
 
 // --- helpers ---
@@ -261,6 +264,7 @@ function getTargetAspect(format: 'landscape' | 'portrait'): number {
 export const V2GenerateStep = ({
   images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat, autoCropEnabled,
   onImagesUpdate, onComplete, onRefetchCredits, onStartOver, onTriggerPaywall,
+  regenerateImageId, existingResults, onRegenerateComplete,
 }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
