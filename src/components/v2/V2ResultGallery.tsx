@@ -25,9 +25,10 @@ interface Props {
   onStartOver: () => void;
   onTryAnotherBackground: () => void;
   onFindPlan?: () => void;
+  isTryFlow?: boolean;
 }
 
-export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan }: Props) => {
+export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan, isTryFlow }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
