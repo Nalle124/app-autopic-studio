@@ -238,6 +238,25 @@ const TryV2Content = () => {
     </div>
   );
 
+  if (activeTab === 'history') {
+    return (
+      <div className="min-h-screen bg-background">
+        {renderHeader()}
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          {user ? (
+            <ProjectGallery />
+          ) : (
+            <div className="text-center py-16 space-y-4">
+              <h2 className="text-lg font-medium text-foreground">Galleri</h2>
+              <p className="text-muted-foreground text-sm">Skapa ett konto för att se dina genererade bilder här.</p>
+              <Button onClick={() => setShowSignupModal(true)}>Skapa konto</Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (showResults) {
     return (
       <div className="min-h-screen bg-background">
@@ -247,6 +266,7 @@ const TryV2Content = () => {
           onStartOver={handleStartOver} 
           onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }}
           onFindPlan={() => triggerPaywall('signup')}
+          isTryFlow
         />
       </div>
     );
