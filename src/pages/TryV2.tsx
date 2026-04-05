@@ -134,6 +134,8 @@ const TryV2Content = () => {
     setPlateConfig({ enabled: false, style: 'blur-dark' });
     sessionStorage.removeItem('try-current-step');
     sessionStorage.removeItem('try-selected-scene');
+    sessionStorage.removeItem('try-results');
+    sessionStorage.removeItem('try-show-results');
   }, []);
 
   // Allow browsing all steps freely but only track maxStepReached via Nästa button
