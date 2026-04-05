@@ -17,6 +17,7 @@ import { DemoProvider, useDemo } from '@/contexts/DemoContext';
 import { DemoPaywall } from '@/components/DemoPaywall';
 import { useDraftImages } from '@/hooks/useDraftImages';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 
