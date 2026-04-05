@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import * as Sentry from '@sentry/react';
+
 import i18n from '@/i18n';
 
 interface AuthContextType {
@@ -68,15 +68,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Identify user in Sentry for error tracking
+        // Identify user in Sentry for error tracking (lazy)
         if (session?.user) {
-          Sentry.setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            username: session.user.user_metadata?.full_name || ''
-          });
+          import('@sentry/react').then(Sentry => {
+            Sentry.setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              username: session.user.user_metadata?.full_name || ''
+            });
+          }).catch(() => {});
         } else {
-          Sentry.setUser(null);
+          import('@sentry/react').then(Sentry => {
+            Sentry.setUser(null);
+          }).catch(() => {});
         }
         
         // Defer admin check with setTimeout to avoid deadlock
