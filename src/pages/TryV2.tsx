@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ProjectGallery } from '@/components/ProjectGallery';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -41,8 +42,10 @@ const TryV2Content = () => {
   const { user, loading: authLoading } = useAuth();
   const { credits, triggerPaywall } = useDemo();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { setTheme } = useTheme();
+  const activeTab = searchParams.get('tab') || 'project';
 
   // Force light theme
   useEffect(() => { setTheme('light'); }, [setTheme]);
@@ -72,8 +75,19 @@ const TryV2Content = () => {
   const [selectedSceneId, setSelectedSceneId] = useState(() => sessionStorage.getItem('try-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
-  const [results, setResults] = useState<V2Image[]>([]);
-  const [showResults, setShowResults] = useState(false);
+  const [results, setResults] = useState<V2Image[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('try-results');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+  const [showResults, setShowResults] = useState(() => {
+    try {
+      return sessionStorage.getItem('try-show-results') === 'true';
+    } catch {}
+    return false;
+  });
   const [showSignupModal, setShowSignupModal] = useState(false);
 
   // Persist step & scene to sessionStorage
@@ -93,8 +107,19 @@ const TryV2Content = () => {
   }, []);
 
   const handleGenerationComplete = useCallback((resultImages: V2Image[]) => {
-    setResults(resultImages);
+    // Filter to only show successfully processed images
+    const successfulResults = resultImages.filter(img => img.status === 'done' && img.processedUrl);
+    setResults(successfulResults.length > 0 ? successfulResults : resultImages);
     setShowResults(true);
+    // Persist results so user can navigate away and return
+    try {
+      const toStore = (successfulResults.length > 0 ? successfulResults : resultImages).map(img => ({
+        id: img.id, previewUrl: img.previewUrl, processedUrl: img.processedUrl,
+        classification: img.classification, status: img.status, error: img.error,
+      }));
+      sessionStorage.setItem('try-results', JSON.stringify(toStore));
+      sessionStorage.setItem('try-show-results', 'true');
+    } catch {}
   }, []);
 
   const handleStartOver = useCallback(() => {
@@ -109,6 +134,8 @@ const TryV2Content = () => {
     setPlateConfig({ enabled: false, style: 'blur-dark' });
     sessionStorage.removeItem('try-current-step');
     sessionStorage.removeItem('try-selected-scene');
+    sessionStorage.removeItem('try-results');
+    sessionStorage.removeItem('try-show-results');
   }, []);
 
   // Allow browsing all steps freely but only track maxStepReached via Nästa button
@@ -145,15 +172,13 @@ const TryV2Content = () => {
   }, [user, triggerPaywall]);
 
   const handleTabChange = (value: string) => {
-    if (value === 'new') navigate('/');
+    if (value === 'new') navigate('/try');
     else if (value === 'ai-studio') {
-      if (!user) {
-        toast.info('AI Studio är en premiumfunktion. Skapa ett konto och uppgradera för att använda den.');
-      } else {
-        navigate('/?tab=ai-studio');
-      }
+      toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
     }
-    else if (value === 'history') navigate('/?tab=history');
+    else if (value === 'history') {
+      navigate('/try?tab=history');
+    }
     else if (value === 'pro') {
       triggerPaywall('signup');
     }
@@ -166,7 +191,7 @@ const TryV2Content = () => {
           <img src={autopicLogoDark} alt="AutoPic" className="h-[26px] sm:h-8 w-auto" />
         </a>
         <div className="flex items-center gap-2">
-          <Select value="v2" onValueChange={handleTabChange}>
+          <Select value={activeTab === 'history' ? 'history' : 'v2'} onValueChange={handleTabChange}>
             <SelectTrigger className={`${isMobile ? 'w-[120px] h-8 text-xs' : 'w-[150px] h-9 text-sm'} bg-background/80 backdrop-blur-sm`}>
               <SelectValue />
             </SelectTrigger>
@@ -175,7 +200,7 @@ const TryV2Content = () => {
               <SelectItem value="ai-studio">AI Studio</SelectItem>
               <SelectItem value="history">Galleri</SelectItem>
               <SelectItem value="pro">
-                <span className="bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] bg-clip-text text-transparent font-semibold">✨ Skaffa Pro</span>
+                <span className="bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] bg-clip-text text-transparent font-semibold">Skaffa Pro</span>
               </SelectItem>
             </SelectContent>
           </Select>
@@ -237,6 +262,25 @@ const TryV2Content = () => {
     </div>
   );
 
+  if (activeTab === 'history') {
+    return (
+      <div className="min-h-screen bg-background">
+        {renderHeader()}
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          {user ? (
+            <ProjectGallery />
+          ) : (
+            <div className="text-center py-16 space-y-4">
+              <h2 className="text-lg font-medium text-foreground">Galleri</h2>
+              <p className="text-muted-foreground text-sm">Skapa ett konto för att se dina genererade bilder här.</p>
+              <Button onClick={() => setShowSignupModal(true)}>Skapa konto</Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (showResults) {
     return (
       <div className="min-h-screen bg-background">
@@ -246,6 +290,7 @@ const TryV2Content = () => {
           onStartOver={handleStartOver} 
           onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }}
           onFindPlan={() => triggerPaywall('signup')}
+          isTryFlow
         />
       </div>
     );
