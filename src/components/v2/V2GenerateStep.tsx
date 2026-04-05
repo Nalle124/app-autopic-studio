@@ -292,6 +292,79 @@ export const V2GenerateStep = ({
     }
   }, [liveResults.length]);
 
+  // Auto-start regeneration for a single image
+  const regenerateStartedRef = useRef(false);
+  useEffect(() => {
+    if (regenerateImageId && !regenerateStartedRef.current) {
+      regenerateStartedRef.current = true;
+      handleRegenerateSingle(regenerateImageId);
+    }
+    if (!regenerateImageId) {
+      regenerateStartedRef.current = false;
+    }
+  }, [regenerateImageId]);
+
+  const handleRegenerateSingle = async (imageId: string) => {
+    const img = images.find(i => i.id === imageId);
+    if (!img) { toast.error('Bilden hittades inte'); return; }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) { toast.error('Din session har gått ut.'); return; }
+
+    try {
+      const scene = await fetchScene(sceneId);
+      if (!scene) throw new Error('Kunde inte ladda bakgrund');
+
+      const logos = await fetchUserLogo(session.user.id);
+      let logoUrl: string | null = null;
+      if (logoConfig.applyTo !== 'none') logoUrl = logos.light || logos.dark;
+
+      const sceneName = (scene.name || '').toLowerCase();
+      const sceneCategory = (scene.category || '').toLowerCase();
+      const isDarkScene = sceneName.includes('mörk') || sceneName.includes('dark') || sceneName.includes('midnight') || sceneName.includes('svart') || sceneName.includes('black') || sceneName.includes('charcoal') || sceneName.includes('natt') || sceneName.includes('night') || sceneCategory === 'dark';
+      const isGreyScene = sceneName.includes('grå') || sceneName.includes('grey') || sceneName.includes('gray') || sceneName.includes('betong') || sceneName.includes('concrete');
+      const interiorBgType = isDarkScene ? 'dark neutral black/charcoal' : isGreyScene ? 'neutral mid-grey' : 'clean white';
+      const targetAspect = getTargetAspect(outputFormat);
+      const classification = img.classification || 'exterior';
+      const isExterior = classification === 'exterior' || classification === 'detail';
+
+      let plateLogoBase64: string | null = null;
+      if (plateConfig.enabled && isExterior) {
+        if (plateConfig.style === 'custom-logo' && plateConfig.customLogoBase64) {
+          plateLogoBase64 = plateConfig.customLogoBase64;
+        } else if (plateConfig.style === 'logo') {
+          const plateLogoUrl = logos.light || logos.dark;
+          if (plateLogoUrl) {
+            try { const r = await fetch(plateLogoUrl); const b = await r.blob(); plateLogoBase64 = await new Promise<string>((resolve) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target?.result as string); reader.readAsDataURL(b); }); } catch {}
+          }
+        }
+      }
+
+      let processedUrl: string;
+      if (isExterior) {
+        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
+        if (autoCropEnabled) processedUrl = await autoCropImage(processedUrl, targetAspect);
+        if (plateConfig.enabled) {
+          try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); } catch {}
+        }
+      } else {
+        processedUrl = await processInteriorImage(img, interiorBgType);
+      }
+
+      const imgIndex = images.indexOf(img);
+      if (logoUrl && shouldApplyLogo(img.id, imgIndex, images.length, logoConfig)) {
+        processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset, logoConfig.logoSize);
+      }
+
+      const updatedImage: V2Image = { ...img, processedUrl, status: 'done', error: undefined };
+      if (onRegenerateComplete) onRegenerateComplete(updatedImage);
+      await onRefetchCredits();
+    } catch (err: any) {
+      console.error('Regeneration error:', err);
+      toast.error(t('v2.somethingWentWrong'));
+    }
+  };
+
   const handleGenerate = async () => {
     // Check auth first - if no session, trigger paywall/signup
     const { data: { session: authSession } } = await supabase.auth.getSession();
