@@ -26,9 +26,11 @@ interface Props {
   onTryAnotherBackground: () => void;
   onFindPlan?: () => void;
   isTryFlow?: boolean;
+  onRegenerateImage?: (imageId: string) => void;
+  regeneratingIds?: Set<string>;
 }
 
-export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan, isTryFlow }: Props) => {
+export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan, isTryFlow, onRegenerateImage, regeneratingIds }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
@@ -285,11 +287,26 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
               }}
             >
               <div className="aspect-auto bg-muted relative overflow-hidden">
-                <img
-                  src={img.processedUrl || img.previewUrl}
-                  alt={`${t('v2.result')} ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
+                {regeneratingIds?.has(img.id) ? (
+                  <div className="aspect-[4/3] flex items-center justify-center bg-muted">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <img
+                    src={img.processedUrl || img.previewUrl}
+                    alt={`${t('v2.result')} ${i + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                {img.status === 'error' && onRegenerateImage && !regeneratingIds?.has(img.id) && (
+                  <button
+                    className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white gap-2"
+                    onClick={(e) => { e.stopPropagation(); onRegenerateImage(img.id); }}
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                    <span className="text-xs font-medium">{t('v2.regenerate') || 'Generera om'}</span>
+                  </button>
+                )}
                 {selectedImages.has(i) && (
                   <>
                     <div className="absolute inset-0 bg-black/40 transition-opacity" />
@@ -387,6 +404,15 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                     <Focus className="w-4 h-4" />
                     <span className="hidden sm:inline ml-1">Bokeh</span>
                   </Button>
+                  {onRegenerateImage && (
+                    <Button size="sm" variant="outline" title={t('v2.regenerate') || 'Generera om'}
+                      disabled={regeneratingIds?.has(previewImg?.id || '')}
+                      onClick={() => { if (previewImg) onRegenerateImage(previewImg.id); }}
+                    >
+                      <RotateCcw className={`w-4 h-4 ${regeneratingIds?.has(previewImg?.id || '') ? 'animate-spin' : ''}`} />
+                      <span className="hidden sm:inline ml-1">{t('v2.regenerate') || 'Generera om'}</span>
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" title={t('v2.editFreely')} onClick={() => {
                     if (isTryFlow) {
                       toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
