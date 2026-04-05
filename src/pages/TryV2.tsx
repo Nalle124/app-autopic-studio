@@ -282,6 +282,15 @@ const TryV2Content = () => {
             </div>
           )}
         </div>
+        <DemoPaywall />
+        <DemoSignupModal 
+          open={showSignupModal} 
+          onClose={() => setShowSignupModal(false)}
+          onSuccess={() => {
+            setSignedUpHere(true);
+            setShowSignupModal(false);
+          }}
+        />
       </div>
     );
   }
@@ -296,6 +305,15 @@ const TryV2Content = () => {
           onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }}
           onFindPlan={() => triggerPaywall('signup')}
           isTryFlow
+        />
+        <DemoPaywall />
+        <DemoSignupModal 
+          open={showSignupModal} 
+          onClose={() => setShowSignupModal(false)}
+          onSuccess={() => {
+            setSignedUpHere(true);
+            setShowSignupModal(false);
+          }}
         />
       </div>
     );
