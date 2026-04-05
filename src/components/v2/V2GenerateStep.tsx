@@ -153,9 +153,24 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string, log
   });
 }
 
+async function ensureDataUrl(imageUrl: string): Promise<string> {
+  if (imageUrl.startsWith('data:')) return imageUrl;
+  try {
+    const resp = await fetch(imageUrl);
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(imageUrl);
+      reader.readAsDataURL(blob);
+    });
+  } catch { return imageUrl; }
+}
+
 function applyLightEdit(imageUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image(); img.crossOrigin = 'anonymous';
+  return new Promise(async (resolve) => {
+    const safeUrl = await ensureDataUrl(imageUrl);
+    const img = new Image();
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
@@ -163,13 +178,14 @@ function applyLightEdit(imageUrl: string): Promise<string> {
         resolve(canvas.toDataURL('image/jpeg', 0.92));
       } catch { resolve(imageUrl); }
     };
-    img.onerror = () => resolve(imageUrl); img.src = imageUrl;
+    img.onerror = () => resolve(imageUrl); img.src = safeUrl;
   });
 }
 
 function applyLightBoost(imageUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image(); img.crossOrigin = 'anonymous';
+  return new Promise(async (resolve) => {
+    const safeUrl = await ensureDataUrl(imageUrl);
+    const img = new Image();
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
@@ -177,7 +193,7 @@ function applyLightBoost(imageUrl: string): Promise<string> {
         resolve(canvas.toDataURL('image/jpeg', 0.92));
       } catch { resolve(imageUrl); }
     };
-    img.onerror = () => resolve(imageUrl); img.src = imageUrl;
+    img.onerror = () => resolve(imageUrl); img.src = safeUrl;
   });
 }
 
