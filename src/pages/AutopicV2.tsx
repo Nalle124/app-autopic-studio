@@ -206,7 +206,6 @@ const AutopicV2Content = () => {
     sessionStorage.removeItem('v2-show-results');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
-  }, []);
 
   const goToStep = useCallback((step: number) => {
     setCurrentStep(step);
