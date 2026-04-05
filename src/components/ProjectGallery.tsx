@@ -598,7 +598,24 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
       </div>
 
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3" style={{ contentVisibility: 'auto' }}>
-        {filteredProjects.map((project) => {
+        {/* Pending/processing jobs indicator */}
+        {pendingJobCount > 0 && (
+          <Card className="overflow-hidden border-border border-primary/30 bg-primary/5">
+            <div className="aspect-[4/3] bg-muted relative overflow-hidden flex items-center justify-center">
+              <div className="text-center space-y-3">
+                <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Bearbetar bilder...</p>
+                  <p className="text-xs text-muted-foreground">{pendingJobCount} {pendingJobCount === 1 ? 'bild' : 'bilder'} kvar</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 sm:p-4">
+              <p className="text-sm font-medium text-foreground">Pågående</p>
+              <p className="text-xs text-muted-foreground">Genereras i bakgrunden</p>
+            </div>
+          </Card>
+        )}
           const projectJobs = project.jobs.filter(j => j.final_url);
           const firstImage = projectJobs[0];
           const isOrphan = project.id === 'orphan';
