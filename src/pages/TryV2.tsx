@@ -68,7 +68,7 @@ const TryV2Content = () => {
     const saved = sessionStorage.getItem('try-current-step');
     return saved ? parseInt(saved, 10) : 0;
   });
-  const [images, setImages] = useState<V2Image[]>(EXAMPLE_IMAGES);
+  const [images, setImages] = useState<V2Image[]>([]);
   const [projectName, setProjectName] = useState('');
   const [logoConfig, setLogoConfig] = useState<V2LogoConfig>({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
@@ -123,7 +123,7 @@ const TryV2Content = () => {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    setImages(EXAMPLE_IMAGES);
+    setImages([]);
     setResults([]);
     setShowResults(false);
     setCurrentStep(0);
@@ -334,6 +334,39 @@ const TryV2Content = () => {
                 projectName={projectName}
                 onProjectNameChange={setProjectName}
               />
+            </section>
+
+            {/* Example images — click to add */}
+            <section className="bg-card border border-border rounded-[10px] p-4">
+              <p className="text-xs text-muted-foreground mb-3">Har du inga egna bilder? Testa med våra exempelbilder:</p>
+              <div className="flex gap-2 flex-wrap">
+                {EXAMPLE_IMAGES.map((ex) => {
+                  const alreadyAdded = images.some(img => img.id === ex.id);
+                  return (
+                    <button
+                      key={ex.id}
+                      disabled={alreadyAdded}
+                      onClick={() => {
+                        if (!alreadyAdded) {
+                          handleImagesChange([...images, ex]);
+                        }
+                      }}
+                      className={`relative w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                        alreadyAdded
+                          ? 'border-primary/40 opacity-50 cursor-default'
+                          : 'border-border hover:border-primary cursor-pointer'
+                      }`}
+                    >
+                      <img src={ex.previewUrl} alt="Exempelbild" className="w-full h-full object-cover" />
+                      {alreadyAdded && (
+                        <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-primary" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </section>
           </div>
         )}
