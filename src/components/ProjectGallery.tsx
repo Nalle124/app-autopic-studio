@@ -241,19 +241,26 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
 
       if (projectsError) throw projectsError;
 
-      // Only load orphan jobs on first page
+      // Only load orphan jobs and pending count on first page
       if (page === 1) {
-        const { data: orphanData, error: orphanError } = await supabase
-          .from('processing_jobs')
-          .select('id, final_url, thumbnail_url, scene_id, created_at')
-          .eq('user_id', user.id)
-          .is('project_id', null)
-          .eq('status', 'completed')
-          .order('created_at', { ascending: false })
-          .limit(50);
+        const [orphanResult, pendingResult] = await Promise.all([
+          supabase
+            .from('processing_jobs')
+            .select('id, final_url, thumbnail_url, scene_id, created_at')
+            .eq('user_id', user.id)
+            .is('project_id', null)
+            .eq('status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(50),
+          supabase
+            .from('processing_jobs')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .in('status', ['pending', 'processing']),
+        ]);
 
-        if (orphanError) throw orphanError;
-        setOrphanJobs(orphanData || []);
+        if (!orphanResult.error) setOrphanJobs(orphanResult.data || []);
+        setPendingJobCount(pendingResult.count || 0);
       }
 
       if (append) {
