@@ -397,7 +397,21 @@ export const V2GenerateStep = ({
           }
           const result = { ...img, processedUrl, status: 'done' as const };
           resultImages.push(result);
-          if (deliveryMode === 'direct') { setLiveResults(prev => [...prev, result]); }
+          if (deliveryMode === 'direct') {
+            setLiveResults(prev => {
+              const updated = [...prev, result];
+              // Persist partial results so user can leave and return
+              try {
+                const serializable = updated.map(r => ({
+                  id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
+                  classification: r.classification, status: r.status, error: r.error,
+                }));
+                sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+                sessionStorage.setItem('v2-show-results', 'true');
+              } catch {}
+              return updated;
+            });
+          }
         } catch (err: any) {
           console.error(`Error processing image ${img.id}:`, err);
           if (err?.message?.includes('402') || err?.message?.includes('Otillräckliga')) {

@@ -2556,17 +2556,17 @@ export const CreateSceneModal = ({
                         className="group relative flex flex-col rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.02] active:scale-[0.98]">
                         <div className="relative w-full aspect-[4/3] overflow-hidden rounded-t-2xl bg-muted/50">
                           <img
-                            src="/scenes/white-studio.png"
+                            src="/mode-previews/thumbs/white-studio-thumb.jpg"
                             alt=""
                             loading="lazy"
                             className="absolute top-0 left-1 w-[55%] h-[75%] object-cover rounded-lg shadow-sm -rotate-6 group-hover:-rotate-3 transition-transform mt-2" />
                           <img
-                            src="/scenes/nordic-showroom.png"
+                            src="/mode-previews/thumbs/nordic-showroom-thumb.jpg"
                             alt=""
                             loading="lazy"
                             className="absolute top-1 left-1/2 -translate-x-1/2 w-[55%] h-[75%] object-cover rounded-lg shadow-md rotate-0 group-hover:rotate-1 transition-transform z-10" />
                           <img
-                            src="/scenes/hostgata.png"
+                            src="/mode-previews/thumbs/hostgata-thumb.jpg"
                             alt=""
                             loading="lazy"
                             className="absolute bottom-0 right-1 w-[55%] h-[75%] object-cover rounded-lg shadow-lg rotate-6 group-hover:rotate-3 transition-transform" />
@@ -2583,7 +2583,7 @@ export const CreateSceneModal = ({
                         className="group relative flex flex-col rounded-2xl border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-primary/40 transition-all text-left overflow-hidden hover:scale-[1.02] active:scale-[0.98]">
                         <div className="relative w-full aspect-[4/3] overflow-hidden rounded-t-2xl bg-muted/50">
                           <img
-                            src="/mode-previews/redigera-fritt-preview.jpg"
+                            src="/mode-previews/thumbs/redigera-fritt-thumb.jpg"
                             alt=""
                             loading="lazy"
                             className="absolute inset-0 w-full h-full object-cover" />
@@ -2664,12 +2664,12 @@ export const CreateSceneModal = ({
                       className="group relative flex items-center gap-3 w-full rounded-2xl border border-border/60 bg-muted/30 text-left overflow-hidden opacity-60 cursor-default">
                       <div className="relative w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0 overflow-hidden rounded-l-2xl bg-muted/50">
                         <img
-                          src="/mode-previews/ad-sasongsrea.png"
+                          src="/mode-previews/thumbs/ad-sasongsrea-thumb.jpg"
                           alt=""
                           loading="lazy"
                           className="absolute top-0 left-0 w-[70%] h-[80%] object-cover rounded-lg shadow-sm -rotate-3 ml-1.5 mt-1.5" />
                         <img
-                          src="/mode-previews/ad-import-guide.png"
+                          src="/mode-previews/thumbs/ad-import-guide-thumb.jpg"
                           alt=""
                           loading="lazy"
                           className="absolute bottom-0 right-0 w-[70%] h-[80%] object-cover rounded-lg shadow-md rotate-6 mr-1 mb-1" />

@@ -150,6 +150,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
   const galleryNavigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [orphanJobs, setOrphanJobs] = useState<OrphanJob[]>([]);
+  const [pendingJobCount, setPendingJobCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -205,6 +206,15 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     loadProjects(1);
   }, []);
 
+  // Poll for pending jobs completion
+  useEffect(() => {
+    if (pendingJobCount <= 0) return;
+    const interval = setInterval(() => {
+      loadProjects(1);
+    }, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, [pendingJobCount]);
+
   const loadProjects = async (page: number, append = false) => {
     try {
       if (page === 1) {
@@ -240,19 +250,26 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
 
       if (projectsError) throw projectsError;
 
-      // Only load orphan jobs on first page
+      // Only load orphan jobs and pending count on first page
       if (page === 1) {
-        const { data: orphanData, error: orphanError } = await supabase
-          .from('processing_jobs')
-          .select('id, final_url, thumbnail_url, scene_id, created_at')
-          .eq('user_id', user.id)
-          .is('project_id', null)
-          .eq('status', 'completed')
-          .order('created_at', { ascending: false })
-          .limit(50);
+        const [orphanResult, pendingResult] = await Promise.all([
+          supabase
+            .from('processing_jobs')
+            .select('id, final_url, thumbnail_url, scene_id, created_at')
+            .eq('user_id', user.id)
+            .is('project_id', null)
+            .eq('status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(50),
+          supabase
+            .from('processing_jobs')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .in('status', ['pending', 'processing']),
+        ]);
 
-        if (orphanError) throw orphanError;
-        setOrphanJobs(orphanData || []);
+        if (!orphanResult.error) setOrphanJobs(orphanResult.data || []);
+        setPendingJobCount(pendingResult.count || 0);
       }
 
       if (append) {
@@ -545,7 +562,7 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     );
   }
 
-  if (projects.length === 0 && orphanJobs.length === 0) {
+  if (projects.length === 0 && orphanJobs.length === 0 && pendingJobCount === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Inga projekt ännu. Skapa ditt första!</p>
@@ -590,6 +607,24 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
       </div>
 
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3" style={{ contentVisibility: 'auto' }}>
+        {/* Pending/processing jobs indicator */}
+        {pendingJobCount > 0 && (
+          <Card className="overflow-hidden border-border border-primary/30 bg-primary/5">
+            <div className="aspect-[4/3] bg-muted relative overflow-hidden flex items-center justify-center">
+              <div className="text-center space-y-3">
+                <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Bearbetar bilder...</p>
+                  <p className="text-xs text-muted-foreground">{pendingJobCount} {pendingJobCount === 1 ? 'bild' : 'bilder'} kvar</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 sm:p-4">
+              <p className="text-sm font-medium text-foreground">Pågående</p>
+              <p className="text-xs text-muted-foreground">Genereras i bakgrunden</p>
+            </div>
+          </Card>
+        )}
         {filteredProjects.map((project) => {
           const projectJobs = project.jobs.filter(j => j.final_url);
           const firstImage = projectJobs[0];

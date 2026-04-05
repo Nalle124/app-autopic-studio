@@ -77,8 +77,19 @@ const AutopicV2Content = () => {
   const [selectedSceneId, setSelectedSceneId] = useState<string>(() => sessionStorage.getItem('v2-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
   const [autoCropEnabled, setAutoCropEnabled] = useState(true);
-  const [results, setResults] = useState<V2Image[]>([]);
-  const [showResults, setShowResults] = useState(false);
+  const [results, setResults] = useState<V2Image[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('v2-results');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+  const [showResults, setShowResults] = useState(() => {
+    try {
+      return sessionStorage.getItem('v2-show-results') === 'true';
+    } catch {}
+    return false;
+  });
   const draftsLoadedRef = useRef(false);
   const { uploadDraft, fetchDrafts, deleteDraft, deleteAllDrafts } = useDraftImages();
 
@@ -151,6 +162,19 @@ const AutopicV2Content = () => {
   const handleGenerationComplete = useCallback((resultImages: V2Image[]) => {
     setResults(resultImages);
     setShowResults(true);
+    // Persist results so user can navigate away and return
+    try {
+      const serializable = resultImages.map(img => ({
+        id: img.id,
+        previewUrl: img.previewUrl,
+        processedUrl: img.processedUrl,
+        classification: img.classification,
+        status: img.status,
+        error: img.error,
+      }));
+      sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+      sessionStorage.setItem('v2-show-results', 'true');
+    } catch {}
   }, []);
 
   const handleStartOver = useCallback(() => {
@@ -168,6 +192,8 @@ const AutopicV2Content = () => {
     draftsLoadedRef.current = false;
     sessionStorage.removeItem('v2-current-step');
     sessionStorage.removeItem('v2-selected-scene');
+    sessionStorage.removeItem('v2-results');
+    sessionStorage.removeItem('v2-show-results');
   }, [user?.id, deleteAllDrafts]);
 
   const handleTryAnotherBackground = useCallback(() => {
@@ -176,6 +202,8 @@ const AutopicV2Content = () => {
     setCurrentStep(1);
     setMaxStepReached(prev => Math.max(prev, 1));
     setSelectedSceneId('');
+    sessionStorage.removeItem('v2-results');
+    sessionStorage.removeItem('v2-show-results');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
