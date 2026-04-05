@@ -466,6 +466,18 @@ export const V2GenerateStep = ({
             setStatusText(t('v2.maskingInterior', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
             processedUrl = await processInteriorImage(img, interiorBgType);
+            // Save interior image to processing_jobs so it appears in gallery
+            try {
+              await supabase.from('processing_jobs').insert({
+                user_id: session.user.id,
+                original_filename: img.file?.name || `${img.id}.jpg`,
+                scene_id: sceneId || 'interior',
+                status: 'completed',
+                final_url: processedUrl,
+                thumbnail_url: processedUrl,
+                completed_at: new Date().toISOString(),
+              });
+            } catch (e) { console.warn('Could not save interior job:', e); }
           }
           if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
           if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
@@ -708,6 +720,17 @@ export const V2GenerateStep = ({
       >
         {processing ? t('v2.processing') : t('v2.generateImages', { count: totalImages })}
       </Button>
+
+      {/* CTA for try/free users */}
+      {onTriggerPaywall && (
+        <Button
+          variant="outline"
+          className="w-full border-primary text-primary hover:bg-primary/5 font-semibold"
+          onClick={onTriggerPaywall}
+        >
+          Hitta ditt paket
+        </Button>
+      )}
     </div>
   );
 };

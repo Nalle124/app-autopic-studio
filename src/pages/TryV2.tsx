@@ -199,11 +199,16 @@ const TryV2Content = () => {
               <SelectItem value="v2">Projekt</SelectItem>
               <SelectItem value="ai-studio">AI Studio</SelectItem>
               <SelectItem value="history">Galleri</SelectItem>
-              <SelectItem value="pro">
-                <span className="bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] bg-clip-text text-transparent font-semibold">Skaffa Pro</span>
-              </SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            size={isMobile ? 'sm' : 'default'}
+            className="text-white font-semibold text-xs"
+            style={{ background: 'linear-gradient(135deg, hsl(220 27% 41%) 0%, hsl(25 71% 45%) 100%)' }}
+            onClick={() => triggerPaywall('signup')}
+          >
+            Skaffa Pro
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
             if (!user) setShowSignupModal(true);
             else navigate('/profil');
