@@ -494,6 +494,47 @@ export const V2GenerateStep = ({
           if (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig)) {
             processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset, logoConfig.logoSize);
           }
+
+          // Save final post-processed image (with logo/plates/light edits) to gallery
+          const hasPostProcessing = plateConfig.enabled || lightBoost || lightEdit || (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig));
+          if (isExterior && exteriorJobId && hasPostProcessing) {
+            // Update the existing job with the post-processed URL
+            try {
+              // Upload the post-processed image to storage
+              const postBlob = await fetch(processedUrl).then(r => r.blob());
+              const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
+              const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
+              if (!upErr) {
+                const { data: pubUrl } = supabase.storage.from('processed-cars').getPublicUrl(postPath);
+                await supabase.from('processing_jobs').update({ final_url: pubUrl.publicUrl, thumbnail_url: pubUrl.publicUrl }).eq('id', exteriorJobId);
+              }
+            } catch (e) { console.warn('Could not update gallery with post-processed image:', e); }
+          } else if (!isExterior) {
+            // Save interior image to processing_jobs (after all edits)
+            try {
+              // Upload if it's a data URL
+              let galleryUrl = processedUrl;
+              if (processedUrl.startsWith('data:')) {
+                const postBlob = await fetch(processedUrl).then(r => r.blob());
+                const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
+                const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
+                if (!upErr) {
+                  const { data: pubUrl } = supabase.storage.from('processed-cars').getPublicUrl(postPath);
+                  galleryUrl = pubUrl.publicUrl;
+                }
+              }
+              await supabase.from('processing_jobs').insert({
+                user_id: session.user.id,
+                original_filename: img.file?.name || `${img.id}.jpg`,
+                scene_id: sceneId || 'interior',
+                status: 'completed',
+                final_url: galleryUrl,
+                thumbnail_url: galleryUrl,
+                completed_at: new Date().toISOString(),
+              });
+            } catch (e) { console.warn('Could not save interior job:', e); }
+          }
+
           const result = { ...img, processedUrl, status: 'done' as const };
           resultImages.push(result);
           if (deliveryMode === 'direct') {
