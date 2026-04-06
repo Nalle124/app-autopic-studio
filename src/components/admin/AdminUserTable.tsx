@@ -218,7 +218,7 @@ export const AdminUserTable = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    {user.roles?.map((role) => (
+                    {user.roles?.filter(Boolean).map((role) => (
                       <Badge
                         key={role}
                         variant={role === 'admin' ? 'default' : 'secondary'}
