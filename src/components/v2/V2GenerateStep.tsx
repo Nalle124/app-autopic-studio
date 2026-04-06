@@ -469,11 +469,14 @@ export const V2GenerateStep = ({
         setCurrentImageIndex(i + 1);
         try {
           let processedUrl: string;
+          let exteriorJobId: string | null = null;
           const isExterior = img.classification === 'exterior' || img.classification === 'detail';
           if (isExterior) {
             setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
-            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+            const extResult = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+            processedUrl = extResult.finalUrl;
+            exteriorJobId = extResult.jobId;
             // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
             if (plateConfig.enabled) {
               setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
@@ -485,18 +488,6 @@ export const V2GenerateStep = ({
             setStatusText(t('v2.maskingInterior', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
             processedUrl = await processInteriorImage(img, interiorBgType);
-            // Save interior image to processing_jobs so it appears in gallery
-            try {
-              await supabase.from('processing_jobs').insert({
-                user_id: session.user.id,
-                original_filename: img.file?.name || `${img.id}.jpg`,
-                scene_id: sceneId || 'interior',
-                status: 'completed',
-                final_url: processedUrl,
-                thumbnail_url: processedUrl,
-                completed_at: new Date().toISOString(),
-              });
-            } catch (e) { console.warn('Could not save interior job:', e); }
           }
           if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
           if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
