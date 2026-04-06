@@ -362,9 +362,11 @@ export const V2GenerateStep = ({
       }
 
       let processedUrl: string;
+      let exteriorJobId: string | null = null;
       if (isExterior) {
-        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
-        // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
+        const result = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+        processedUrl = result.finalUrl;
+        exteriorJobId = result.jobId;
         if (plateConfig.enabled) {
           try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); } catch {}
         }
@@ -467,11 +469,14 @@ export const V2GenerateStep = ({
         setCurrentImageIndex(i + 1);
         try {
           let processedUrl: string;
+          let exteriorJobId: string | null = null;
           const isExterior = img.classification === 'exterior' || img.classification === 'detail';
           if (isExterior) {
             setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
-            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+            const extResult = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+            processedUrl = extResult.finalUrl;
+            exteriorJobId = extResult.jobId;
             // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
             if (plateConfig.enabled) {
               setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
@@ -483,24 +488,53 @@ export const V2GenerateStep = ({
             setStatusText(t('v2.maskingInterior', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
             processedUrl = await processInteriorImage(img, interiorBgType);
-            // Save interior image to processing_jobs so it appears in gallery
-            try {
-              await supabase.from('processing_jobs').insert({
-                user_id: session.user.id,
-                original_filename: img.file?.name || `${img.id}.jpg`,
-                scene_id: sceneId || 'interior',
-                status: 'completed',
-                final_url: processedUrl,
-                thumbnail_url: processedUrl,
-                completed_at: new Date().toISOString(),
-              });
-            } catch (e) { console.warn('Could not save interior job:', e); }
           }
           if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
           if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
           if (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig)) {
             processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset, logoConfig.logoSize);
           }
+
+          // Save final post-processed image (with logo/plates/light edits) to gallery
+          const hasPostProcessing = plateConfig.enabled || lightBoost || lightEdit || (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig));
+          if (isExterior && exteriorJobId && hasPostProcessing) {
+            // Update the existing job with the post-processed URL
+            try {
+              // Upload the post-processed image to storage
+              const postBlob = await fetch(processedUrl).then(r => r.blob());
+              const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
+              const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
+              if (!upErr) {
+                const { data: pubUrl } = supabase.storage.from('processed-cars').getPublicUrl(postPath);
+                await supabase.from('processing_jobs').update({ final_url: pubUrl.publicUrl, thumbnail_url: pubUrl.publicUrl }).eq('id', exteriorJobId);
+              }
+            } catch (e) { console.warn('Could not update gallery with post-processed image:', e); }
+          } else if (!isExterior) {
+            // Save interior image to processing_jobs (after all edits)
+            try {
+              // Upload if it's a data URL
+              let galleryUrl = processedUrl;
+              if (processedUrl.startsWith('data:')) {
+                const postBlob = await fetch(processedUrl).then(r => r.blob());
+                const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
+                const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
+                if (!upErr) {
+                  const { data: pubUrl } = supabase.storage.from('processed-cars').getPublicUrl(postPath);
+                  galleryUrl = pubUrl.publicUrl;
+                }
+              }
+              await supabase.from('processing_jobs').insert({
+                user_id: session.user.id,
+                original_filename: img.file?.name || `${img.id}.jpg`,
+                scene_id: sceneId || 'interior',
+                status: 'completed',
+                final_url: galleryUrl,
+                thumbnail_url: galleryUrl,
+                completed_at: new Date().toISOString(),
+              });
+            } catch (e) { console.warn('Could not save interior job:', e); }
+          }
+
           const result = { ...img, processedUrl, status: 'done' as const };
           resultImages.push(result);
           if (deliveryMode === 'direct') {
@@ -773,9 +807,8 @@ async function normalizeImageOrientation(file: File): Promise<File> {
   });
 }
 
-async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off'): Promise<string> {
+async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off'): Promise<{ finalUrl: string; jobId: string | null }> {
   let file = img.file;
-  // If file is null or empty (e.g. example images or restored drafts), fetch from previewUrl
   if ((!file || file.size === 0) && img.previewUrl) {
     const resp = await fetch(img.previewUrl);
     const blob = await resp.blob();
@@ -783,7 +816,6 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   }
   if (!file) throw new Error('Ingen bildfil tillgänglig');
 
-  // Normalize orientation: draw through canvas to bake in EXIF rotation
   file = await normalizeImageOrientation(file);
 
   const formData = new FormData();
@@ -801,7 +833,6 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   formData.append('backgroundUrl', backgroundUrl);
   formData.append('orientation', outputFormat === 'portrait' ? 'portrait' : 'landscape');
 
-  // Send original dimensions (post-normalization, so they match pixel data)
   const dims = await new Promise<{ w: number; h: number }>((resolve) => {
     const image = new window.Image();
     image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
@@ -825,6 +856,6 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
     if (!response.ok) { let d = `HTTP ${response.status}`; try { const e = await response.json(); d = e.error || d; } catch {} throw new Error(d); }
     const result = await response.json();
     if (!result.success || !result.finalUrl) throw new Error(result.error || 'Bearbetning misslyckades');
-    return result.finalUrl;
+    return { finalUrl: result.finalUrl, jobId: result.jobId || null };
   } catch (err: any) { clearTimeout(timeoutId); throw err; }
 }

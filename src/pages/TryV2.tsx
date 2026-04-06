@@ -74,7 +74,7 @@ const TryV2Content = () => {
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState(() => sessionStorage.getItem('try-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
-  const [autoCropMode, setAutoCropMode] = useState<'off' | 'tight' | 'standard'>('tight');
+  const [autoCropMode, setAutoCropMode] = useState<'off' | 'tight' | 'standard'>('off');
   const [results, setResults] = useState<V2Image[]>(() => {
     try {
       const saved = sessionStorage.getItem('try-results');
