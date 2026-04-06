@@ -46,9 +46,10 @@ interface Props {
   onProjectNameChange: (name: string) => void;
   onDeleteDraft?: (draftId: string) => void;
   onClearAllDrafts?: () => void;
+  maxImages?: number;
 }
 
-export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, onDeleteDraft, onClearAllDrafts }: Props) => {
+export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, onDeleteDraft, onClearAllDrafts, maxImages }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
@@ -65,8 +66,13 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       return true;
     });
 
-    if (images.length + validFiles.length > 50) {
-      toast.error(t('v2.max50'));
+    const effectiveMax = maxImages ?? 50;
+    if (images.length + validFiles.length > effectiveMax) {
+      if (maxImages && maxImages < 50) {
+        toast.error(t('v2.demoMaxImages', { count: maxImages }));
+      } else {
+        toast.error(t('v2.max50'));
+      }
       return;
     }
 
@@ -196,7 +202,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         </div>
       )}
 
-      <p className="text-[10px] text-muted-foreground text-right">{images.length}/50</p>
+      <p className="text-[10px] text-muted-foreground text-right">{images.length}/{maxImages ?? 50}</p>
 
       {/* Nyhet badge */}
       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[10px] border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10">

@@ -98,7 +98,7 @@ const Auth = () => {
       localStorage.setItem('pendingPlan', selectedPlan);
       navigate('/payment-pending');
     } else {
-      navigate('/onboarding');
+      navigate('/');
     }
   };
 
