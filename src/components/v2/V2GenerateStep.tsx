@@ -773,9 +773,8 @@ async function normalizeImageOrientation(file: File): Promise<File> {
   });
 }
 
-async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off'): Promise<string> {
+async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off'): Promise<{ finalUrl: string; jobId: string | null }> {
   let file = img.file;
-  // If file is null or empty (e.g. example images or restored drafts), fetch from previewUrl
   if ((!file || file.size === 0) && img.previewUrl) {
     const resp = await fetch(img.previewUrl);
     const blob = await resp.blob();
@@ -783,7 +782,6 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   }
   if (!file) throw new Error('Ingen bildfil tillgänglig');
 
-  // Normalize orientation: draw through canvas to bake in EXIF rotation
   file = await normalizeImageOrientation(file);
 
   const formData = new FormData();
@@ -801,7 +799,6 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   formData.append('backgroundUrl', backgroundUrl);
   formData.append('orientation', outputFormat === 'portrait' ? 'portrait' : 'landscape');
 
-  // Send original dimensions (post-normalization, so they match pixel data)
   const dims = await new Promise<{ w: number; h: number }>((resolve) => {
     const image = new window.Image();
     image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
@@ -825,6 +822,6 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
     if (!response.ok) { let d = `HTTP ${response.status}`; try { const e = await response.json(); d = e.error || d; } catch {} throw new Error(d); }
     const result = await response.json();
     if (!result.success || !result.finalUrl) throw new Error(result.error || 'Bearbetning misslyckades');
-    return result.finalUrl;
+    return { finalUrl: result.finalUrl, jobId: result.jobId || null };
   } catch (err: any) { clearTimeout(timeoutId); throw err; }
 }
