@@ -344,7 +344,8 @@ serve(async (req) => {
     }
     
     const autoCrop = formData.get('autoCrop') === 'true';
-    const paddingValue = autoCrop ? '0.03' : (orientation === 'portrait' ? '0.08' : '0.10');
+    const autoCropPadding = formData.get('autoCropPadding') as string || '0.03';
+    const paddingValue = autoCrop ? autoCropPadding : (orientation === 'portrait' ? '0.08' : '0.10');
     photoroomFormData.append('padding', paddingValue);
     
     photoroomFormData.append('scaling', 'fit');
