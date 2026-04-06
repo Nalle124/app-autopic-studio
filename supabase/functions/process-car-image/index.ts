@@ -541,11 +541,11 @@ serve(async (req) => {
       console.error('CRITICAL: PhotoRoom processed image but credit deduction failed!');
     }
 
-    // Step 3: Compress if needed and save final image
-    console.log('Preparing final image for upload...');
+    // Step 3: Always compress to JPEG for storage efficiency (~1-2MB vs 5-10MB PNG)
+    console.log('Compressing final image to JPEG for storage...');
     
-    const { buffer: uploadBuffer, contentType, wasCompressed } = await compressImageIfNeeded(finalImageBuffer);
-    const fileExtension = wasCompressed ? 'jpg' : 'png';
+    const { buffer: uploadBuffer, contentType } = await compressToJpeg(finalImageBuffer);
+    const fileExtension = 'jpg';
     
     // Sanitize scene ID for filename
     const sanitizedSceneId = scene.id
