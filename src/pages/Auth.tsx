@@ -97,8 +97,11 @@ const Auth = () => {
     if (selectedPlan) {
       localStorage.setItem('pendingPlan', selectedPlan);
       navigate('/payment-pending');
+    } else if (isInvite) {
+      navigate('/onboarding');
     } else {
-      navigate('/');
+      // Free signup without plan → send to try flow
+      navigate('/try');
     }
   };
 

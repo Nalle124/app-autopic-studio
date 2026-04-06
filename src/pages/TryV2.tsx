@@ -53,12 +53,13 @@ const TryV2Content = () => {
   // Track if user signed up during this session (to avoid redirecting)
   const [signedUpHere, setSignedUpHere] = useState(false);
 
-  // Redirect logged-in users to main app (unless they just signed up here)
+  // Redirect logged-in subscribers to main app (free users can stay on /try)
+  const { isSubscribed, subscriptionLoading } = useDemo();
   useEffect(() => {
-    if (!authLoading && user && !signedUpHere) {
+    if (!authLoading && !subscriptionLoading && user && !signedUpHere && isSubscribed) {
       navigate('/');
     }
-  }, [user, authLoading, navigate, signedUpHere]);
+  }, [user, authLoading, navigate, signedUpHere, isSubscribed, subscriptionLoading]);
 
   const [currentStep, setCurrentStep] = useState(() => {
     const saved = sessionStorage.getItem('try-current-step');
