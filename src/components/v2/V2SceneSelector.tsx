@@ -3,10 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { CheckCircle2, RefreshCw, LayoutGrid, Grid2x2 } from 'lucide-react';
+import { CheckCircle2, RefreshCw, LayoutGrid, Grid2x2, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface Scene {
   id: string;
@@ -34,6 +40,7 @@ const POPULAR_SCENE_IDS = [
 
 const CATEGORY_KEYS: { id: string; key: string }[] = [
   { id: 'popular', key: 'v2.categories.popular' },
+  { id: 'user', key: 'v2.categories.myScenes' },
   { id: 'studio-basic', key: 'v2.categories.studioBasic' },
   { id: 'studio-light', key: 'v2.categories.studioLight' },
   { id: 'studio-dark', key: 'v2.categories.studioDark' },
@@ -44,7 +51,6 @@ const CATEGORY_KEYS: { id: string; key: string }[] = [
   { id: 'premium', key: 'v2.categories.premium' },
   { id: 'exakt', key: 'v2.categories.exact' },
   { id: 'kreativa', key: 'v2.categories.creative' },
-  { id: 'user', key: 'v2.categories.myScenes' },
 ];
 
 export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOutputFormatChange, isTryFlow }: Props) => {
@@ -117,6 +123,8 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
   const displayScenes = getDisplayScenes();
   const isPortrait = outputFormat === 'portrait';
   const thumbAspect = isPortrait ? 'aspect-[2/3]' : 'aspect-[4/3]';
+  const visibleCategories = getVisibleCategories();
+  const activeCategoryLabel = visibleCategories.find(c => c.id === activeCategory);
 
   return (
     <div className="space-y-6">
@@ -124,7 +132,7 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.chooseBackground')}</h2>
         <div className="flex items-center gap-2">
-          {/* Format toggle — lighter, more subtle */}
+          {/* Format toggle */}
           <div className="flex gap-0.5 border border-border rounded-full p-0.5">
             <button
               onClick={() => onOutputFormatChange('landscape')}
@@ -157,22 +165,26 @@ export const V2SceneSelector = ({ selectedSceneId, onSelect, outputFormat, onOut
         </div>
       </div>
 
-      {/* Category tabs — extra spacing before gallery */}
-      <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-hide">
-        {getVisibleCategories().map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-              activeCategory === cat.id
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t(cat.key)}
+      {/* Category dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-muted transition-colors w-full justify-between">
+            <span>{activeCategoryLabel ? t(activeCategoryLabel.key) : t('v2.categories.popular')}</span>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>
-        ))}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
+          {visibleCategories.map(cat => (
+            <DropdownMenuItem
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={activeCategory === cat.id ? 'bg-accent font-semibold' : ''}
+            >
+              {t(cat.key)}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {error ? (
         <div className="flex flex-col items-center justify-center py-10 gap-3">
