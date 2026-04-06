@@ -29,31 +29,19 @@ interface SceneMetadata {
 // Fixed seed for consistent results across generations
 const PROCESSING_SEED = 117879368;
 
-// Helper function to compress image if too large
-async function compressImageIfNeeded(
-  imageBuffer: ArrayBuffer,
-  maxSizeBytes: number = 50 * 1024 * 1024 // 50MB threshold
-): Promise<{ buffer: ArrayBuffer; contentType: string; wasCompressed: boolean }> {
-  if (imageBuffer.byteLength <= maxSizeBytes) {
-    return { buffer: imageBuffer, contentType: 'image/png', wasCompressed: false };
-  }
-
-  console.log(`Image too large (${(imageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB), compressing to JPEG...`);
-  
-  // Use PhotoRoom's API to convert to JPEG with compression
-  // This is a simple conversion - we re-encode as JPEG
+// Compress image to JPEG for storage efficiency
+async function compressToJpeg(
+  imageBuffer: ArrayBuffer
+): Promise<{ buffer: ArrayBuffer; contentType: string }> {
   const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
   
   if (!PHOTOROOM_API_KEY) {
-    // If no API key, just return the original
-    console.warn('No PhotoRoom API key for compression, using original');
-    return { buffer: imageBuffer, contentType: 'image/png', wasCompressed: false };
+    console.warn('No PhotoRoom API key for compression, using original PNG');
+    return { buffer: imageBuffer, contentType: 'image/png' };
   }
 
   try {
-    // Create a blob from the buffer
     const blob = new Blob([imageBuffer], { type: 'image/png' });
-    
     const formData = new FormData();
     formData.append('image_file', blob, 'image.png');
     formData.append('format', 'jpg');
@@ -61,23 +49,23 @@ async function compressImageIfNeeded(
 
     const response = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
-      headers: {
-        'x-api-key': PHOTOROOM_API_KEY,
-      },
+      headers: { 'x-api-key': PHOTOROOM_API_KEY },
       body: formData,
     });
 
     if (response.ok) {
       const compressedBuffer = await response.arrayBuffer();
-      console.log(`Compressed to ${(compressedBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
-      return { buffer: compressedBuffer, contentType: 'image/jpeg', wasCompressed: true };
+      const origMB = (imageBuffer.byteLength / 1024 / 1024).toFixed(2);
+      const newMB = (compressedBuffer.byteLength / 1024 / 1024).toFixed(2);
+      console.log(`Compressed ${origMB}MB PNG → ${newMB}MB JPEG`);
+      return { buffer: compressedBuffer, contentType: 'image/jpeg' };
     }
+    console.warn('PhotoRoom compression failed, status:', response.status);
   } catch (err) {
     console.error('Compression failed:', err);
   }
 
-  // Fallback: return original
-  return { buffer: imageBuffer, contentType: 'image/png', wasCompressed: false };
+  return { buffer: imageBuffer, contentType: 'image/png' };
 }
 
 serve(async (req) => {
