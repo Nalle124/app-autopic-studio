@@ -741,6 +741,37 @@ export const V2GenerateStep = ({
   );
 };
 
+/**
+ * Normalize an image file through a canvas to apply EXIF rotation.
+ * Modern browsers auto-rotate when drawing to canvas, producing correct pixel data.
+ */
+async function normalizeImageOrientation(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        // naturalWidth/Height already reflect EXIF rotation in modern browsers
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', 0.95);
+      } catch {
+        resolve(file);
+      }
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait'): Promise<string> {
   let file = img.file;
   // If file is null or empty (e.g. example images or restored drafts), fetch from previewUrl
@@ -750,6 +781,10 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
     file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
   }
   if (!file) throw new Error('Ingen bildfil tillgänglig');
+
+  // Normalize orientation: draw through canvas to bake in EXIF rotation
+  file = await normalizeImageOrientation(file);
+
   const formData = new FormData();
   formData.append('image', file, file.name);
   const scenePayload = {
@@ -765,12 +800,12 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   formData.append('backgroundUrl', backgroundUrl);
   formData.append('orientation', outputFormat === 'portrait' ? 'portrait' : 'landscape');
 
-  // Send original dimensions so edge function preserves aspect ratio
+  // Send original dimensions (post-normalization, so they match pixel data)
   const dims = await new Promise<{ w: number; h: number }>((resolve) => {
     const image = new window.Image();
     image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
     image.onerror = () => resolve({ w: 4000, h: 2667 });
-    image.src = file ? URL.createObjectURL(file) : img.previewUrl;
+    image.src = URL.createObjectURL(file!);
   });
   formData.append('originalWidth', dims.w.toString());
   formData.append('originalHeight', dims.h.toString());

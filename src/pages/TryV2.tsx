@@ -302,7 +302,13 @@ const TryV2Content = () => {
         <V2ResultGallery 
           results={results} 
           onStartOver={handleStartOver} 
-          onTryAnotherBackground={() => { setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1); }}
+          onTryAnotherBackground={() => {
+            if (credits <= 0) {
+              triggerPaywall('limit');
+              return;
+            }
+            setResults([]); setShowResults(false); setSelectedSceneId(''); setCurrentStep(1);
+          }}
           onFindPlan={() => triggerPaywall('signup')}
           isTryFlow
         />
