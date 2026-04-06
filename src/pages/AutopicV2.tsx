@@ -58,7 +58,7 @@ const AutopicV2Content = () => {
   ] as const;
   const { user } = useAuth();
   const { credits, refetch: refetchCredits } = useUserCredits();
-  const { triggerPaywall } = useDemo();
+  const { triggerPaywall, isSubscribed } = useDemo();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
@@ -407,6 +407,7 @@ const AutopicV2Content = () => {
               onProjectNameChange={setProjectName}
               onDeleteDraft={(draftId) => deleteDraft(draftId)}
               onClearAllDrafts={() => { if (user?.id) deleteAllDrafts(user.id); }}
+              maxImages={isSubscribed ? 50 : 3}
             />
           </section>
         )}
