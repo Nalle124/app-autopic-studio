@@ -358,8 +358,8 @@ export const V2GenerateStep = ({
 
       let processedUrl: string;
       if (isExterior) {
-        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
-        if (autoCropEnabled) processedUrl = await autoCropImage(processedUrl, targetAspect);
+        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropEnabled);
+        // Auto-crop handled natively by PhotoRoom when autoCropEnabled=true
         if (plateConfig.enabled) {
           try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); } catch {}
         }
@@ -466,12 +466,8 @@ export const V2GenerateStep = ({
           if (isExterior) {
             setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
-            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
-            if (autoCropEnabled) {
-              setStatusText(t('v2.cropping', { current: i + 1, total: totalSteps }));
-              setProgress(Math.round(((i + 0.4) / totalSteps) * 100));
-              processedUrl = await autoCropImage(processedUrl, targetAspect);
-            }
+            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropEnabled);
+            // Auto-crop handled natively by PhotoRoom when autoCropEnabled=true
             if (plateConfig.enabled) {
               setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
               setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
