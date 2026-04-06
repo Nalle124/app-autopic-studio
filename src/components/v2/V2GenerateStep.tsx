@@ -37,8 +37,12 @@ const LOGO_SIZE_MAP: Record<string, number> = {
 };
 
 async function fetchScene(sceneId: string) {
+  // Try global scenes first
   const { data } = await supabase.from('scenes').select('*').eq('id', sceneId).single();
-  return data;
+  if (data) return data;
+  // Fallback to user-created scenes
+  const { data: userScene } = await supabase.from('user_scenes').select('*').eq('id', sceneId).single();
+  return userScene;
 }
 
 async function fetchUserLogo(userId: string) {
