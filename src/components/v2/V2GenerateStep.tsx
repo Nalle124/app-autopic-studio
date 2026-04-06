@@ -362,9 +362,11 @@ export const V2GenerateStep = ({
       }
 
       let processedUrl: string;
+      let exteriorJobId: string | null = null;
       if (isExterior) {
-        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
-        // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
+        const result = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+        processedUrl = result.finalUrl;
+        exteriorJobId = result.jobId;
         if (plateConfig.enabled) {
           try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); } catch {}
         }
