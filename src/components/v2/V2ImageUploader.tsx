@@ -49,7 +49,7 @@ interface Props {
   maxImages?: number;
 }
 
-export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, onDeleteDraft, onClearAllDrafts }: Props) => {
+export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, onDeleteDraft, onClearAllDrafts, maxImages }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [previewImage, setPreviewImage] = useState<V2Image | null>(null);
@@ -66,8 +66,13 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
       return true;
     });
 
-    if (images.length + validFiles.length > 50) {
-      toast.error(t('v2.max50'));
+    const effectiveMax = maxImages ?? 50;
+    if (images.length + validFiles.length > effectiveMax) {
+      if (maxImages && maxImages < 50) {
+        toast.error(t('v2.demoMaxImages', { count: maxImages }));
+      } else {
+        toast.error(t('v2.max50'));
+      }
       return;
     }
 
