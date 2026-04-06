@@ -343,11 +343,13 @@ serve(async (req) => {
       console.log('Adding PhotoRoom shadow:', shadowMode);
     }
     
-    const paddingValue = orientation === 'portrait' ? '0.08' : '0.10';
+    const autoCrop = formData.get('autoCrop') === 'true';
+    const paddingValue = autoCrop ? '0.03' : (orientation === 'portrait' ? '0.08' : '0.10');
     photoroomFormData.append('padding', paddingValue);
     
     photoroomFormData.append('scaling', 'fit');
-    photoroomFormData.append('referenceBox', 'originalImage');
+    photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
+    console.log(`Auto-crop: ${autoCrop}, padding: ${paddingValue}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
     
     if (relightEnabled) {
       photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');

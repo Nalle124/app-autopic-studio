@@ -358,8 +358,8 @@ export const V2GenerateStep = ({
 
       let processedUrl: string;
       if (isExterior) {
-        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
-        if (autoCropEnabled) processedUrl = await autoCropImage(processedUrl, targetAspect);
+        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropEnabled);
+        // Auto-crop handled natively by PhotoRoom when autoCropEnabled=true
         if (plateConfig.enabled) {
           try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); } catch {}
         }
@@ -466,12 +466,8 @@ export const V2GenerateStep = ({
           if (isExterior) {
             setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
-            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat);
-            if (autoCropEnabled) {
-              setStatusText(t('v2.cropping', { current: i + 1, total: totalSteps }));
-              setProgress(Math.round(((i + 0.4) / totalSteps) * 100));
-              processedUrl = await autoCropImage(processedUrl, targetAspect);
-            }
+            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropEnabled);
+            // Auto-crop handled natively by PhotoRoom when autoCropEnabled=true
             if (plateConfig.enabled) {
               setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
               setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
@@ -772,7 +768,7 @@ async function normalizeImageOrientation(file: File): Promise<File> {
   });
 }
 
-async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait'): Promise<string> {
+async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCrop: boolean = false): Promise<string> {
   let file = img.file;
   // If file is null or empty (e.g. example images or restored drafts), fetch from previewUrl
   if ((!file || file.size === 0) && img.previewUrl) {
@@ -809,6 +805,7 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   });
   formData.append('originalWidth', dims.w.toString());
   formData.append('originalHeight', dims.h.toString());
+  if (autoCrop) formData.append('autoCrop', 'true');
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
