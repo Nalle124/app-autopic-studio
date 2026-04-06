@@ -498,10 +498,8 @@ export const V2GenerateStep = ({
           // Save final post-processed image (with logo/plates/light edits) to gallery
           const hasPostProcessing = plateConfig.enabled || lightBoost || lightEdit || (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig));
           if (isExterior && exteriorJobId && hasPostProcessing) {
-            // Update the existing job with the post-processed URL
             try {
-              // Upload the post-processed image to storage
-              const postBlob = await fetch(processedUrl).then(r => r.blob());
+              const postBlob = await compressBlobForStorage(processedUrl);
               const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
               const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
               if (!upErr) {
@@ -510,12 +508,10 @@ export const V2GenerateStep = ({
               }
             } catch (e) { console.warn('Could not update gallery with post-processed image:', e); }
           } else if (!isExterior) {
-            // Save interior image to processing_jobs (after all edits)
             try {
-              // Upload if it's a data URL
               let galleryUrl = processedUrl;
               if (processedUrl.startsWith('data:')) {
-                const postBlob = await fetch(processedUrl).then(r => r.blob());
+                const postBlob = await compressBlobForStorage(processedUrl);
                 const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
                 const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
                 if (!upErr) {
