@@ -36,6 +36,29 @@ const LOGO_SIZE_MAP: Record<string, number> = {
   large: 0.16,
 };
 
+/** Compress an image URL/dataURL to a ~1-2 MB JPEG blob for storage */
+async function compressBlobForStorage(imageUrl: string): Promise<Blob> {
+  const resp = await fetch(imageUrl);
+  const srcBlob = await resp.blob();
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => resolve(blob || srcBlob),
+        'image/jpeg',
+        0.85
+      );
+    };
+    img.onerror = () => resolve(srcBlob);
+    img.src = URL.createObjectURL(srcBlob);
+  });
+}
+
 async function fetchScene(sceneId: string) {
   // Try global scenes first
   const { data } = await supabase.from('scenes').select('*').eq('id', sceneId).single();
@@ -498,10 +521,8 @@ export const V2GenerateStep = ({
           // Save final post-processed image (with logo/plates/light edits) to gallery
           const hasPostProcessing = plateConfig.enabled || lightBoost || lightEdit || (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig));
           if (isExterior && exteriorJobId && hasPostProcessing) {
-            // Update the existing job with the post-processed URL
             try {
-              // Upload the post-processed image to storage
-              const postBlob = await fetch(processedUrl).then(r => r.blob());
+              const postBlob = await compressBlobForStorage(processedUrl);
               const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
               const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
               if (!upErr) {
@@ -510,12 +531,10 @@ export const V2GenerateStep = ({
               }
             } catch (e) { console.warn('Could not update gallery with post-processed image:', e); }
           } else if (!isExterior) {
-            // Save interior image to processing_jobs (after all edits)
             try {
-              // Upload if it's a data URL
               let galleryUrl = processedUrl;
               if (processedUrl.startsWith('data:')) {
-                const postBlob = await fetch(processedUrl).then(r => r.blob());
+                const postBlob = await compressBlobForStorage(processedUrl);
                 const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
                 const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
                 if (!upErr) {

@@ -13,56 +13,57 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // SECURITY: Require authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Check if this is a scheduled cron call
+    const body = await req.json().catch(() => ({}));
+    const isScheduled = body?.scheduled === true;
+
+    if (!isScheduled) {
+      // Manual call: require admin authentication
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authentication required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid authentication' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: user.id });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Admin cleanup triggered by user: ${user.id}`);
+    } else {
+      console.log('Scheduled cleanup triggered by cron');
     }
 
-    // Verify the user's JWT token
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // SECURITY: Require admin role
-    const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin', {
-      _user_id: user.id
-    });
-
-    if (adminError || !isAdmin) {
-      console.error('Admin check failed:', adminError);
-      return new Response(
-        JSON.stringify({ error: 'Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Admin cleanup triggered by user: ${user.id}`);
-
-    // Find jobs older than 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Find jobs older than 14 days
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
     const { data: oldJobs, error: selectError } = await supabase
       .from('processing_jobs')
       .select('id, final_url, project_id')
-      .lt('created_at', sevenDaysAgo.toISOString());
+      .lt('created_at', fourteenDaysAgo.toISOString());
 
     if (selectError) {
       throw selectError;
     }
 
-    console.log(`Found ${oldJobs?.length || 0} jobs older than 7 days`);
+    console.log(`Found ${oldJobs?.length || 0} jobs older than 14 days`);
 
     if (!oldJobs || oldJobs.length === 0) {
       return new Response(
