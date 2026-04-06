@@ -36,6 +36,29 @@ const LOGO_SIZE_MAP: Record<string, number> = {
   large: 0.16,
 };
 
+/** Compress an image URL/dataURL to a ~1-2 MB JPEG blob for storage */
+async function compressBlobForStorage(imageUrl: string): Promise<Blob> {
+  const resp = await fetch(imageUrl);
+  const srcBlob = await resp.blob();
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => resolve(blob || srcBlob),
+        'image/jpeg',
+        0.85
+      );
+    };
+    img.onerror = () => resolve(srcBlob);
+    img.src = URL.createObjectURL(srcBlob);
+  });
+}
+
 async function fetchScene(sceneId: string) {
   // Try global scenes first
   const { data } = await supabase.from('scenes').select('*').eq('id', sceneId).single();
