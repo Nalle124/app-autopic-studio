@@ -74,7 +74,7 @@ const TryV2Content = () => {
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState(() => sessionStorage.getItem('try-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
-  const [autoCropEnabled, setAutoCropEnabled] = useState(true);
+  const [autoCropMode, setAutoCropMode] = useState<'off' | 'tight' | 'standard'>('tight');
   const [results, setResults] = useState<V2Image[]>(() => {
     try {
       const saved = sessionStorage.getItem('try-results');
@@ -400,8 +400,8 @@ const TryV2Content = () => {
               onConfigChange={setLogoConfig}
               plateConfig={plateConfig}
               onPlateConfigChange={setPlateConfig}
-              autoCropEnabled={autoCropEnabled}
-              onAutoCropChange={setAutoCropEnabled}
+              autoCropMode={autoCropMode}
+              onAutoCropModeChange={setAutoCropMode}
               images={images}
               fallbackLogoUrl={autopicLogoDark}
             />
@@ -423,7 +423,7 @@ const TryV2Content = () => {
                 projectName={projectName}
                 credits={credits}
                 outputFormat={outputFormat}
-                autoCropEnabled={autoCropEnabled}
+                autoCropMode={autoCropMode}
                 onImagesUpdate={setImages}
                 onComplete={handleGenerationComplete}
                 onRefetchCredits={async () => {}}

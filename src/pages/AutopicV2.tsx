@@ -77,7 +77,7 @@ const AutopicV2Content = () => {
   const [plateConfig, setPlateConfig] = useState<V2PlateConfig>({ enabled: false, style: 'blur-dark' });
   const [selectedSceneId, setSelectedSceneId] = useState<string>(() => sessionStorage.getItem('v2-selected-scene') || '');
   const [outputFormat, setOutputFormat] = useState<'landscape' | 'portrait'>('landscape');
-  const [autoCropEnabled, setAutoCropEnabled] = useState(true);
+  const [autoCropMode, setAutoCropMode] = useState<'off' | 'tight' | 'standard'>('tight');
   const [results, setResults] = useState<V2Image[]>(() => {
     try {
       const saved = sessionStorage.getItem('v2-results');
@@ -218,7 +218,7 @@ const AutopicV2Content = () => {
     setSelectedSceneId('');
     setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
-    setAutoCropEnabled(true);
+    setAutoCropMode('tight');
     draftsLoadedRef.current = false;
     sessionStorage.removeItem('v2-current-step');
     sessionStorage.removeItem('v2-selected-scene');
@@ -375,7 +375,7 @@ const AutopicV2Content = () => {
               projectName={projectName}
               credits={credits}
               outputFormat={outputFormat}
-              autoCropEnabled={autoCropEnabled}
+              autoCropMode={autoCropMode}
               onImagesUpdate={setImages}
               onComplete={handleGenerationComplete}
               onRefetchCredits={refetchCredits}
@@ -427,8 +427,8 @@ const AutopicV2Content = () => {
               onConfigChange={setLogoConfig}
               plateConfig={plateConfig}
               onPlateConfigChange={setPlateConfig}
-              autoCropEnabled={autoCropEnabled}
-              onAutoCropChange={setAutoCropEnabled}
+              autoCropMode={autoCropMode}
+              onAutoCropModeChange={setAutoCropMode}
               images={images}
             />
           </section>
@@ -443,7 +443,7 @@ const AutopicV2Content = () => {
               projectName={projectName}
               credits={credits}
               outputFormat={outputFormat}
-              autoCropEnabled={autoCropEnabled}
+              autoCropMode={autoCropMode}
               onImagesUpdate={setImages}
               onComplete={handleGenerationComplete}
               onRefetchCredits={refetchCredits}

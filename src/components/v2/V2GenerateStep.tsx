@@ -17,7 +17,7 @@ interface Props {
   projectName: string;
   credits: number;
   outputFormat: 'landscape' | 'portrait';
-  autoCropEnabled: boolean;
+  autoCropMode: 'off' | 'tight' | 'standard';
   onImagesUpdate: (images: V2Image[]) => void;
   onComplete: (resultImages: V2Image[]) => void;
   onRefetchCredits: () => Promise<void>;
@@ -278,7 +278,7 @@ function getTargetAspect(format: 'landscape' | 'portrait'): number {
 // --- component ---
 
 export const V2GenerateStep = ({
-  images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat, autoCropEnabled,
+  images, logoConfig, plateConfig, sceneId, projectName, credits, outputFormat, autoCropMode,
   onImagesUpdate, onComplete, onRefetchCredits, onStartOver, onTriggerPaywall,
   regenerateImageId, existingResults, onRegenerateComplete,
 }: Props) => {
@@ -358,8 +358,8 @@ export const V2GenerateStep = ({
 
       let processedUrl: string;
       if (isExterior) {
-        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropEnabled);
-        // Auto-crop handled natively by PhotoRoom when autoCropEnabled=true
+        processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+        // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
         if (plateConfig.enabled) {
           try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); } catch {}
         }
@@ -466,8 +466,8 @@ export const V2GenerateStep = ({
           if (isExterior) {
             setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
-            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropEnabled);
-            // Auto-crop handled natively by PhotoRoom when autoCropEnabled=true
+            processedUrl = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+            // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
             if (plateConfig.enabled) {
               setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
               setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
@@ -768,7 +768,7 @@ async function normalizeImageOrientation(file: File): Promise<File> {
   });
 }
 
-async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCrop: boolean = false): Promise<string> {
+async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off'): Promise<string> {
   let file = img.file;
   // If file is null or empty (e.g. example images or restored drafts), fetch from previewUrl
   if ((!file || file.size === 0) && img.previewUrl) {
@@ -805,7 +805,10 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   });
   formData.append('originalWidth', dims.w.toString());
   formData.append('originalHeight', dims.h.toString());
-  if (autoCrop) formData.append('autoCrop', 'true');
+  if (autoCropMode !== 'off') {
+    formData.append('autoCrop', 'true');
+    formData.append('autoCropPadding', autoCropMode === 'tight' ? '0.03' : '0.12');
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);

@@ -15,8 +15,8 @@ interface Props {
   onConfigChange: (config: V2LogoConfig) => void;
   plateConfig: V2PlateConfig;
   onPlateConfigChange: (config: V2PlateConfig) => void;
-  autoCropEnabled: boolean;
-  onAutoCropChange: (enabled: boolean) => void;
+  autoCropMode: 'off' | 'tight' | 'standard';
+  onAutoCropModeChange: (mode: 'off' | 'tight' | 'standard') => void;
   images: V2Image[];
   fallbackLogoUrl?: string;
 }
@@ -87,7 +87,7 @@ const renderPresetMockup = (presetId: string) => {
   );
 };
 
-export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropEnabled, onAutoCropChange, images, fallbackLogoUrl }: Props) => {
+export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropMode, onAutoCropModeChange, images, fallbackLogoUrl }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -367,19 +367,61 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
       {/* Divider */}
       <div className="border-t border-border" />
 
-      {/* Auto-crop toggle */}
-      <div className="flex items-center justify-between rounded-[10px] border border-border p-3 sm:p-4">
-        <div className="flex items-center gap-3">
-          <Crop className="h-5 w-5 text-primary shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground">{t('v2.autoCrop')}</p>
-            <p className="text-[11px] text-muted-foreground">{t('v2.autoCropDesc')}</p>
+      {/* Auto-crop section */}
+      <div className="rounded-[10px] border border-border p-3 sm:p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Crop className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">{t('v2.autoCrop')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('v2.autoCropDesc')}</p>
+            </div>
           </div>
+          <Switch
+            checked={autoCropMode !== 'off'}
+            onCheckedChange={(checked) => onAutoCropModeChange(checked ? 'tight' : 'off')}
+          />
         </div>
-        <Switch
-          checked={autoCropEnabled}
-          onCheckedChange={onAutoCropChange}
-        />
+        
+        {autoCropMode !== 'off' && (
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            {/* Tight mockup */}
+            <button
+              onClick={() => onAutoCropModeChange('tight')}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className={`relative aspect-[16/10] w-full rounded-lg border-2 transition-all bg-muted/50 overflow-hidden ${
+                autoCropMode === 'tight' ? 'border-primary ring-1 ring-primary/30' : 'border-border hover:border-primary/50'
+              }`}>
+                {/* Car mockup - tight */}
+                <div className="absolute inset-x-[6%] inset-y-[10%] rounded bg-foreground/15 flex items-center justify-center">
+                  <div className="w-[85%] h-[60%] rounded bg-foreground/10" />
+                </div>
+              </div>
+              <span className={`text-[10px] ${autoCropMode === 'tight' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                {t('v2.cropTight', 'Tight')}
+              </span>
+            </button>
+            
+            {/* Standard/spacious mockup */}
+            <button
+              onClick={() => onAutoCropModeChange('standard')}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className={`relative aspect-[16/10] w-full rounded-lg border-2 transition-all bg-muted/50 overflow-hidden ${
+                autoCropMode === 'standard' ? 'border-primary ring-1 ring-primary/30' : 'border-border hover:border-primary/50'
+              }`}>
+                {/* Car mockup - more padding */}
+                <div className="absolute inset-x-[18%] inset-y-[18%] rounded bg-foreground/15 flex items-center justify-center">
+                  <div className="w-[85%] h-[60%] rounded bg-foreground/10" />
+                </div>
+              </div>
+              <span className={`text-[10px] ${autoCropMode === 'standard' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                {t('v2.cropStandard', 'Standard')}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Placement modal */}
