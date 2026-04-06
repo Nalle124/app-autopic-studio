@@ -400,8 +400,8 @@ const TryV2Content = () => {
               onConfigChange={setLogoConfig}
               plateConfig={plateConfig}
               onPlateConfigChange={setPlateConfig}
-              autoCropEnabled={autoCropEnabled}
-              onAutoCropChange={setAutoCropEnabled}
+              autoCropMode={autoCropMode}
+              onAutoCropModeChange={setAutoCropMode}
               images={images}
               fallbackLogoUrl={autopicLogoDark}
             />
@@ -423,7 +423,7 @@ const TryV2Content = () => {
                 projectName={projectName}
                 credits={credits}
                 outputFormat={outputFormat}
-                autoCropEnabled={autoCropEnabled}
+                autoCropMode={autoCropMode}
                 onImagesUpdate={setImages}
                 onComplete={handleGenerationComplete}
                 onRefetchCredits={async () => {}}
