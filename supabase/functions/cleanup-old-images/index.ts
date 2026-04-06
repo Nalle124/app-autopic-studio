@@ -49,20 +49,20 @@ serve(async (req) => {
 
     console.log(`Admin cleanup triggered by user: ${user.id}`);
 
-    // Find jobs older than 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Find jobs older than 14 days
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
     const { data: oldJobs, error: selectError } = await supabase
       .from('processing_jobs')
       .select('id, final_url, project_id')
-      .lt('created_at', sevenDaysAgo.toISOString());
+      .lt('created_at', fourteenDaysAgo.toISOString());
 
     if (selectError) {
       throw selectError;
     }
 
-    console.log(`Found ${oldJobs?.length || 0} jobs older than 7 days`);
+    console.log(`Found ${oldJobs?.length || 0} jobs older than 14 days`);
 
     if (!oldJobs || oldJobs.length === 0) {
       return new Response(
