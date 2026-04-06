@@ -202,7 +202,7 @@ export const V2ImageUploader = ({ images, onImagesChange, projectName, onProject
         </div>
       )}
 
-      <p className="text-[10px] text-muted-foreground text-right">{images.length}/50</p>
+      <p className="text-[10px] text-muted-foreground text-right">{images.length}/{maxImages ?? 50}</p>
 
       {/* Nyhet badge */}
       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[10px] border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10">
