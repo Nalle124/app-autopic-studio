@@ -46,6 +46,7 @@ interface Props {
   onProjectNameChange: (name: string) => void;
   onDeleteDraft?: (draftId: string) => void;
   onClearAllDrafts?: () => void;
+  maxImages?: number;
 }
 
 export const V2ImageUploader = ({ images, onImagesChange, projectName, onProjectNameChange, onDeleteDraft, onClearAllDrafts }: Props) => {
