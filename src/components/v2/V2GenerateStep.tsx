@@ -423,6 +423,11 @@ export const V2GenerateStep = ({
       return;
     }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
+    // Mark results view active immediately so user returns here if they leave mid-generation
+    try {
+      sessionStorage.setItem('v2-show-results', 'true');
+      sessionStorage.setItem('v2-results', JSON.stringify([]));
+    } catch {}
 
     try {
       setStatusText(t('v2.analyzingImages'));
