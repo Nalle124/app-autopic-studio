@@ -208,14 +208,24 @@ async function ensureDataUrl(imageUrl: string): Promise<string> {
   if (imageUrl.startsWith('data:')) return imageUrl;
   try {
     const resp = await fetch(imageUrl);
+    if (!resp.ok) {
+      console.warn('[ensureDataUrl] fetch failed with status:', resp.status, imageUrl.substring(0, 80));
+      return imageUrl;
+    }
     const blob = await resp.blob();
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(imageUrl);
+      reader.onerror = () => {
+        console.warn('[ensureDataUrl] FileReader error');
+        resolve(imageUrl);
+      };
       reader.readAsDataURL(blob);
     });
-  } catch { return imageUrl; }
+  } catch (e) {
+    console.warn('[ensureDataUrl] fetch exception:', e, imageUrl.substring(0, 80));
+    return imageUrl;
+  }
 }
 
 function applyLightEdit(imageUrl: string): Promise<string> {
