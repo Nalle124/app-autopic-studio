@@ -93,6 +93,7 @@ const AutopicV2Content = () => {
   });
   const [regenerateImageId, setRegenerateImageId] = useState<string | null>(null);
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+  const [pollingForResults, setPollingForResults] = useState(false);
   const draftsLoadedRef = useRef(false);
   const { uploadDraft, fetchDrafts, deleteDraft, deleteAllDrafts } = useDraftImages();
 
