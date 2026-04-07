@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.blur-license-plates]
 verify_jwt = false
+
+[functions.list-invoices]
+verify_jwt = false

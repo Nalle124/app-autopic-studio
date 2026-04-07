@@ -356,7 +356,21 @@
     "bugSent": "Skickat!",
     "couldNotSendBug": "Kunde inte skicka rapport",
     "logout": "Logga ut",
-    "account": "Konto"
+    "account": "Konto",
+    "invoices": "Mina fakturor",
+    "invoicesDesc": "Se och ladda ner dina fakturor",
+    "invoiceDate": "Datum",
+    "invoiceNumber": "Fakturanr",
+    "invoiceAmount": "Belopp",
+    "invoiceStatus": "Status",
+    "downloadPdf": "PDF",
+    "noInvoices": "Inga fakturor ännu",
+    "loadingInvoices": "Hämtar fakturor...",
+    "couldNotLoadInvoices": "Kunde inte hämta fakturor",
+    "invoicePaid": "Betald",
+    "invoiceOpen": "Öppen",
+    "invoiceVoid": "Makulerad",
+    "invoiceUncollectible": "Ej indrivbar"
   },
   "guide": {
     "beforeYouStart": "Innan du börjar",
