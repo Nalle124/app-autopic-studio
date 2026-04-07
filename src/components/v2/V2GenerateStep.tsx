@@ -842,7 +842,7 @@ async function normalizeImageOrientation(file: File): Promise<File> {
   });
 }
 
-async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off'): Promise<{ finalUrl: string; jobId: string | null }> {
+async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off', projectId: string | null = null): Promise<{ finalUrl: string; jobId: string | null }> {
   let file = img.file;
   if ((!file || file.size === 0) && img.previewUrl) {
     const resp = await fetch(img.previewUrl);
