@@ -711,20 +711,41 @@ export const V2GenerateStep = ({
         setCurrentImageIndex(doneCount);
         setStatusText(t('v2.generating', { current: doneCount, total: totalExpected }));
 
-        // Process newly completed jobs (apply logo/light client-side)
+        // Process newly completed jobs (apply plate blur, auto-crop, logo, light client-side)
         for (const job of completed) {
           if (processedJobIdsRef.current.has(job.id)) continue;
           processedJobIdsRef.current.add(job.id);
 
           let url = job.final_url!;
           const jobIndex = jobs.indexOf(job);
+          const isExteriorJob = !job.original_filename?.toLowerCase().includes('interior');
 
-          // Apply client-side post-processing (logo, light)
+          // Apply client-side post-processing
           try {
+            // 1. Auto-crop (only for exterior images not already cropped server-side)
+            if (currentAutoCropMode !== 'off' && isExteriorJob) {
+              try {
+                const targetAspect = currentOutputFormat === 'portrait' ? 3 / 4 : 16 / 9;
+                url = await autoCropImage(url, targetAspect);
+              } catch (e) { console.warn('Auto-crop in polling failed:', e); }
+            }
+
+            // 2. Plate blur (only for exterior images)
+            if (currentPlateConfig.enabled && isExteriorJob) {
+              try {
+                url = await blurPlatesOnImage(url, currentPlateConfig.style, currentPlateLogoBase64, currentAccessToken);
+              } catch (e) { console.warn('Plate blur in polling failed:', e); }
+            }
+
+            // 3. Light boost / edit
             if (currentLightBoost) url = await applyLightBoost(url);
             if (currentLightEdit) url = await applyLightEdit(url);
+
+            // 4. Logo — convert image to dataURL first to avoid CORS tainted canvas
             if (currentLogoUrl && shouldApplyLogo(job.id, jobIndex, totalExpected, currentLogoConfig)) {
-              url = await applyLogoToImage(url, currentLogoUrl, currentLogoConfig.preset, currentLogoConfig.logoSize);
+              const safeUrl = await ensureDataUrl(url);
+              const safeLogoUrl = await ensureDataUrl(currentLogoUrl);
+              url = await applyLogoToImage(safeUrl, safeLogoUrl, currentLogoConfig.preset, currentLogoConfig.logoSize);
             }
 
             // If post-processed, upload and update DB
