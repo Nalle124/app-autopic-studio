@@ -168,7 +168,7 @@ serve(async (req) => {
     const interiorBgType = formData.get('interiorBgType') as string || 'clean white';
     const plateStyle = formData.get('plateStyle') as string || '';
     const plateLogoBase64Str = formData.get('plateLogoBase64') as string || '';
-    const jobId = formData.get('jobId') as string || '';
+    jobId = formData.get('jobId') as string || '';
     
     // Input validation
     if (!imageFile) {
