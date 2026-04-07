@@ -178,6 +178,9 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                   const imgUrl = results[idx]?.processedUrl || results[idx]?.previewUrl || '';
                   sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                   sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
+                  // Pass all project results to AI Studio
+                  const projectImages = results.filter(r => r.processedUrl).map(r => ({ url: r.processedUrl!, id: r.id }));
+                  sessionStorage.setItem('ai-studio-project-images', JSON.stringify(projectImages));
                   navigate('/classic?tab=ai-studio');
                 }}
               >
@@ -420,6 +423,8 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                     const imgUrl = previewUrl;
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                     sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
+                    const projectImages = results.filter(r => r.processedUrl).map(r => ({ url: r.processedUrl!, id: r.id }));
+                    sessionStorage.setItem('ai-studio-project-images', JSON.stringify(projectImages));
                     navigate('/classic?tab=ai-studio');
                   }}>
                     <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />

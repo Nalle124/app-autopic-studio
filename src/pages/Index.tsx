@@ -224,6 +224,26 @@ function IndexContent() {
       if (storedImg) { sessionStorage.removeItem('ai-studio-initial-image'); setAiModalInitialImage(storedImg); }
       const storedMode = sessionStorage.getItem('ai-studio-initial-mode');
       if (storedMode) { sessionStorage.removeItem('ai-studio-initial-mode'); setAiChatMode(storedMode); }
+      // Load V2 project images into uploadedImages for AI Studio
+      const storedProjectImages = sessionStorage.getItem('ai-studio-project-images');
+      if (storedProjectImages) {
+        sessionStorage.removeItem('ai-studio-project-images');
+        try {
+          const projectImgs: Array<{url: string; id: string}> = JSON.parse(storedProjectImages);
+          const v2Images: UploadedImage[] = projectImgs.map(pi => ({
+            id: pi.id,
+            file: new File([], 'v2-result.jpg', { type: 'image/jpeg' }),
+            preview: pi.url,
+            finalUrl: pi.url,
+            status: 'completed' as const,
+          }));
+          setUploadedImages(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newOnes = v2Images.filter(v => !existingIds.has(v.id));
+            return [...newOnes, ...prev];
+          });
+        } catch {}
+      }
     } else if (tab === 'gallery' || tab === 'history') {
       setActiveTab('history');
     }

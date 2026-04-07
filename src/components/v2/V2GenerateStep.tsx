@@ -852,7 +852,7 @@ export const V2GenerateStep = ({
             </p>
             <Button variant="outline" size="sm" onClick={handleCancelGeneration} className="text-destructive border-destructive/30 hover:bg-destructive/10">
               <X className="w-3.5 h-3.5 mr-1" />
-              {t('v2.cancel') || 'Avbryt'}
+              Avbryt
             </Button>
           </div>
           <Progress value={progress} className="h-2 max-w-md" />
