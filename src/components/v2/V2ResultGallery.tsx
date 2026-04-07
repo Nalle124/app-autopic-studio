@@ -28,9 +28,10 @@ interface Props {
   isTryFlow?: boolean;
   onRegenerateImage?: (imageId: string) => void;
   regeneratingIds?: Set<string>;
+  pendingCount?: number;
 }
 
-export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan, isTryFlow, onRegenerateImage, regeneratingIds }: Props) => {
+export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan, isTryFlow, onRegenerateImage, regeneratingIds, pendingCount = 0 }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
@@ -312,6 +313,20 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                     <div className="w-3 h-3 rounded-sm border border-muted-foreground" />
                   )}
                 </button>
+              </div>
+            </div>
+          ))}
+          {/* Pending job placeholders */}
+          {pendingCount > 0 && Array.from({ length: pendingCount }).map((_, i) => (
+            <div key={`pending-${i}`} className="relative overflow-hidden rounded-[10px] border border-border bg-card">
+              <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-muted via-muted-foreground/10 to-muted" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span className="text-[10px] text-muted-foreground">{t('common.waiting') || 'Väntar...'}</span>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
