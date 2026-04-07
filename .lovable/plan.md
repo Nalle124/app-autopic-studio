@@ -1,61 +1,85 @@
 
+Sammanfattning:
+Det finns både ett prestandaproblem och ett återhämtningsproblem. Jag ser minst tre konkreta orsaker till att flödet känns onödigt långsamt och att generering “avbryts” när du lämnar sidan.
 
-## Plan: Background Generation That Survives Page Navigation
+Vad som faktiskt är fel:
+1. Klienten gör fortfarande mycket tungt arbete innan alla jobb ens har skickats
+- I `V2GenerateStep.tsx` klassificeras alla bilder först.
+- Sedan skapas `processing_jobs` en och en.
+- Sedan normaliseras EXIF/orientering per bild innan varje request skickas.
+- Dispatchen sker i en vanlig `for`-loop med flera `await` inuti, så “fire-and-forget” är inte riktigt fire-and-forget ännu.
+- Resultat: om användaren lämnar sidan tidigt har inte alla bilder hunnit skickas till backend.
 
-### Problem
-The generation loop runs entirely client-side in a sequential `for` loop. When the user leaves the page, the browser kills in-flight `fetch` requests and the loop stops — remaining images are never processed. The 4th image was likely mid-request when you navigated away.
+2. Återhämtningen efter återbesök pollar bara när `results.length === 0`
+- I `AutopicV2.tsx` startar recovery-polling bara om `showResults` är true och `results.length > 0` är false.
+- Om en bild redan hunnit sparas i `sessionStorage` och två återstår, då pollas inte längre resterande jobb.
+- Det matchar exakt ditt symptom: du kommer tillbaka till rätt vy men ser bara 1 av 3 bilder kvar.
 
-### Solution: Fire-and-forget job creation + polling
+3. Interiörbilder är en verklig flaskhals och kan också fallera server-side
+- Edge logs visar `Interior masking failed (429)` och även `Memory limit exceeded`.
+- Det betyder att vissa interiörjobb faktiskt misslyckar i backend, inte bara avbryts i UI.
+- Just nu skickas interiörmaskning till AI-modellen med relativt tung payload och med bara kort retry.
 
-Instead of processing images one-by-one in the browser loop, **submit all jobs to the backend immediately**, then **poll for results**. The edge function already creates `processing_jobs` records and does all PhotoRoom/storage work server-side — we just need to stop waiting for the response in the client loop.
+Varför flödet känns långsamt i onödan:
+- All batch-setup görs sekventiellt i browsern.
+- Per-bild dimension/exif-arbete sker innan requesten skickas.
+- Logo/light-postprocessing görs fortfarande client-side efter att jobb blivit klara.
+- Interiörjobb körs parallellt tillsammans med övriga jobb, vilket ökar risken för 429/rate-limit och minnesproblem.
 
-### Changes
+Plan:
+1. Gör dispatchen verkligt snabb och robust
+- Flytta all förberedelse som går till ett gemensamt prepass.
+- Skapa alla job records i ett steg.
+- Bygg FormData för alla bilder först och dispatcha dem direkt därefter utan sekventiell väntan mellan bilder.
+- Viktigt mål: alla bilder i projektet ska vara registrerade och skickade inom några sekunder innan användaren hinner lämna sidan.
 
-#### 1. Restructure the generation loop (V2GenerateStep.tsx)
+2. Laga recovery-logiken så den fortsätter även vid partiella resultat
+- Ändra `AutopicV2.tsx` så polling startar när `showResults` är true och det finns ett `v2-project-id`, oavsett om `results` redan innehåller 1 bild.
+- Polling ska merge:a in nya completed/failed jobb i befintliga resultat istället för att bara återställa när listan är tom.
+- Polling ska fortsätta tills alla jobb för projektet är `completed` eller `failed`.
 
-**Current:** `for` loop calls `processExteriorImage` → waits for response → applies logo/plates client-side → moves to next image.
+3. Visa pending-jobb i slutgalleriet
+- Resultatvyn ska kunna visa placeholders för jobb som fortfarande körs.
+- Då ser användaren att 3 jobb finns i projektet även om bara 1 är klar ännu.
+- Det minskar känslan av att bilder “försvunnit”.
 
-**New approach for exterior images:**
-- Send all exterior image requests in parallel using `fetch` with **no `await`** on the response — fire-and-forget style. Each call to `process-car-image` already creates a `processing_jobs` record and uploads the result to storage.
-- After dispatching all requests, switch to a **polling loop** that queries `processing_jobs` for the batch (by `project_id` or `user_id` + recent timestamp) every 3 seconds.
-- As jobs complete (`status = 'completed'`), add them to `liveResults` from their `final_url`.
-- Interior images still need client-side AI masking — these will be processed sequentially before the polling phase, or handled as a separate pre-step.
+4. Minska onödig väntetid för interiörbilder
+- Komprimera/resize interiörinput tydligare innan upload till edge-funktionen.
+- Lägg bättre retry/backoff för 429 i `process-car-image`.
+- Begränsa samtidigheten för interiörjobb, t.ex. 1 åt gången eller låg concurrency, medan exteriörjobb kan fortsätta parallellt.
+- Det här är viktigt eftersom loggarna visar att just interiörmaskningen orsakar både 429 och memory pressure.
 
-#### 2. Move post-processing to the edge function (process-car-image)
+5. Flytta sista postprocessing till backend där det är rimligt
+- Logo/light bör helst inte vara beroende av att klienten fortfarande är öppen.
+- Om det inte flyttas helt nu, bör minst recovery kunna upptäcka jobb som är klara men ännu inte lokalt postprocessade och färdigställa dem när användaren kommer tillbaka.
+- Bäst långsiktigt är att spara den slutliga levererade bilden direkt server-side.
 
-Logo overlay, plate blurring, and light adjustments currently happen client-side after the edge function returns. To survive page navigation, these must move server-side:
-- Add optional parameters to `process-car-image`: `logoUrl`, `logoPreset`, `logoSize`, `plateBlur`, `plateStyle`, `plateLogo`, `lightBoost`, `lightEdit`.
-- The edge function already has access to storage and can compose the final image. Logo overlay and light filters can be done via canvas-equivalent (sharp/PhotoRoom) or by calling the existing `blur-license-plates` function internally.
-- This ensures the fully post-processed image is saved to `final_url` even if the client disconnects.
+Filer att uppdatera:
+- `src/components/v2/V2GenerateStep.tsx`
+  - Snabbare batch dispatch
+  - Mindre sekventiell klientlogik
+  - Interiör-concurrency/komprimering
+- `src/pages/AutopicV2.tsx`
+  - Recovery-polling även vid partial results
+  - Merge av nya jobbstatusar
+  - Stoppa polling först när hela projektet är klart
+- `src/components/v2/V2ResultGallery.tsx`
+  - Stöd för pending placeholders i “Färdiga bilder”
+- `supabase/functions/process-car-image/index.ts`
+  - Bättre retry/backoff för interiörmaskning
+  - Ev. lättare input / skydd mot memory spikes
+  - Tydligare failed-status när AI rate-limit slår till
 
-#### 3. Interior image handling
+Det jag kommer rapportera som rotorsak:
+- “Bakgrundsgenerering” var bara delvis implementerad. Jobben skickades inte snabbt nog från klienten, recovery pollade inte vidare när vissa resultat redan fanns, och interiörmaskning kunde fallera i backend på grund av 429/minnesgräns.
 
-Interior images use Gemini AI masking which runs via `generate-scene-image` edge function. This already runs server-side. The approach:
-- Pre-create a `processing_jobs` record with status `pending` for each interior image.
-- Call `generate-scene-image` from a new small edge function (or extend `process-car-image` to handle interior mode) so it runs independently of the client.
-- The polling loop picks up completed interior jobs the same way as exterior ones.
+Förväntat resultat efter fix:
+- Om användaren lämnar mitt i generering ska alla redan-startade bilder fortsätta.
+- När användaren återkommer ska samma projekt öppnas i slutvyn och fortsätta fyllas på bild för bild.
+- Inga delvis klara batcher ska “fastna” bara för att 1 bild redan hunnit sparas lokalt.
+- Interiörbilder ska bli stabilare och snabbare, eller åtminstone tydligt markeras som failed utan att stoppa resten av projektet.
 
-#### 4. Recovery on return (AutopicV2.tsx)
-
-The existing recovery polling (added previously) already queries `processing_jobs` for recent jobs. This will now work correctly because all jobs are created at dispatch time and complete independently. Minor adjustments:
-- Use `project_id` for more precise matching instead of time-based heuristic.
-- Show shimmer placeholders for pending/processing jobs, completed images for done jobs.
-
-### What stays unchanged
-- The step wizard UI flow
-- Scene selection, logo configuration, plate configuration UI
-- The `process-car-image` edge function's core PhotoRoom logic
-- Gallery display and project naming
-- Credit deduction (already happens in `process-car-image`)
-
-### File changes summary
-| File | Change |
-|------|--------|
-| `supabase/functions/process-car-image/index.ts` | Add optional logo/plate/light params; apply post-processing server-side before saving `final_url` |
-| `src/components/v2/V2GenerateStep.tsx` | Replace sequential await loop with fire-and-forget dispatch + polling loop; move post-processing params to request |
-| `src/pages/AutopicV2.tsx` | Improve recovery polling to use `project_id`; handle partial results display |
-
-### Risks & mitigations
-- **Edge function timeout**: `process-car-image` already completes within ~15-30s per image. Adding logo overlay adds negligible time.
-- **Interior masking**: The Gemini call can be slow (~30-60s). If it times out in the edge function, the job is marked `failed` and user can regenerate. This is better than silently losing the image when navigating away.
-
+Tekniska detaljer:
+- Den viktigaste buggen i återkomstflödet är villkoret i `AutopicV2.tsx` som hindrar polling när `results.length > 0`.
+- Den viktigaste prestandabromsen i dispatchflödet är sekventiell batch-setup i `V2GenerateStep.tsx`, trots att nätverksanropen i slutet inte awaitas.
+- Loggarna bekräftar backend-problem för interiörbilder: `429 RESOURCE_EXHAUSTED` och `Memory limit exceeded`, så detta är inte bara ett frontendproblem.
