@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mail, Sun, Palette, Plus, RotateCcw } from 'lucide-react';
+import { Mail, Sun, Palette, Plus, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
@@ -414,6 +414,7 @@ export const V2GenerateStep = ({
   // Ref to track which job IDs have been post-processed during polling
   const processedJobIdsRef = useRef<Set<string>>(new Set());
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelledRef = useRef(false);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -421,6 +422,30 @@ export const V2GenerateStep = ({
       if (pollingRef.current) clearTimeout(pollingRef.current);
     };
   }, []);
+
+  const handleCancelGeneration = async () => {
+    cancelledRef.current = true;
+    if (pollingRef.current) clearTimeout(pollingRef.current);
+
+    // Mark all remaining pending/processing jobs as failed
+    const savedProjectId = sessionStorage.getItem('v2-project-id');
+    if (savedProjectId) {
+      await supabase
+        .from('processing_jobs')
+        .update({ status: 'failed', error_message: 'Avbruten av användare' })
+        .eq('project_id', savedProjectId)
+        .in('status', ['pending', 'processing']);
+    }
+
+    // Complete with whatever we have so far
+    const currentResults = [...liveResults];
+    if (currentResults.length > 0) {
+      onComplete(currentResults);
+    } else {
+      setProcessing(false);
+    }
+    toast.info('Generering avbruten');
+  };
 
   const handleGenerate = async () => {
     // Check auth first - if no session, trigger paywall/signup
@@ -435,6 +460,7 @@ export const V2GenerateStep = ({
     }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
     processedJobIdsRef.current = new Set();
+    cancelledRef.current = false;
     // Mark results view active immediately so user returns here if they leave mid-generation
     try {
       sessionStorage.setItem('v2-show-results', 'true');
@@ -577,13 +603,14 @@ export const V2GenerateStep = ({
         })
       );
 
-      // Dispatch ALL images instantly (no awaits in loop)
+      // Dispatch with concurrency limit (max 3 simultaneous requests)
       setStatusText(t('v2.generating', { current: 0, total: classifiedImages.length }));
-      for (const prepared of preparedImages) {
-        if (!prepared) continue;
+      const MAX_CONCURRENT = 3;
+      const validPrepared = preparedImages.filter(Boolean) as { img: typeof classifiedImages[0]; file: File; dims: { w: number; h: number } }[];
+      
+      const buildFormData = (prepared: typeof validPrepared[0]) => {
         const { img, file, dims } = prepared;
         const isExterior = img.classification === 'exterior' || img.classification === 'detail';
-
         const fd = new FormData();
         fd.append('image', file, file.name);
         if (jobIds[img.id]) fd.append('jobId', jobIds[img.id]);
@@ -613,15 +640,40 @@ export const V2GenerateStep = ({
           fd.append('interiorMode', 'true');
           fd.append('interiorBgType', interiorBgType);
         }
+        return fd;
+      };
 
-        // Fire-and-forget: don't await the response
-        console.log(`Dispatching ${isExterior ? 'exterior' : 'interior'} image ${img.id} (job ${jobIds[img.id]})`);
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          body: fd,
-        }).catch(err => console.error(`Dispatch failed for ${img.id}:`, err));
-      }
+      // Dispatch in batches of MAX_CONCURRENT
+      let dispatched = 0;
+      const dispatchBatch = async (batch: typeof validPrepared) => {
+        const promises = batch.map(async (prepared) => {
+          if (cancelledRef.current) return;
+          const fd = buildFormData(prepared);
+          const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
+          console.log(`Dispatching ${isExterior ? 'exterior' : 'interior'} image ${prepared.img.id} (job ${jobIds[prepared.img.id]})`);
+          try {
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${session.access_token}` },
+              body: fd,
+            });
+          } catch (err) {
+            console.error(`Dispatch failed for ${prepared.img.id}:`, err);
+          }
+        });
+        await Promise.allSettled(promises);
+      };
+
+      // Launch batches without blocking polling (fire-and-forget the batch chain)
+      (async () => {
+        for (let i = 0; i < validPrepared.length; i += MAX_CONCURRENT) {
+          if (cancelledRef.current) break;
+          const batch = validPrepared.slice(i, i + MAX_CONCURRENT);
+          await dispatchBatch(batch);
+          dispatched += batch.length;
+          console.log(`Dispatched ${dispatched}/${validPrepared.length} images`);
+        }
+      })();
 
       // 7. Start polling for results
       const totalExpected = classifiedImages.length;
@@ -632,7 +684,7 @@ export const V2GenerateStep = ({
       const currentSessionUserId = session.user.id;
 
       const pollForResults = async () => {
-        if (!projectId) return;
+        if (!projectId || cancelledRef.current) return;
 
         const { data: jobs } = await supabase
           .from('processing_jobs')
@@ -794,9 +846,15 @@ export const V2GenerateStep = ({
     return (
       <div className="space-y-6" ref={galleryRef}>
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {currentImageIndex} av {totalImages} — {statusText}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {currentImageIndex} av {totalImages} — {statusText}
+            </p>
+            <Button variant="outline" size="sm" onClick={handleCancelGeneration} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+              <X className="w-3.5 h-3.5 mr-1" />
+              {t('v2.cancel') || 'Avbryt'}
+            </Button>
+          </div>
           <Progress value={progress} className="h-2 max-w-md" />
         </div>
 

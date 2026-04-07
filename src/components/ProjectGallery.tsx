@@ -24,7 +24,9 @@ interface Project {
     final_url: string | null;
     thumbnail_url: string | null;
     scene_id: string;
+    status?: string;
   }[];
+  pendingCount?: number;
 }
 
 interface OrphanJob {
@@ -241,7 +243,8 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
             id,
             final_url,
             thumbnail_url,
-            scene_id
+            scene_id,
+            status
           )
         `, { count: 'exact' })
         .eq('user_id', user.id)
@@ -272,10 +275,16 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
         setPendingJobCount(pendingResult.count || 0);
       }
 
+      // Add pending count per project
+      const enrichedProjects = (projectsData as any[])?.map((p: any) => ({
+        ...p,
+        pendingCount: p.jobs?.filter((j: any) => j.status === 'pending' || j.status === 'processing').length || 0,
+      })) || [];
+
       if (append) {
-        setProjects(prev => [...prev, ...(projectsData as any)]);
+        setProjects(prev => [...prev, ...enrichedProjects]);
       } else {
-        setProjects(projectsData as any);
+        setProjects(enrichedProjects);
       }
       
       setTotalProjects(count || 0);
@@ -607,26 +616,10 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
       </div>
 
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3" style={{ contentVisibility: 'auto' }}>
-        {/* Pending/processing jobs indicator */}
-        {pendingJobCount > 0 && (
-          <Card className="overflow-hidden border-border border-primary/30 bg-primary/5">
-            <div className="aspect-[4/3] bg-muted relative overflow-hidden flex items-center justify-center">
-              <div className="text-center space-y-3">
-                <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Bearbetar bilder...</p>
-                  <p className="text-xs text-muted-foreground">{pendingJobCount} {pendingJobCount === 1 ? 'bild' : 'bilder'} kvar</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-3 sm:p-4">
-              <p className="text-sm font-medium text-foreground">Pågående</p>
-              <p className="text-xs text-muted-foreground">Genereras i bakgrunden</p>
-            </div>
-          </Card>
-        )}
+        {/* Removed generic pending card - pending counts are shown per project now */}
         {filteredProjects.map((project) => {
           const projectJobs = project.jobs.filter(j => j.final_url);
+          const pendingInProject = project.pendingCount || 0;
           const firstImage = projectJobs[0];
           const isOrphan = project.id === 'orphan';
 
@@ -639,11 +632,32 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
             >
               {/* Preview Image - Fixed aspect ratio to prevent layout shifts */}
               <div className="aspect-[4/3] bg-muted relative overflow-hidden" style={{ minHeight: '180px' }}>
-                <ProjectImagePreviewContent 
-                  thumbnailUrl={firstImage?.thumbnail_url}
-                  fullUrl={firstImage?.final_url}
-                  projectName={project.registration_number}
-                />
+                {pendingInProject > 0 && projectJobs.length === 0 ? (
+                  /* No completed images yet, show processing state */
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center space-y-3">
+                      <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Bearbetar bilder...</p>
+                        <p className="text-xs text-muted-foreground">{pendingInProject} {pendingInProject === 1 ? 'bild' : 'bilder'} kvar</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <ProjectImagePreviewContent 
+                    thumbnailUrl={firstImage?.thumbnail_url}
+                    fullUrl={firstImage?.final_url}
+                    projectName={project.registration_number}
+                  />
+                )}
+                
+                {/* Pending badge on project card */}
+                {pendingInProject > 0 && projectJobs.length > 0 && (
+                  <div className="absolute bottom-2 left-2 bg-primary/90 text-primary-foreground text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    {pendingInProject} kvar
+                  </div>
+                )}
                 
                 {/* Image count badge */}
                 {projectJobs.length > 1 && (
