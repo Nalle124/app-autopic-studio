@@ -603,13 +603,14 @@ export const V2GenerateStep = ({
         })
       );
 
-      // Dispatch ALL images instantly (no awaits in loop)
+      // Dispatch with concurrency limit (max 3 simultaneous requests)
       setStatusText(t('v2.generating', { current: 0, total: classifiedImages.length }));
-      for (const prepared of preparedImages) {
-        if (!prepared) continue;
+      const MAX_CONCURRENT = 3;
+      const validPrepared = preparedImages.filter(Boolean) as { img: typeof classifiedImages[0]; file: File; dims: { w: number; h: number } }[];
+      
+      const buildFormData = (prepared: typeof validPrepared[0]) => {
         const { img, file, dims } = prepared;
         const isExterior = img.classification === 'exterior' || img.classification === 'detail';
-
         const fd = new FormData();
         fd.append('image', file, file.name);
         if (jobIds[img.id]) fd.append('jobId', jobIds[img.id]);
@@ -639,15 +640,40 @@ export const V2GenerateStep = ({
           fd.append('interiorMode', 'true');
           fd.append('interiorBgType', interiorBgType);
         }
+        return fd;
+      };
 
-        // Fire-and-forget: don't await the response
-        console.log(`Dispatching ${isExterior ? 'exterior' : 'interior'} image ${img.id} (job ${jobIds[img.id]})`);
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          body: fd,
-        }).catch(err => console.error(`Dispatch failed for ${img.id}:`, err));
-      }
+      // Dispatch in batches of MAX_CONCURRENT
+      let dispatched = 0;
+      const dispatchBatch = async (batch: typeof validPrepared) => {
+        const promises = batch.map(async (prepared) => {
+          if (cancelledRef.current) return;
+          const fd = buildFormData(prepared);
+          const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
+          console.log(`Dispatching ${isExterior ? 'exterior' : 'interior'} image ${prepared.img.id} (job ${jobIds[prepared.img.id]})`);
+          try {
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${session.access_token}` },
+              body: fd,
+            });
+          } catch (err) {
+            console.error(`Dispatch failed for ${prepared.img.id}:`, err);
+          }
+        });
+        await Promise.allSettled(promises);
+      };
+
+      // Launch batches without blocking polling (fire-and-forget the batch chain)
+      (async () => {
+        for (let i = 0; i < validPrepared.length; i += MAX_CONCURRENT) {
+          if (cancelledRef.current) break;
+          const batch = validPrepared.slice(i, i + MAX_CONCURRENT);
+          await dispatchBatch(batch);
+          dispatched += batch.length;
+          console.log(`Dispatched ${dispatched}/${validPrepared.length} images`);
+        }
+      })();
 
       // 7. Start polling for results
       const totalExpected = classifiedImages.length;
