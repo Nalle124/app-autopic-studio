@@ -880,6 +880,8 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
     formData.append('autoCrop', 'true');
     formData.append('autoCropPadding', autoCropMode === 'tight' ? '0.03' : '0.12');
   }
+  if (projectId) {
+    formData.append('projectId', projectId);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
