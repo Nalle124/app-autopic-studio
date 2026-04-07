@@ -846,9 +846,15 @@ export const V2GenerateStep = ({
     return (
       <div className="space-y-6" ref={galleryRef}>
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {currentImageIndex} av {totalImages} — {statusText}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {currentImageIndex} av {totalImages} — {statusText}
+            </p>
+            <Button variant="outline" size="sm" onClick={handleCancelGeneration} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+              <X className="w-3.5 h-3.5 mr-1" />
+              {t('v2.cancel') || 'Avbryt'}
+            </Button>
+          </div>
           <Progress value={progress} className="h-2 max-w-md" />
         </div>
 
