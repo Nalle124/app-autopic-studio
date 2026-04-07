@@ -825,7 +825,6 @@ export const V2GenerateStep = ({
           await onRefetchCredits();
           // Use liveResults as source of truth (they have post-processed URLs with logos etc.)
           // Only add failed jobs from DB that aren't already tracked
-          const liveResultIds = new Set(liveResults.map(r => r.id));
           // Get current liveResults via a state read trick
           let currentLiveResults: V2Image[] = [];
           setLiveResults(prev => { currentLiveResults = prev; return prev; });
