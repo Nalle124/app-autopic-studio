@@ -460,6 +460,17 @@ export const V2GenerateStep = ({
       if (!scene) throw new Error('Kunde inte ladda bakgrund');
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Din session har gått ut.');
+
+      // Create project record if projectName is provided
+      let projectId: string | null = null;
+      if (projectName.trim()) {
+        const { data: project, error: projErr } = await supabase
+          .from('projects')
+          .insert({ user_id: session.user.id, registration_number: projectName.trim().toUpperCase() })
+          .select()
+          .single();
+        if (!projErr && project) projectId = project.id;
+      }
       let logoUrl: string | null = null;
       const logos = await fetchUserLogo(session.user.id);
       if (logoConfig.applyTo !== 'none') { logoUrl = logos.light || logos.dark; }
