@@ -506,7 +506,7 @@ export const V2GenerateStep = ({
       const imageData = await Promise.all(
         images.map(async (img) => {
           let file = img.file;
-          if (!file && img.previewUrl) {
+          if ((!file || file.size === 0) && img.previewUrl) {
             const resp = await fetch(img.previewUrl);
             const blob = await resp.blob();
             file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
