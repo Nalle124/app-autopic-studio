@@ -745,10 +745,17 @@ export const V2GenerateStep = ({
         setStatusText(t('v2.generating', { current: doneCount, total: totalExpected }));
 
         // Process newly completed jobs (apply logo/light client-side; plate blur & auto-crop are server-side)
+        // Queue them for sequential reveal (one at a time with delay)
+        const newlyCompleted: { job: typeof completed[0] }[] = [];
         for (const job of completed) {
           if (processedJobIdsRef.current.has(job.id)) continue;
           processedJobIdsRef.current.add(job.id);
+          newlyCompleted.push({ job });
+        }
 
+        // Process and reveal each new result sequentially with a small delay
+        for (let ni = 0; ni < newlyCompleted.length; ni++) {
+          const { job } = newlyCompleted[ni];
           let url = job.final_url!;
           const jobIndex = jobs.indexOf(job);
 
@@ -791,6 +798,11 @@ export const V2GenerateStep = ({
             processedUrl: url,
             status: 'done',
           };
+
+          // Add a small delay between reveals for sequential appearance
+          if (ni > 0) {
+            await new Promise(r => setTimeout(r, 400));
+          }
 
           setLiveResults(prev => {
             const updated = [...prev, result];
