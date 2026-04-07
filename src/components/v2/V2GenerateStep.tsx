@@ -356,6 +356,7 @@ export const V2GenerateStep = ({
   const [liveResults, setLiveResults] = useState<V2Image[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
+  const liveResultsRef = useRef<V2Image[]>([]);
 
   const totalImages = images.length;
   const exteriorCount = images.filter(i => i.classification === 'exterior' || !i.classification).length;
@@ -364,6 +365,7 @@ export const V2GenerateStep = ({
   const useLiveGallery = deliveryMode === 'direct' && totalImages <= 10;
 
   useEffect(() => {
+    liveResultsRef.current = liveResults;
     if (liveResults.length > 0 && galleryRef.current) {
       galleryRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
@@ -492,6 +494,7 @@ export const V2GenerateStep = ({
       return;
     }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
+    liveResultsRef.current = [];
     processedJobIdsRef.current = new Set();
     cancelledRef.current = false;
     // Mark results view active immediately so user returns here if they leave mid-generation
@@ -806,6 +809,7 @@ export const V2GenerateStep = ({
 
           setLiveResults(prev => {
             const updated = [...prev, result];
+            liveResultsRef.current = updated;
             try {
               const serializable = updated.map(r => ({
                 id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
@@ -823,11 +827,9 @@ export const V2GenerateStep = ({
         } else {
           // All done
           await onRefetchCredits();
-          // Use liveResults as source of truth (they have post-processed URLs with logos etc.)
-          // Only add failed jobs from DB that aren't already tracked
-          // Get current liveResults via a state read trick
-          let currentLiveResults: V2Image[] = [];
-          setLiveResults(prev => { currentLiveResults = prev; return prev; });
+          // Use ref-backed live results as source of truth so final view keeps post-processed URLs
+          // even if React state batching hasn't flushed the last completed image yet.
+          const currentLiveResults = [...liveResultsRef.current];
           const liveIds = new Set(currentLiveResults.map(r => r.id));
           
           const allResults: V2Image[] = [...currentLiveResults];
