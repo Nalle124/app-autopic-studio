@@ -684,7 +684,7 @@ export const V2GenerateStep = ({
       const currentSessionUserId = session.user.id;
 
       const pollForResults = async () => {
-        if (!projectId) return;
+        if (!projectId || cancelledRef.current) return;
 
         const { data: jobs } = await supabase
           .from('processing_jobs')
