@@ -560,6 +560,7 @@ export const V2GenerateStep = ({
               }
               await supabase.from('processing_jobs').insert({
                 user_id: session.user.id,
+                project_id: projectId || null,
                 original_filename: img.file?.name || `${img.id}.jpg`,
                 scene_id: sceneId || 'interior',
                 status: 'completed',
