@@ -208,21 +208,23 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     loadProjects(1);
   }, []);
 
-  // Poll for pending jobs completion
+  // Poll for pending jobs completion (silent — no skeleton flash)
   useEffect(() => {
     if (pendingJobCount <= 0) return;
     const interval = setInterval(() => {
-      loadProjects(1);
-    }, 10000); // Check every 10 seconds
+      loadProjects(1, false, true);
+    }, 10000);
     return () => clearInterval(interval);
   }, [pendingJobCount]);
 
-  const loadProjects = async (page: number, append = false) => {
+  const loadProjects = async (page: number, append = false, silent = false) => {
     try {
-      if (page === 1) {
-        setIsLoading(true);
-      } else {
-        setIsLoadingMore(true);
+      if (!silent) {
+        if (page === 1) {
+          setIsLoading(true);
+        } else {
+          setIsLoadingMore(true);
+        }
       }
       
       const { data: { user } } = await supabase.auth.getUser();
