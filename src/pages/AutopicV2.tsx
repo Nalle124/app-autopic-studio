@@ -93,6 +93,7 @@ const AutopicV2Content = () => {
   });
   const [regenerateImageId, setRegenerateImageId] = useState<string | null>(null);
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+  const [pollingForResults, setPollingForResults] = useState(false);
   const draftsLoadedRef = useRef(false);
   const { uploadDraft, fetchDrafts, deleteDraft, deleteAllDrafts } = useDraftImages();
 
@@ -143,6 +144,55 @@ const AutopicV2Content = () => {
       });
     })();
   }, [user?.id]);
+
+  // When returning to results view with empty results, poll processing_jobs
+  useEffect(() => {
+    if (!showResults || !user?.id || results.length > 0) return;
+    
+    setPollingForResults(true);
+    let cancelled = false;
+    
+    const pollJobs = async () => {
+      const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: jobs } = await supabase
+        .from('processing_jobs')
+        .select('id, final_url, thumbnail_url, original_filename, status, scene_id')
+        .eq('user_id', user.id)
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: true });
+      
+      if (cancelled || !jobs) return;
+      
+      const completedJobs = jobs.filter(j => j.status === 'completed' && j.final_url);
+      if (completedJobs.length > 0) {
+        const restoredResults: V2Image[] = completedJobs.map(j => ({
+          id: j.id,
+          file: new File([], j.original_filename || 'image.jpg'),
+          previewUrl: j.final_url!,
+          processedUrl: j.final_url!,
+          status: 'done' as const,
+        }));
+        setResults(restoredResults);
+        try {
+          const serializable = restoredResults.map(r => ({
+            id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
+            status: r.status,
+          }));
+          sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+        } catch {}
+      }
+      
+      const pendingJobs = jobs.filter(j => j.status === 'pending' || j.status === 'processing');
+      if (pendingJobs.length > 0 && !cancelled) {
+        setTimeout(pollJobs, 5000);
+      } else {
+        setPollingForResults(false);
+      }
+    };
+    
+    pollJobs();
+    return () => { cancelled = true; };
+  }, [showResults, user?.id, results.length]);
 
   const handleImagesUploaded = useCallback(async (newImages: V2Image[]) => {
     setImages(newImages);

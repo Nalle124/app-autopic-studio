@@ -423,6 +423,11 @@ export const V2GenerateStep = ({
       return;
     }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
+    // Mark results view active immediately so user returns here if they leave mid-generation
+    try {
+      sessionStorage.setItem('v2-show-results', 'true');
+      sessionStorage.setItem('v2-results', JSON.stringify([]));
+    } catch {}
 
     try {
       setStatusText(t('v2.analyzingImages'));
@@ -455,6 +460,17 @@ export const V2GenerateStep = ({
       if (!scene) throw new Error('Kunde inte ladda bakgrund');
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Din session har gått ut.');
+
+      // Create project record if projectName is provided
+      let projectId: string | null = null;
+      if (projectName.trim()) {
+        const { data: project, error: projErr } = await supabase
+          .from('projects')
+          .insert({ user_id: session.user.id, registration_number: projectName.trim().toUpperCase() })
+          .select()
+          .single();
+        if (!projErr && project) projectId = project.id;
+      }
       let logoUrl: string | null = null;
       const logos = await fetchUserLogo(session.user.id);
       if (logoConfig.applyTo !== 'none') { logoUrl = logos.light || logos.dark; }
@@ -497,7 +513,7 @@ export const V2GenerateStep = ({
           if (isExterior) {
             setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
-            const extResult = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+            const extResult = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode, projectId);
             processedUrl = extResult.finalUrl;
             exteriorJobId = extResult.jobId;
             // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
@@ -544,6 +560,7 @@ export const V2GenerateStep = ({
               }
               await supabase.from('processing_jobs').insert({
                 user_id: session.user.id,
+                project_id: projectId || null,
                 original_filename: img.file?.name || `${img.id}.jpg`,
                 scene_id: sceneId || 'interior',
                 status: 'completed',
@@ -826,7 +843,7 @@ async function normalizeImageOrientation(file: File): Promise<File> {
   });
 }
 
-async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off'): Promise<{ finalUrl: string; jobId: string | null }> {
+async function processExteriorImage(img: V2Image, scene: any, accessToken: string, outputFormat: 'landscape' | 'portrait', autoCropMode: 'off' | 'tight' | 'standard' = 'off', projectId: string | null = null): Promise<{ finalUrl: string; jobId: string | null }> {
   let file = img.file;
   if ((!file || file.size === 0) && img.previewUrl) {
     const resp = await fetch(img.previewUrl);
@@ -863,6 +880,9 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   if (autoCropMode !== 'off') {
     formData.append('autoCrop', 'true');
     formData.append('autoCropPadding', autoCropMode === 'tight' ? '0.03' : '0.12');
+  }
+  if (projectId) {
+    formData.append('projectId', projectId);
   }
 
   const controller = new AbortController();
