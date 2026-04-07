@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 interface SceneMetadata {
   id: string;
@@ -68,6 +69,33 @@ async function compressToJpeg(
   return { buffer: imageBuffer, contentType: 'image/png' };
 }
 
+/** Extract image data URL from AI gateway response message */
+function extractImageFromAiMessage(message: any): string | null {
+  if (message?.images?.length > 0) {
+    return message.images[0].image_url?.url;
+  }
+  if (Array.isArray(message?.content)) {
+    for (const part of message.content) {
+      if (part.type === "image_url") return part.image_url?.url;
+    }
+  }
+  if (typeof message?.content === "string" && message.content.startsWith("data:image")) {
+    return message.content;
+  }
+  return null;
+}
+
+/** Convert a data URL to an ArrayBuffer */
+function dataUrlToBuffer(dataUrl: string): ArrayBuffer {
+  const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+  const binaryStr = atob(base64Data);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === 'OPTIONS') {
@@ -133,9 +161,22 @@ serve(async (req) => {
     const projectId = formData.get('projectId') as string | null;
     const orientation = formData.get('orientation') as string || 'landscape';
     const relightEnabled = formData.get('relight') === 'true';
+
+    // New fields for parallel dispatch + server-side post-processing
+    const interiorMode = formData.get('interiorMode') === 'true';
+    const interiorBgType = formData.get('interiorBgType') as string || 'clean white';
+    const plateStyle = formData.get('plateStyle') as string || '';
+    const plateLogoBase64Str = formData.get('plateLogoBase64') as string || '';
+    const jobId = formData.get('jobId') as string || '';
     
     // Input validation
-    if (!imageFile || !sceneData || !backgroundImageUrl) {
+    if (!imageFile) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing image file' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!interiorMode && (!sceneData || !backgroundImageUrl)) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -160,9 +201,9 @@ serve(async (req) => {
       );
     }
 
-    // Validate backgroundUrl format - allow http/https URLs and data URIs
-    const isDataUri = backgroundImageUrl.startsWith('data:image/');
-    if (!isDataUri) {
+    // Validate backgroundUrl format (only for exterior mode)
+    const isDataUri = !interiorMode && backgroundImageUrl?.startsWith('data:image/');
+    if (!interiorMode && backgroundImageUrl && !isDataUri) {
       try {
         const bgUrl = new URL(backgroundImageUrl);
         if (!['http:', 'https:'].includes(bgUrl.protocol)) {
@@ -184,35 +225,45 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Parse and validate scene data
-    let scene: SceneMetadata;
-    try {
-      scene = JSON.parse(sceneData);
-      if (!scene.id || typeof scene.id !== 'string' || scene.id.length > 100) {
-        throw new Error('Invalid scene id');
-      }
-      if (scene.aiPrompt && (typeof scene.aiPrompt !== 'string' || scene.aiPrompt.length > 2000)) {
-        throw new Error('Invalid AI prompt');
-      }
-    } catch (e) {
+    if (jobId && !uuidRegex.test(jobId)) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid scene data format' }),
+        JSON.stringify({ success: false, error: 'Invalid job ID format' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Parse and validate scene data (only for exterior mode)
+    let scene: SceneMetadata;
+    if (interiorMode) {
+      scene = {
+        id: 'interior', name: 'Interior', horizonY: 50, baselineY: 65, defaultScale: 0.65,
+        shadowPreset: { enabled: false, strength: 0, blur: 0, offsetX: 0, offsetY: 0 },
+        reflectionPreset: { enabled: false, opacity: 0, fade: 0 },
+      };
+    } else {
+      try {
+        scene = JSON.parse(sceneData);
+        if (!scene.id || typeof scene.id !== 'string' || scene.id.length > 100) {
+          throw new Error('Invalid scene id');
+        }
+        if (scene.aiPrompt && (typeof scene.aiPrompt !== 'string' || scene.aiPrompt.length > 2000)) {
+          throw new Error('Invalid AI prompt');
+        }
+      } catch (e) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid scene data format' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
-    
-    if (!PHOTOROOM_API_KEY) {
+    if (!interiorMode && !PHOTOROOM_API_KEY) {
       throw new Error('PHOTOROOM_API_KEY not configured');
     }
 
-    console.log(`Processing image for scene: ${scene.name}`);
-    console.log(`Shadow mode: ${scene.shadowMode || 'none'}`);
-    console.log(`AI Prompt: ${scene.aiPrompt || 'default'}`);
-    console.log(`Orientation: ${orientation}`);
-    console.log(`Relight enabled: ${relightEnabled}`);
+    console.log(`Processing image: interior=${interiorMode}, scene=${scene.name}, plates=${plateStyle || 'none'}`);
+    console.log(`Orientation: ${orientation}, Relight: ${relightEnabled}`);
 
     // Quick credit check BEFORE doing any work (actual deduction is atomic later)
     console.log(`Checking credits for user: ${userId}`);
@@ -232,6 +283,10 @@ serve(async (req) => {
     console.log(`Current credits: ${currentCredits}`);
 
     if (currentCredits < 1) {
+      // Update job status if pre-created
+      if (jobId) {
+        await supabase.from('processing_jobs').update({ status: 'failed', error_message: 'Inga credits kvar' }).eq('id', jobId);
+      }
       return new Response(
         JSON.stringify({
           success: false,
@@ -245,247 +300,326 @@ serve(async (req) => {
       );
     }
 
-    // Step 1: Read image into buffer for direct upload to PhotoRoom
+    // Update pre-created job status to 'processing'
+    if (jobId) {
+      await supabase.from('processing_jobs').update({ status: 'processing' }).eq('id', jobId);
+    }
+
+    // Step 1: Read image into buffer
     const imageBuffer = await imageFile.arrayBuffer();
     const imageBlob = new Blob([imageBuffer], { type: imageFile.type });
     console.log(`Image size: ${(imageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
 
-    // Step 2: Process with Photoroom's AI Background API
-    console.log('Processing with Photoroom Studio model...');
-    
-    const photoroomFormData = new FormData();
-    
-    // Send image directly as file (avoids race condition with storage URL)
-    photoroomFormData.append('imageFile', imageBlob, imageFile.name);
-    console.log('Sending image directly as file to PhotoRoom');
-    
-    // Check if this scene uses composite mode (exact background, no AI generation)
-    const useCompositeMode = scene.compositeMode === true;
-    console.log('Composite mode:', useCompositeMode);
-
-    // If backgroundUrl is a data URI, upload it to storage first so PhotoRoom can fetch it
+    let finalImageBuffer: ArrayBuffer;
     let resolvedBackgroundUrl = backgroundImageUrl;
     let tempBgPath: string | null = null;
-    if (isDataUri) {
-      console.log('Background is a data URI, uploading to storage...');
-      const matches = backgroundImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
-      if (matches) {
-        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-        const base64Data = matches[2];
-        const binaryStr = atob(base64Data);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
-        tempBgPath = `temp/${crypto.randomUUID()}-bg.${ext}`;
-        const { error: bgUploadError } = await supabase.storage
-          .from('processed-cars')
-          .upload(tempBgPath, bytes.buffer, {
-            contentType: `image/${matches[1]}`,
-            upsert: false,
-          });
-        if (bgUploadError) {
-          console.error('Failed to upload data URI background:', bgUploadError);
-          throw new Error('Failed to process background image');
-        }
-        const { data: bgUrlData } = supabase.storage
-          .from('processed-cars')
-          .getPublicUrl(tempBgPath);
-        resolvedBackgroundUrl = bgUrlData.publicUrl;
-        console.log('Background uploaded to:', resolvedBackgroundUrl);
-      } else {
-        throw new Error('Invalid data URI format for background');
-      }
-    }
 
-    if (useCompositeMode) {
-      // Composite mode - use exact background image (no AI generation)
-      photoroomFormData.append('background.color', 'transparent');
-      console.log('Using TRANSPARENT background for hybrid composite (step 1)');
-    } else {
-      // AI-generated background mode - use guidance
-      photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
-      const referenceScale = scene.referenceScale ?? 0.7;
-      photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-      console.log('Reference scale:', referenceScale);
-      
-      photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
-      
-      const basePrompt = scene.aiPrompt ||
-        `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
-        `Realistic scale, perspective and lighting for professional automotive photography.`;
+    if (interiorMode) {
+      // ===== INTERIOR PROCESSING via AI Gateway =====
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-      const orientationHint = orientation === 'portrait'
-        ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
-        : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
+      const uint8 = new Uint8Array(imageBuffer);
+      const b64 = base64Encode(uint8);
+      const dataUrl = `data:${imageFile.type};base64,${b64}`;
 
-      const prompt = `${basePrompt} ${orientationHint}`;
+      const origW = parseInt(formData.get('originalWidth') as string || '0');
+      const origH = parseInt(formData.get('originalHeight') as string || '0');
+      const dimNote = origW && origH ? ` The output MUST have the EXACT same dimensions (${origW}x${origH}).` : '';
 
-      photoroomFormData.append('background.prompt', prompt);
-      console.log('Using prompt:', prompt);
-    }
-    
-    const shadowMode = scene.shadowMode || 'none';
-    if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
-      photoroomFormData.append('shadow.mode', shadowMode);
-      console.log('Adding PhotoRoom shadow:', shadowMode);
-    }
-    
-    const autoCrop = formData.get('autoCrop') === 'true';
-    const autoCropPadding = formData.get('autoCropPadding') as string || '0.03';
-    const paddingValue = autoCrop ? autoCropPadding : (orientation === 'portrait' ? '0.08' : '0.10');
-    photoroomFormData.append('padding', paddingValue);
-    
-    photoroomFormData.append('scaling', 'fit');
-    photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
-    console.log(`Auto-crop: ${autoCrop}, padding: ${paddingValue}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
-    
-    if (relightEnabled) {
-      photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
-      console.log('AI Relight enabled with preserve-hue-and-saturation');
-    }
-    
-    const originalWidth = parseInt(formData.get('originalWidth') as string || '0');
-    const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
-    console.log('Original dimensions:', originalWidth, 'x', originalHeight);
-    
-    // Max dimensions - reduced to 4000 to help with file size
-    const maxWidth = 4000;
-    const maxHeight = 4000;
-    
-    let outputWidth: number;
-    let outputHeight: number;
-    
-    if (originalWidth > 0 && originalHeight > 0) {
-      const aspectRatio = originalWidth / originalHeight;
-      
-      if (orientation === 'portrait') {
-        outputHeight = Math.min(originalHeight, maxHeight);
-        outputWidth = Math.round(outputHeight * aspectRatio);
-        if (outputWidth > maxWidth) {
-          outputWidth = maxWidth;
-          outputHeight = Math.round(outputWidth / aspectRatio);
-        }
-      } else {
-        outputWidth = Math.min(originalWidth, maxWidth);
-        outputHeight = Math.round(outputWidth / aspectRatio);
-        if (outputHeight > maxHeight) {
-          outputHeight = maxHeight;
-          outputWidth = Math.round(outputHeight * aspectRatio);
-        }
-      }
-    } else {
-      outputWidth = maxWidth;
-      outputHeight = maxHeight;
-    }
-    
-    const outputSize = `${outputWidth}x${outputHeight}`;
-    photoroomFormData.append('outputSize', outputSize);
-    console.log('Calculated output size:', outputSize, '(original:', originalWidth, 'x', originalHeight, ')');
-    
-    // Request PNG output for lossless quality
-    photoroomFormData.append('export.format', 'png');
-    
-    console.log('Photoroom request prepared:');
-    console.log('- Reference URL:', resolvedBackgroundUrl.substring(0, 100));
-    console.log('- Seed:', PROCESSING_SEED);
-    console.log('- Shadow mode:', shadowMode);
-    console.log('- Padding:', paddingValue);
-    console.log('- Orientation:', orientation);
-    console.log('- Relight:', relightEnabled);
-    console.log('- Composite mode:', useCompositeMode);
-    console.log('- Output format: PNG');
-    
-    const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
-      method: 'POST',
-      headers: {
-        'x-api-key': PHOTOROOM_API_KEY,
-        ...(useCompositeMode ? {} : { 'pr-ai-background-model-version': 'background-studio-beta-2025-03-17' }),
-      },
-      body: photoroomFormData,
-    });
+      const prompt = `Look at this car image carefully. This is a photo of a car where the background is visible — either through windows, open doors, open trunk/boot, or because the car is only partially in frame. YOUR TASK: Replace ALL visible background (everything that is NOT the car itself or its interior) with a clean, ${interiorBgType} background. KEEP THE CAR AND ITS INTERIOR EXACTLY AS THEY ARE. Do NOT alter any part of the vehicle itself. Do NOT move, resize, crop, or reframe the image.${dimNote}`;
 
-    if (!editResponse.ok) {
-      const errorText = await editResponse.text();
-      console.error('Photoroom error:', editResponse.status, errorText);
+      console.log('Calling AI gateway for interior masking...');
       
-      // No temp file to clean up (image sent directly)
-      
-      if (editResponse.status === 402) {
-        throw new Error(`Photoroom: Out of API credits. Visit https://app.photoroom.com/api-dashboard to upgrade.`);
-      }
-      if (editResponse.status === 401) {
-        throw new Error(`Photoroom: Invalid API key. Please check your API key.`);
-      }
-      
-      // PhotoRoom failed = no charge from them = no credit deduction from user
-      throw new Error(`Bildbearbetning misslyckades. Ingen credit drogs. (${editResponse.status})`);
-    }
-
-    let finalImageBuffer = await editResponse.arrayBuffer();
-    console.log('✅ Photoroom processed successfully!');
-    console.log(`Result size: ${(finalImageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
-
-    // Step 2: If composite mode, composite the transparent car onto exact background
-    if (useCompositeMode) {
-      console.log('Starting step 2: Compositing onto exact background...');
-      
-      // Upload step 1 result (transparent car) to get a URL
-      const step1Filename = `temp/${crypto.randomUUID()}-step1.png`;
-      const { error: step1UploadError } = await supabase.storage
-        .from('processed-cars')
-        .upload(step1Filename, finalImageBuffer, {
-          contentType: 'image/png',
-          upsert: false,
+      let aiResponse: Response | null = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3.1-flash-image-preview",
+            messages: [
+              { role: "system", content: "You are an image editing assistant. Preserve exact input image dimensions. Never crop, resize, or reframe." },
+              { role: "user", content: [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: dataUrl } },
+              ] },
+            ],
+            modalities: ["image", "text"],
+          }),
         });
-
-      if (step1UploadError) {
-        console.error('Step 1 upload error:', step1UploadError);
-        throw new Error(`Failed to upload step 1 result: ${step1UploadError.message}`);
+        
+        if (aiResponse.ok) break;
+        
+        const errText = await aiResponse.text();
+        console.error(`AI gateway error (attempt ${attempt}):`, aiResponse.status, errText);
+        
+        if ((aiResponse.status === 429 || aiResponse.status === 502) && attempt < 2) {
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        throw new Error(`Interior masking failed (${aiResponse.status})`);
       }
 
-      const { data: step1UrlData } = supabase.storage
-        .from('processed-cars')
-        .getPublicUrl(step1Filename);
+      if (!aiResponse || !aiResponse.ok) throw new Error("Interior masking failed after retries");
 
-      const transparentCarUrl = step1UrlData.publicUrl;
-      console.log('Transparent car uploaded:', transparentCarUrl);
+      const aiResult = await aiResponse.json();
+      const resultUrl = extractImageFromAiMessage(aiResult.choices?.[0]?.message);
 
-      // Step 2: Composite transparent car onto exact background
-      const step2FormData = new FormData();
-      step2FormData.append('imageUrl', transparentCarUrl);
-      step2FormData.append('background.imageUrl', resolvedBackgroundUrl);
-      step2FormData.append('padding', '0'); // No additional padding - car is already positioned
-      step2FormData.append('scaling', 'fill'); // Fill to preserve positioning from step 1
-      step2FormData.append('outputSize', outputSize);
-      step2FormData.append('export.format', 'png');
+      if (!resultUrl) {
+        console.error("No image in AI response:", JSON.stringify(aiResult).slice(0, 500));
+        throw new Error("AI did not return an image for interior masking");
+      }
 
-      console.log('Step 2 request: Compositing transparent car onto exact background');
+      finalImageBuffer = dataUrlToBuffer(resultUrl);
+      console.log('✅ Interior masking completed');
 
-      const step2Response = await fetch('https://image-api.photoroom.com/v2/edit', {
+    } else {
+      // ===== EXTERIOR PROCESSING via PhotoRoom =====
+      console.log('Processing with Photoroom Studio model...');
+    
+      const photoroomFormData = new FormData();
+      photoroomFormData.append('imageFile', imageBlob, imageFile.name);
+      console.log('Sending image directly as file to PhotoRoom');
+    
+      const useCompositeMode = scene.compositeMode === true;
+      console.log('Composite mode:', useCompositeMode);
+
+      if (isDataUri) {
+        console.log('Background is a data URI, uploading to storage...');
+        const matches = backgroundImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (matches) {
+          const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+          const base64Data = matches[2];
+          const binaryStr = atob(base64Data);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+          tempBgPath = `temp/${crypto.randomUUID()}-bg.${ext}`;
+          const { error: bgUploadError } = await supabase.storage
+            .from('processed-cars')
+            .upload(tempBgPath, bytes.buffer, {
+              contentType: `image/${matches[1]}`,
+              upsert: false,
+            });
+          if (bgUploadError) {
+            console.error('Failed to upload data URI background:', bgUploadError);
+            throw new Error('Failed to process background image');
+          }
+          const { data: bgUrlData } = supabase.storage
+            .from('processed-cars')
+            .getPublicUrl(tempBgPath);
+          resolvedBackgroundUrl = bgUrlData.publicUrl;
+          console.log('Background uploaded to:', resolvedBackgroundUrl);
+        } else {
+          throw new Error('Invalid data URI format for background');
+        }
+      }
+
+      if (useCompositeMode) {
+        photoroomFormData.append('background.color', 'transparent');
+        console.log('Using TRANSPARENT background for hybrid composite (step 1)');
+      } else {
+        photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
+        const referenceScale = scene.referenceScale ?? 0.7;
+        photoroomFormData.append('background.guidance.scale', referenceScale.toString());
+        console.log('Reference scale:', referenceScale);
+        
+        photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
+        
+        const basePrompt = scene.aiPrompt ||
+          `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
+          `Realistic scale, perspective and lighting for professional automotive photography.`;
+
+        const orientationHint = orientation === 'portrait'
+          ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
+          : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
+
+        const prompt = `${basePrompt} ${orientationHint}`;
+        photoroomFormData.append('background.prompt', prompt);
+        console.log('Using prompt:', prompt);
+      }
+    
+      const shadowMode = scene.shadowMode || 'none';
+      if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
+        photoroomFormData.append('shadow.mode', shadowMode);
+        console.log('Adding PhotoRoom shadow:', shadowMode);
+      }
+    
+      const autoCrop = formData.get('autoCrop') === 'true';
+      const autoCropPadding = formData.get('autoCropPadding') as string || '0.03';
+      const paddingValue = autoCrop ? autoCropPadding : (orientation === 'portrait' ? '0.08' : '0.10');
+      photoroomFormData.append('padding', paddingValue);
+    
+      photoroomFormData.append('scaling', 'fit');
+      photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
+      console.log(`Auto-crop: ${autoCrop}, padding: ${paddingValue}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
+    
+      if (relightEnabled) {
+        photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
+        console.log('AI Relight enabled with preserve-hue-and-saturation');
+      }
+    
+      const originalWidth = parseInt(formData.get('originalWidth') as string || '0');
+      const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
+      console.log('Original dimensions:', originalWidth, 'x', originalHeight);
+    
+      const maxWidth = 4000;
+      const maxHeight = 4000;
+    
+      let outputWidth: number;
+      let outputHeight: number;
+    
+      if (originalWidth > 0 && originalHeight > 0) {
+        const aspectRatio = originalWidth / originalHeight;
+        
+        if (orientation === 'portrait') {
+          outputHeight = Math.min(originalHeight, maxHeight);
+          outputWidth = Math.round(outputHeight * aspectRatio);
+          if (outputWidth > maxWidth) {
+            outputWidth = maxWidth;
+            outputHeight = Math.round(outputWidth / aspectRatio);
+          }
+        } else {
+          outputWidth = Math.min(originalWidth, maxWidth);
+          outputHeight = Math.round(outputWidth / aspectRatio);
+          if (outputHeight > maxHeight) {
+            outputHeight = maxHeight;
+            outputWidth = Math.round(outputHeight * aspectRatio);
+          }
+        }
+      } else {
+        outputWidth = maxWidth;
+        outputHeight = maxHeight;
+      }
+    
+      const outputSize = `${outputWidth}x${outputHeight}`;
+      photoroomFormData.append('outputSize', outputSize);
+      console.log('Calculated output size:', outputSize);
+    
+      photoroomFormData.append('export.format', 'png');
+    
+      const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
         method: 'POST',
         headers: {
-          'x-api-key': PHOTOROOM_API_KEY,
+          'x-api-key': PHOTOROOM_API_KEY!,
+          ...(useCompositeMode ? {} : { 'pr-ai-background-model-version': 'background-studio-beta-2025-03-17' }),
         },
-        body: step2FormData,
+        body: photoroomFormData,
       });
 
-      // Clean up step 1 temp file
-      await supabase.storage.from('processed-cars').remove([step1Filename]);
-
-      if (!step2Response.ok) {
-        const errorText = await step2Response.text();
-        console.error('Photoroom step 2 error:', step2Response.status, errorText);
-        throw new Error(`Composite step 2 failed. (${step2Response.status})`);
+      if (!editResponse.ok) {
+        const errorText = await editResponse.text();
+        console.error('Photoroom error:', editResponse.status, errorText);
+        
+        if (editResponse.status === 402) {
+          throw new Error(`Photoroom: Out of API credits.`);
+        }
+        if (editResponse.status === 401) {
+          throw new Error(`Photoroom: Invalid API key.`);
+        }
+        
+        throw new Error(`Bildbearbetning misslyckades. Ingen credit drogs. (${editResponse.status})`);
       }
 
-      finalImageBuffer = await step2Response.arrayBuffer();
-      console.log('✅ Photoroom step 2 (composite) completed!');
-      console.log(`Final result size: ${(finalImageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
+      finalImageBuffer = await editResponse.arrayBuffer();
+      console.log('✅ Photoroom processed successfully!');
+      console.log(`Result size: ${(finalImageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
+
+      // If composite mode, composite the transparent car onto exact background
+      if (useCompositeMode) {
+        console.log('Starting step 2: Compositing onto exact background...');
+        
+        const step1Filename = `temp/${crypto.randomUUID()}-step1.png`;
+        const { error: step1UploadError } = await supabase.storage
+          .from('processed-cars')
+          .upload(step1Filename, finalImageBuffer, {
+            contentType: 'image/png',
+            upsert: false,
+          });
+
+        if (step1UploadError) {
+          console.error('Step 1 upload error:', step1UploadError);
+          throw new Error(`Failed to upload step 1 result: ${step1UploadError.message}`);
+        }
+
+        const { data: step1UrlData } = supabase.storage
+          .from('processed-cars')
+          .getPublicUrl(step1Filename);
+
+        const transparentCarUrl = step1UrlData.publicUrl;
+        console.log('Transparent car uploaded:', transparentCarUrl);
+
+        const step2FormData = new FormData();
+        step2FormData.append('imageUrl', transparentCarUrl);
+        step2FormData.append('background.imageUrl', resolvedBackgroundUrl);
+        step2FormData.append('padding', '0');
+        step2FormData.append('scaling', 'fill');
+        step2FormData.append('outputSize', outputSize);
+        step2FormData.append('export.format', 'png');
+
+        const step2Response = await fetch('https://image-api.photoroom.com/v2/edit', {
+          method: 'POST',
+          headers: { 'x-api-key': PHOTOROOM_API_KEY! },
+          body: step2FormData,
+        });
+
+        await supabase.storage.from('processed-cars').remove([step1Filename]);
+
+        if (!step2Response.ok) {
+          const errorText = await step2Response.text();
+          console.error('Photoroom step 2 error:', step2Response.status, errorText);
+          throw new Error(`Composite step 2 failed. (${step2Response.status})`);
+        }
+
+        finalImageBuffer = await step2Response.arrayBuffer();
+        console.log('✅ Photoroom step 2 (composite) completed!');
+      }
+    }
+
+    // ===== SERVER-SIDE PLATE BLURRING =====
+    if (plateStyle && !interiorMode) {
+      console.log(`Applying server-side plate blur: style=${plateStyle}`);
+      try {
+        // Call blur-license-plates function (it handles its own credit deduction)
+        const plateUint8 = new Uint8Array(finalImageBuffer);
+        const plateB64 = base64Encode(plateUint8);
+        const plateDataUrl = `data:image/jpeg;base64,${plateB64}`;
+
+        const blurResp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/blur-license-plates`, {
+          method: 'POST',
+          headers: {
+            Authorization: authHeader!,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageBase64: plateDataUrl,
+            style: plateStyle,
+            logoBase64: plateLogoBase64Str || null,
+          }),
+        });
+
+        if (blurResp.ok) {
+          const blurResult = await blurResp.json();
+          if (blurResult.success && blurResult.imageUrl) {
+            finalImageBuffer = dataUrlToBuffer(blurResult.imageUrl);
+            console.log('✅ Plate blur applied server-side');
+          } else {
+            console.warn('Plate blur returned no image:', blurResult.error);
+          }
+        } else {
+          console.warn('Plate blur function failed:', blurResp.status);
+        }
+      } catch (plateErr) {
+        console.error('Plate blur error (non-fatal):', plateErr);
+      }
     }
 
     // *** CRITICAL: Deduct credit NOW using atomic SQL function ***
-    // This prevents race conditions where check-subscription could reset balance mid-operation
     let newBalance: number;
     try {
       const { data: decrementResult, error: decrementError } = await supabase
@@ -493,11 +627,15 @@ serve(async (req) => {
 
       if (decrementError) {
         if (decrementError.message?.includes('insufficient_credits')) {
+          // Update job if pre-created
+          if (jobId) {
+            await supabase.from('processing_jobs').update({ status: 'failed', error_message: 'Inga credits kvar' }).eq('id', jobId);
+          }
           return new Response(
             JSON.stringify({
               success: false,
               error: 'insufficient_credits',
-              message: 'Du har inga credits kvar. Köp fler credits för att fortsätta.',
+              message: 'Du har inga credits kvar.',
             }),
             {
               status: 402,
@@ -506,15 +644,13 @@ serve(async (req) => {
           );
         }
         console.error('Error deducting credit:', decrementError);
-        console.error('CRITICAL: PhotoRoom processed image but credit deduction failed!');
-        newBalance = -1; // Unknown balance
+        newBalance = -1;
       } else {
         newBalance = decrementResult;
         creditDeducted = true;
         console.log(`Credit deducted atomically. New balance: ${newBalance}`);
       }
       
-      // Log the transaction
       if (creditDeducted) {
         await supabase.from('credit_transactions').insert({
           user_id: userId,
@@ -526,16 +662,14 @@ serve(async (req) => {
       }
     } catch (rpcError) {
       console.error('RPC decrement_credits failed:', rpcError);
-      console.error('CRITICAL: PhotoRoom processed image but credit deduction failed!');
     }
 
-    // Step 3: Always compress to JPEG for storage efficiency (~1-2MB vs 5-10MB PNG)
+    // Compress to JPEG for storage efficiency
     console.log('Compressing final image to JPEG for storage...');
     
     const { buffer: uploadBuffer, contentType } = await compressToJpeg(finalImageBuffer);
     const fileExtension = 'jpg';
     
-    // Sanitize scene ID for filename
     const sanitizedSceneId = scene.id
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
@@ -567,13 +701,10 @@ serve(async (req) => {
       finalUploadError = error;
       console.error(`Upload attempt ${attempt} failed:`, error);
       
-      // Don't retry on size errors - they won't succeed
       if (error.message?.includes('exceeded') || error.statusCode === '413') {
-        console.error('File size error - not retrying');
         break;
       }
       
-      // Wait before retry
       if (attempt < 3) {
         await new Promise(r => setTimeout(r, 1000 * attempt));
       }
@@ -581,8 +712,10 @@ serve(async (req) => {
 
     if (!uploadSuccess) {
       console.error('All upload attempts failed:', finalUploadError);
-      // Credit was already deducted (PhotoRoom charged us), so we can't refund
-      throw new Error(`Bilden bearbetades men kunde inte sparas. Din credit användes. Kontakta support om problemet kvarstår.`);
+      if (jobId) {
+        await supabase.from('processing_jobs').update({ status: 'failed', error_message: 'Upload failed' }).eq('id', jobId);
+      }
+      throw new Error(`Bilden bearbetades men kunde inte sparas.`);
     }
 
     const { data: finalPublicUrlData } = supabase.storage
@@ -591,47 +724,62 @@ serve(async (req) => {
 
     console.log('✅ Final image uploaded:', finalPublicUrlData.publicUrl);
 
-    // Step 4: Generate thumbnail
-    console.log('Generating thumbnail...');
+    // Generate thumbnail
     let thumbnailUrl: string | null = null;
-    
     try {
-      const transformedUrl = `${finalPublicUrlData.publicUrl}?width=400&quality=70`;
-      thumbnailUrl = transformedUrl;
-      console.log('✅ Thumbnail URL generated:', thumbnailUrl);
+      thumbnailUrl = `${finalPublicUrlData.publicUrl}?width=400&quality=70`;
     } catch (thumbError) {
-      console.error('Thumbnail generation failed, using full URL:', thumbError);
       thumbnailUrl = finalPublicUrlData.publicUrl;
     }
 
     // Clean up temp background file if we uploaded one
     if (tempBgPath) {
       await supabase.storage.from('processed-cars').remove([tempBgPath]);
-      console.log('Cleaned up temp background file');
     }
 
-    // Save to processing_jobs
-    let jobId: string | null = null;
-    const { data: jobData, error: jobError } = await supabase
-      .from('processing_jobs')
-      .insert({
-        user_id: userId,
-        project_id: projectId || null,
-        original_filename: imageFile.name,
-        scene_id: scene.id,
-        status: 'completed',
-        final_url: finalPublicUrlData.publicUrl,
-        thumbnail_url: thumbnailUrl,
-        completed_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
-
-    if (jobError) {
-      console.error('Error saving job:', jobError);
+    // Save or update processing_jobs
+    let finalJobId: string | null = jobId || null;
+    if (jobId) {
+      // Update pre-created job
+      const { error: updateError } = await supabase
+        .from('processing_jobs')
+        .update({
+          status: 'completed',
+          final_url: finalPublicUrlData.publicUrl,
+          thumbnail_url: thumbnailUrl,
+          completed_at: new Date().toISOString(),
+          scene_id: scene.id,
+        })
+        .eq('id', jobId);
+      
+      if (updateError) {
+        console.error('Error updating job:', updateError);
+      } else {
+        console.log('✅ Job updated:', jobId);
+      }
     } else {
-      jobId = jobData.id;
-      console.log('✅ Job saved:', jobId);
+      // Create new job record
+      const { data: jobData, error: jobError } = await supabase
+        .from('processing_jobs')
+        .insert({
+          user_id: userId,
+          project_id: projectId || null,
+          original_filename: imageFile.name,
+          scene_id: scene.id,
+          status: 'completed',
+          final_url: finalPublicUrlData.publicUrl,
+          thumbnail_url: thumbnailUrl,
+          completed_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (jobError) {
+        console.error('Error saving job:', jobError);
+      } else {
+        finalJobId = jobData.id;
+        console.log('✅ Job saved:', finalJobId);
+      }
     }
 
     return new Response(
@@ -639,7 +787,7 @@ serve(async (req) => {
         success: true,
         finalUrl: finalPublicUrlData.publicUrl,
         thumbnailUrl: thumbnailUrl,
-        jobId,
+        jobId: finalJobId,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -647,10 +795,20 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error processing image:', error);
-    
-    // Note: We do NOT refund credits here because if we reached the credit deduction point,
-    // it means PhotoRoom successfully processed and charged us.
-    // The error would be in storage upload, which doesn't warrant a refund.
+
+    // Update job status if pre-created
+    if (supabase && userId) {
+      const formData2 = await req.clone().formData().catch(() => null);
+      const failJobId = formData2?.get('jobId') as string || '';
+      if (failJobId) {
+        try {
+          await supabase.from('processing_jobs').update({
+            status: 'failed',
+            error_message: error instanceof Error ? error.message : 'Unknown error',
+          }).eq('id', failJobId);
+        } catch {}
+      }
+    }
     
     return new Response(
       JSON.stringify({
@@ -659,7 +817,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
       }
     );
   }

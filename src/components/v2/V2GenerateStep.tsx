@@ -411,6 +411,17 @@ export const V2GenerateStep = ({
     }
   };
 
+  // Ref to track which job IDs have been post-processed during polling
+  const processedJobIdsRef = useRef<Set<string>>(new Set());
+  const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearTimeout(pollingRef.current);
+    };
+  }, []);
+
   const handleGenerate = async () => {
     // Check auth first - if no session, trigger paywall/signup
     const { data: { session: authSession } } = await supabase.auth.getSession();
@@ -423,6 +434,7 @@ export const V2GenerateStep = ({
       return;
     }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
+    processedJobIdsRef.current = new Set();
     // Mark results view active immediately so user returns here if they leave mid-generation
     try {
       sessionStorage.setItem('v2-show-results', 'true');
@@ -430,23 +442,41 @@ export const V2GenerateStep = ({
     } catch {}
 
     try {
+      // 1. Classify images
       setStatusText(t('v2.analyzingImages'));
       const imageData = await Promise.all(
         images.map(async (img) => {
           let file = img.file;
-          // If file is null (e.g. example images), fetch from previewUrl
           if (!file && img.previewUrl) {
             const resp = await fetch(img.previewUrl);
             const blob = await resp.blob();
             file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
           }
           if (!file) throw new Error('Ingen bildfil tillgänglig');
-          const ab = await file.arrayBuffer();
-          const b64 = btoa(new Uint8Array(ab).reduce((d, b) => d + String.fromCharCode(b), ''));
-          return { id: img.id, base64: `data:${file.type};base64,${b64}` };
+          // Create 512px thumbnail for classification
+          const thumbB64 = await new Promise<string>((resolve) => {
+            const imgEl = new window.Image();
+            imgEl.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                const scale = Math.min(512 / imgEl.naturalWidth, 512 / imgEl.naturalHeight, 1);
+                canvas.width = Math.round(imgEl.naturalWidth * scale);
+                canvas.height = Math.round(imgEl.naturalHeight * scale);
+                const ctx = canvas.getContext('2d')!;
+                ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+              } catch { resolve(''); }
+            };
+            imgEl.onerror = () => resolve('');
+            imgEl.src = URL.createObjectURL(file!);
+          });
+          return { id: img.id, base64: thumbB64, file };
         })
       );
-      const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', { body: { images: imageData } });
+      const validImageData = imageData.filter(d => d.base64.length > 100);
+      const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', {
+        body: { images: validImageData.map(d => ({ id: d.id, base64: d.base64 })) },
+      });
       if (classError) throw classError;
       const classifications: Record<string, 'interior' | 'exterior' | 'detail'> = classData.classifications;
       const classifiedImages = images.map(img => ({ ...img, classification: classifications[img.id] || 'exterior' }));
@@ -456,21 +486,27 @@ export const V2GenerateStep = ({
         setEmailSent(true);
       }
 
+      // 2. Fetch scene & session
       const scene = await fetchScene(sceneId);
       if (!scene) throw new Error('Kunde inte ladda bakgrund');
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Din session har gått ut.');
 
-      // Create project record if projectName is provided
+      // 3. Always create project for batch tracking
       let projectId: string | null = null;
-      if (projectName.trim()) {
-        const { data: project, error: projErr } = await supabase
-          .from('projects')
-          .insert({ user_id: session.user.id, registration_number: projectName.trim().toUpperCase() })
-          .select()
-          .single();
-        if (!projErr && project) projectId = project.id;
+      const { data: project, error: projErr } = await supabase
+        .from('projects')
+        .insert({ user_id: session.user.id, registration_number: projectName.trim().toUpperCase() || 'Utan namn' })
+        .select()
+        .single();
+      if (!projErr && project) projectId = project.id;
+
+      // Store projectId for recovery
+      if (projectId) {
+        try { sessionStorage.setItem('v2-project-id', projectId); } catch {}
       }
+
+      // 4. Prepare shared data
       let logoUrl: string | null = null;
       const logos = await fetchUserLogo(session.user.id);
       if (logoConfig.applyTo !== 'none') { logoUrl = logos.light || logos.dark; }
@@ -483,7 +519,6 @@ export const V2GenerateStep = ({
       const isGreyScene = sceneName.includes('grå') || sceneName.includes('grey') || sceneName.includes('gray')
         || sceneName.includes('betong') || sceneName.includes('concrete') || sceneName.includes('netgrey');
       const interiorBgType = isDarkScene ? 'dark neutral black/charcoal' : isGreyScene ? 'neutral mid-grey' : 'clean white';
-      const targetAspect = getTargetAspect(outputFormat);
 
       let plateLogoBase64: string | null = null;
       if (plateConfig.enabled) {
@@ -500,129 +535,226 @@ export const V2GenerateStep = ({
         }
       }
 
-      const resultImages: V2Image[] = [];
-      const totalSteps = classifiedImages.length;
+      // 5. Pre-create processing_jobs for all images
+      const jobIds: Record<string, string> = {};
+      for (const img of classifiedImages) {
+        const { data: job } = await supabase.from('processing_jobs').insert({
+          user_id: session.user.id,
+          project_id: projectId,
+          original_filename: img.file?.name || `${img.id}.jpg`,
+          scene_id: sceneId || 'interior',
+          status: 'pending',
+        }).select('id').single();
+        if (job) jobIds[img.id] = job.id;
+      }
 
-      for (let i = 0; i < classifiedImages.length; i++) {
-        const img = classifiedImages[i];
-        setCurrentImageIndex(i + 1);
-        try {
-          let processedUrl: string;
-          let exteriorJobId: string | null = null;
-          const isExterior = img.classification === 'exterior' || img.classification === 'detail';
-          if (isExterior) {
-            setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
-            setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
-            const extResult = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode, projectId);
-            processedUrl = extResult.finalUrl;
-            exteriorJobId = extResult.jobId;
-            // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
-            if (plateConfig.enabled) {
-              setStatusText(t('v2.hidingPlates', { current: i + 1, total: totalSteps }));
-              setProgress(Math.round(((i + 0.6) / totalSteps) * 100));
-              try { processedUrl = await blurPlatesOnImage(processedUrl, plateConfig.style, plateLogoBase64, session.access_token); }
-              catch (plateErr: any) { console.error('Plate blur failed for image', i, plateErr); }
+      // 6. Dispatch ALL images in parallel (fire-and-forget)
+      setStatusText(t('v2.generating', { current: 0, total: classifiedImages.length }));
+      const backgroundUrl = scene.full_res_url.startsWith('http') || scene.full_res_url.startsWith('data:')
+        ? scene.full_res_url
+        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${scene.full_res_url}`;
+
+      for (const img of classifiedImages) {
+        const isExterior = img.classification === 'exterior' || img.classification === 'detail';
+        const fileData = imageData.find(d => d.id === img.id);
+        let file = fileData?.file || img.file;
+        if ((!file || file.size === 0) && img.previewUrl) {
+          const resp = await fetch(img.previewUrl);
+          const blob = await resp.blob();
+          file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+        }
+        if (!file) continue;
+
+        // Normalize EXIF orientation
+        file = await normalizeImageOrientation(file);
+
+        const fd = new FormData();
+        fd.append('image', file, file.name);
+        if (jobIds[img.id]) fd.append('jobId', jobIds[img.id]);
+        if (projectId) fd.append('projectId', projectId);
+
+        // Get dimensions
+        const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+          const image = new window.Image();
+          image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
+          image.onerror = () => resolve({ w: 4000, h: 2667 });
+          image.src = URL.createObjectURL(file!);
+        });
+        fd.append('originalWidth', dims.w.toString());
+        fd.append('originalHeight', dims.h.toString());
+
+        if (isExterior) {
+          // Exterior: send scene + background
+          const scenePayload = {
+            id: scene.id, name: scene.name, horizonY: scene.horizon_y, baselineY: scene.baseline_y, defaultScale: scene.default_scale,
+            shadowPreset: { enabled: scene.shadow_enabled, strength: scene.shadow_strength, blur: scene.shadow_blur, offsetX: scene.shadow_offset_x, offsetY: scene.shadow_offset_y },
+            reflectionPreset: { enabled: scene.reflection_enabled, opacity: scene.reflection_opacity, fade: scene.reflection_fade },
+            aiPrompt: scene.ai_prompt, shadowMode: scene.photoroom_shadow_mode, referenceScale: scene.reference_scale, compositeMode: scene.composite_mode,
+          };
+          fd.append('scene', JSON.stringify(scenePayload));
+          fd.append('backgroundUrl', backgroundUrl);
+          fd.append('orientation', outputFormat === 'portrait' ? 'portrait' : 'landscape');
+          if (autoCropMode !== 'off') {
+            fd.append('autoCrop', 'true');
+            fd.append('autoCropPadding', autoCropMode === 'tight' ? '0.03' : '0.12');
+          }
+          // Server-side plate blurring
+          if (plateConfig.enabled) {
+            fd.append('plateStyle', plateConfig.style);
+            if (plateLogoBase64) fd.append('plateLogoBase64', plateLogoBase64);
+          }
+        } else {
+          // Interior: set interior mode
+          fd.append('interiorMode', 'true');
+          fd.append('interiorBgType', interiorBgType);
+        }
+
+        // Fire-and-forget: don't await the response
+        console.log(`Dispatching ${isExterior ? 'exterior' : 'interior'} image ${img.id} (job ${jobIds[img.id]})`);
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: fd,
+        }).catch(err => console.error(`Dispatch failed for ${img.id}:`, err));
+      }
+
+      // 7. Start polling for results
+      const totalExpected = classifiedImages.length;
+      const currentLogoUrl = logoUrl;
+      const currentLogoConfig = { ...logoConfig };
+      const currentLightBoost = lightBoost;
+      const currentLightEdit = lightEdit;
+      const currentSessionUserId = session.user.id;
+
+      const pollForResults = async () => {
+        if (!projectId) return;
+
+        const { data: jobs } = await supabase
+          .from('processing_jobs')
+          .select('id, final_url, thumbnail_url, original_filename, status, scene_id, error_message')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: true });
+
+        if (!jobs) {
+          pollingRef.current = setTimeout(pollForResults, 3000);
+          return;
+        }
+
+        const completed = jobs.filter(j => j.status === 'completed' && j.final_url);
+        const failed = jobs.filter(j => j.status === 'failed');
+        const pending = jobs.filter(j => j.status === 'pending' || j.status === 'processing');
+        const doneCount = completed.length + failed.length;
+
+        setProgress(Math.round((doneCount / totalExpected) * 100));
+        setCurrentImageIndex(doneCount);
+        setStatusText(t('v2.generating', { current: doneCount, total: totalExpected }));
+
+        // Process newly completed jobs (apply logo/light client-side)
+        for (const job of completed) {
+          if (processedJobIdsRef.current.has(job.id)) continue;
+          processedJobIdsRef.current.add(job.id);
+
+          let url = job.final_url!;
+          const jobIndex = jobs.indexOf(job);
+
+          // Apply client-side post-processing (logo, light)
+          try {
+            if (currentLightBoost) url = await applyLightBoost(url);
+            if (currentLightEdit) url = await applyLightEdit(url);
+            if (currentLogoUrl && shouldApplyLogo(job.id, jobIndex, totalExpected, currentLogoConfig)) {
+              url = await applyLogoToImage(url, currentLogoUrl, currentLogoConfig.preset, currentLogoConfig.logoSize);
             }
-          } else {
-            setStatusText(t('v2.maskingInterior', { current: i + 1, total: totalSteps }));
-            setProgress(Math.round(((i + 0.5) / totalSteps) * 100));
-            processedUrl = await processInteriorImage(img, interiorBgType);
-          }
-          if (lightBoost) processedUrl = await applyLightBoost(processedUrl);
-          if (lightEdit) processedUrl = await applyLightEdit(processedUrl);
-          if (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig)) {
-            processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset, logoConfig.logoSize);
-          }
 
-          // Save final post-processed image (with logo/plates/light edits) to gallery
-          const hasPostProcessing = plateConfig.enabled || lightBoost || lightEdit || (logoUrl && shouldApplyLogo(img.id, i, totalSteps, logoConfig));
-          if (isExterior && exteriorJobId && hasPostProcessing) {
-            try {
-              const postBlob = await compressBlobForStorage(processedUrl);
-              const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
-              const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
-              if (!upErr) {
-                const { data: pubUrl } = supabase.storage.from('processed-cars').getPublicUrl(postPath);
-                await supabase.from('processing_jobs').update({ final_url: pubUrl.publicUrl, thumbnail_url: pubUrl.publicUrl }).eq('id', exteriorJobId);
-              }
-            } catch (e) { console.warn('Could not update gallery with post-processed image:', e); }
-          } else if (!isExterior) {
-            try {
-              let galleryUrl = processedUrl;
-              if (processedUrl.startsWith('data:')) {
-                const postBlob = await compressBlobForStorage(processedUrl);
-                const postPath = `post-processed/${session.user.id}/${Date.now()}-${img.id}.jpg`;
+            // If post-processed, upload and update DB
+            if (url !== job.final_url) {
+              try {
+                const postBlob = await compressBlobForStorage(url);
+                const postPath = `post-processed/${currentSessionUserId}/${Date.now()}-${job.id}.jpg`;
                 const { error: upErr } = await supabase.storage.from('processed-cars').upload(postPath, postBlob, { contentType: 'image/jpeg', upsert: true });
                 if (!upErr) {
                   const { data: pubUrl } = supabase.storage.from('processed-cars').getPublicUrl(postPath);
-                  galleryUrl = pubUrl.publicUrl;
+                  await supabase.from('processing_jobs').update({ final_url: pubUrl.publicUrl, thumbnail_url: pubUrl.publicUrl }).eq('id', job.id);
+                  url = pubUrl.publicUrl;
                 }
-              }
-              await supabase.from('processing_jobs').insert({
-                user_id: session.user.id,
-                project_id: projectId || null,
-                original_filename: img.file?.name || `${img.id}.jpg`,
-                scene_id: sceneId || 'interior',
-                status: 'completed',
-                final_url: galleryUrl,
-                thumbnail_url: galleryUrl,
-                completed_at: new Date().toISOString(),
-              });
-            } catch (e) { console.warn('Could not save interior job:', e); }
-          }
+              } catch (e) { console.warn('Post-processing upload failed:', e); }
+            }
+          } catch (e) { console.warn('Post-processing failed:', e); }
 
-          const result = { ...img, processedUrl, status: 'done' as const };
-          resultImages.push(result);
-          if (deliveryMode === 'direct') {
-            setLiveResults(prev => {
-              const updated = [...prev, result];
-              // Persist partial results so user can leave and return
-              try {
-                const serializable = updated.map(r => ({
-                  id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
-                  classification: r.classification, status: r.status, error: r.error,
-                }));
-                sessionStorage.setItem('v2-results', JSON.stringify(serializable));
-                sessionStorage.setItem('v2-show-results', 'true');
-              } catch {}
-              return updated;
-            });
-          }
-        } catch (err: any) {
-          console.error(`Error processing image ${img.id}:`, err);
-          if (err?.message?.includes('402') || err?.message?.includes('Otillräckliga')) {
-            toast.error(t('v2.creditsRanOut')); break;
-          }
-          resultImages.push({ ...img, status: 'error', error: err.message });
+          const result: V2Image = {
+            id: job.id,
+            file: new File([], job.original_filename || 'image.jpg'),
+            previewUrl: url,
+            processedUrl: url,
+            status: 'done',
+          };
+
+          setLiveResults(prev => {
+            const updated = [...prev, result];
+            try {
+              const serializable = updated.map(r => ({
+                id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
+                classification: r.classification, status: r.status, error: r.error,
+              }));
+              sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+              sessionStorage.setItem('v2-show-results', 'true');
+            } catch {}
+            return updated;
+          });
         }
-        setProgress(Math.round(((i + 1) / totalSteps) * 100));
-      }
 
-      await onRefetchCredits();
-      if (deliveryMode === 'direct') {
-        onComplete(resultImages);
-      } else if (deliveryMode === 'email') {
-        const successfulUrls = resultImages
-          .filter(r => r.status === 'done' && r.processedUrl)
-          .map(r => r.processedUrl!);
-        if (successfulUrls.length > 0) {
-          try {
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            const userEmail = currentUser?.email;
-            if (userEmail) {
-              await supabase.functions.invoke('send-images-email', {
-                body: { imageUrls: successfulUrls, projectName, email: userEmail },
+        if (pending.length > 0) {
+          pollingRef.current = setTimeout(pollForResults, 3000);
+        } else {
+          // All done
+          await onRefetchCredits();
+          // Gather all results
+          const allResults: V2Image[] = [];
+          for (const job of jobs) {
+            if (job.status === 'completed' && job.final_url) {
+              allResults.push({
+                id: job.id,
+                file: new File([], job.original_filename || 'image.jpg'),
+                previewUrl: job.final_url,
+                processedUrl: job.final_url,
+                status: 'done',
+              });
+            } else if (job.status === 'failed') {
+              allResults.push({
+                id: job.id,
+                file: new File([], job.original_filename || 'image.jpg'),
+                previewUrl: '',
+                status: 'error',
+                error: job.error_message || 'Bearbetning misslyckades',
               });
             }
-          } catch (emailErr) {
-            console.error('Email delivery failed:', emailErr);
           }
+
+          // Handle email delivery
+          if (deliveryMode === 'email') {
+            const successfulUrls = allResults.filter(r => r.status === 'done' && r.processedUrl).map(r => r.processedUrl!);
+            if (successfulUrls.length > 0) {
+              try {
+                const { data: { user: currentUser } } = await supabase.auth.getUser();
+                if (currentUser?.email) {
+                  await supabase.functions.invoke('send-images-email', {
+                    body: { imageUrls: successfulUrls, projectName, email: currentUser.email },
+                  });
+                }
+              } catch (emailErr) { console.error('Email delivery failed:', emailErr); }
+            }
+          }
+
+          onComplete(allResults);
+          setProcessing(false);
         }
-      }
+      };
+
+      // Start first poll after a brief delay
+      pollingRef.current = setTimeout(pollForResults, 2000);
+
     } catch (err: any) {
       console.error('Generation error:', err);
       toast.error(t('v2.somethingWentWrong'));
-    } finally {
       setProcessing(false);
     }
   };
