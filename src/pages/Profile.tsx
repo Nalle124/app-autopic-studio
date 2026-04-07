@@ -654,6 +654,139 @@ const ProfileContent = () => {
   );
 };
 
+// Invoices Component
+const InvoicesSection = () => {
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && !loaded) {
+      fetchInvoices();
+    }
+  }, [isOpen]);
+
+  const fetchInvoices = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('list-invoices');
+      if (error) throw error;
+      setInvoices(data?.invoices || []);
+      setLoaded(true);
+    } catch (err) {
+      console.error('Error fetching invoices:', err);
+      toast.error(t('profile.couldNotLoadInvoices'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'paid': return t('profile.invoicePaid');
+      case 'open': return t('profile.invoiceOpen');
+      case 'void': return t('profile.invoiceVoid');
+      case 'uncollectible': return t('profile.invoiceUncollectible');
+      default: return status;
+    }
+  };
+
+  const formatDate = (iso: string) => {
+    return new Date(iso).toLocaleDateString('sv-SE');
+  };
+
+  const formatAmount = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('sv-SE', {
+      style: 'currency',
+      currency: currency?.toUpperCase() || 'SEK',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mt-4 sm:mt-6">
+      <Card className="p-4">
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-sm font-medium text-foreground">
+                  {t('profile.invoices')}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {t('profile.invoicesDesc')}
+                </p>
+              </div>
+            </div>
+            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="pt-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">{t('profile.loadingInvoices')}</span>
+            </div>
+          ) : invoices.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">{t('profile.noInvoices')}</p>
+          ) : (
+            <div className="overflow-x-auto -mx-4 px-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="pb-2 font-medium text-muted-foreground">{t('profile.invoiceDate')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground hidden sm:table-cell">{t('profile.invoiceNumber')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-right">{t('profile.invoiceAmount')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-center">{t('profile.invoiceStatus')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-right">{t('profile.downloadPdf')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((inv: any) => (
+                    <tr key={inv.id} className="border-b border-border/50 last:border-0">
+                      <td className="py-2.5">{inv.date ? formatDate(inv.date) : '—'}</td>
+                      <td className="py-2.5 hidden sm:table-cell text-muted-foreground">{inv.number || '—'}</td>
+                      <td className="py-2.5 text-right font-medium">{formatAmount(inv.amount, inv.currency)}</td>
+                      <td className="py-2.5 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                          inv.status === 'paid' 
+                            ? 'bg-green-500/10 text-green-600 dark:text-green-400' 
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {getStatusLabel(inv.status)}
+                        </span>
+                      </td>
+                      <td className="py-2.5 text-right">
+                        {inv.pdf_url ? (
+                          <a
+                            href={inv.pdf_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
+                          </a>
+                        ) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+};
+
 // Bug Report Component - Collapsible dropdown version
 const BugReportSection = ({ userId, isSubscribed, onManageSubscription, portalLoading }: { userId?: string; isSubscribed?: boolean; onManageSubscription?: () => void; portalLoading?: boolean }) => {
   const { t } = useTranslation();
