@@ -217,12 +217,14 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
     return () => clearInterval(interval);
   }, [pendingJobCount]);
 
-  const loadProjects = async (page: number, append = false) => {
+  const loadProjects = async (page: number, append = false, silent = false) => {
     try {
-      if (page === 1) {
-        setIsLoading(true);
-      } else {
-        setIsLoadingMore(true);
+      if (!silent) {
+        if (page === 1) {
+          setIsLoading(true);
+        } else {
+          setIsLoadingMore(true);
+        }
       }
       
       const { data: { user } } = await supabase.auth.getUser();
