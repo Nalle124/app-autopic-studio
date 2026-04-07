@@ -24,7 +24,9 @@ interface Project {
     final_url: string | null;
     thumbnail_url: string | null;
     scene_id: string;
+    status?: string;
   }[];
+  pendingCount?: number;
 }
 
 interface OrphanJob {
@@ -241,7 +243,8 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
             id,
             final_url,
             thumbnail_url,
-            scene_id
+            scene_id,
+            status
           )
         `, { count: 'exact' })
         .eq('user_id', user.id)
