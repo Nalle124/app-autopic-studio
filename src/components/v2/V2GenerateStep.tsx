@@ -414,6 +414,7 @@ export const V2GenerateStep = ({
   // Ref to track which job IDs have been post-processed during polling
   const processedJobIdsRef = useRef<Set<string>>(new Set());
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelledRef = useRef(false);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -421,6 +422,30 @@ export const V2GenerateStep = ({
       if (pollingRef.current) clearTimeout(pollingRef.current);
     };
   }, []);
+
+  const handleCancelGeneration = async () => {
+    cancelledRef.current = true;
+    if (pollingRef.current) clearTimeout(pollingRef.current);
+
+    // Mark all remaining pending/processing jobs as failed
+    const savedProjectId = sessionStorage.getItem('v2-project-id');
+    if (savedProjectId) {
+      await supabase
+        .from('processing_jobs')
+        .update({ status: 'failed', error_message: 'Avbruten av användare' })
+        .eq('project_id', savedProjectId)
+        .in('status', ['pending', 'processing']);
+    }
+
+    // Complete with whatever we have so far
+    const currentResults = [...liveResults];
+    if (currentResults.length > 0) {
+      onComplete(currentResults);
+    } else {
+      setProcessing(false);
+    }
+    toast.info('Generering avbruten');
+  };
 
   const handleGenerate = async () => {
     // Check auth first - if no session, trigger paywall/signup
@@ -435,6 +460,7 @@ export const V2GenerateStep = ({
     }
     setProcessing(true); setProgress(0); setCurrentImageIndex(0); setLiveResults([]); setEmailSent(false);
     processedJobIdsRef.current = new Set();
+    cancelledRef.current = false;
     // Mark results view active immediately so user returns here if they leave mid-generation
     try {
       sessionStorage.setItem('v2-show-results', 'true');
