@@ -275,10 +275,16 @@ export const ProjectGallery = ({ onUseAsNewImage }: ProjectGalleryProps) => {
         setPendingJobCount(pendingResult.count || 0);
       }
 
+      // Add pending count per project
+      const enrichedProjects = (projectsData as any[])?.map((p: any) => ({
+        ...p,
+        pendingCount: p.jobs?.filter((j: any) => j.status === 'pending' || j.status === 'processing').length || 0,
+      })) || [];
+
       if (append) {
-        setProjects(prev => [...prev, ...(projectsData as any)]);
+        setProjects(prev => [...prev, ...enrichedProjects]);
       } else {
-        setProjects(projectsData as any);
+        setProjects(enrichedProjects);
       }
       
       setTotalProjects(count || 0);
