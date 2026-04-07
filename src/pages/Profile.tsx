@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard, BookOpen, Sparkles, Globe } from 'lucide-react';
+import { Upload, User, Sun, Moon, Palette, ChevronLeft, Building2, Phone, MapPin, Coins, Plus, History, MessageSquare, Loader2, LogOut, ChevronDown, Check, Smartphone, CreditCard, BookOpen, Sparkles, Globe, FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -628,6 +628,9 @@ const ProfileContent = () => {
             )}
           </div>
         </Card>
+
+        {/* Invoices Section */}
+        <InvoicesSection />
 
         {/* Bug Report Section */}
         <BugReportSection userId={user?.id} isSubscribed={isSubscribed} onManageSubscription={handleManageSubscription} portalLoading={portalLoading} />
