@@ -407,7 +407,7 @@ const AutopicV2Content = () => {
               onProjectNameChange={setProjectName}
               onDeleteDraft={(draftId) => deleteDraft(draftId)}
               onClearAllDrafts={() => { if (user?.id) deleteAllDrafts(user.id); }}
-              maxImages={isSubscribed ? 50 : 3}
+              maxImages={subscriptionLoading ? 50 : (isSubscribed ? 50 : 3)}
             />
           </section>
         )}
