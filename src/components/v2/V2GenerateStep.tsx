@@ -823,18 +823,18 @@ export const V2GenerateStep = ({
         } else {
           // All done
           await onRefetchCredits();
-          // Gather all results
-          const allResults: V2Image[] = [];
+          // Use liveResults as source of truth (they have post-processed URLs with logos etc.)
+          // Only add failed jobs from DB that aren't already tracked
+          const liveResultIds = new Set(liveResults.map(r => r.id));
+          // Get current liveResults via a state read trick
+          let currentLiveResults: V2Image[] = [];
+          setLiveResults(prev => { currentLiveResults = prev; return prev; });
+          const liveIds = new Set(currentLiveResults.map(r => r.id));
+          
+          const allResults: V2Image[] = [...currentLiveResults];
           for (const job of jobs) {
-            if (job.status === 'completed' && job.final_url) {
-              allResults.push({
-                id: job.id,
-                file: new File([], job.original_filename || 'image.jpg'),
-                previewUrl: job.final_url,
-                processedUrl: job.final_url,
-                status: 'done',
-              });
-            } else if (job.status === 'failed') {
+            if (liveIds.has(job.id)) continue; // Already in live results with post-processed URL
+            if (job.status === 'failed') {
               allResults.push({
                 id: job.id,
                 file: new File([], job.original_filename || 'image.jpg'),
