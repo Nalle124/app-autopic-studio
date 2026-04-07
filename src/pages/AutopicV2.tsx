@@ -58,7 +58,7 @@ const AutopicV2Content = () => {
   ] as const;
   const { user } = useAuth();
   const { credits, refetch: refetchCredits } = useUserCredits();
-  const { triggerPaywall, isSubscribed } = useDemo();
+  const { triggerPaywall, isSubscribed, subscriptionLoading } = useDemo();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
