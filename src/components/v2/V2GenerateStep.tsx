@@ -506,7 +506,7 @@ export const V2GenerateStep = ({
       const imageData = await Promise.all(
         images.map(async (img) => {
           let file = img.file;
-          if (!file && img.previewUrl) {
+          if ((!file || file.size === 0) && img.previewUrl) {
             const resp = await fetch(img.previewUrl);
             const blob = await resp.blob();
             file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
@@ -745,10 +745,17 @@ export const V2GenerateStep = ({
         setStatusText(t('v2.generating', { current: doneCount, total: totalExpected }));
 
         // Process newly completed jobs (apply logo/light client-side; plate blur & auto-crop are server-side)
+        // Queue them for sequential reveal (one at a time with delay)
+        const newlyCompleted: { job: typeof completed[0] }[] = [];
         for (const job of completed) {
           if (processedJobIdsRef.current.has(job.id)) continue;
           processedJobIdsRef.current.add(job.id);
+          newlyCompleted.push({ job });
+        }
 
+        // Process and reveal each new result sequentially with a small delay
+        for (let ni = 0; ni < newlyCompleted.length; ni++) {
+          const { job } = newlyCompleted[ni];
           let url = job.final_url!;
           const jobIndex = jobs.indexOf(job);
 
@@ -792,6 +799,11 @@ export const V2GenerateStep = ({
             status: 'done',
           };
 
+          // Add a small delay between reveals for sequential appearance
+          if (ni > 0) {
+            await new Promise(r => setTimeout(r, 400));
+          }
+
           setLiveResults(prev => {
             const updated = [...prev, result];
             try {
@@ -811,18 +823,17 @@ export const V2GenerateStep = ({
         } else {
           // All done
           await onRefetchCredits();
-          // Gather all results
-          const allResults: V2Image[] = [];
+          // Use liveResults as source of truth (they have post-processed URLs with logos etc.)
+          // Only add failed jobs from DB that aren't already tracked
+          // Get current liveResults via a state read trick
+          let currentLiveResults: V2Image[] = [];
+          setLiveResults(prev => { currentLiveResults = prev; return prev; });
+          const liveIds = new Set(currentLiveResults.map(r => r.id));
+          
+          const allResults: V2Image[] = [...currentLiveResults];
           for (const job of jobs) {
-            if (job.status === 'completed' && job.final_url) {
-              allResults.push({
-                id: job.id,
-                file: new File([], job.original_filename || 'image.jpg'),
-                previewUrl: job.final_url,
-                processedUrl: job.final_url,
-                status: 'done',
-              });
-            } else if (job.status === 'failed') {
+            if (liveIds.has(job.id)) continue; // Already in live results with post-processed URL
+            if (job.status === 'failed') {
               allResults.push({
                 id: job.id,
                 file: new File([], job.original_filename || 'image.jpg'),
