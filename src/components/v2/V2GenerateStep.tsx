@@ -132,14 +132,19 @@ function applyCropRegion(imageUrl: string, crop: { left: number; top: number; wi
 }
 
 function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string, logoSize: string): Promise<string> {
+  console.log('[LOGO] applyLogoToImage called', { preset, logoSize, imgLen: imageUrl?.length, logoLen: logoUrl?.length, imgPrefix: imageUrl?.substring(0, 50), logoPrefix: logoUrl?.substring(0, 50) });
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Only set crossOrigin for non-data URLs
+    if (!imageUrl.startsWith('data:')) img.crossOrigin = 'anonymous';
     img.onload = () => {
+      console.log('[LOGO] Main image loaded', { w: img.naturalWidth, h: img.naturalHeight });
       const logo = new Image();
-      logo.crossOrigin = 'anonymous';
+      // Only set crossOrigin for non-data URLs
+      if (!logoUrl.startsWith('data:')) logo.crossOrigin = 'anonymous';
       logo.onload = () => {
         try {
+          console.log('[LOGO] Logo image loaded', { w: logo.naturalWidth, h: logo.naturalHeight });
           const canvas = document.createElement('canvas');
           canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d')!;
@@ -152,6 +157,7 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string, log
           const pad = img.naturalWidth * 0.04;
           let x = pad, y = pad;
           if (preset === 'top-center') { x = (img.naturalWidth - logoW) / 2; y = pad; }
+          else if (preset === 'bottom-left') { x = pad; y = img.naturalHeight - logoH - pad; }
           else if (preset === 'bottom-right') { x = img.naturalWidth - logoW - pad; y = img.naturalHeight - logoH - pad; }
           else if (preset === 'bottom-center-banner') {
             const bannerH = logoH + pad * 2;
@@ -168,15 +174,32 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string, log
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
             ctx.fillRect(0, 0, img.naturalWidth, bannerH);
             x = pad; y = pad;
+          } else if (preset === 'top-banner-right') {
+            const bannerH = logoH + pad * 2;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, img.naturalWidth, bannerH);
+            x = img.naturalWidth - logoW - pad; y = pad;
           }
+          console.log('[LOGO] Drawing logo at', { x, y, logoW, logoH, preset });
           ctx.drawImage(logo, x, y, logoW, logoH);
-          resolve(canvas.toDataURL('image/jpeg', 0.92));
-        } catch { resolve(imageUrl); }
+          const result = canvas.toDataURL('image/jpeg', 0.92);
+          console.log('[LOGO] Logo applied successfully, result length:', result.length);
+          resolve(result);
+        } catch (err) {
+          console.error('[LOGO] Canvas error:', err);
+          resolve(imageUrl);
+        }
       };
-      logo.onerror = () => resolve(imageUrl);
+      logo.onerror = (e) => {
+        console.error('[LOGO] Logo image failed to load:', e, logoUrl?.substring(0, 100));
+        resolve(imageUrl);
+      };
       logo.src = logoUrl;
     };
-    img.onerror = () => resolve(imageUrl);
+    img.onerror = (e) => {
+      console.error('[LOGO] Main image failed to load:', e, imageUrl?.substring(0, 100));
+      resolve(imageUrl);
+    };
     img.src = imageUrl;
   });
 }
@@ -185,14 +208,24 @@ async function ensureDataUrl(imageUrl: string): Promise<string> {
   if (imageUrl.startsWith('data:')) return imageUrl;
   try {
     const resp = await fetch(imageUrl);
+    if (!resp.ok) {
+      console.warn('[ensureDataUrl] fetch failed with status:', resp.status, imageUrl.substring(0, 80));
+      return imageUrl;
+    }
     const blob = await resp.blob();
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(imageUrl);
+      reader.onerror = () => {
+        console.warn('[ensureDataUrl] FileReader error');
+        resolve(imageUrl);
+      };
       reader.readAsDataURL(blob);
     });
-  } catch { return imageUrl; }
+  } catch (e) {
+    console.warn('[ensureDataUrl] fetch exception:', e, imageUrl.substring(0, 80));
+    return imageUrl;
+  }
 }
 
 function applyLightEdit(imageUrl: string): Promise<string> {
@@ -726,9 +759,13 @@ export const V2GenerateStep = ({
             if (currentLightEdit) url = await applyLightEdit(url);
 
             // 2. Logo — convert both image and logo to dataURL first to avoid CORS tainted canvas
-            if (currentLogoUrl && shouldApplyLogo(job.id, jobIndex, totalExpected, currentLogoConfig)) {
+            console.log('[LOGO-POLL] Check:', { hasLogoUrl: !!currentLogoUrl, logoUrlLen: currentLogoUrl?.length, applyTo: currentLogoConfig.applyTo, jobId: job.id, jobIndex, totalExpected });
+            const shouldApply = currentLogoUrl && shouldApplyLogo(job.id, jobIndex, totalExpected, currentLogoConfig);
+            console.log('[LOGO-POLL] shouldApply:', shouldApply);
+            if (shouldApply) {
               const safeUrl = await ensureDataUrl(url);
               const safeLogoUrl = await ensureDataUrl(currentLogoUrl);
+              console.log('[LOGO-POLL] ensureDataUrl done', { imgIsDataUrl: safeUrl.startsWith('data:'), logoIsDataUrl: safeLogoUrl.startsWith('data:') });
               url = await applyLogoToImage(safeUrl, safeLogoUrl, currentLogoConfig.preset, currentLogoConfig.logoSize);
             }
 
