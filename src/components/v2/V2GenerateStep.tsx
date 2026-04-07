@@ -681,7 +681,12 @@ export const V2GenerateStep = ({
       const currentLogoConfig = { ...logoConfig };
       const currentLightBoost = lightBoost;
       const currentLightEdit = lightEdit;
+      const currentPlateConfig = { ...plateConfig };
+      const currentPlateLogoBase64 = plateLogoBase64;
+      const currentAutoCropMode = autoCropMode;
+      const currentOutputFormat = outputFormat;
       const currentSessionUserId = session.user.id;
+      const currentAccessToken = session.access_token;
 
       const pollForResults = async () => {
         if (!projectId || cancelledRef.current) return;
@@ -706,7 +711,7 @@ export const V2GenerateStep = ({
         setCurrentImageIndex(doneCount);
         setStatusText(t('v2.generating', { current: doneCount, total: totalExpected }));
 
-        // Process newly completed jobs (apply logo/light client-side)
+        // Process newly completed jobs (apply logo/light client-side; plate blur & auto-crop are server-side)
         for (const job of completed) {
           if (processedJobIdsRef.current.has(job.id)) continue;
           processedJobIdsRef.current.add(job.id);
@@ -714,12 +719,17 @@ export const V2GenerateStep = ({
           let url = job.final_url!;
           const jobIndex = jobs.indexOf(job);
 
-          // Apply client-side post-processing (logo, light)
+          // Apply client-side post-processing
           try {
+            // 1. Light boost / edit
             if (currentLightBoost) url = await applyLightBoost(url);
             if (currentLightEdit) url = await applyLightEdit(url);
+
+            // 2. Logo — convert both image and logo to dataURL first to avoid CORS tainted canvas
             if (currentLogoUrl && shouldApplyLogo(job.id, jobIndex, totalExpected, currentLogoConfig)) {
-              url = await applyLogoToImage(url, currentLogoUrl, currentLogoConfig.preset, currentLogoConfig.logoSize);
+              const safeUrl = await ensureDataUrl(url);
+              const safeLogoUrl = await ensureDataUrl(currentLogoUrl);
+              url = await applyLogoToImage(safeUrl, safeLogoUrl, currentLogoConfig.preset, currentLogoConfig.logoSize);
             }
 
             // If post-processed, upload and update DB
