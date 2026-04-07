@@ -289,6 +289,7 @@ const AutopicV2Content = () => {
     sessionStorage.removeItem('v2-selected-scene');
     sessionStorage.removeItem('v2-results');
     sessionStorage.removeItem('v2-show-results');
+    sessionStorage.removeItem('v2-project-id');
   }, [user?.id, deleteAllDrafts]);
 
   const handleTryAnotherBackground = useCallback(() => {
