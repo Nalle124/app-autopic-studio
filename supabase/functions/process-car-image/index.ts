@@ -106,6 +106,7 @@ serve(async (req) => {
   let creditDeducted = false;
   let userId: string | null = null;
   let supabase: any = null;
+  let jobId: string = '';
 
   try {
     // SECURITY: Require authentication
