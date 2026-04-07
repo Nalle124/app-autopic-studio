@@ -1,63 +1,49 @@
 
 
-## Plan: PhotoRoom Native Auto-Crop for Exterior Images Only
+## Plan: Add "Mina fakturor" (My Invoices) Section to Profile
 
-### Problem
-Currently auto-crop applies to all images equally via a separate Gemini AI call, which is slow and inconsistent. Interior/detail images should not be cropped at all — only exterior (whole car) images need tight centering.
+### Summary
+Create a new edge function to fetch Stripe invoices, and add an "Invoices" card/section to the Profile page. No changes to existing contact form, manage subscription button, or cancellation flow.
 
-### Reference
-The uploaded image shows ideal padding: car centered with approximately 3-5% even padding on all sides, no wasted space.
+### 1. New Edge Function: `list-invoices`
 
-### Solution
+**File:** `supabase/functions/list-invoices/index.ts`
 
-**1. `supabase/functions/process-car-image/index.ts`** (lines 346-350)
-- Accept new `autoCrop` form field from client
-- When `autoCrop=true`: change `referenceBox` from `originalImage` to `subjectBox` and set `padding` to `0.03` (tight, matching reference image)
-- When `autoCrop=false`: keep current behavior (`referenceBox=originalImage`, `padding=0.10/0.08`)
+- Authenticate user via Authorization header
+- Look up Stripe customer by email
+- Call `stripe.invoices.list({ customer, limit: 24 })`
+- Return array: `{ id, number, date, amount, currency, status, pdf_url }`
+- Amount converted from öre to kr (divide by 100)
+- Uses existing CORS helper from `_shared/cors.ts`
 
-```typescript
-// Current:
-const paddingValue = orientation === 'portrait' ? '0.08' : '0.10';
-photoroomFormData.append('padding', paddingValue);
-photoroomFormData.append('scaling', 'fit');
-photoroomFormData.append('referenceBox', 'originalImage');
+### 2. Profile Page: Add Invoices Card
 
-// New:
-const autoCrop = formData.get('autoCrop') === 'true';
-const paddingValue = autoCrop ? '0.03' : (orientation === 'portrait' ? '0.08' : '0.10');
-photoroomFormData.append('padding', paddingValue);
-photoroomFormData.append('scaling', 'fit');
-photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
-```
+**File:** `src/pages/Profile.tsx`
 
-**2. `src/components/v2/V2GenerateStep.tsx`**
-- In `processExteriorImage()`: pass `autoCrop` flag in the FormData sent to the edge function
-- In the generation loop: only pass `autoCrop=true` for exterior images (classification already identifies these)
-- Remove the separate `autoCropImage()` Gemini call entirely for exterior images when `autoCropEnabled` — PhotoRoom handles it natively now
-- Keep the `autoCropImage()` function as dead-code fallback (or remove it)
+- Add a new `<Card>` section between the Logo card and the Bug Report section
+- Title: "Mina fakturor" with a `FileText` icon
+- On mount (or on card open), call `supabase.functions.invoke('list-invoices')`
+- Show a simple table: Datum | Fakturanr | Belopp | Status | PDF-länk
+- Loading state with skeleton/spinner
+- Empty state: "Inga fakturor ännu"
+- Make it a `Collapsible` to keep the page clean (same pattern as bug report)
 
-The key change in the generation loop:
-```typescript
-// Before:
-processedUrl = await processExteriorImage(img, scene, token, outputFormat);
-if (autoCropEnabled) processedUrl = await autoCropImage(processedUrl, targetAspect);
+### 3. Translations
 
-// After:
-processedUrl = await processExteriorImage(img, scene, token, outputFormat, autoCropEnabled);
-// No separate autoCrop step needed — PhotoRoom already centered + padded
-```
+**Files:** `src/locales/sv.json`, `src/locales/en.json`
 
-Interior and detail images: `autoCrop` is never passed, so they keep their original framing untouched.
+Add keys:
+- `profile.invoices` / `profile.invoicesDesc`
+- `profile.invoiceDate` / `profile.invoiceNumber` / `profile.invoiceAmount` / `profile.invoiceStatus` / `profile.downloadPdf`
+- `profile.noInvoices`
 
-### Files to edit
-| File | Change |
-|------|--------|
-| `supabase/functions/process-car-image/index.ts` | Read `autoCrop` from formData, conditionally set `referenceBox=subjectBox` and `padding=0.03` |
-| `src/components/v2/V2GenerateStep.tsx` | Pass `autoCrop` flag to edge function for exteriors only; remove Gemini `autoCropImage()` call |
+### 4. Config
 
-### What stays the same
-- Interior images: no crop, no padding change — processed as-is
-- Detail images: no crop — processed as-is
-- The `autoCropEnabled` toggle in the UI works exactly as before
-- The `auto-crop-image` edge function remains available but is no longer called in the V2 flow
+**File:** `supabase/config.toml` — add `[functions.list-invoices]` with `verify_jwt = false`
+
+### What stays unchanged
+- Bug report / contact form — untouched
+- "Manage subscription" button inside bug report collapsible — untouched
+- Buy credits / Get Pro button — untouched
+- No cancellation-related changes
 
