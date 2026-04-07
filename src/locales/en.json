@@ -356,7 +356,21 @@
     "bugSent": "Sent!",
     "couldNotSendBug": "Could not send report",
     "logout": "Log out",
-    "account": "Account"
+    "account": "Account",
+    "invoices": "My invoices",
+    "invoicesDesc": "View and download your invoices",
+    "invoiceDate": "Date",
+    "invoiceNumber": "Invoice #",
+    "invoiceAmount": "Amount",
+    "invoiceStatus": "Status",
+    "downloadPdf": "PDF",
+    "noInvoices": "No invoices yet",
+    "loadingInvoices": "Loading invoices...",
+    "couldNotLoadInvoices": "Could not load invoices",
+    "invoicePaid": "Paid",
+    "invoiceOpen": "Open",
+    "invoiceVoid": "Void",
+    "invoiceUncollectible": "Uncollectible"
   },
   "guide": {
     "beforeYouStart": "Before you start",
