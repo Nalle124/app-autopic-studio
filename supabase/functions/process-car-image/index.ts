@@ -106,6 +106,7 @@ serve(async (req) => {
   let creditDeducted = false;
   let userId: string | null = null;
   let supabase: any = null;
+  let jobId: string = '';
 
   try {
     // SECURITY: Require authentication
@@ -167,7 +168,7 @@ serve(async (req) => {
     const interiorBgType = formData.get('interiorBgType') as string || 'clean white';
     const plateStyle = formData.get('plateStyle') as string || '';
     const plateLogoBase64Str = formData.get('plateLogoBase64') as string || '';
-    const jobId = formData.get('jobId') as string || '';
+    jobId = formData.get('jobId') as string || '';
     
     // Input validation
     if (!imageFile) {
@@ -796,18 +797,14 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error processing image:', error);
 
-    // Update job status if pre-created
-    if (supabase && userId) {
-      const formData2 = await req.clone().formData().catch(() => null);
-      const failJobId = formData2?.get('jobId') as string || '';
-      if (failJobId) {
-        try {
-          await supabase.from('processing_jobs').update({
-            status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Unknown error',
-          }).eq('id', failJobId);
-        } catch {}
-      }
+    // Update job status if pre-created (jobId was captured earlier in the try block)
+    if (supabase && jobId) {
+      try {
+        await supabase.from('processing_jobs').update({
+          status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+        }).eq('id', jobId);
+      } catch {}
     }
     
     return new Response(
