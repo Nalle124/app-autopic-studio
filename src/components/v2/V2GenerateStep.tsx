@@ -882,6 +882,7 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   }
   if (projectId) {
     formData.append('projectId', projectId);
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
