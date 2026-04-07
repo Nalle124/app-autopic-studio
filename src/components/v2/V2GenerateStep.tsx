@@ -513,7 +513,7 @@ export const V2GenerateStep = ({
           if (isExterior) {
             setStatusText(t('v2.generating', { current: i + 1, total: totalSteps }));
             setProgress(Math.round(((i + 0.2) / totalSteps) * 100));
-            const extResult = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode);
+            const extResult = await processExteriorImage(img, scene, session.access_token, outputFormat, autoCropMode, projectId);
             processedUrl = extResult.finalUrl;
             exteriorJobId = extResult.jobId;
             // Auto-crop handled natively by PhotoRoom when autoCropMode !== 'off'
