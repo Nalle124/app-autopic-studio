@@ -145,15 +145,16 @@ const AutopicV2Content = () => {
     })();
   }, [user?.id]);
 
-  // When returning to results view with empty results, poll processing_jobs by project_id
+  // Track pending count for result gallery placeholders
+  const [pendingJobCount, setPendingJobCount] = useState(0);
+
+  // When returning to results view, poll processing_jobs by project_id
+  // Works even when partial results already exist (merges new completions)
   useEffect(() => {
-    if (!showResults || !user?.id || results.length > 0) return;
+    if (!showResults || !user?.id) return;
     
     const savedProjectId = sessionStorage.getItem('v2-project-id');
-    if (!savedProjectId) {
-      // No project to recover — nothing to poll
-      return;
-    }
+    if (!savedProjectId) return;
 
     setPollingForResults(true);
     let cancelled = false;
@@ -171,43 +172,60 @@ const AutopicV2Content = () => {
       const failedJobs = jobs.filter(j => j.status === 'failed');
       const pendingJobs = jobs.filter(j => j.status === 'pending' || j.status === 'processing');
 
-      if (completedJobs.length > 0 || failedJobs.length > 0) {
-        const restoredResults: V2Image[] = [
-          ...completedJobs.map(j => ({
-            id: j.id,
-            file: new File([], j.original_filename || 'image.jpg'),
-            previewUrl: j.final_url!,
-            processedUrl: j.final_url!,
-            status: 'done' as const,
-          })),
-          ...failedJobs.map(j => ({
-            id: j.id,
-            file: new File([], j.original_filename || 'image.jpg'),
-            previewUrl: '',
-            status: 'error' as const,
-            error: 'Bearbetning misslyckades',
-          })),
-        ];
-        setResults(restoredResults);
-        try {
-          const serializable = restoredResults.map(r => ({
-            id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
-            status: r.status, error: r.error,
-          }));
-          sessionStorage.setItem('v2-results', JSON.stringify(serializable));
-        } catch {}
+      setPendingJobCount(pendingJobs.length);
+
+      // Build full result list from DB (source of truth)
+      const dbResults: V2Image[] = [
+        ...completedJobs.map(j => ({
+          id: j.id,
+          file: new File([], j.original_filename || 'image.jpg'),
+          previewUrl: j.final_url!,
+          processedUrl: j.final_url!,
+          status: 'done' as const,
+        })),
+        ...failedJobs.map(j => ({
+          id: j.id,
+          file: new File([], j.original_filename || 'image.jpg'),
+          previewUrl: '',
+          status: 'error' as const,
+          error: 'Bearbetning misslyckades',
+        })),
+      ];
+
+      if (dbResults.length > 0) {
+        setResults(prev => {
+          // Merge: use DB results as source of truth, keep any local post-processed URLs
+          const localMap = new Map(prev.map(r => [r.id, r]));
+          const merged = dbResults.map(dbR => {
+            const local = localMap.get(dbR.id);
+            // Keep local processedUrl if it was post-processed client-side
+            if (local && local.status === 'done' && local.processedUrl && local.processedUrl !== dbR.processedUrl) {
+              return local;
+            }
+            return dbR;
+          });
+          try {
+            const serializable = merged.map(r => ({
+              id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
+              status: r.status, error: r.error,
+            }));
+            sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+          } catch {}
+          return merged;
+        });
       }
       
       if (pendingJobs.length > 0 && !cancelled) {
         setTimeout(pollJobs, 3000);
       } else {
+        setPendingJobCount(0);
         setPollingForResults(false);
       }
     };
     
     pollJobs();
     return () => { cancelled = true; };
-  }, [showResults, user?.id, results.length]);
+  }, [showResults, user?.id]);
 
   const handleImagesUploaded = useCallback(async (newImages: V2Image[]) => {
     setImages(newImages);
@@ -429,6 +447,7 @@ const AutopicV2Content = () => {
           onTryAnotherBackground={handleTryAnotherBackground}
           onRegenerateImage={handleRegenerateImage}
           regeneratingIds={regeneratingIds}
+          pendingCount={pendingJobCount}
         />
         {/* Hidden generate step for regeneration */}
         {regenerateImageId && (

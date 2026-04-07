@@ -333,7 +333,8 @@ serve(async (req) => {
       console.log('Calling AI gateway for interior masking...');
       
       let aiResponse: Response | null = null;
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      const maxRetries = 3;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
         aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -356,10 +357,12 @@ serve(async (req) => {
         if (aiResponse.ok) break;
         
         const errText = await aiResponse.text();
-        console.error(`AI gateway error (attempt ${attempt}):`, aiResponse.status, errText);
+        console.error(`AI gateway error (attempt ${attempt}/${maxRetries}):`, aiResponse.status, errText);
         
-        if ((aiResponse.status === 429 || aiResponse.status === 502) && attempt < 2) {
-          await new Promise(r => setTimeout(r, 3000));
+        if ((aiResponse.status === 429 || aiResponse.status === 502 || aiResponse.status === 503) && attempt < maxRetries) {
+          const backoffMs = Math.min(3000 * Math.pow(2, attempt - 1), 15000);
+          console.log(`Retrying in ${backoffMs}ms...`);
+          await new Promise(r => setTimeout(r, backoffMs));
           continue;
         }
         throw new Error(`Interior masking failed (${aiResponse.status})`);

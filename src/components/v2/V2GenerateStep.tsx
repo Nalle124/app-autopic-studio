@@ -554,37 +554,44 @@ export const V2GenerateStep = ({
         ? scene.full_res_url
         : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${scene.full_res_url}`;
 
-      for (const img of classifiedImages) {
-        const isExterior = img.classification === 'exterior' || img.classification === 'detail';
-        const fileData = imageData.find(d => d.id === img.id);
-        let file = fileData?.file || img.file;
-        if ((!file || file.size === 0) && img.previewUrl) {
-          const resp = await fetch(img.previewUrl);
-          const blob = await resp.blob();
-          file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
-        }
-        if (!file) continue;
+      // Pre-pass: normalize all files and get dimensions in parallel
+      setStatusText(t('v2.preparingImages') || 'Förbereder bilder...');
+      const preparedImages = await Promise.all(
+        classifiedImages.map(async (img) => {
+          const fileData = imageData.find(d => d.id === img.id);
+          let file = fileData?.file || img.file;
+          if ((!file || file.size === 0) && img.previewUrl) {
+            const resp = await fetch(img.previewUrl);
+            const blob = await resp.blob();
+            file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+          }
+          if (!file) return null;
+          file = await normalizeImageOrientation(file);
+          const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+            const image = new window.Image();
+            image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
+            image.onerror = () => resolve({ w: 4000, h: 2667 });
+            image.src = URL.createObjectURL(file!);
+          });
+          return { img, file, dims };
+        })
+      );
 
-        // Normalize EXIF orientation
-        file = await normalizeImageOrientation(file);
+      // Dispatch ALL images instantly (no awaits in loop)
+      setStatusText(t('v2.generating', { current: 0, total: classifiedImages.length }));
+      for (const prepared of preparedImages) {
+        if (!prepared) continue;
+        const { img, file, dims } = prepared;
+        const isExterior = img.classification === 'exterior' || img.classification === 'detail';
 
         const fd = new FormData();
         fd.append('image', file, file.name);
         if (jobIds[img.id]) fd.append('jobId', jobIds[img.id]);
         if (projectId) fd.append('projectId', projectId);
-
-        // Get dimensions
-        const dims = await new Promise<{ w: number; h: number }>((resolve) => {
-          const image = new window.Image();
-          image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
-          image.onerror = () => resolve({ w: 4000, h: 2667 });
-          image.src = URL.createObjectURL(file!);
-        });
         fd.append('originalWidth', dims.w.toString());
         fd.append('originalHeight', dims.h.toString());
 
         if (isExterior) {
-          // Exterior: send scene + background
           const scenePayload = {
             id: scene.id, name: scene.name, horizonY: scene.horizon_y, baselineY: scene.baseline_y, defaultScale: scene.default_scale,
             shadowPreset: { enabled: scene.shadow_enabled, strength: scene.shadow_strength, blur: scene.shadow_blur, offsetX: scene.shadow_offset_x, offsetY: scene.shadow_offset_y },
@@ -598,13 +605,11 @@ export const V2GenerateStep = ({
             fd.append('autoCrop', 'true');
             fd.append('autoCropPadding', autoCropMode === 'tight' ? '0.03' : '0.12');
           }
-          // Server-side plate blurring
           if (plateConfig.enabled) {
             fd.append('plateStyle', plateConfig.style);
             if (plateLogoBase64) fd.append('plateLogoBase64', plateLogoBase64);
           }
         } else {
-          // Interior: set interior mode
           fd.append('interiorMode', 'true');
           fd.append('interiorBgType', interiorBgType);
         }
