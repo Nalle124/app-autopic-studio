@@ -681,7 +681,12 @@ export const V2GenerateStep = ({
       const currentLogoConfig = { ...logoConfig };
       const currentLightBoost = lightBoost;
       const currentLightEdit = lightEdit;
+      const currentPlateConfig = { ...plateConfig };
+      const currentPlateLogoBase64 = plateLogoBase64;
+      const currentAutoCropMode = autoCropMode;
+      const currentOutputFormat = outputFormat;
       const currentSessionUserId = session.user.id;
+      const currentAccessToken = session.access_token;
 
       const pollForResults = async () => {
         if (!projectId || cancelledRef.current) return;
