@@ -796,18 +796,14 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error processing image:', error);
 
-    // Update job status if pre-created
-    if (supabase && userId) {
-      const formData2 = await req.clone().formData().catch(() => null);
-      const failJobId = formData2?.get('jobId') as string || '';
-      if (failJobId) {
-        try {
-          await supabase.from('processing_jobs').update({
-            status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Unknown error',
-          }).eq('id', failJobId);
-        } catch {}
-      }
+    // Update job status if pre-created (jobId was captured earlier in the try block)
+    if (supabase && jobId) {
+      try {
+        await supabase.from('processing_jobs').update({
+          status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+        }).eq('id', jobId);
+      } catch {}
     }
     
     return new Response(

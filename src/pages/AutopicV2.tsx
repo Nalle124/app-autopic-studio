@@ -145,46 +145,61 @@ const AutopicV2Content = () => {
     })();
   }, [user?.id]);
 
-  // When returning to results view with empty results, poll processing_jobs
+  // When returning to results view with empty results, poll processing_jobs by project_id
   useEffect(() => {
     if (!showResults || !user?.id || results.length > 0) return;
     
+    const savedProjectId = sessionStorage.getItem('v2-project-id');
+    if (!savedProjectId) {
+      // No project to recover — nothing to poll
+      return;
+    }
+
     setPollingForResults(true);
     let cancelled = false;
     
     const pollJobs = async () => {
-      const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       const { data: jobs } = await supabase
         .from('processing_jobs')
         .select('id, final_url, thumbnail_url, original_filename, status, scene_id')
-        .eq('user_id', user.id)
-        .gte('created_at', cutoff)
+        .eq('project_id', savedProjectId)
         .order('created_at', { ascending: true });
       
       if (cancelled || !jobs) return;
       
       const completedJobs = jobs.filter(j => j.status === 'completed' && j.final_url);
-      if (completedJobs.length > 0) {
-        const restoredResults: V2Image[] = completedJobs.map(j => ({
-          id: j.id,
-          file: new File([], j.original_filename || 'image.jpg'),
-          previewUrl: j.final_url!,
-          processedUrl: j.final_url!,
-          status: 'done' as const,
-        }));
+      const failedJobs = jobs.filter(j => j.status === 'failed');
+      const pendingJobs = jobs.filter(j => j.status === 'pending' || j.status === 'processing');
+
+      if (completedJobs.length > 0 || failedJobs.length > 0) {
+        const restoredResults: V2Image[] = [
+          ...completedJobs.map(j => ({
+            id: j.id,
+            file: new File([], j.original_filename || 'image.jpg'),
+            previewUrl: j.final_url!,
+            processedUrl: j.final_url!,
+            status: 'done' as const,
+          })),
+          ...failedJobs.map(j => ({
+            id: j.id,
+            file: new File([], j.original_filename || 'image.jpg'),
+            previewUrl: '',
+            status: 'error' as const,
+            error: 'Bearbetning misslyckades',
+          })),
+        ];
         setResults(restoredResults);
         try {
           const serializable = restoredResults.map(r => ({
             id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
-            status: r.status,
+            status: r.status, error: r.error,
           }));
           sessionStorage.setItem('v2-results', JSON.stringify(serializable));
         } catch {}
       }
       
-      const pendingJobs = jobs.filter(j => j.status === 'pending' || j.status === 'processing');
       if (pendingJobs.length > 0 && !cancelled) {
-        setTimeout(pollJobs, 5000);
+        setTimeout(pollJobs, 3000);
       } else {
         setPollingForResults(false);
       }
