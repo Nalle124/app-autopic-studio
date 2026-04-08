@@ -362,7 +362,7 @@ export const V2GenerateStep = ({
   const exteriorCount = images.filter(i => i.classification === 'exterior' || !i.classification).length;
   const totalCost = totalImages + (plateConfig.enabled ? exteriorCount : 0);
   const canGenerate = credits >= totalCost;
-  const useLiveGallery = deliveryMode === 'direct' && totalImages <= 10;
+  const useLiveGallery = deliveryMode === 'direct';
 
   useEffect(() => {
     liveResultsRef.current = liveResults;
@@ -506,11 +506,7 @@ export const V2GenerateStep = ({
     liveResultsRef.current = [];
     processedJobIdsRef.current = new Set();
     cancelledRef.current = false;
-    // Mark results view active immediately so user returns here if they leave mid-generation
-    try {
-      sessionStorage.setItem('v2-show-results', 'true');
-      sessionStorage.setItem('v2-results', JSON.stringify([]));
-    } catch {}
+    // NOTE: v2-show-results is set AFTER dispatch succeeds, not here
 
     try {
       // 1. Classify images
@@ -625,28 +621,30 @@ export const V2GenerateStep = ({
         ? scene.full_res_url
         : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/processed-cars${scene.full_res_url}`;
 
-      // Pre-pass: normalize all files and get dimensions in parallel
-      setStatusText(t('v2.preparingImages') || 'Förbereder bilder...');
-      const preparedImages = await Promise.all(
-        classifiedImages.map(async (img) => {
-          const fileData = imageData.find(d => d.id === img.id);
-          let file = fileData?.file || img.file;
-          if ((!file || file.size === 0) && img.previewUrl) {
-            const resp = await fetch(img.previewUrl);
-            const blob = await resp.blob();
-            file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
-          }
-          if (!file) return null;
-          file = await normalizeImageOrientation(file);
-          const dims = await new Promise<{ w: number; h: number }>((resolve) => {
-            const image = new window.Image();
-            image.onload = () => resolve({ w: image.naturalWidth, h: image.naturalHeight });
-            image.onerror = () => resolve({ w: 4000, h: 2667 });
-            image.src = URL.createObjectURL(file!);
-          });
-          return { img, file, dims };
-        })
-      );
+      // Pre-pass: normalize files SEQUENTIALLY to avoid browser memory exhaustion
+      setStatusText(t('v2.preparingImages'));
+      const preparedImages: ({ img: typeof classifiedImages[0]; file: File; dims: { w: number; h: number } } | null)[] = [];
+      for (let pi = 0; pi < classifiedImages.length; pi++) {
+        const img = classifiedImages[pi];
+        setStatusText(`${t('v2.preparingImages')} (${pi + 1}/${classifiedImages.length})`);
+        const fileData = imageData.find(d => d.id === img.id);
+        let file = fileData?.file || img.file;
+        if ((!file || file.size === 0) && img.previewUrl) {
+          const resp = await fetch(img.previewUrl);
+          const blob = await resp.blob();
+          file = new File([blob], `${img.id}.jpg`, { type: blob.type || 'image/jpeg' });
+        }
+        if (!file) { preparedImages.push(null); continue; }
+        file = await normalizeImageOrientation(file);
+        const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+          const image = new window.Image();
+          const objUrl = URL.createObjectURL(file!);
+          image.onload = () => { URL.revokeObjectURL(objUrl); resolve({ w: image.naturalWidth, h: image.naturalHeight }); };
+          image.onerror = () => { URL.revokeObjectURL(objUrl); resolve({ w: 4000, h: 2667 }); };
+          image.src = objUrl;
+        });
+        preparedImages.push({ img, file, dims });
+      }
 
       // Dispatch with concurrency limit (max 3 simultaneous requests)
       setStatusText(t('v2.generating', { current: 0, total: classifiedImages.length }));
@@ -710,12 +708,20 @@ export const V2GenerateStep = ({
       };
 
       // Launch batches without blocking polling (fire-and-forget the batch chain)
+      // Set v2-show-results AFTER first batch dispatches (not during prep where crashes can happen)
       (async () => {
         for (let i = 0; i < validPrepared.length; i += MAX_CONCURRENT) {
           if (cancelledRef.current) break;
           const batch = validPrepared.slice(i, i + MAX_CONCURRENT);
           await dispatchBatch(batch);
           dispatched += batch.length;
+          // Mark results view active after first successful dispatch
+          if (i === 0) {
+            try {
+              sessionStorage.setItem('v2-show-results', 'true');
+              sessionStorage.setItem('v2-results', JSON.stringify([]));
+            } catch {}
+          }
           console.log(`Dispatched ${dispatched}/${validPrepared.length} images`);
         }
       })();
@@ -903,6 +909,15 @@ export const V2GenerateStep = ({
       console.error('Generation error:', err);
       toast.error(t('v2.somethingWentWrong'));
       setProcessing(false);
+      // Cleanup: mark any pre-created pending jobs as failed so they don't linger
+      const savedProjectId = sessionStorage.getItem('v2-project-id');
+      if (savedProjectId) {
+        supabase.from('processing_jobs')
+          .update({ status: 'failed', error_message: 'Klientfel under förberedelse' })
+          .eq('project_id', savedProjectId)
+          .in('status', ['pending'])
+          .then(() => {});
+      }
     }
   };
 
