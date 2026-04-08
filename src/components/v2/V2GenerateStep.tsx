@@ -384,7 +384,11 @@ export const V2GenerateStep = ({
   }, [regenerateImageId]);
 
   const handleRegenerateSingle = async (imageId: string) => {
-    const img = images.find(i => i.id === imageId);
+    // Search in both original images AND existing results (regeneration uses result IDs)
+    let img = images.find(i => i.id === imageId);
+    if (!img && existingResults) {
+      img = existingResults.find(i => i.id === imageId);
+    }
     if (!img) { toast.error('Bilden hittades inte'); return; }
 
     const { data: { session } } = await supabase.auth.getSession();
@@ -490,6 +494,11 @@ export const V2GenerateStep = ({
       return;
     }
     if (!canGenerate) {
+      if (credits <= 0) {
+        toast.error(`Du har inga credits kvar. Köp fler för att generera bilder.`, { duration: 6000 });
+      } else {
+        toast.error(`Du har ${credits} credits men behöver ${totalCost}. Minska antal bilder eller köp fler credits.`, { duration: 6000 });
+      }
       if (onTriggerPaywall) onTriggerPaywall();
       return;
     }
@@ -729,7 +738,7 @@ export const V2GenerateStep = ({
 
         const { data: jobs } = await supabase
           .from('processing_jobs')
-          .select('id, final_url, thumbnail_url, original_filename, status, scene_id, error_message')
+          .select('id, final_url, thumbnail_url, original_filename, status, scene_id, error_message, created_at')
           .eq('project_id', projectId)
           .order('created_at', { ascending: true });
 
@@ -822,7 +831,28 @@ export const V2GenerateStep = ({
           });
         }
 
-        if (pending.length > 0) {
+        // Check for stuck jobs (processing/pending for > 5 minutes)
+        const now = new Date().getTime();
+        const STUCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+        const stuckJobs = pending.filter(j => {
+          const createdAt = new Date(j.created_at || '').getTime();
+          return (now - createdAt) > STUCK_TIMEOUT_MS;
+        });
+        if (stuckJobs.length > 0) {
+          console.warn(`[POLL] ${stuckJobs.length} jobs stuck for >5 min, marking as failed`);
+          for (const sj of stuckJobs) {
+            await supabase.from('processing_jobs')
+              .update({ status: 'failed', error_message: 'Timeout - bearbetningen tog för lång tid' })
+              .eq('id', sj.id);
+          }
+        }
+
+        const stillPending = pending.filter(j => {
+          const createdAt = new Date(j.created_at || '').getTime();
+          return (now - createdAt) <= STUCK_TIMEOUT_MS;
+        });
+
+        if (stillPending.length > 0) {
           pollingRef.current = setTimeout(pollForResults, 3000);
         } else {
           // All done
