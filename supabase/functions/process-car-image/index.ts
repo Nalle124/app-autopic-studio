@@ -472,8 +472,9 @@ serve(async (req) => {
       const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
       console.log('Original dimensions:', originalWidth, 'x', originalHeight);
     
-      const maxWidth = 4000;
-      const maxHeight = 4000;
+      // Cap output to 2500px to avoid memory limit exceeded in edge function
+      const maxWidth = 2500;
+      const maxHeight = 2500;
     
       let outputWidth: number;
       let outputHeight: number;
@@ -505,7 +506,8 @@ serve(async (req) => {
       photoroomFormData.append('outputSize', outputSize);
       console.log('Calculated output size:', outputSize);
     
-      photoroomFormData.append('export.format', 'png');
+      photoroomFormData.append('export.format', 'jpg');
+      photoroomFormData.append('export.quality', '90');
     
       const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
         method: 'POST',
@@ -589,34 +591,46 @@ serve(async (req) => {
     if (plateStyle && !interiorMode) {
       console.log(`Applying server-side plate blur: style=${plateStyle}`);
       try {
-        // Call blur-license-plates function (it handles its own credit deduction)
-        const plateUint8 = new Uint8Array(finalImageBuffer);
-        const plateB64 = base64Encode(plateUint8);
-        const plateDataUrl = `data:image/jpeg;base64,${plateB64}`;
+        // Upload the image to storage temporarily to avoid base64-encoding large buffers in memory
+        const tempPlatePath = `temp/${crypto.randomUUID()}-plate-input.jpg`;
+        const { error: plateUploadErr } = await supabase.storage
+          .from('processed-cars')
+          .upload(tempPlatePath, finalImageBuffer, { contentType: 'image/jpeg', upsert: false });
 
-        const blurResp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/blur-license-plates`, {
-          method: 'POST',
-          headers: {
-            Authorization: authHeader!,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            imageBase64: plateDataUrl,
-            style: plateStyle,
-            logoBase64: plateLogoBase64Str || null,
-          }),
-        });
-
-        if (blurResp.ok) {
-          const blurResult = await blurResp.json();
-          if (blurResult.success && blurResult.imageUrl) {
-            finalImageBuffer = dataUrlToBuffer(blurResult.imageUrl);
-            console.log('✅ Plate blur applied server-side');
-          } else {
-            console.warn('Plate blur returned no image:', blurResult.error);
-          }
+        if (plateUploadErr) {
+          console.warn('Failed to upload for plate blur, skipping:', plateUploadErr.message);
         } else {
-          console.warn('Plate blur function failed:', blurResp.status);
+          const { data: plateUrlData } = supabase.storage.from('processed-cars').getPublicUrl(tempPlatePath);
+          const plateImageUrl = plateUrlData.publicUrl;
+
+          const blurResp = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/blur-license-plates`, {
+            method: 'POST',
+            headers: {
+              Authorization: authHeader!,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              imageUrl: plateImageUrl,
+              style: plateStyle,
+              logoBase64: plateLogoBase64Str || null,
+            }),
+          });
+
+          if (blurResp.ok) {
+            const blurResult = await blurResp.json();
+            if (blurResult.success && blurResult.imageUrl) {
+              finalImageBuffer = dataUrlToBuffer(blurResult.imageUrl);
+              console.log('✅ Plate blur applied server-side');
+            } else {
+              console.warn('Plate blur returned no image:', blurResult.error);
+            }
+          } else {
+            console.warn('Plate blur function failed:', blurResp.status);
+            await blurResp.text(); // consume body
+          }
+
+          // Clean up temp file
+          await supabase.storage.from('processed-cars').remove([tempPlatePath]);
         }
       } catch (plateErr) {
         console.error('Plate blur error (non-fatal):', plateErr);
@@ -668,10 +682,19 @@ serve(async (req) => {
       console.error('RPC decrement_credits failed:', rpcError);
     }
 
-    // Compress to JPEG for storage efficiency
-    console.log('Compressing final image to JPEG for storage...');
-    
-    const { buffer: uploadBuffer, contentType } = await compressToJpeg(finalImageBuffer);
+    // For exterior images we already requested JPEG from PhotoRoom, so skip re-compression
+    // For interior images (AI gateway returns PNG), compress to JPEG
+    let uploadBuffer: ArrayBuffer;
+    let contentType: string;
+    if (interiorMode) {
+      console.log('Compressing interior image to JPEG for storage...');
+      const compressed = await compressToJpeg(finalImageBuffer);
+      uploadBuffer = compressed.buffer;
+      contentType = compressed.contentType;
+    } else {
+      uploadBuffer = finalImageBuffer;
+      contentType = 'image/jpeg';
+    }
     const fileExtension = 'jpg';
     
     const sanitizedSceneId = scene.id

@@ -15,9 +15,21 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, style, logoBase64, width, height } = await req.json();
+    const { imageBase64, imageUrl, style, logoBase64, width, height } = await req.json();
 
-    if (!imageBase64) throw new Error("imageBase64 is required");
+    // Support either imageBase64 (data URL) or imageUrl (public URL that we fetch and convert)
+    let resolvedImageBase64 = imageBase64;
+    if (!resolvedImageBase64 && imageUrl) {
+      console.log('Fetching image from URL for plate blur...');
+      const imgResp = await fetch(imageUrl);
+      if (!imgResp.ok) throw new Error(`Failed to fetch image: ${imgResp.status}`);
+      const imgBuf = await imgResp.arrayBuffer();
+      const { encode: b64Encode } = await import("https://deno.land/std@0.168.0/encoding/base64.ts");
+      const b64 = b64Encode(new Uint8Array(imgBuf));
+      resolvedImageBase64 = `data:image/jpeg;base64,${b64}`;
+      console.log(`Fetched and encoded image: ${(imgBuf.byteLength / 1024 / 1024).toFixed(2)}MB`);
+    }
+    if (!resolvedImageBase64) throw new Error("imageBase64 or imageUrl is required");
     if (!style) throw new Error("style is required");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -74,7 +86,7 @@ serve(async (req) => {
 
     const userContent: any[] = [
       { type: "text", text: effectivePrompt + dimNote },
-      { type: "image_url", image_url: { url: imageBase64 } },
+      { type: "image_url", image_url: { url: resolvedImageBase64 } },
     ];
 
     // Only add logo if it's a raster image (PNG/JPEG), not SVG
