@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare, Focus, Stamp } from 'lucide-react';
+import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare, Focus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
