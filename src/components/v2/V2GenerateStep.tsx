@@ -831,7 +831,28 @@ export const V2GenerateStep = ({
           });
         }
 
-        if (pending.length > 0) {
+        // Check for stuck jobs (processing/pending for > 5 minutes)
+        const now = new Date().getTime();
+        const STUCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+        const stuckJobs = pending.filter(j => {
+          const createdAt = new Date(j.created_at || '').getTime();
+          return (now - createdAt) > STUCK_TIMEOUT_MS;
+        });
+        if (stuckJobs.length > 0) {
+          console.warn(`[POLL] ${stuckJobs.length} jobs stuck for >5 min, marking as failed`);
+          for (const sj of stuckJobs) {
+            await supabase.from('processing_jobs')
+              .update({ status: 'failed', error_message: 'Timeout - bearbetningen tog för lång tid' })
+              .eq('id', sj.id);
+          }
+        }
+
+        const stillPending = pending.filter(j => {
+          const createdAt = new Date(j.created_at || '').getTime();
+          return (now - createdAt) <= STUCK_TIMEOUT_MS;
+        });
+
+        if (stillPending.length > 0) {
           pollingRef.current = setTimeout(pollForResults, 3000);
         } else {
           // All done
