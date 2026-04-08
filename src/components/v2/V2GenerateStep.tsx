@@ -735,6 +735,11 @@ export const V2GenerateStep = ({
       const currentOutputFormat = outputFormat;
       const currentSessionUserId = session.user.id;
       const currentAccessToken = session.access_token;
+      // Build reverse mapping: jobId → original imgId for logo selection matching
+      const jobIdToImgId: Record<string, string> = {};
+      for (const [imgId, jobId] of Object.entries(jobIds)) {
+        jobIdToImgId[jobId] = imgId;
+      }
 
       const pollForResults = async () => {
         if (!projectId || cancelledRef.current) return;
