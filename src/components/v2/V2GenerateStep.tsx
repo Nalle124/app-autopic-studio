@@ -786,9 +786,11 @@ export const V2GenerateStep = ({
             if (currentLightEdit) url = await applyLightEdit(url);
 
             // 2. Logo — convert both image and logo to dataURL first to avoid CORS tainted canvas
-            console.log('[LOGO-POLL] Check:', { hasLogoUrl: !!currentLogoUrl, logoUrlLen: currentLogoUrl?.length, applyTo: currentLogoConfig.applyTo, jobId: job.id, jobIndex, totalExpected });
-            const shouldApply = currentLogoUrl && shouldApplyLogo(job.id, jobIndex, totalExpected, currentLogoConfig);
-            console.log('[LOGO-POLL] shouldApply:', shouldApply);
+            console.log('[LOGO-POLL] Check:', { hasLogoUrl: !!currentLogoUrl, logoUrlLen: currentLogoUrl?.length, applyTo: currentLogoConfig.applyTo, jobId: job.id, originalImgId: jobIdToImgId[job.id], jobIndex, totalExpected });
+            // Use original image ID for 'selected' mode matching, fall back to job.id
+            const originalImgId = jobIdToImgId[job.id] || job.id;
+            const shouldApply = currentLogoUrl && shouldApplyLogo(originalImgId, jobIndex, totalExpected, currentLogoConfig);
+            console.log('[LOGO-POLL] shouldApply:', shouldApply, 'originalImgId:', originalImgId);
             if (shouldApply) {
               const safeUrl = await ensureDataUrl(url);
               const safeLogoUrl = await ensureDataUrl(currentLogoUrl);
