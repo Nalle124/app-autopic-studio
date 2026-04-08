@@ -738,7 +738,7 @@ export const V2GenerateStep = ({
 
         const { data: jobs } = await supabase
           .from('processing_jobs')
-          .select('id, final_url, thumbnail_url, original_filename, status, scene_id, error_message')
+          .select('id, final_url, thumbnail_url, original_filename, status, scene_id, error_message, created_at')
           .eq('project_id', projectId)
           .order('created_at', { ascending: true });
 
