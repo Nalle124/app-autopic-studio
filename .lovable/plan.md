@@ -1,85 +1,69 @@
 
-Sammanfattning:
-Det finns både ett prestandaproblem och ett återhämtningsproblem. Jag ser minst tre konkreta orsaker till att flödet känns onödigt långsamt och att generering “avbryts” när du lämnar sidan.
 
-Vad som faktiskt är fel:
-1. Klienten gör fortfarande mycket tungt arbete innan alla jobb ens har skickats
-- I `V2GenerateStep.tsx` klassificeras alla bilder först.
-- Sedan skapas `processing_jobs` en och en.
-- Sedan normaliseras EXIF/orientering per bild innan varje request skickas.
-- Dispatchen sker i en vanlig `for`-loop med flera `await` inuti, så “fire-and-forget” är inte riktigt fire-and-forget ännu.
-- Resultat: om användaren lämnar sidan tidigt har inte alla bilder hunnit skickas till backend.
+## Plan: Stabilize V2 Generation for Large Batches (19+ images)
 
-2. Återhämtningen efter återbesök pollar bara när `results.length === 0`
-- I `AutopicV2.tsx` startar recovery-polling bara om `showResults` är true och `results.length > 0` är false.
-- Om en bild redan hunnit sparas i `sessionStorage` och två återstår, då pollas inte längre resterande jobb.
-- Det matchar exakt ditt symptom: du kommer tillbaka till rätt vy men ser bara 1 av 3 bilder kvar.
+### What Happened
+The generation of 19 images crashed the browser before any images were dispatched to the server. Evidence:
+- Database shows all 19 jobs stuck as `pending` — zero `process-car-image` calls in edge function logs
+- The crash happened during the **preparation phase** (line 630): `Promise.all` normalizes all 19 images simultaneously through canvas operations, each creating a full-resolution canvas + JPEG blob conversion. With 19 large car photos (~5-10MB each), this exhausts browser memory
+- After the crash/recovery, `v2-show-results` was already set to `true` (line 511, set before dispatching), so the user landed on the results page with 19 empty placeholders that will never complete
+- The "v2 processimages" text visible in the progress bar is a missing/wrong translation key
 
-3. Interiörbilder är en verklig flaskhals och kan också fallera server-side
-- Edge logs visar `Interior masking failed (429)` och även `Memory limit exceeded`.
-- Det betyder att vissa interiörjobb faktiskt misslyckar i backend, inte bara avbryts i UI.
-- Just nu skickas interiörmaskning till AI-modellen med relativt tung payload och med bara kort retry.
+### Root Causes
+1. **Memory explosion**: `normalizeImageOrientation` runs on ALL images in parallel via `Promise.all` — each allocates a full-res canvas
+2. **Premature state transition**: `v2-show-results` is set before any dispatching happens, so a crash mid-preparation leaves the user on a dead results page
+3. **`useLiveGallery` disabled for >10 images** (line 365): batches over 10 fall back to a single spinner bar instead of per-image skeletons
+4. **No dispatch verification**: if the preparation phase crashes, jobs stay `pending` forever with no recovery
+5. **Visual glitch between states**: the component switches between 3 render modes (summary card → processing view → results gallery) causing visible flashes
 
-Varför flödet känns långsamt i onödan:
-- All batch-setup görs sekventiellt i browsern.
-- Per-bild dimension/exif-arbete sker innan requesten skickas.
-- Logo/light-postprocessing görs fortfarande client-side efter att jobb blivit klara.
-- Interiörjobb körs parallellt tillsammans med övriga jobb, vilket ökar risken för 429/rate-limit och minnesproblem.
+### Changes
 
-Plan:
-1. Gör dispatchen verkligt snabb och robust
-- Flytta all förberedelse som går till ett gemensamt prepass.
-- Skapa alla job records i ett steg.
-- Bygg FormData för alla bilder först och dispatcha dem direkt därefter utan sekventiell väntan mellan bilder.
-- Viktigt mål: alla bilder i projektet ska vara registrerade och skickade inom några sekunder innan användaren hinner lämna sidan.
+#### 1. Sequential Image Preparation (V2GenerateStep.tsx)
+Replace `Promise.all` for `normalizeImageOrientation` + dimension extraction with a sequential loop (or batches of 2). This prevents allocating 19 canvases simultaneously.
 
-2. Laga recovery-logiken så den fortsätter även vid partiella resultat
-- Ändra `AutopicV2.tsx` så polling startar när `showResults` är true och det finns ett `v2-project-id`, oavsett om `results` redan innehåller 1 bild.
-- Polling ska merge:a in nya completed/failed jobb i befintliga resultat istället för att bara återställa när listan är tom.
-- Polling ska fortsätta tills alla jobb för projektet är `completed` eller `failed`.
+```
+// Before (crashes with 19 images):
+const preparedImages = await Promise.all(classifiedImages.map(...))
 
-3. Visa pending-jobb i slutgalleriet
-- Resultatvyn ska kunna visa placeholders för jobb som fortfarande körs.
-- Då ser användaren att 3 jobb finns i projektet även om bara 1 är klar ännu.
-- Det minskar känslan av att bilder “försvunnit”.
+// After (sequential, memory-safe):
+const preparedImages = [];
+for (const img of classifiedImages) {
+  // normalize one at a time, release canvas memory between each
+  const prepared = await prepareOneImage(img);
+  preparedImages.push(prepared);
+}
+```
 
-4. Minska onödig väntetid för interiörbilder
-- Komprimera/resize interiörinput tydligare innan upload till edge-funktionen.
-- Lägg bättre retry/backoff för 429 i `process-car-image`.
-- Begränsa samtidigheten för interiörjobb, t.ex. 1 åt gången eller låg concurrency, medan exteriörjobb kan fortsätta parallellt.
-- Det här är viktigt eftersom loggarna visar att just interiörmaskningen orsakar både 429 och memory pressure.
+#### 2. Fix State Transition Timing (V2GenerateStep.tsx)
+- Move `sessionStorage.setItem('v2-show-results', 'true')` to AFTER at least the first batch of dispatches succeeds, not before
+- Don't set it during the preparation/classification phase where crashes can happen
 
-5. Flytta sista postprocessing till backend där det är rimligt
-- Logo/light bör helst inte vara beroende av att klienten fortfarande är öppen.
-- Om det inte flyttas helt nu, bör minst recovery kunna upptäcka jobb som är klara men ännu inte lokalt postprocessade och färdigställa dem när användaren kommer tillbaka.
-- Bäst långsiktigt är att spara den slutliga levererade bilden direkt server-side.
+#### 3. Remove the `useLiveGallery` Limit (V2GenerateStep.tsx)
+- Remove the `totalImages <= 10` check on line 365 — always show per-image skeletons for the processing view regardless of batch size
+- This gives consistent UX whether generating 3 or 50 images
 
-Filer att uppdatera:
-- `src/components/v2/V2GenerateStep.tsx`
-  - Snabbare batch dispatch
-  - Mindre sekventiell klientlogik
-  - Interiör-concurrency/komprimering
-- `src/pages/AutopicV2.tsx`
-  - Recovery-polling även vid partial results
-  - Merge av nya jobbstatusar
-  - Stoppa polling först när hela projektet är klart
-- `src/components/v2/V2ResultGallery.tsx`
-  - Stöd för pending placeholders i “Färdiga bilder”
-- `supabase/functions/process-car-image/index.ts`
-  - Bättre retry/backoff för interiörmaskning
-  - Ev. lättare input / skydd mot memory spikes
-  - Tydligare failed-status när AI rate-limit slår till
+#### 4. Smooth Transition: Single Processing View (V2GenerateStep.tsx)
+- When `processing` is true, render the live gallery immediately (no intermediate "progress screen" that flashes)
+- The processing view already shows skeletons + completed images — just ensure it renders cleanly from the start without a separate "analyzing" screen that causes the visual glitch
 
-Det jag kommer rapportera som rotorsak:
-- “Bakgrundsgenerering” var bara delvis implementerad. Jobben skickades inte snabbt nog från klienten, recovery pollade inte vidare när vissa resultat redan fanns, och interiörmaskning kunde fallera i backend på grund av 429/minnesgräns.
+#### 5. Add Dispatch Failure Recovery (V2GenerateStep.tsx)
+- Wrap the entire preparation + dispatch in a try/catch that cleans up pending jobs if the client crashes
+- If preparation fails, mark all pre-created jobs as `failed` so they don't show as "processing" in the gallery indefinitely
 
-Förväntat resultat efter fix:
-- Om användaren lämnar mitt i generering ska alla redan-startade bilder fortsätta.
-- När användaren återkommer ska samma projekt öppnas i slutvyn och fortsätta fyllas på bild för bild.
-- Inga delvis klara batcher ska “fastna” bara för att 1 bild redan hunnit sparas lokalt.
-- Interiörbilder ska bli stabilare och snabbare, eller åtminstone tydligt markeras som failed utan att stoppa resten av projektet.
+#### 6. Fix Translation Key (locales)
+- Ensure the status text uses proper translation keys during the preparation phase, not raw keys like "v2 processimages"
 
-Tekniska detaljer:
-- Den viktigaste buggen i återkomstflödet är villkoret i `AutopicV2.tsx` som hindrar polling när `results.length > 0`.
-- Den viktigaste prestandabromsen i dispatchflödet är sekventiell batch-setup i `V2GenerateStep.tsx`, trots att nätverksanropen i slutet inte awaitas.
-- Loggarna bekräftar backend-problem för interiörbilder: `429 RESOURCE_EXHAUSTED` och `Memory limit exceeded`, så detta är inte bara ett frontendproblem.
+#### 7. Cleanup Stuck Jobs from Current Session
+- Add logic in the polling recovery (AutopicV2.tsx useEffect) to detect jobs that have been `pending` for >10 minutes with no corresponding edge function activity and mark them as `failed`
+
+### Files to Edit
+| File | Change |
+|---|---|
+| `src/components/v2/V2GenerateStep.tsx` | Sequential preparation, remove useLiveGallery limit, fix state timing, add dispatch error recovery, smooth transitions |
+| `src/pages/AutopicV2.tsx` | Improve stuck-job detection in recovery polling |
+| `src/locales/sv.json` | Verify/fix translation keys for preparation status |
+
+### Technical Risks
+- Sequential preparation will be slightly slower for small batches (adds ~100ms per image) — acceptable tradeoff for stability
+- Large batches (50 images) will take ~5-10 seconds to prepare before dispatching starts — show clear progress during this phase
+
