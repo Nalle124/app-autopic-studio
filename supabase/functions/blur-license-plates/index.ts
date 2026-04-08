@@ -86,7 +86,7 @@ serve(async (req) => {
 
     const userContent: any[] = [
       { type: "text", text: effectivePrompt + dimNote },
-      { type: "image_url", image_url: { url: imageBase64 } },
+      { type: "image_url", image_url: { url: resolvedImageBase64 } },
     ];
 
     // Only add logo if it's a raster image (PNG/JPEG), not SVG
