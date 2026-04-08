@@ -419,11 +419,12 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                       toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
                       return;
                     }
-                    const imgUrl = previewUrl;
+                    const imgUrl = previewImg?.processedUrl || previewImg?.previewUrl || '';
                     sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                     sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
                     const projectImages = results.filter(r => r.processedUrl).map(r => ({ url: r.processedUrl!, id: r.id }));
                     sessionStorage.setItem('ai-studio-project-images', JSON.stringify(projectImages));
+                    setPreviewIndex(null);
                     navigate('/classic?tab=ai-studio');
                   }}>
                     <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
