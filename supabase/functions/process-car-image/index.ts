@@ -472,8 +472,9 @@ serve(async (req) => {
       const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
       console.log('Original dimensions:', originalWidth, 'x', originalHeight);
     
-      const maxWidth = 4000;
-      const maxHeight = 4000;
+      // Cap output to 2500px to avoid memory limit exceeded in edge function
+      const maxWidth = 2500;
+      const maxHeight = 2500;
     
       let outputWidth: number;
       let outputHeight: number;
