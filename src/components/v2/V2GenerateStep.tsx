@@ -494,6 +494,11 @@ export const V2GenerateStep = ({
       return;
     }
     if (!canGenerate) {
+      if (credits <= 0) {
+        toast.error(`Du har inga credits kvar. Köp fler för att generera bilder.`, { duration: 6000 });
+      } else {
+        toast.error(`Du har ${credits} credits men behöver ${totalCost}. Minska antal bilder eller köp fler credits.`, { duration: 6000 });
+      }
       if (onTriggerPaywall) onTriggerPaywall();
       return;
     }
