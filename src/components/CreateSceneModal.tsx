@@ -654,6 +654,7 @@ export const CreateSceneModal = ({
   // Logo studio state
   const [selectedLogoUrl, setSelectedLogoUrl] = useState<string | null>(null);
   const [selectedLogoPreset, setSelectedLogoPreset] = useState<string | null>(null);
+  const [logoStudioSize, setLogoStudioSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [profileLogoLight, setProfileLogoLight] = useState<string | null>(null);
   const [profileLogoDark, setProfileLogoDark] = useState<string | null>(null);
 
@@ -2296,8 +2297,9 @@ export const CreateSceneModal = ({
                 const ctx = canvas.getContext('2d')!;
                 ctx.drawImage(img, 0, 0);
 
-                // Logo sizing: ~10% of image width
-                const logoMaxW = img.naturalWidth * 0.10;
+                // Logo sizing based on selected size
+                const sizeRatioMap: Record<string, number> = { small: 0.07, medium: 0.10, large: 0.15 };
+                const logoMaxW = img.naturalWidth * (sizeRatioMap[logoStudioSize] || 0.10);
                 const logoScale = logoMaxW / logo.naturalWidth;
                 const logoW = logo.naturalWidth * logoScale;
                 const logoH = logo.naturalHeight * logoScale;
@@ -3637,6 +3639,24 @@ export const CreateSceneModal = ({
               <AutopicAvatar />
               <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%] space-y-3">
                 <p className="text-sm text-foreground">{isGenerating ? 'Applicerar logo...' : 'Redo att applicera.'}</p>
+                {/* Logo size picker */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Storlek:</span>
+                  {(['small', 'medium', 'large'] as const).map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setLogoStudioSize(size)}
+                      disabled={isGenerating}
+                      className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
+                        logoStudioSize === size
+                          ? 'border-primary bg-primary/10 text-primary font-medium'
+                          : 'border-border/50 text-muted-foreground hover:border-primary/40'
+                      }`}
+                    >
+                      {size === 'small' ? 'S' : size === 'medium' ? 'M' : 'L'}
+                    </button>
+                  ))}
+                </div>
                 <Button
                   onClick={handleApplyLogo}
                   disabled={isGenerating}
