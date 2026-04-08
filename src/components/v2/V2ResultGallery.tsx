@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare, Focus } from 'lucide-react';
+import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare, Focus, Stamp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -163,6 +163,26 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
               </Button>
 
 
+              {/* Logo Studio button */}
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
+                title="Applicera logo"
+                onClick={() => {
+                  if (isTryFlow) {
+                    toast.info('Logo Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
+                    return;
+                  }
+                  const projectImages = results.filter(r => r.processedUrl).map(r => ({ url: r.processedUrl!, id: r.id }));
+                  sessionStorage.setItem('ai-studio-project-images', JSON.stringify(projectImages));
+                  sessionStorage.setItem('ai-studio-initial-mode', 'logo-studio');
+                  navigate('/classic?tab=ai-studio');
+                }}
+              >
+                <Stamp className="w-4 h-4" />
+              </Button>
+
               {/* AI Studio button */}
               <Button 
                 variant="outline" 
@@ -178,7 +198,6 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                   const imgUrl = results[idx]?.processedUrl || results[idx]?.previewUrl || '';
                   sessionStorage.setItem('ai-studio-initial-image', imgUrl);
                   sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
-                  // Pass all project results to AI Studio
                   const projectImages = results.filter(r => r.processedUrl).map(r => ({ url: r.processedUrl!, id: r.id }));
                   sessionStorage.setItem('ai-studio-project-images', JSON.stringify(projectImages));
                   navigate('/classic?tab=ai-studio');
