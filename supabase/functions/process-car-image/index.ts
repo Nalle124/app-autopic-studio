@@ -682,10 +682,19 @@ serve(async (req) => {
       console.error('RPC decrement_credits failed:', rpcError);
     }
 
-    // Compress to JPEG for storage efficiency
-    console.log('Compressing final image to JPEG for storage...');
-    
-    const { buffer: uploadBuffer, contentType } = await compressToJpeg(finalImageBuffer);
+    // For exterior images we already requested JPEG from PhotoRoom, so skip re-compression
+    // For interior images (AI gateway returns PNG), compress to JPEG
+    let uploadBuffer: ArrayBuffer;
+    let contentType: string;
+    if (interiorMode) {
+      console.log('Compressing interior image to JPEG for storage...');
+      const compressed = await compressToJpeg(finalImageBuffer);
+      uploadBuffer = compressed.buffer;
+      contentType = compressed.contentType;
+    } else {
+      uploadBuffer = finalImageBuffer;
+      contentType = 'image/jpeg';
+    }
     const fileExtension = 'jpg';
     
     const sanitizedSceneId = scene.id
