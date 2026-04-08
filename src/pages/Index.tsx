@@ -237,11 +237,8 @@ function IndexContent() {
             finalUrl: pi.url,
             status: 'completed' as const,
           }));
-          setUploadedImages(prev => {
-            const existingIds = new Set(prev.map(p => p.id));
-            const newOnes = v2Images.filter(v => !existingIds.has(v.id));
-            return [...newOnes, ...prev];
-          });
+          // Replace uploaded images with only project images (not old drafts)
+          setUploadedImages(v2Images);
         } catch {}
       }
     } else if (tab === 'gallery' || tab === 'history') {
