@@ -384,7 +384,11 @@ export const V2GenerateStep = ({
   }, [regenerateImageId]);
 
   const handleRegenerateSingle = async (imageId: string) => {
-    const img = images.find(i => i.id === imageId);
+    // Search in both original images AND existing results (regeneration uses result IDs)
+    let img = images.find(i => i.id === imageId);
+    if (!img && existingResults) {
+      img = existingResults.find(i => i.id === imageId);
+    }
     if (!img) { toast.error('Bilden hittades inte'); return; }
 
     const { data: { session } } = await supabase.auth.getSession();

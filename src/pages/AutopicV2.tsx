@@ -301,7 +301,7 @@ const AutopicV2Content = () => {
     setSelectedSceneId('');
     setLogoConfig({ preset: 'top-left', applyTo: 'none', logoSize: 'medium' });
     setPlateConfig({ enabled: false, style: 'blur-dark' });
-    setAutoCropMode('tight');
+    setAutoCropMode('standard');
     draftsLoadedRef.current = false;
     sessionStorage.removeItem('v2-current-step');
     sessionStorage.removeItem('v2-selected-scene');
