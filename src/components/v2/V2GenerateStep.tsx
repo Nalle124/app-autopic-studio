@@ -366,9 +366,6 @@ export const V2GenerateStep = ({
 
   useEffect(() => {
     liveResultsRef.current = liveResults;
-    if (liveResults.length > 0 && galleryRef.current) {
-      galleryRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
   }, [liveResults.length]);
 
   // Auto-start regeneration for a single image
