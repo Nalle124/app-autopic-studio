@@ -162,12 +162,29 @@ const AutopicV2Content = () => {
     const pollJobs = async () => {
       const { data: jobs } = await supabase
         .from('processing_jobs')
-        .select('id, final_url, thumbnail_url, original_filename, status, scene_id')
+        .select('id, final_url, thumbnail_url, original_filename, status, scene_id, created_at')
         .eq('project_id', savedProjectId)
         .order('created_at', { ascending: true });
       
       if (cancelled || !jobs) return;
       
+      // Auto-fail jobs stuck as pending/processing for >10 minutes
+      const now = Date.now();
+      const STUCK_TIMEOUT = 10 * 60 * 1000;
+      const stuckJobs = jobs.filter(j => 
+        (j.status === 'pending' || j.status === 'processing') &&
+        j.created_at && (now - new Date(j.created_at).getTime()) > STUCK_TIMEOUT
+      );
+      if (stuckJobs.length > 0) {
+        console.warn(`[RECOVERY] Marking ${stuckJobs.length} stuck jobs as failed`);
+        for (const sj of stuckJobs) {
+          await supabase.from('processing_jobs')
+            .update({ status: 'failed', error_message: 'Timeout - bearbetningen slutfördes inte' })
+            .eq('id', sj.id);
+          sj.status = 'failed'; // update local reference
+        }
+      }
+
       const completedJobs = jobs.filter(j => j.status === 'completed' && j.final_url);
       const failedJobs = jobs.filter(j => j.status === 'failed');
       const pendingJobs = jobs.filter(j => j.status === 'pending' || j.status === 'processing');
@@ -194,11 +211,9 @@ const AutopicV2Content = () => {
 
       if (dbResults.length > 0) {
         setResults(prev => {
-          // Merge: use DB results as source of truth, keep any local post-processed URLs
           const localMap = new Map(prev.map(r => [r.id, r]));
           const merged = dbResults.map(dbR => {
             const local = localMap.get(dbR.id);
-            // Keep local processedUrl if it was post-processed client-side
             if (local && local.status === 'done' && local.processedUrl && local.processedUrl !== dbR.processedUrl) {
               return local;
             }

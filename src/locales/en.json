@@ -197,6 +197,7 @@
     "generateImages": "Generate {{count}} images",
     "processing": "Processing...",
     "analyzingImages": "Analyzing images...",
+    "preparingImages": "Preparing images...",
     "generating": "Generating {{current}} of {{total}}...",
     "cropping": "Cropping {{current}} of {{total}}...",
     "hidingPlates": "Hiding plates {{current}} of {{total}}...",

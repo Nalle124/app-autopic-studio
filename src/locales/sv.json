@@ -197,6 +197,7 @@
     "generateImages": "Generera {{count}} bilder",
     "processing": "Bearbetar...",
     "analyzingImages": "Analyserar bilder...",
+    "preparingImages": "Förbereder bilder...",
     "generating": "Genererar {{current}} av {{total}}...",
     "cropping": "Beskär {{current}} av {{total}}...",
     "hidingPlates": "Döljer skyltar {{current}} av {{total}}...",
