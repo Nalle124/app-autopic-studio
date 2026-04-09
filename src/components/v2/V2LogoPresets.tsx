@@ -88,7 +88,7 @@ const renderPresetMockup = (presetId: string) => {
   );
 };
 
-export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropMode, onAutoCropModeChange, images, fallbackLogoUrl }: Props) => {
+export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConfigChange, autoCropMode, onAutoCropModeChange, images, fallbackLogoUrl, isTryFlow }: Props) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -315,7 +315,13 @@ export const V2LogoPresets = ({ config, onConfigChange, plateConfig, onPlateConf
         </div>
         <Switch
           checked={plateConfig.enabled}
-          onCheckedChange={(checked) => onPlateConfigChange({ ...plateConfig, enabled: checked })}
+          onCheckedChange={(checked) => {
+            if (checked && isTryFlow) {
+              toast.info('Dölja registreringsskyltar är en premiumfunktion. Skaffa ett paket för att använda den.');
+              return;
+            }
+            onPlateConfigChange({ ...plateConfig, enabled: checked });
+          }}
         />
       </div>
 
