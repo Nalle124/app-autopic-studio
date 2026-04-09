@@ -405,6 +405,7 @@ const TryV2Content = () => {
               onAutoCropModeChange={setAutoCropMode}
               images={images}
               fallbackLogoUrl={autopicLogoDark}
+              isTryFlow
             />
           </section>
         )}

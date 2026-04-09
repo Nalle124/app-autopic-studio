@@ -19,6 +19,7 @@ interface Props {
   onAutoCropModeChange: (mode: 'off' | 'tight' | 'standard') => void;
   images: V2Image[];
   fallbackLogoUrl?: string;
+  isTryFlow?: boolean;
 }
 
 const PRESET_KEYS = [
