@@ -826,19 +826,17 @@ export const V2GenerateStep = ({
             await new Promise(r => setTimeout(r, 400));
           }
 
-          setLiveResults(prev => {
-            const updated = [...prev, result];
-            liveResultsRef.current = updated;
-            try {
-              const serializable = updated.map(r => ({
-                id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
-                classification: r.classification, status: r.status, error: r.error,
-              }));
-              sessionStorage.setItem('v2-results', JSON.stringify(serializable));
-              sessionStorage.setItem('v2-show-results', 'true');
-            } catch {}
-            return updated;
-          });
+          // Update ref DIRECTLY so it's always in sync (not dependent on React batching)
+          liveResultsRef.current = [...liveResultsRef.current, result];
+          try {
+            const serializable = liveResultsRef.current.map(r => ({
+              id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
+              classification: r.classification, status: r.status, error: r.error,
+            }));
+            sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+            sessionStorage.setItem('v2-show-results', 'true');
+          } catch {}
+          setLiveResults([...liveResultsRef.current]);
         }
 
         // Check for stuck jobs (processing/pending for > 5 minutes)
