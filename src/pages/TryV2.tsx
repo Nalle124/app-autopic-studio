@@ -108,13 +108,12 @@ const TryV2Content = () => {
   }, []);
 
   const handleGenerationComplete = useCallback((resultImages: V2Image[]) => {
-    // Filter to only show successfully processed images
-    const successfulResults = resultImages.filter(img => img.status === 'done' && img.processedUrl);
-    setResults(successfulResults.length > 0 ? successfulResults : resultImages);
+    // Include all results - both successful and failed - so user sees the full batch
+    setResults(resultImages);
     setShowResults(true);
     // Persist results so user can navigate away and return
     try {
-      const toStore = (successfulResults.length > 0 ? successfulResults : resultImages).map(img => ({
+      const toStore = resultImages.map(img => ({
         id: img.id, previewUrl: img.previewUrl, processedUrl: img.processedUrl,
         classification: img.classification, status: img.status, error: img.error,
       }));
