@@ -148,7 +148,7 @@ const mapUserSceneToMetadata = (row: any): SceneMetadata => ({
   aiPrompt: row.ai_prompt || undefined,
   shadowMode: row.photoroom_shadow_mode || 'ai.soft',
   referenceScale: Number(row.reference_scale),
-  compositeMode: false,
+  compositeMode: row.composite_mode || false,
 });
 
 export const SceneSelector = ({ 

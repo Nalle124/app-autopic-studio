@@ -258,6 +258,54 @@ serve(async (req) => {
       }
     }
 
+    const exactStudioSceneIds = new Set([
+      'anthracite-studio',
+      'gra-minimalist-studio',
+      'grey-corner',
+      'lightroom-studio',
+      'ljus-fotohorna',
+      'ljus-studio-enkel',
+      'netgrey-dark',
+      'netgrey-light',
+      'nordic-showroom',
+      'showroom-panorama',
+      'vit-kakel',
+      'vit-rundad-studio',
+    ]);
+
+    if (!interiorMode) {
+      const { data: canonicalScene, error: canonicalSceneError } = await supabase
+        .from('scenes')
+        .select('ai_prompt, reference_scale, photoroom_shadow_mode, composite_mode, category')
+        .eq('id', scene.id)
+        .maybeSingle();
+
+      if (canonicalSceneError) {
+        console.warn('Could not load canonical scene config:', canonicalSceneError);
+      } else if (canonicalScene) {
+        const isStudioCategory = typeof canonicalScene.category === 'string' && canonicalScene.category.startsWith('studio');
+        const forcedCompositeMode = isStudioCategory
+          ? true
+          : (canonicalScene.composite_mode ?? scene.compositeMode);
+
+        scene = {
+          ...scene,
+          aiPrompt: canonicalScene.ai_prompt ?? scene.aiPrompt,
+          referenceScale: canonicalScene.reference_scale != null
+            ? Number(canonicalScene.reference_scale)
+            : scene.referenceScale,
+          shadowMode: canonicalScene.photoroom_shadow_mode ?? scene.shadowMode,
+          compositeMode: forcedCompositeMode,
+        };
+        console.log('Using canonical scene config:', {
+          sceneId: scene.id,
+          category: canonicalScene.category,
+          compositeMode: scene.compositeMode,
+          referenceScale: scene.referenceScale,
+        });
+      }
+    }
+
     const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
     if (!interiorMode && !PHOTOROOM_API_KEY) {
       throw new Error('PHOTOROOM_API_KEY not configured');
@@ -389,8 +437,9 @@ serve(async (req) => {
       photoroomFormData.append('imageFile', imageBlob, imageFile.name);
       console.log('Sending image directly as file to PhotoRoom');
     
-      const useCompositeMode = scene.compositeMode === true;
-      console.log('Composite mode:', useCompositeMode);
+      const useCompositeMode = scene.compositeMode === true || exactStudioSceneIds.has(scene.id);
+      console.log('Composite mode:', useCompositeMode, 'scene:', scene.id);
+      console.log('Composite mode:', useCompositeMode, 'scene:', scene.id);
 
       if (isDataUri) {
         console.log('Background is a data URI, uploading to storage...');
