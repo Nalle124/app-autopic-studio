@@ -417,8 +417,7 @@ serve(async (req) => {
       photoroomFormData.append('imageFile', imageBlob, imageFile.name);
       console.log('Sending image directly as file to PhotoRoom');
     
-      const useCompositeMode = scene.compositeMode === true;
-      console.log('Composite mode from scene config:', useCompositeMode, 'scene:', scene.id);
+      console.log('Using standard reference-guided PhotoRoom flow for scene:', scene.id);
 
       if (isDataUri) {
         console.log('Background is a data URI, uploading to storage...');
