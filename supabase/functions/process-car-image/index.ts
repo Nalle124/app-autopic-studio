@@ -258,6 +258,33 @@ serve(async (req) => {
       }
     }
 
+    if (!interiorMode) {
+      const { data: canonicalScene, error: canonicalSceneError } = await supabase
+        .from('scenes')
+        .select('ai_prompt, reference_scale, photoroom_shadow_mode, composite_mode')
+        .eq('id', scene.id)
+        .maybeSingle();
+
+      if (canonicalSceneError) {
+        console.warn('Could not load canonical scene config:', canonicalSceneError);
+      } else if (canonicalScene) {
+        scene = {
+          ...scene,
+          aiPrompt: canonicalScene.ai_prompt ?? scene.aiPrompt,
+          referenceScale: canonicalScene.reference_scale != null
+            ? Number(canonicalScene.reference_scale)
+            : scene.referenceScale,
+          shadowMode: canonicalScene.photoroom_shadow_mode ?? scene.shadowMode,
+          compositeMode: canonicalScene.composite_mode ?? scene.compositeMode,
+        };
+        console.log('Using canonical scene config:', {
+          sceneId: scene.id,
+          compositeMode: scene.compositeMode,
+          referenceScale: scene.referenceScale,
+        });
+      }
+    }
+
     const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
     if (!interiorMode && !PHOTOROOM_API_KEY) {
       throw new Error('PHOTOROOM_API_KEY not configured');
