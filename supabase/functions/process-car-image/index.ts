@@ -416,8 +416,22 @@ serve(async (req) => {
       photoroomFormData.append('imageFile', imageBlob, imageFile.name);
       console.log('Sending image directly as file to PhotoRoom');
     
-      const useCompositeMode = scene.compositeMode === true;
-      console.log('Composite mode:', useCompositeMode);
+      const exactStudioSceneIds = new Set([
+        'anthracite-studio',
+        'gra-minimalist-studio',
+        'grey-corner',
+        'lightroom-studio',
+        'ljus-fotohorna',
+        'ljus-studio-enkel',
+        'netgrey-dark',
+        'netgrey-light',
+        'nordic-showroom',
+        'showroom-panorama',
+        'vit-kakel',
+        'vit-rundad-studio',
+      ]);
+      const useCompositeMode = scene.compositeMode === true || exactStudioSceneIds.has(scene.id);
+      console.log('Composite mode:', useCompositeMode, 'scene:', scene.id);
 
       if (isDataUri) {
         console.log('Background is a data URI, uploading to storage...');
