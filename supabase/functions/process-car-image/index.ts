@@ -449,7 +449,7 @@ serve(async (req) => {
         
         // Negative prompt to prevent artifacts bleeding through from original image
         photoroomFormData.append('background.negativePrompt', 
-          'artifacts, distorted objects, blurry elements, items from original background, debris, extra wheels, floating parts, duplicate objects, text, watermarks, low quality');
+          'artifacts, distorted objects, blurry elements, items from original background, debris, extra wheels, floating parts, duplicate objects, text, watermarks, low quality, TV, television, monitor, screen, painting, picture frame, furniture, shelves, signs, posters, wall decorations, objects on walls');
         
         console.log('Using prompt:', prompt);
       }
