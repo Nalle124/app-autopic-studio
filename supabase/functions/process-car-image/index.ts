@@ -663,16 +663,18 @@ serve(async (req) => {
     // For interior images (AI gateway returns PNG), compress to JPEG
     let uploadBuffer: ArrayBuffer;
     let contentType: string;
+    let fileExtension: string;
     if (interiorMode) {
       console.log('Compressing interior image to JPEG for storage...');
       const compressed = await compressToJpeg(finalImageBuffer);
       uploadBuffer = compressed.buffer;
       contentType = compressed.contentType;
+      fileExtension = contentType === 'image/png' ? 'png' : 'jpg';
     } else {
       uploadBuffer = finalImageBuffer;
       contentType = 'image/jpeg';
+      fileExtension = 'jpg';
     }
-    const fileExtension = 'jpg';
     
     const sanitizedSceneId = scene.id
       .normalize('NFD')
