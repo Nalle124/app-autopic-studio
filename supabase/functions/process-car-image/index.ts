@@ -258,21 +258,6 @@ serve(async (req) => {
       }
     }
 
-    const exactStudioSceneIds = new Set([
-      'anthracite-studio',
-      'gra-minimalist-studio',
-      'grey-corner',
-      'lightroom-studio',
-      'ljus-fotohorna',
-      'ljus-studio-enkel',
-      'netgrey-dark',
-      'netgrey-light',
-      'nordic-showroom',
-      'showroom-panorama',
-      'vit-kakel',
-      'vit-rundad-studio',
-    ]);
-
     if (!interiorMode) {
       const { data: canonicalScene, error: canonicalSceneError } = await supabase
         .from('scenes')
@@ -283,11 +268,6 @@ serve(async (req) => {
       if (canonicalSceneError) {
         console.warn('Could not load canonical scene config:', canonicalSceneError);
       } else if (canonicalScene) {
-        const isStudioCategory = typeof canonicalScene.category === 'string' && canonicalScene.category.startsWith('studio');
-        const forcedCompositeMode = isStudioCategory
-          ? true
-          : (canonicalScene.composite_mode ?? scene.compositeMode);
-
         scene = {
           ...scene,
           aiPrompt: canonicalScene.ai_prompt ?? scene.aiPrompt,
@@ -295,7 +275,7 @@ serve(async (req) => {
             ? Number(canonicalScene.reference_scale)
             : scene.referenceScale,
           shadowMode: canonicalScene.photoroom_shadow_mode ?? scene.shadowMode,
-          compositeMode: forcedCompositeMode,
+          compositeMode: canonicalScene.composite_mode ?? scene.compositeMode,
         };
         console.log('Using canonical scene config:', {
           sceneId: scene.id,
@@ -437,9 +417,7 @@ serve(async (req) => {
       photoroomFormData.append('imageFile', imageBlob, imageFile.name);
       console.log('Sending image directly as file to PhotoRoom');
     
-      const useCompositeMode = scene.compositeMode === true || exactStudioSceneIds.has(scene.id);
-      console.log('Composite mode:', useCompositeMode, 'scene:', scene.id);
-      console.log('Composite mode:', useCompositeMode, 'scene:', scene.id);
+      console.log('Using standard reference-guided PhotoRoom flow for scene:', scene.id);
 
       if (isDataUri) {
         console.log('Background is a data URI, uploading to storage...');
@@ -473,35 +451,29 @@ serve(async (req) => {
         }
       }
 
-      if (useCompositeMode) {
-        photoroomFormData.append('background.color', 'transparent');
-        console.log('Using TRANSPARENT background for hybrid composite (step 1)');
-      } else {
-        photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
-        const referenceScale = scene.referenceScale ?? 0.7;
-        photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-        console.log('Reference scale:', referenceScale);
-        
-        photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
-        
-        const basePrompt = scene.aiPrompt ||
-          `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
-          `Realistic scale, perspective and lighting for professional automotive photography.`;
+      photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
+      const referenceScale = scene.referenceScale ?? 0.7;
+      photoroomFormData.append('background.guidance.scale', referenceScale.toString());
+      console.log('Reference scale:', referenceScale);
 
-        const orientationHint = orientation === 'portrait'
-          ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
-          : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
+      photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
 
-        const cleanSuffix = 'Clean background with no foreign objects, no artifacts, no elements from the original photo.';
-        const prompt = `${basePrompt} ${orientationHint} ${cleanSuffix}`;
-        photoroomFormData.append('background.prompt', prompt);
-        
-        // Negative prompt to prevent artifacts bleeding through from original image
-        photoroomFormData.append('background.negativePrompt', 
-          'artifacts, distorted objects, blurry elements, items from original background, debris, extra wheels, floating parts, duplicate objects, text, watermarks, low quality, TV, television, monitor, screen, painting, picture frame, furniture, shelves, signs, posters, wall decorations, objects on walls, trees, nature, grass, sky, clouds, buildings, houses, outdoor elements, vehicles in background, roads, fences, hedges, bushes, plants');
-        
-        console.log('Using prompt:', prompt);
-      }
+      const basePrompt = scene.aiPrompt ||
+        `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
+        `Realistic scale, perspective and lighting for professional automotive photography.`;
+
+      const orientationHint = orientation === 'portrait'
+        ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
+        : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
+
+      const cleanSuffix = 'Match the reference background closely. Keep the background clean and free from foreign objects or artifacts. Do not borrow scenery, structures, vegetation, props, or wall details from the uploaded source photo.';
+      const prompt = `${basePrompt} ${orientationHint} ${cleanSuffix}`;
+      photoroomFormData.append('background.prompt', prompt);
+
+      photoroomFormData.append('background.negativePrompt',
+        'floating car, flying car, car above ground, car too high in frame, distorted, blurry, unrealistic scale, wrong perspective, car too small, car too large, cropped car, duplicate objects, multiple vehicles, items from original background, scenery from source photo, trees, grass, bushes, sky, clouds, houses, buildings, fences, roads, signs, posters, furniture, shelves, screens, televisions, monitors, picture frames, wall decorations, debris, random objects, artifacts, text, watermarks');
+
+      console.log('Using prompt:', prompt);
     
       const shadowMode = scene.shadowMode || 'none';
       if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
@@ -527,7 +499,6 @@ serve(async (req) => {
       const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
       console.log('Original dimensions:', originalWidth, 'x', originalHeight);
     
-      // Cap output to 2500px to avoid memory limit exceeded in edge function
       const maxWidth = 2500;
       const maxHeight = 2500;
     
@@ -560,19 +531,15 @@ serve(async (req) => {
       const outputSize = `${outputWidth}x${outputHeight}`;
       photoroomFormData.append('outputSize', outputSize);
       console.log('Calculated output size:', outputSize);
-    
-      if (useCompositeMode) {
-        photoroomFormData.append('export.format', 'png');
-      } else {
-        photoroomFormData.append('export.format', 'jpg');
-        photoroomFormData.append('export.quality', '90');
-      }
+
+      photoroomFormData.append('export.format', 'jpg');
+      photoroomFormData.append('export.quality', '90');
     
       const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
         method: 'POST',
         headers: {
           'x-api-key': PHOTOROOM_API_KEY!,
-          ...(useCompositeMode ? {} : { 'pr-ai-background-model-version': 'background-studio-beta-2025-03-17' }),
+          'pr-ai-background-model-version': 'background-studio-beta-2025-03-17',
         },
         body: photoroomFormData,
       });
@@ -594,56 +561,6 @@ serve(async (req) => {
       finalImageBuffer = await editResponse.arrayBuffer();
       console.log('✅ Photoroom processed successfully!');
       console.log(`Result size: ${(finalImageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
-
-      // If composite mode, composite the transparent car onto exact background
-      if (useCompositeMode) {
-        console.log('Starting step 2: Compositing onto exact background...');
-        
-        const step1Filename = `temp/${crypto.randomUUID()}-step1.png`;
-        const { error: step1UploadError } = await supabase.storage
-          .from('processed-cars')
-          .upload(step1Filename, finalImageBuffer, {
-            contentType: 'image/png',
-            upsert: false,
-          });
-
-        if (step1UploadError) {
-          console.error('Step 1 upload error:', step1UploadError);
-          throw new Error(`Failed to upload step 1 result: ${step1UploadError.message}`);
-        }
-
-        const { data: step1UrlData } = supabase.storage
-          .from('processed-cars')
-          .getPublicUrl(step1Filename);
-
-        const transparentCarUrl = step1UrlData.publicUrl;
-        console.log('Transparent car uploaded:', transparentCarUrl);
-
-        const step2FormData = new FormData();
-        step2FormData.append('imageUrl', transparentCarUrl);
-        step2FormData.append('background.imageUrl', resolvedBackgroundUrl);
-        step2FormData.append('padding', '0');
-        step2FormData.append('scaling', 'fill');
-        step2FormData.append('outputSize', outputSize);
-        step2FormData.append('export.format', 'png');
-
-        const step2Response = await fetch('https://image-api.photoroom.com/v2/edit', {
-          method: 'POST',
-          headers: { 'x-api-key': PHOTOROOM_API_KEY! },
-          body: step2FormData,
-        });
-
-        await supabase.storage.from('processed-cars').remove([step1Filename]);
-
-        if (!step2Response.ok) {
-          const errorText = await step2Response.text();
-          console.error('Photoroom step 2 error:', step2Response.status, errorText);
-          throw new Error(`Composite step 2 failed. (${step2Response.status})`);
-        }
-
-        finalImageBuffer = await step2Response.arrayBuffer();
-        console.log('✅ Photoroom step 2 (composite) completed!');
-      }
     }
 
     // ===== SERVER-SIDE PLATE BLURRING =====
@@ -745,16 +662,18 @@ serve(async (req) => {
     // For interior images (AI gateway returns PNG), compress to JPEG
     let uploadBuffer: ArrayBuffer;
     let contentType: string;
+    let fileExtension: string;
     if (interiorMode) {
       console.log('Compressing interior image to JPEG for storage...');
       const compressed = await compressToJpeg(finalImageBuffer);
       uploadBuffer = compressed.buffer;
       contentType = compressed.contentType;
+      fileExtension = contentType === 'image/png' ? 'png' : 'jpg';
     } else {
       uploadBuffer = finalImageBuffer;
       contentType = 'image/jpeg';
+      fileExtension = 'jpg';
     }
-    const fileExtension = 'jpg';
     
     const sanitizedSceneId = scene.id
       .normalize('NFD')
