@@ -258,6 +258,21 @@ serve(async (req) => {
       }
     }
 
+    const exactStudioSceneIds = new Set([
+      'anthracite-studio',
+      'gra-minimalist-studio',
+      'grey-corner',
+      'lightroom-studio',
+      'ljus-fotohorna',
+      'ljus-studio-enkel',
+      'netgrey-dark',
+      'netgrey-light',
+      'nordic-showroom',
+      'showroom-panorama',
+      'vit-kakel',
+      'vit-rundad-studio',
+    ]);
+
     if (!interiorMode) {
       const { data: canonicalScene, error: canonicalSceneError } = await supabase
         .from('scenes')
@@ -268,6 +283,10 @@ serve(async (req) => {
       if (canonicalSceneError) {
         console.warn('Could not load canonical scene config:', canonicalSceneError);
       } else if (canonicalScene) {
+        const forcedCompositeMode = exactStudioSceneIds.has(scene.id)
+          ? true
+          : (canonicalScene.composite_mode ?? scene.compositeMode);
+
         scene = {
           ...scene,
           aiPrompt: canonicalScene.ai_prompt ?? scene.aiPrompt,
@@ -275,7 +294,7 @@ serve(async (req) => {
             ? Number(canonicalScene.reference_scale)
             : scene.referenceScale,
           shadowMode: canonicalScene.photoroom_shadow_mode ?? scene.shadowMode,
-          compositeMode: canonicalScene.composite_mode ?? scene.compositeMode,
+          compositeMode: forcedCompositeMode,
         };
         console.log('Using canonical scene config:', {
           sceneId: scene.id,
@@ -416,21 +435,8 @@ serve(async (req) => {
       photoroomFormData.append('imageFile', imageBlob, imageFile.name);
       console.log('Sending image directly as file to PhotoRoom');
     
-      const exactStudioSceneIds = new Set([
-        'anthracite-studio',
-        'gra-minimalist-studio',
-        'grey-corner',
-        'lightroom-studio',
-        'ljus-fotohorna',
-        'ljus-studio-enkel',
-        'netgrey-dark',
-        'netgrey-light',
-        'nordic-showroom',
-        'showroom-panorama',
-        'vit-kakel',
-        'vit-rundad-studio',
-      ]);
       const useCompositeMode = scene.compositeMode === true || exactStudioSceneIds.has(scene.id);
+      console.log('Composite mode:', useCompositeMode, 'scene:', scene.id);
       console.log('Composite mode:', useCompositeMode, 'scene:', scene.id);
 
       if (isDataUri) {
