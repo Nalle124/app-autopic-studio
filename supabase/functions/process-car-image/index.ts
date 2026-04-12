@@ -443,8 +443,14 @@ serve(async (req) => {
           ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
           : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-        const prompt = `${basePrompt} ${orientationHint}`;
+        const cleanSuffix = 'Clean background with no foreign objects, no artifacts, no elements from the original photo.';
+        const prompt = `${basePrompt} ${orientationHint} ${cleanSuffix}`;
         photoroomFormData.append('background.prompt', prompt);
+        
+        // Negative prompt to prevent artifacts bleeding through from original image
+        photoroomFormData.append('background.negativePrompt', 
+          'artifacts, distorted objects, blurry elements, items from original background, debris, extra wheels, floating parts, duplicate objects, text, watermarks, low quality');
+        
         console.log('Using prompt:', prompt);
       }
     
