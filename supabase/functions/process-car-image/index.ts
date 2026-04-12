@@ -258,21 +258,6 @@ serve(async (req) => {
       }
     }
 
-    const exactStudioSceneIds = new Set([
-      'anthracite-studio',
-      'gra-minimalist-studio',
-      'grey-corner',
-      'lightroom-studio',
-      'ljus-fotohorna',
-      'ljus-studio-enkel',
-      'netgrey-dark',
-      'netgrey-light',
-      'nordic-showroom',
-      'showroom-panorama',
-      'vit-kakel',
-      'vit-rundad-studio',
-    ]);
-
     if (!interiorMode) {
       const { data: canonicalScene, error: canonicalSceneError } = await supabase
         .from('scenes')
@@ -283,11 +268,6 @@ serve(async (req) => {
       if (canonicalSceneError) {
         console.warn('Could not load canonical scene config:', canonicalSceneError);
       } else if (canonicalScene) {
-        const isStudioCategory = typeof canonicalScene.category === 'string' && canonicalScene.category.startsWith('studio');
-        const forcedCompositeMode = isStudioCategory
-          ? true
-          : (canonicalScene.composite_mode ?? scene.compositeMode);
-
         scene = {
           ...scene,
           aiPrompt: canonicalScene.ai_prompt ?? scene.aiPrompt,
@@ -295,7 +275,7 @@ serve(async (req) => {
             ? Number(canonicalScene.reference_scale)
             : scene.referenceScale,
           shadowMode: canonicalScene.photoroom_shadow_mode ?? scene.shadowMode,
-          compositeMode: forcedCompositeMode,
+          compositeMode: canonicalScene.composite_mode ?? scene.compositeMode,
         };
         console.log('Using canonical scene config:', {
           sceneId: scene.id,
