@@ -459,22 +459,16 @@ serve(async (req) => {
       photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
 
       const basePrompt = scene.aiPrompt ||
-        `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
-        `Realistic scale, perspective and lighting for professional automotive photography.`;
+        'Professional automotive photography. Vehicle centered on the ground, realistic scale and lighting.';
 
       const orientationHint = orientation === 'portrait'
-        ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
-        : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
+        ? 'Vertical composition with extra headroom.'
+        : 'Horizontal composition, vehicle centered.';
 
-      const cleanSuffix = 'Match the reference background closely. Keep the background clean and free from foreign objects or artifacts. Do not borrow scenery, structures, vegetation, props, or wall details from the uploaded source photo.';
-      const prompt = `${basePrompt} ${orientationHint} ${cleanSuffix}`;
+      const prompt = `${basePrompt} ${orientationHint}`;
       photoroomFormData.append('background.prompt', prompt);
 
-      photoroomFormData.append('background.negativePrompt',
-        'floating car, flying car, car above ground, car too high in frame, distorted, blurry, unrealistic scale, wrong perspective, car too small, car too large, cropped car, duplicate objects, multiple vehicles, items from original background, scenery from source photo, trees, grass, bushes, sky, clouds, houses, buildings, fences, roads, signs, posters, furniture, shelves, screens, televisions, monitors, picture frames, wall decorations, debris, random objects, artifacts, text, watermarks');
-
       console.log('Using prompt:', prompt);
-    
       const shadowMode = scene.shadowMode || 'none';
       if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
         photoroomFormData.append('shadow.mode', shadowMode);
