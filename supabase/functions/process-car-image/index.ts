@@ -454,7 +454,7 @@ serve(async (req) => {
       }
 
       photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
-      const referenceScale = scene.referenceScale ?? 0.85;
+      const referenceScale = Math.max(scene.referenceScale ?? 0.85, 0.92);
       photoroomFormData.append('background.guidance.scale', referenceScale.toString());
       console.log('Reference scale:', referenceScale);
 
@@ -469,8 +469,14 @@ serve(async (req) => {
         ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
         : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-      const prompt = `${basePrompt} ${orientationHint}`;
+      const guidanceConstraint = 'Match the guidance image as closely as possible. Keep the same studio layout, wall-floor split, tones, lighting direction, floor reflection and empty environment. Do not add any objects, doors, windows, trees, furniture, screens, decor or architecture that is not clearly present in the guidance image.';
+      const prompt = `${basePrompt} ${orientationHint} ${guidanceConstraint}`;
       photoroomFormData.append('background.prompt', prompt);
+      photoroomFormData.append('background.expandPrompt.mode', 'ai.never');
+      photoroomFormData.append(
+        'background.negativePrompt',
+        'objects, doors, windows, trees, plants, furniture, screens, wall decor, extra structures, outdoor scenery, clutter, props, additional vehicles, people'
+      );
 
       console.log('Using prompt:', prompt);
       const shadowMode = scene.shadowMode || 'none';
@@ -483,8 +489,8 @@ serve(async (req) => {
       photoroomFormData.append('padding', paddingValue);
 
       photoroomFormData.append('scaling', 'fit');
-      photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
-      console.log(`Auto-crop: ${autoCrop}, padding: ${paddingValue}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
+      photoroomFormData.append('referenceBox', 'originalImage');
+      console.log(`Auto-crop requested: ${autoCrop}, padding: ${paddingValue}, referenceBox: originalImage (locked to guidance)`);
     
       if (relightEnabled) {
         photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');

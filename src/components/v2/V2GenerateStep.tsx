@@ -1156,6 +1156,20 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
 
   file = await normalizeImageOrientation(file);
 
+  if (autoCropMode !== 'off') {
+    const targetAspect = outputFormat === 'portrait' ? 2 / 3 : 3 / 2;
+    const localPreviewUrl = URL.createObjectURL(file);
+    try {
+      const croppedDataUrl = await autoCropImage(localPreviewUrl, targetAspect);
+      if (croppedDataUrl !== localPreviewUrl) {
+        const croppedBlob = await fetch(croppedDataUrl).then((response) => response.blob());
+        file = new File([croppedBlob], file.name.replace(/\.[^/.]+$/, '') + '-cropped.jpg', { type: croppedBlob.type || 'image/jpeg' });
+      }
+    } finally {
+      URL.revokeObjectURL(localPreviewUrl);
+    }
+  }
+
   const formData = new FormData();
   formData.append('image', file, file.name);
   const scenePayload = {
@@ -1179,10 +1193,6 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   });
   formData.append('originalWidth', dims.w.toString());
   formData.append('originalHeight', dims.h.toString());
-  if (autoCropMode !== 'off') {
-    formData.append('autoCrop', 'true');
-    formData.append('autoCropPadding', autoCropMode === 'tight' ? '0.03' : '0.12');
-  }
   if (projectId) {
     formData.append('projectId', projectId);
   }
