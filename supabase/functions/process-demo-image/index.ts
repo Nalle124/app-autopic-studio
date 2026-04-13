@@ -250,22 +250,15 @@ serve(async (req) => {
     photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
     
     const basePrompt = scene.aiPrompt ||
-      `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
-      `Realistic scale, perspective and lighting for professional automotive photography.`;
+      `Professional automotive photography. Vehicle placed horizontally centered and resting on the ground with tires touching the floor. ` +
+      `Realistic scale, perspective and lighting.`;
 
     const orientationHint = orientation === 'portrait'
-      ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
-      : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
+      ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame, viewed from a ground-level perspective.'
+      : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded, viewed from a ground-level perspective.';
 
     const prompt = `${basePrompt} ${orientationHint}`;
     photoroomFormData.append('background.prompt', prompt);
-    
-    photoroomFormData.append(
-      'background.negativePrompt',
-      'floating car, flying car, car in sky, car above ground, car too high in frame, car near top edge, ' +
-        'distorted, blurry, unrealistic scale, wrong perspective, car too small, car too large, multiple cars, ' +
-        'off-center car, car on right side, car on left side, asymmetric placement, cropped car'
-    );
     
     const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
@@ -281,8 +274,10 @@ serve(async (req) => {
       photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
     }
     
-    const outputSize = orientation === 'portrait' ? '2048x3072' : '3072x2048';
+    const outputSize = orientation === 'portrait' ? '3072x4000' : '4000x3072';
     photoroomFormData.append('outputSize', outputSize);
+
+    photoroomFormData.append('export.format', 'png');
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
