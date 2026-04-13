@@ -465,10 +465,15 @@ serve(async (req) => {
         ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame, viewed from a ground-level perspective.'
         : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded, viewed from a ground-level perspective.';
 
-      const prompt = `${basePrompt} ${orientationHint}`;
+      const guidanceConstraint =
+        'The generated background must closely match the guidance image. Keep the same studio structure, floor, walls, tones and lighting direction, and do not introduce new objects, doors, windows, furniture, scenery or extra vehicles not present in the guidance image.';
+
+      const prompt = `${basePrompt} ${orientationHint} ${guidanceConstraint}`;
       photoroomFormData.append('background.prompt', prompt);
+      photoroomFormData.append('background.expandPrompt.mode', 'ai.never');
 
       console.log('Using prompt:', prompt);
+      console.log('Disabled PhotoRoom prompt expansion for stricter guidance matching');
       const shadowMode = scene.shadowMode || 'none';
       if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
         photoroomFormData.append('shadow.mode', shadowMode);
@@ -651,8 +656,8 @@ serve(async (req) => {
       console.error('RPC decrement_credits failed:', rpcError);
     }
 
-    // For exterior images we already requested JPEG from PhotoRoom, so skip re-compression
-    // For interior images (AI gateway returns PNG), compress to JPEG
+    // For interior images (AI gateway returns PNG), compress to JPEG.
+    // Exterior images stay in the PhotoRoom export format to avoid metadata/format mismatches.
     let uploadBuffer: ArrayBuffer;
     let contentType: string;
     let fileExtension: string;
@@ -664,8 +669,8 @@ serve(async (req) => {
       fileExtension = contentType === 'image/png' ? 'png' : 'jpg';
     } else {
       uploadBuffer = finalImageBuffer;
-      contentType = 'image/jpeg';
-      fileExtension = 'jpg';
+      contentType = 'image/png';
+      fileExtension = 'png';
     }
     
     const sanitizedSceneId = scene.id

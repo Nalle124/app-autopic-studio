@@ -257,8 +257,13 @@ serve(async (req) => {
       ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame, viewed from a ground-level perspective.'
       : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded, viewed from a ground-level perspective.';
 
-    const prompt = `${basePrompt} ${orientationHint}`;
+    const guidanceConstraint =
+      'The generated background must closely match the guidance image. Keep the same studio structure, floor, walls, tones and lighting direction, and do not introduce new objects, doors, windows, furniture, scenery or extra vehicles not present in the guidance image.';
+
+    const prompt = `${basePrompt} ${orientationHint} ${guidanceConstraint}`;
     photoroomFormData.append('background.prompt', prompt);
+    photoroomFormData.append('background.expandPrompt.mode', 'ai.never');
+    console.log('[DEMO] Disabled PhotoRoom prompt expansion for stricter guidance matching');
     
     const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
