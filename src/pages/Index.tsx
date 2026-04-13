@@ -546,7 +546,7 @@ function IndexContent() {
             
             console.log(`[ProcessImage] Original: ${fileToSend.name} (${(fileToSend.size / 1024 / 1024).toFixed(2)}MB, type: ${fileToSend.type})`);
             
-            // Always compress to JPEG before uploading to keep file size manageable
+            // Compress to keep file size manageable, but preserve high resolution for PhotoRoom
             const shouldCompress = true;
             
             if (shouldCompress) {
@@ -568,8 +568,9 @@ function IndexContent() {
                 await imgLoadPromise;
                 
                 const canvas = document.createElement('canvas');
-                // Mobile: aggressive limit (2048px) to stay well within iOS 16MP limit
-                const maxDim = isMobileDevice ? 2048 : 3500;
+                // Mobile: aggressive limit (2048px) to stay within iOS 16MP limit
+                // Desktop: 4096px — preserve resolution for PhotoRoom
+                const maxDim = isMobileDevice ? 2048 : 4096;
                 const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
                 canvas.width = Math.round(img.width * scale);
                 canvas.height = Math.round(img.height * scale);
@@ -577,9 +578,9 @@ function IndexContent() {
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                  // Always use JPEG for uploads - PNG photos are 5-10x larger and cause timeouts
+                  // JPEG for uploads — use high quality on desktop to preserve detail for PhotoRoom
                   const format = 'image/jpeg';
-                  const quality = isMobileDevice ? 0.85 : 0.92;
+                  const quality = isMobileDevice ? 0.85 : 0.95;
                   const blob = await new Promise<Blob>((resolve, reject) => {
                     canvas.toBlob(b => {
                       if (b) resolve(b);
