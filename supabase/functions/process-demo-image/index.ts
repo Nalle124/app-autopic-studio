@@ -26,8 +26,7 @@ interface SceneMetadata {
   referenceScale?: number;
 }
 
-// Restored historical seed used in the previously stable PhotoRoom flow.
-const PROCESSING_SEED = 117879368;
+// No fixed seed — let PhotoRoom vary each generation for better diversity.
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -249,8 +248,6 @@ serve(async (req) => {
     
     const referenceScale = scene.referenceScale ?? 0.7;
     photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-    photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
-
     const basePrompt = scene.aiPrompt ||
       `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
       `Realistic scale, perspective and lighting for professional automotive photography.`;
@@ -259,7 +256,12 @@ serve(async (req) => {
       ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
       : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-    const prompt = `${basePrompt} ${orientationHint}`;
+    // Always enforce enclosed studio — prevents PhotoRoom from hallucinating windows/outdoor views
+    const studioConstraint = 'Completely enclosed professional photography studio. ' +
+      'No windows, no openings, no outdoor views, no sky, no trees, no buildings visible anywhere. ' +
+      'Sealed solid studio walls only.';
+
+    const prompt = `${basePrompt} ${orientationHint} ${studioConstraint}`;
     photoroomFormData.append('background.prompt', prompt);
 
     photoroomFormData.append(

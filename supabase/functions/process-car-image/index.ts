@@ -27,8 +27,7 @@ interface SceneMetadata {
   compositeMode?: boolean;
 }
 
-// Restored historical seed used in the previously stable PhotoRoom flow.
-const PROCESSING_SEED = 117879368;
+// No fixed seed — let PhotoRoom vary each generation for better diversity.
 
 // Compress image to JPEG for storage efficiency
 async function compressToJpeg(
@@ -458,9 +457,6 @@ serve(async (req) => {
       photoroomFormData.append('background.guidance.scale', referenceScale.toString());
       console.log('Reference scale:', referenceScale);
 
-      photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
-      console.log('Using processing seed:', PROCESSING_SEED);
-
       const basePrompt = scene.aiPrompt ||
         `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
         `Realistic scale, perspective and lighting for professional automotive photography.`;
@@ -469,7 +465,12 @@ serve(async (req) => {
         ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
         : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-      const prompt = `${basePrompt} ${orientationHint}`;
+      // Always enforce enclosed studio — prevents PhotoRoom from hallucinating windows/outdoor views
+      const studioConstraint = 'Completely enclosed professional photography studio. ' +
+        'No windows, no openings, no outdoor views, no sky, no trees, no buildings visible anywhere. ' +
+        'Sealed solid studio walls only.';
+
+      const prompt = `${basePrompt} ${orientationHint} ${studioConstraint}`;
       photoroomFormData.append('background.prompt', prompt);
 
       console.log('Using prompt:', prompt);
