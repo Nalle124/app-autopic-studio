@@ -454,7 +454,7 @@ serve(async (req) => {
       }
 
       photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
-      const referenceScale = Math.max(scene.referenceScale ?? 0.85, 0.92);
+      const referenceScale = scene.referenceScale ?? 0.7;
       photoroomFormData.append('background.guidance.scale', referenceScale.toString());
       console.log('Reference scale:', referenceScale);
 
