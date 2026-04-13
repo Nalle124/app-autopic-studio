@@ -483,8 +483,8 @@ serve(async (req) => {
       photoroomFormData.append('padding', paddingValue);
 
       photoroomFormData.append('scaling', 'fit');
-      photoroomFormData.append('referenceBox', 'originalImage');
-      console.log(`Auto-crop requested: ${autoCrop}, padding: ${paddingValue}, referenceBox: originalImage (locked to guidance)`);
+      photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
+      console.log(`Auto-crop requested: ${autoCrop}, padding: ${paddingValue}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
     
       if (relightEnabled) {
         photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
