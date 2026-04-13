@@ -281,10 +281,11 @@ serve(async (req) => {
       photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
     }
     
-    const outputSize = orientation === 'portrait' ? '3072x4000' : '4000x3072';
+    const outputSize = orientation === 'portrait' ? '2048x3072' : '3072x2048';
     photoroomFormData.append('outputSize', outputSize);
 
-    photoroomFormData.append('export.format', 'png');
+    photoroomFormData.append('export.format', 'jpg');
+    photoroomFormData.append('export.quality', '90');
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
