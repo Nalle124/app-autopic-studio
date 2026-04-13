@@ -247,7 +247,7 @@ serve(async (req) => {
     photoroomFormData.append('imageUrl', originalImageUrl);
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
     
-    const referenceScale = scene.referenceScale ?? 0.85;
+    const referenceScale = Math.max(scene.referenceScale ?? 0.85, 0.92);
     photoroomFormData.append('background.guidance.scale', referenceScale.toString());
     photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
     
@@ -259,14 +259,16 @@ serve(async (req) => {
       ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
       : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-    const prompt = `${basePrompt} ${orientationHint}`;
+    const guidanceConstraint = 'Match the guidance image as closely as possible. Keep the same studio layout, wall-floor split, tones, lighting direction, floor reflection and empty environment. Do not add any objects, doors, windows, trees, furniture, screens, decor or architecture that is not clearly present in the guidance image.';
+    const prompt = `${basePrompt} ${orientationHint} ${guidanceConstraint}`;
     photoroomFormData.append('background.prompt', prompt);
+    photoroomFormData.append('background.expandPrompt.mode', 'ai.never');
     
     photoroomFormData.append(
       'background.negativePrompt',
       'floating car, flying car, car in sky, car above ground, car too high in frame, car near top edge, ' +
         'distorted, blurry, unrealistic scale, wrong perspective, car too small, car too large, multiple cars, ' +
-        'off-center car, car on right side, car on left side, asymmetric placement, cropped car'
+        'off-center car, car on right side, car on left side, asymmetric placement, cropped car, objects, doors, windows, trees, plants, furniture, decor, screens, clutter'
     );
     
     const shadowMode = scene.shadowMode || 'none';
@@ -277,7 +279,7 @@ serve(async (req) => {
     const paddingValue = autoCrop ? autoCropPadding : (orientation === 'portrait' ? '0.08' : '0.10');
     photoroomFormData.append('padding', paddingValue);
     photoroomFormData.append('scaling', 'fit');
-    photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
+    photoroomFormData.append('referenceBox', 'originalImage');
     
     if (relightEnabled) {
       photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
