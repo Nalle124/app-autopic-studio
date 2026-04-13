@@ -459,11 +459,11 @@ serve(async (req) => {
       photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
 
       const basePrompt = scene.aiPrompt ||
-        'Professional automotive photography. Vehicle centered on the ground, realistic scale and lighting.';
+        'Professional automotive photography. Vehicle placed horizontally centered and resting on the ground with tires touching the floor. Realistic scale, perspective and lighting.';
 
       const orientationHint = orientation === 'portrait'
-        ? 'Vertical composition with extra headroom.'
-        : 'Horizontal composition, vehicle centered.';
+        ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame, viewed from a ground-level perspective.'
+        : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded, viewed from a ground-level perspective.';
 
       const prompt = `${basePrompt} ${orientationHint}`;
       photoroomFormData.append('background.prompt', prompt);
@@ -493,8 +493,8 @@ serve(async (req) => {
       const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
       console.log('Original dimensions:', originalWidth, 'x', originalHeight);
     
-      const maxWidth = 2500;
-      const maxHeight = 2500;
+      const maxWidth = 4000;
+      const maxHeight = 4000;
     
       let outputWidth: number;
       let outputHeight: number;
@@ -526,8 +526,7 @@ serve(async (req) => {
       photoroomFormData.append('outputSize', outputSize);
       console.log('Calculated output size:', outputSize);
 
-      photoroomFormData.append('export.format', 'jpg');
-      photoroomFormData.append('export.quality', '90');
+      photoroomFormData.append('export.format', 'png');
     
       const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
         method: 'POST',
