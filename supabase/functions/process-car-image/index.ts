@@ -454,7 +454,7 @@ serve(async (req) => {
       }
 
       photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
-      const referenceScale = Math.max(scene.referenceScale ?? 0.85, 0.92);
+      const referenceScale = scene.referenceScale ?? 0.7;
       photoroomFormData.append('background.guidance.scale', referenceScale.toString());
       console.log('Reference scale:', referenceScale);
 
@@ -469,14 +469,8 @@ serve(async (req) => {
         ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
         : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-      const guidanceConstraint = 'Match the guidance image as closely as possible. Keep the same studio layout, wall-floor split, tones, lighting direction, floor reflection and empty environment. Do not add any objects, doors, windows, trees, furniture, screens, decor or architecture that is not clearly present in the guidance image.';
-      const prompt = `${basePrompt} ${orientationHint} ${guidanceConstraint}`;
+      const prompt = `${basePrompt} ${orientationHint}`;
       photoroomFormData.append('background.prompt', prompt);
-      photoroomFormData.append('background.expandPrompt.mode', 'ai.never');
-      photoroomFormData.append(
-        'background.negativePrompt',
-        'objects, doors, windows, trees, plants, furniture, screens, wall decor, extra structures, outdoor scenery, clutter, props, additional vehicles, people'
-      );
 
       console.log('Using prompt:', prompt);
       const shadowMode = scene.shadowMode || 'none';
@@ -489,8 +483,8 @@ serve(async (req) => {
       photoroomFormData.append('padding', paddingValue);
 
       photoroomFormData.append('scaling', 'fit');
-      photoroomFormData.append('referenceBox', 'originalImage');
-      console.log(`Auto-crop requested: ${autoCrop}, padding: ${paddingValue}, referenceBox: originalImage (locked to guidance)`);
+      photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
+      console.log(`Auto-crop requested: ${autoCrop}, padding: ${paddingValue}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
     
       if (relightEnabled) {
         photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
@@ -501,8 +495,8 @@ serve(async (req) => {
       const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
       console.log('Original dimensions:', originalWidth, 'x', originalHeight);
     
-      const maxWidth = 4000;
-      const maxHeight = 4000;
+      const maxWidth = 2500;
+      const maxHeight = 2500;
     
       let outputWidth: number;
       let outputHeight: number;
@@ -534,7 +528,8 @@ serve(async (req) => {
       photoroomFormData.append('outputSize', outputSize);
       console.log('Calculated output size:', outputSize);
 
-      photoroomFormData.append('export.format', 'png');
+      photoroomFormData.append('export.format', 'jpg');
+      photoroomFormData.append('export.quality', '90');
     
       const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
         method: 'POST',
