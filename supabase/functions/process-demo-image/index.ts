@@ -26,8 +26,8 @@ interface SceneMetadata {
   referenceScale?: number;
 }
 
-// Fixed seed for consistent results
-const PROCESSING_SEED = 117879368;
+// No fixed seed — each generation gets a unique seed to avoid
+// deterministic failures on certain image types.
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -245,9 +245,11 @@ serve(async (req) => {
     photoroomFormData.append('imageUrl', originalImageUrl);
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
     
-    const referenceScale = scene.referenceScale ?? 1.0;
+    const referenceScale = scene.referenceScale ?? 0.85;
     photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-    photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
+    // Random seed per request to avoid deterministic failures
+    const randomSeed = Math.floor(Math.random() * 2_000_000_000);
+    photoroomFormData.append('background.seed', randomSeed.toString());
     
     const basePrompt = scene.aiPrompt ||
       `Professional automotive photography. Vehicle placed horizontally centered and resting on the ground with tires touching the floor. ` +

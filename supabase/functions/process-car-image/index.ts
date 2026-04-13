@@ -27,8 +27,8 @@ interface SceneMetadata {
   compositeMode?: boolean;
 }
 
-// Fixed seed for consistent results across generations
-const PROCESSING_SEED = 117879368;
+// No fixed seed — each generation gets a unique seed to avoid
+// deterministic failures on certain image types.
 
 // Compress image to JPEG for storage efficiency
 async function compressToJpeg(
@@ -452,11 +452,14 @@ serve(async (req) => {
       }
 
       photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
-      const referenceScale = scene.referenceScale ?? 0.7;
+      const referenceScale = scene.referenceScale ?? 0.85;
       photoroomFormData.append('background.guidance.scale', referenceScale.toString());
       console.log('Reference scale:', referenceScale);
 
-      photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
+      // Random seed per request to avoid deterministic failures on certain images
+      const randomSeed = Math.floor(Math.random() * 2_000_000_000);
+      photoroomFormData.append('background.seed', randomSeed.toString());
+      console.log('Using random seed:', randomSeed);
 
       const basePrompt = scene.aiPrompt ||
         'Professional automotive photography. Vehicle placed horizontally centered and resting on the ground with tires touching the floor. Realistic scale, perspective and lighting.';
@@ -480,14 +483,15 @@ serve(async (req) => {
         console.log('Adding PhotoRoom shadow:', shadowMode);
       }
     
-      const autoCrop = formData.get('autoCrop') === 'true';
-      const autoCropPadding = formData.get('autoCropPadding') as string || '0.03';
-      const paddingValue = autoCrop ? autoCropPadding : (orientation === 'portrait' ? '0.08' : '0.10');
+      // IMPORTANT: Always use referenceBox=originalImage for studio scenes.
+      // Using subjectBox causes the model to "borrow" structure from the
+      // original photo's background, leading to hallucinated objects.
+      const paddingValue = orientation === 'portrait' ? '0.08' : '0.10';
       photoroomFormData.append('padding', paddingValue);
     
       photoroomFormData.append('scaling', 'fit');
-      photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
-      console.log(`Auto-crop: ${autoCrop}, padding: ${paddingValue}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
+      photoroomFormData.append('referenceBox', 'originalImage');
+      console.log(`padding: ${paddingValue}, referenceBox: originalImage (forced for clean background)`);
     
       if (relightEnabled) {
         photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
