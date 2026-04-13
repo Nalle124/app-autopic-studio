@@ -26,8 +26,8 @@ interface SceneMetadata {
   referenceScale?: number;
 }
 
-// No fixed seed — each generation gets a unique seed to avoid
-// deterministic failures on certain image types.
+// Restored historical seed used in the previously stable PhotoRoom flow.
+const PROCESSING_SEED = 117879368;
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -153,6 +153,8 @@ serve(async (req) => {
     const backgroundImageUrl = formData.get('backgroundUrl') as string;
     const orientation = formData.get('orientation') as string || 'landscape';
     const relightEnabled = formData.get('relight') === 'true';
+    const autoCrop = formData.get('autoCrop') === 'true';
+    const autoCropPadding = formData.get('autoCropPadding') as string || '0.03';
     
     // Input validation
     if (!imageFile || !sceneData || !backgroundImageUrl) {
@@ -247,35 +249,35 @@ serve(async (req) => {
     
     const referenceScale = scene.referenceScale ?? 0.85;
     photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-    // Random seed per request to avoid deterministic failures
-    const randomSeed = Math.floor(Math.random() * 2_000_000_000);
-    photoroomFormData.append('background.seed', randomSeed.toString());
+    photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
     
     const basePrompt = scene.aiPrompt ||
-      `Professional automotive photography. Vehicle placed horizontally centered and resting on the ground with tires touching the floor. ` +
-      `Realistic scale, perspective and lighting.`;
+      `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
+      `Realistic scale, perspective and lighting for professional automotive photography.`;
 
     const orientationHint = orientation === 'portrait'
-      ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame, viewed from a ground-level perspective.'
-      : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded, viewed from a ground-level perspective.';
+      ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
+      : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-    const guidanceConstraint =
-      'The generated background must closely match the guidance image. Keep the same studio structure, floor, walls, tones and lighting direction, and do not introduce new objects, doors, windows, furniture, scenery or extra vehicles not present in the guidance image.';
-
-    const prompt = `${basePrompt} ${orientationHint} ${guidanceConstraint}`;
+    const prompt = `${basePrompt} ${orientationHint}`;
     photoroomFormData.append('background.prompt', prompt);
-    photoroomFormData.append('background.expandPrompt.mode', 'ai.never');
-    console.log('[DEMO] Disabled PhotoRoom prompt expansion for stricter guidance matching');
+    
+    photoroomFormData.append(
+      'background.negativePrompt',
+      'floating car, flying car, car in sky, car above ground, car too high in frame, car near top edge, ' +
+        'distorted, blurry, unrealistic scale, wrong perspective, car too small, car too large, multiple cars, ' +
+        'off-center car, car on right side, car on left side, asymmetric placement, cropped car'
+    );
     
     const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
       photoroomFormData.append('shadow.mode', shadowMode);
     }
     
-    const paddingValue = orientation === 'portrait' ? '0.08' : '0.10';
+    const paddingValue = autoCrop ? autoCropPadding : (orientation === 'portrait' ? '0.08' : '0.10');
     photoroomFormData.append('padding', paddingValue);
     photoroomFormData.append('scaling', 'fit');
-    photoroomFormData.append('referenceBox', 'originalImage');
+    photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
     
     if (relightEnabled) {
       photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
