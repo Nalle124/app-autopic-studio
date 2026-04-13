@@ -247,7 +247,7 @@ serve(async (req) => {
     photoroomFormData.append('imageUrl', originalImageUrl);
     photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
     
-    const referenceScale = Math.max(scene.referenceScale ?? 0.85, 0.92);
+    const referenceScale = scene.referenceScale ?? 0.7;
     photoroomFormData.append('background.guidance.scale', referenceScale.toString());
     photoroomFormData.append('background.seed', PROCESSING_SEED.toString());
     
@@ -259,16 +259,12 @@ serve(async (req) => {
       ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
       : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
 
-    const guidanceConstraint = 'Match the guidance image as closely as possible. Keep the same studio layout, wall-floor split, tones, lighting direction, floor reflection and empty environment. Do not add any objects, doors, windows, trees, furniture, screens, decor or architecture that is not clearly present in the guidance image.';
-    const prompt = `${basePrompt} ${orientationHint} ${guidanceConstraint}`;
+    const prompt = `${basePrompt} ${orientationHint}`;
     photoroomFormData.append('background.prompt', prompt);
-    photoroomFormData.append('background.expandPrompt.mode', 'ai.never');
     
     photoroomFormData.append(
       'background.negativePrompt',
-      'floating car, flying car, car in sky, car above ground, car too high in frame, car near top edge, ' +
-        'distorted, blurry, unrealistic scale, wrong perspective, car too small, car too large, multiple cars, ' +
-        'off-center car, car on right side, car on left side, asymmetric placement, cropped car, objects, doors, windows, trees, plants, furniture, decor, screens, clutter'
+      'floating car, flying car, distorted, blurry'
     );
     
     const shadowMode = scene.shadowMode || 'none';
@@ -285,10 +281,11 @@ serve(async (req) => {
       photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
     }
     
-    const outputSize = orientation === 'portrait' ? '3072x4000' : '4000x3072';
+    const outputSize = orientation === 'portrait' ? '2048x3072' : '3072x2048';
     photoroomFormData.append('outputSize', outputSize);
 
-    photoroomFormData.append('export.format', 'png');
+    photoroomFormData.append('export.format', 'jpg');
+    photoroomFormData.append('export.quality', '90');
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
@@ -316,11 +313,11 @@ serve(async (req) => {
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
     
-    const finalFilename = `demo/${crypto.randomUUID()}-${sanitizedSceneId}.png`;
+    const finalFilename = `demo/${crypto.randomUUID()}-${sanitizedSceneId}.jpg`;
     const { data: finalUploadData, error: finalUploadError } = await supabase.storage
       .from('processed-cars')
       .upload(finalFilename, finalImageBuffer, {
-        contentType: 'image/png',
+        contentType: 'image/jpeg',
         upsert: false,
       });
 
