@@ -569,8 +569,8 @@ function IndexContent() {
                 
                 const canvas = document.createElement('canvas');
                 // Mobile: aggressive limit (2048px) to stay within iOS 16MP limit
-                // Desktop: 4096px — preserve resolution for PhotoRoom
-                const maxDim = isMobileDevice ? 2048 : 4096;
+                // Desktop: restore historical 3500px flow used with stable PhotoRoom results
+                const maxDim = isMobileDevice ? 2048 : 3500;
                 const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
                 canvas.width = Math.round(img.width * scale);
                 canvas.height = Math.round(img.height * scale);
@@ -580,7 +580,7 @@ function IndexContent() {
                   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                   // JPEG for uploads — use high quality on desktop to preserve detail for PhotoRoom
                   const format = 'image/jpeg';
-                  const quality = isMobileDevice ? 0.85 : 0.95;
+                  const quality = isMobileDevice ? 0.85 : 0.92;
                   const blob = await new Promise<Blob>((resolve, reject) => {
                     canvas.toBlob(b => {
                       if (b) resolve(b);
@@ -1609,7 +1609,7 @@ function IndexContent() {
                       img.onload = resolve;
                     });
                     const canvas = document.createElement('canvas');
-                    const maxDim = 4096;
+                    const maxDim = 3500;
                     const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
                     canvas.width = img.width * scale;
                     canvas.height = img.height * scale;
@@ -1628,7 +1628,7 @@ function IndexContent() {
                       await new Promise(resolve => { img.onload = resolve; });
                       URL.revokeObjectURL(imgUrl);
                       const canvas = document.createElement('canvas');
-                      const maxDim = 4096;
+                      const maxDim = 3500;
                       const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
                       canvas.width = img.width * scale;
                       canvas.height = img.height * scale;
