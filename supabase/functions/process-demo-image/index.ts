@@ -313,11 +313,11 @@ serve(async (req) => {
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
     
-    const finalFilename = `demo/${crypto.randomUUID()}-${sanitizedSceneId}.png`;
+    const finalFilename = `demo/${crypto.randomUUID()}-${sanitizedSceneId}.jpg`;
     const { data: finalUploadData, error: finalUploadError } = await supabase.storage
       .from('processed-cars')
       .upload(finalFilename, finalImageBuffer, {
-        contentType: 'image/png',
+        contentType: 'image/jpeg',
         upsert: false,
       });
 
