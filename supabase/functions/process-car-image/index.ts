@@ -528,7 +528,8 @@ serve(async (req) => {
       photoroomFormData.append('outputSize', outputSize);
       console.log('Calculated output size:', outputSize);
 
-      photoroomFormData.append('export.format', 'png');
+      photoroomFormData.append('export.format', 'jpg');
+      photoroomFormData.append('export.quality', '90');
     
       const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
         method: 'POST',
