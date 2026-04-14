@@ -106,8 +106,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Track temp file for cleanup in finally block
-  let uploadFilename: string | null = null;
   let supabase: ReturnType<typeof createClient> | null = null;
 
   try {
@@ -367,15 +365,5 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } finally {
-    // Always clean up temp file, even on error
-    if (uploadFilename && supabase) {
-      try {
-        await supabase.storage.from('processed-cars').remove([uploadFilename]);
-        console.log(`[DEMO] Cleaned up temp file: ${uploadFilename}`);
-      } catch (cleanupErr) {
-        console.warn(`[DEMO] Failed to clean up temp file ${uploadFilename}:`, cleanupErr);
-      }
-    }
   }
 });
