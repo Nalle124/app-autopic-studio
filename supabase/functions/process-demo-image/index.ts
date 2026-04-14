@@ -243,15 +243,13 @@ serve(async (req) => {
     console.log('[DEMO] Processing with Photoroom...');
     
     const photoroomFormData = new FormData();
+    // Direct background placement via imageFile — original working approach.
+    const bgFetchResp = await fetch(backgroundImageUrl);
+    if (!bgFetchResp.ok) throw new Error(`Failed to fetch background: ${bgFetchResp.status}`);
+    const bgBuf = await bgFetchResp.arrayBuffer();
+    const bgBlob = new Blob([bgBuf], { type: bgFetchResp.headers.get('content-type') || 'image/jpeg' });
     photoroomFormData.append('imageUrl', originalImageUrl);
-    photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    photoroomFormData.append('background.guidance.scale', '1.0');
-    const basePrompt = scene.aiPrompt ||
-      `Place the vehicle centered on the floor. Professional automotive photography.`;
-    const orientationHint = orientation === 'portrait' ? 'Vertical composition.' : 'Horizontal composition, vehicle centered.';
-    photoroomFormData.append('background.prompt', `${basePrompt} ${orientationHint}`);
-    photoroomFormData.append('background.negativePrompt',
-      'windows, outdoor view, trees, sky, clouds, buildings, nature, grass, exterior, daylight through opening');
+    photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
     
     const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {

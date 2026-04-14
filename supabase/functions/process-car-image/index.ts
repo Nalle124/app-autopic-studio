@@ -452,20 +452,19 @@ serve(async (req) => {
         }
       }
 
-      photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
-      // Always use maximum scale — forces AI to follow reference image as closely as possible
-      photoroomFormData.append('background.guidance.scale', '1.0');
-      console.log('Reference scale: 1.0 (maximum)');
-
-      const basePrompt = scene.aiPrompt ||
-        `Place the vehicle centered on the floor. Professional automotive photography.`;
-      const orientationHint = orientation === 'portrait'
-        ? 'Vertical composition.'
-        : 'Horizontal composition, vehicle centered.';
-      photoroomFormData.append('background.prompt', `${basePrompt} ${orientationHint}`);
-      photoroomFormData.append('background.negativePrompt',
-        'windows, outdoor view, trees, sky, clouds, buildings, nature, grass, exterior, daylight through opening');
-      console.log('Using guidance imageUrl with scale 1.0 and negative prompt');
+      // Fetch the background image and send it as a file using background.imageFile.
+      // This is the original working approach — direct background placement, no AI generation.
+      // background.guidance.imageUrl always triggers AI generation (blends car context in).
+      console.log('[BG] Fetching background image to send as file...');
+      const bgFetchResponse = await fetch(resolvedBackgroundUrl);
+      if (!bgFetchResponse.ok) {
+        throw new Error(`Failed to fetch background image: ${bgFetchResponse.status}`);
+      }
+      const bgBuffer = await bgFetchResponse.arrayBuffer();
+      const bgContentType = bgFetchResponse.headers.get('content-type') || 'image/jpeg';
+      const bgBlob = new Blob([bgBuffer], { type: bgContentType });
+      photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
+      console.log('[BG] Background sent as imageFile, size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
       const shadowMode = scene.shadowMode || 'none';
       if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
         photoroomFormData.append('shadow.mode', shadowMode);
