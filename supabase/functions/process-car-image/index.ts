@@ -536,7 +536,7 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'x-api-key': PHOTOROOM_API_KEY!,
-          'pr-ai-background-model-version': 'background-studio-beta-2025-03-17',
+          // Use default stable model (v3) — beta model generates unwanted windows/outdoor elements
         },
         body: photoroomFormData,
       });
