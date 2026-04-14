@@ -232,6 +232,8 @@ serve(async (req) => {
     const bgBuf = await bgFetchResp.arrayBuffer();
     const bgBlob = new Blob([bgBuf], { type: bgFetchResp.headers.get('content-type') || 'image/jpeg' });
     photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
+    // Override any PNG transparency so export.format=jpg doesn't conflict
+    photoroomFormData.append('background.color', 'white');
     
     const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
