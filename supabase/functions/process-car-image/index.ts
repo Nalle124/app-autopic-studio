@@ -456,10 +456,10 @@ serve(async (req) => {
         }
       }
 
-      // Fetch the background image and send it as guidance reference for AI scene generation.
-      // guidance mode lets PhotoRoom naturally integrate the car into the scene with correct
-      // perspective, grounding, shadows and reflections — unlike static background.imageFile.
-      console.log('[BG] Fetching background image for guidance mode...');
+      // Use STATIC background mode — sends the exact reference image as the backdrop.
+      // This prevents PhotoRoom's AI from being influenced by reflections on the car
+      // (e.g. trees reflected in paint causing greenery in the generated background).
+      console.log('[BG] Fetching background image for static mode...');
       const bgFetchResponse = await fetch(resolvedBackgroundUrl);
       if (!bgFetchResponse.ok) {
         throw new Error(`Failed to fetch background image: ${bgFetchResponse.status}`);
@@ -467,14 +467,8 @@ serve(async (req) => {
       const bgBuffer = await bgFetchResponse.arrayBuffer();
       const bgContentType = bgFetchResponse.headers.get('content-type') || 'image/jpeg';
       const bgBlob = new Blob([bgBuffer], { type: bgContentType });
-      photoroomFormData.append('background.guidance.imageFile', bgBlob, 'background.jpg');
-      const guidanceScale = (scene.referenceScale || 0.95).toString();
-      photoroomFormData.append('background.guidance.scale', guidanceScale);
-      // IMPORTANT: Keep prompt minimal to prevent PhotoRoom from adding objects.
-      // The guidance image already shows what we want — the prompt just sets the mood.
-      const bgPrompt = 'empty car photography studio, no objects, no props';
-      photoroomFormData.append('background.prompt', bgPrompt);
-      console.log('[BG] Guidance mode — scale:', guidanceScale, ', prompt:', bgPrompt, ', size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
+      photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
+      console.log('[BG] Static background mode — size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
       // Determine shadow/reflection mode
       // If scene has photoroom_shadow_mode set, use it directly.
       // If scene has reflection_enabled but no shadow mode, use ai.soft for reflections.
