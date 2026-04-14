@@ -232,7 +232,7 @@ serve(async (req) => {
     const bgBuf = await bgFetchResp.arrayBuffer();
     const bgBlob = new Blob([bgBuf], { type: bgFetchResp.headers.get('content-type') || 'image/jpeg' });
     photoroomFormData.append('background.guidance.imageFile', bgBlob, 'background.jpg');
-    const guidanceScale = (scene.referenceScale || 0.85).toString();
+    const guidanceScale = (scene.referenceScale || 0.95).toString();
     photoroomFormData.append('background.guidance.scale', guidanceScale);
     // IMPORTANT: Keep prompt minimal to prevent PhotoRoom from adding objects.
     const bgPrompt = 'empty car photography studio, no objects, no props';
