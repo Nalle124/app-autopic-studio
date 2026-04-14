@@ -233,6 +233,8 @@ serve(async (req) => {
     const bgBuf = await bgFetchResp.arrayBuffer();
     const bgBlob = new Blob([bgBuf], { type: bgFetchResp.headers.get('content-type') || 'image/jpeg' });
     photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
+    // Fallback color for any transparent areas in the background PNG (JPG doesn't support transparency)
+    photoroomFormData.append('background.color', 'white');
     
     // Determine shadow/reflection mode
     let effectiveShadowMode = scene.shadowMode || 'none';
