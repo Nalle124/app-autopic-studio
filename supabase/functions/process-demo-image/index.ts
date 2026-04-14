@@ -235,18 +235,24 @@ serve(async (req) => {
     // Override any PNG transparency so export.format=jpg doesn't conflict
     photoroomFormData.append('background.color', 'white');
     
-    const shadowMode = scene.shadowMode || 'none';
-    if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
-      photoroomFormData.append('shadow.mode', shadowMode);
+    // Determine shadow/reflection mode
+    let effectiveShadowMode = scene.shadowMode || 'none';
+    const sceneReflectionEnabled = scene.reflectionPreset?.enabled === true;
+    if (effectiveShadowMode === 'none' && sceneReflectionEnabled) {
+      effectiveShadowMode = 'ai.soft';
+    }
+    const hasShadowOrReflection = effectiveShadowMode !== 'none' && effectiveShadowMode.startsWith('ai.');
+    if (hasShadowOrReflection) {
+      photoroomFormData.append('shadow.mode', effectiveShadowMode);
     }
     
-    // Use asymmetric padding + bottom alignment to ground the car
+    // Padding + vertical alignment
     if (autoCrop) {
       photoroomFormData.append('padding', autoCropPadding);
     } else {
       const padValue = orientation === 'portrait' ? '0.08' : '0.10';
       photoroomFormData.append('padding', padValue);
-      photoroomFormData.append('paddingBottom', '0.02');
+      photoroomFormData.append('paddingBottom', hasShadowOrReflection ? '0.05' : '0.02');
       photoroomFormData.append('verticalAlignment', 'bottom');
     }
     photoroomFormData.append('scaling', 'fit');
