@@ -304,10 +304,12 @@ serve(async (req) => {
       autoCrop,
       autoCropPadding,
       referenceBox: autoCrop ? 'subjectBox' : 'originalImage',
-      shadowMode,
+      effectiveShadowMode,
       relightEnabled,
       orientation,
       outputSize,
+      guidanceScale,
+      bgPrompt,
       referenceScale: scene.referenceScale,
       params: prParams,
     }));
