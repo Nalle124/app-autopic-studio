@@ -464,7 +464,9 @@ serve(async (req) => {
       const bgContentType = bgFetchResponse.headers.get('content-type') || 'image/jpeg';
       const bgBlob = new Blob([bgBuffer], { type: bgContentType });
       photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
-      console.log('[BG] Background sent as imageFile, size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
+      // Override any PNG transparency so export.format=jpg doesn't conflict
+      photoroomFormData.append('background.color', 'white');
+      console.log('[BG] Background sent as imageFile, size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB, type:', bgContentType);
       const shadowMode = scene.shadowMode || 'none';
       if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
         photoroomFormData.append('shadow.mode', shadowMode);
