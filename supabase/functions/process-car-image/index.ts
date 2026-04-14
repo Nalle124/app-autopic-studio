@@ -185,11 +185,11 @@ serve(async (req) => {
       );
     }
 
-    // Validate image file
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedMimeTypes.includes(imageFile.type)) {
+    // Validate image file — accept any image/* type (PhotoRoom validates further)
+    // Also accept empty type since some browsers/canvas blobs may not set it
+    if (imageFile.type && !imageFile.type.startsWith('image/')) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid image type. Allowed: JPEG, PNG, WebP' }),
+        JSON.stringify({ success: false, error: 'Invalid file type. Only images are allowed.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
