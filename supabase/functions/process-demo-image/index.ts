@@ -243,31 +243,9 @@ serve(async (req) => {
     console.log('[DEMO] Processing with Photoroom...');
     
     const photoroomFormData = new FormData();
+    // Direct composite — no AI generation, car cut out and placed on reference background directly.
     photoroomFormData.append('imageUrl', originalImageUrl);
-    photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
-    
-    const referenceScale = scene.referenceScale ?? 0.7;
-    photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-    const basePrompt = scene.aiPrompt ||
-      `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
-      `Realistic scale, perspective and lighting for professional automotive photography.`;
-
-    const orientationHint = orientation === 'portrait'
-      ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
-      : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
-
-    // Always enforce enclosed studio — prevents PhotoRoom from hallucinating windows/outdoor views
-    const studioConstraint = 'Completely enclosed professional photography studio. ' +
-      'No windows, no openings, no outdoor views, no sky, no trees, no buildings visible anywhere. ' +
-      'Sealed solid studio walls only.';
-
-    const prompt = `${basePrompt} ${orientationHint} ${studioConstraint}`;
-    photoroomFormData.append('background.prompt', prompt);
-
-    photoroomFormData.append(
-      'background.negativePrompt',
-      'floating car, flying car, distorted, blurry'
-    );
+    photoroomFormData.append('background.imageUrl', backgroundImageUrl);
     
     const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {

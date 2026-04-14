@@ -452,28 +452,12 @@ serve(async (req) => {
         }
       }
 
-      photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
-      const referenceScale = scene.referenceScale ?? 0.7;
-      photoroomFormData.append('background.guidance.scale', referenceScale.toString());
-      console.log('Reference scale:', referenceScale);
-
-      const basePrompt = scene.aiPrompt ||
-        `Place the vehicle horizontally centered and resting on the ground with tires touching the floor. ` +
-        `Realistic scale, perspective and lighting for professional automotive photography.`;
-
-      const orientationHint = orientation === 'portrait'
-        ? 'Vertical image: keep the entire vehicle visible with extra headroom; place the vehicle in the lower half of the frame.'
-        : 'Horizontal image: keep the entire vehicle visible; place it centered and grounded.';
-
-      // Always enforce enclosed studio — prevents PhotoRoom from hallucinating windows/outdoor views
-      const studioConstraint = 'Completely enclosed professional photography studio. ' +
-        'No windows, no openings, no outdoor views, no sky, no trees, no buildings visible anywhere. ' +
-        'Sealed solid studio walls only.';
-
-      const prompt = `${basePrompt} ${orientationHint} ${studioConstraint}`;
-      photoroomFormData.append('background.prompt', prompt);
-
-      console.log('Using prompt:', prompt);
+      // Direct composite — place car exactly on reference background, no AI generation.
+      // Using background.imageUrl instead of background.guidance.imageUrl ensures PhotoRoom
+      // cuts out the car and places it on the reference image without interpreting
+      // the car's reflections/colors to generate a new background.
+      photoroomFormData.append('background.imageUrl', resolvedBackgroundUrl);
+      console.log('Using direct background composite (no AI generation):', resolvedBackgroundUrl.substring(0, 80));
       const shadowMode = scene.shadowMode || 'none';
       if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
         photoroomFormData.append('shadow.mode', shadowMode);
