@@ -467,25 +467,40 @@ serve(async (req) => {
       // Override any PNG transparency so export.format=jpg doesn't conflict
       photoroomFormData.append('background.color', 'white');
       console.log('[BG] Background sent as imageFile, size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB, type:', bgContentType);
-      const shadowMode = scene.shadowMode || 'none';
-      if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
-        photoroomFormData.append('shadow.mode', shadowMode);
-        console.log('Adding PhotoRoom shadow:', shadowMode);
+      // Determine shadow/reflection mode
+      // If scene has photoroom_shadow_mode set, use it directly.
+      // If scene has reflection_enabled but no shadow mode, use ai.soft for reflections.
+      let effectiveShadowMode = scene.shadowMode || 'none';
+      const sceneReflectionEnabled = scene.reflectionPreset?.enabled === true;
+      if (effectiveShadowMode === 'none' && sceneReflectionEnabled) {
+        effectiveShadowMode = 'ai.soft';
+        console.log('Scene has reflection enabled, adding ai.soft shadow for ground reflection');
+      }
+      const hasShadowOrReflection = effectiveShadowMode !== 'none' && effectiveShadowMode.startsWith('ai.');
+      if (hasShadowOrReflection) {
+        photoroomFormData.append('shadow.mode', effectiveShadowMode);
+        console.log('Adding PhotoRoom shadow/reflection:', effectiveShadowMode);
       }
     
-      // Use asymmetric padding + bottom alignment to ground the car
+      // Padding + vertical alignment
+      // Give more bottom padding when shadow/reflection is active so PhotoRoom has room
       if (autoCrop) {
         photoroomFormData.append('padding', autoCropPadding);
       } else {
         const padValue = orientation === 'portrait' ? '0.08' : '0.10';
         photoroomFormData.append('padding', padValue);
-        photoroomFormData.append('paddingBottom', '0.02');
+        if (hasShadowOrReflection) {
+          // Let PhotoRoom handle vertical placement naturally for shadow/reflection
+          photoroomFormData.append('paddingBottom', '0.05');
+        } else {
+          photoroomFormData.append('paddingBottom', '0.02');
+        }
         photoroomFormData.append('verticalAlignment', 'bottom');
       }
 
       photoroomFormData.append('scaling', 'fit');
       photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
-      console.log(`Auto-crop requested: ${autoCrop}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
+      console.log(`Auto-crop: ${autoCrop}, shadow: ${effectiveShadowMode}, reflection: ${sceneReflectionEnabled}`);
     
       if (relightEnabled) {
         photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
