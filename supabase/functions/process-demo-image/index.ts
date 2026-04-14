@@ -216,39 +216,23 @@ serve(async (req) => {
 
     console.log(`[DEMO] Processing image for scene: ${scene.name}`);
 
-    // Step 1: Upload original image to storage to get a URL
+    // Step 1: Read image into buffer and send directly as imageFile (matches process-car-image)
     const imageBuffer = await imageFile.arrayBuffer();
-    uploadFilename = `demo-temp/${crypto.randomUUID()}-original.${imageFile.name.split('.').pop()}`;
-    
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('processed-cars')
-      .upload(uploadFilename, imageBuffer, {
-        contentType: imageFile.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}`);
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from('processed-cars')
-      .getPublicUrl(uploadFilename);
-
-    const originalImageUrl = publicUrlData.publicUrl;
-    console.log('[DEMO] Original image uploaded:', originalImageUrl);
+    const imageBlob = new Blob([imageBuffer], { type: imageFile.type });
+    console.log(`[DEMO] Image size: ${(imageBuffer.byteLength / 1024 / 1024).toFixed(2)}MB`);
 
     // Step 2: Process with Photoroom's AI Background API
     console.log('[DEMO] Processing with Photoroom...');
     
     const photoroomFormData = new FormData();
-    // Direct background placement via imageFile — original working approach.
+    // Send car image as imageFile (consistent with process-car-image)
+    photoroomFormData.append('imageFile', imageBlob, imageFile.name);
+
+    // Fetch background and send as imageFile (static background, no AI generation)
     const bgFetchResp = await fetch(backgroundImageUrl);
     if (!bgFetchResp.ok) throw new Error(`Failed to fetch background: ${bgFetchResp.status}`);
     const bgBuf = await bgFetchResp.arrayBuffer();
     const bgBlob = new Blob([bgBuf], { type: bgFetchResp.headers.get('content-type') || 'image/jpeg' });
-    photoroomFormData.append('imageUrl', originalImageUrl);
     photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
     
     const shadowMode = scene.shadowMode || 'none';
@@ -259,23 +243,64 @@ serve(async (req) => {
     const paddingValue = autoCrop ? autoCropPadding : (orientation === 'portrait' ? '0.08' : '0.10');
     photoroomFormData.append('padding', paddingValue);
     photoroomFormData.append('scaling', 'fit');
-    photoroomFormData.append('referenceBox', 'originalImage');
+    photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
     
     if (relightEnabled) {
       photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
     }
     
-    const outputSize = orientation === 'portrait' ? '2048x3072' : '3072x2048';
+    // Dynamic output size matching process-car-image logic
+    const maxWidth = 2500;
+    const maxHeight = 2500;
+    let outputWidth: number;
+    let outputHeight: number;
+
+    // Demo doesn't get original dimensions from client, use fixed aspect
+    if (orientation === 'portrait') {
+      outputWidth = 2048;
+      outputHeight = 3072;
+    } else {
+      outputWidth = 3072;
+      outputHeight = 2048;
+    }
+    // Cap to max
+    if (outputWidth > maxWidth) { const r = maxWidth / outputWidth; outputWidth = maxWidth; outputHeight = Math.round(outputHeight * r); }
+    if (outputHeight > maxHeight) { const r = maxHeight / outputHeight; outputHeight = maxHeight; outputWidth = Math.round(outputWidth * r); }
+
+    const outputSize = `${outputWidth}x${outputHeight}`;
     photoroomFormData.append('outputSize', outputSize);
 
     photoroomFormData.append('export.format', 'jpg');
     photoroomFormData.append('export.quality', '90');
+
+    // === DETAILED PHOTOROOM REQUEST LOG ===
+    const prParams: Record<string, string> = {};
+    for (const [key, value] of photoroomFormData.entries()) {
+      if (value instanceof Blob) {
+        prParams[key] = `[Blob ${(value.size / 1024).toFixed(0)}KB ${value.type}]`;
+      } else {
+        prParams[key] = String(value);
+      }
+    }
+    console.log('[PHOTOROOM-REQUEST]', JSON.stringify({
+      flow: 'process-demo-image',
+      sceneId: scene.id,
+      sceneName: scene.name,
+      autoCrop,
+      autoCropPadding,
+      referenceBox: autoCrop ? 'subjectBox' : 'originalImage',
+      shadowMode,
+      relightEnabled,
+      orientation,
+      outputSize,
+      referenceScale: scene.referenceScale,
+      params: prParams,
+    }));
     
     const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
       headers: {
         'x-api-key': PHOTOROOM_API_KEY,
-        // Use default stable model (v3) — beta model generates unwanted windows/outdoor elements
       },
       body: photoroomFormData,
     });
