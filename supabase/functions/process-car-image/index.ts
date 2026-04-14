@@ -468,6 +468,8 @@ serve(async (req) => {
       const bgContentType = bgFetchResponse.headers.get('content-type') || 'image/jpeg';
       const bgBlob = new Blob([bgBuffer], { type: bgContentType });
       photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
+      // Fallback color for any transparent areas in the background PNG (JPG doesn't support transparency)
+      photoroomFormData.append('background.color', 'white');
       console.log('[BG] Static background mode — size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
       // Determine shadow/reflection mode
       // If scene has photoroom_shadow_mode set, use it directly.
