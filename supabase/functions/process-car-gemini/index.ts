@@ -1,17 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 /**
  * POC: Gemini-based car composite pipeline
  * 
  * Flow:
  * 1. PhotoRoom → remove background only (transparent PNG)
- * 2. Gemini → composite car onto chosen background with realistic placement
- * 
- * This avoids PhotoRoom's guidance mode contamination from car reflections
- * while getting intelligent AI-driven placement from Gemini.
+ * 2. Upload transparent car to storage (get URL)
+ * 3. Gemini → composite car onto chosen background using URLs (not base64)
  */
 
 serve(async (req) => {
@@ -58,12 +55,12 @@ serve(async (req) => {
     
     const bgRemovalForm = new FormData();
     bgRemovalForm.append('imageFile', imageBlob, imageFile.name);
-    // No background params = transparent output
     bgRemovalForm.append('export.format', 'png');
     bgRemovalForm.append('export.quality', '100');
-    // Keep original aspect ratio and don't add padding
     bgRemovalForm.append('padding', '0');
     bgRemovalForm.append('scaling', 'fit');
+    // Keep output small to save memory — Gemini doesn't need huge resolution
+    bgRemovalForm.append('outputSize', '1024x1024');
     
     const bgRemovalResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
@@ -78,22 +75,35 @@ serve(async (req) => {
     }
 
     const transparentCarBuffer = await bgRemovalResponse.arrayBuffer();
-    const transparentCarBase64 = base64Encode(new Uint8Array(transparentCarBuffer));
     console.log(`[GEMINI-POC] Step 1 done: transparent car ${(transparentCarBuffer.byteLength / 1024).toFixed(0)}KB`);
 
     // ═══════════════════════════════════════════════════════
-    // STEP 2: Fetch background image
+    // STEP 2: Upload transparent car to storage to get a URL
     // ═══════════════════════════════════════════════════════
-    console.log('[GEMINI-POC] Step 2: Fetching background image...');
-    const bgResponse = await fetch(backgroundUrl);
-    if (!bgResponse.ok) throw new Error(`Failed to fetch background: ${bgResponse.status}`);
-    const bgBuffer = await bgResponse.arrayBuffer();
-    const bgBase64 = base64Encode(new Uint8Array(bgBuffer));
-    const bgContentType = bgResponse.headers.get('content-type') || 'image/jpeg';
-    console.log(`[GEMINI-POC] Step 2 done: background ${(bgBuffer.byteLength / 1024).toFixed(0)}KB`);
+    const carCutoutPath = `gemini-poc/cutout-${crypto.randomUUID()}.png`;
+    const { error: cutoutUploadError } = await supabase.storage
+      .from('processed-cars')
+      .upload(carCutoutPath, transparentCarBuffer, {
+        contentType: 'image/png',
+        upsert: false,
+      });
+
+    if (cutoutUploadError) {
+      throw new Error(`Cutout upload failed: ${cutoutUploadError.message}`);
+    }
+
+    const { data: cutoutUrlData } = supabase.storage
+      .from('processed-cars')
+      .getPublicUrl(carCutoutPath);
+
+    const cutoutUrl = cutoutUrlData.publicUrl;
+    console.log(`[GEMINI-POC] Step 2 done: cutout at ${cutoutUrl}`);
+
+    // Free memory
+    // transparentCarBuffer is no longer needed
 
     // ═══════════════════════════════════════════════════════
-    // STEP 3: Gemini — Composite car into scene
+    // STEP 3: Gemini — Composite car into scene (using URLs)
     // ═══════════════════════════════════════════════════════
     console.log('[GEMINI-POC] Step 3: Compositing with Gemini...');
 
@@ -112,7 +122,7 @@ YOUR TASK:
 CRITICAL RULES:
 - Do NOT alter the car's appearance, color, shape, or any details whatsoever
 - Do NOT add any objects, props, people, or decorations to the scene
-- Do NOT change the background scene — use it exactly as provided
+- Do NOT change the background scene — use it exactly as provided  
 - The final image should look like a professional car photography shot
 - Keep the scene clean and minimal — this is for automotive advertising
 - The output should be ${orientation === 'portrait' ? 'portrait orientation' : 'landscape orientation'}`;
@@ -130,14 +140,8 @@ CRITICAL RULES:
             role: 'user',
             content: [
               { type: 'text', text: compositePrompt },
-              {
-                type: 'image_url',
-                image_url: { url: `data:image/png;base64,${transparentCarBase64}` }
-              },
-              {
-                type: 'image_url',
-                image_url: { url: `data:${bgContentType};base64,${bgBase64}` }
-              }
+              { type: 'image_url', image_url: { url: cutoutUrl } },
+              { type: 'image_url', image_url: { url: backgroundUrl } }
             ]
           }
         ],
@@ -148,12 +152,8 @@ CRITICAL RULES:
     if (!geminiResponse.ok) {
       const errText = await geminiResponse.text();
       console.error('[GEMINI-POC] Gemini error:', geminiResponse.status, errText);
-      if (geminiResponse.status === 429) {
-        throw new Error('AI rate limit exceeded. Please try again in a moment.');
-      }
-      if (geminiResponse.status === 402) {
-        throw new Error('AI credits exhausted. Please add funds.');
-      }
+      if (geminiResponse.status === 429) throw new Error('AI rate limit exceeded.');
+      if (geminiResponse.status === 402) throw new Error('AI credits exhausted.');
       throw new Error(`Gemini compositing failed: ${geminiResponse.status}`);
     }
 
@@ -161,7 +161,8 @@ CRITICAL RULES:
     const generatedImageUrl = geminiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!generatedImageUrl) {
-      console.error('[GEMINI-POC] No image in Gemini response:', JSON.stringify(geminiData).slice(0, 500));
+      const textReply = geminiData.choices?.[0]?.message?.content || '';
+      console.error('[GEMINI-POC] No image in response. Text:', textReply.slice(0, 300));
       throw new Error('Gemini did not return an image');
     }
 
@@ -170,25 +171,19 @@ CRITICAL RULES:
     // ═══════════════════════════════════════════════════════
     // STEP 4: Upload final result
     // ═══════════════════════════════════════════════════════
-    console.log('[GEMINI-POC] Step 4: Uploading final image...');
-
-    // Extract base64 data from data URL
     const base64Match = generatedImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
-    if (!base64Match) {
-      throw new Error('Invalid image data from Gemini');
-    }
+    if (!base64Match) throw new Error('Invalid image data from Gemini');
 
-    const imgFormat = base64Match[1]; // png, jpeg, etc.
+    const imgFormat = base64Match[1];
     const imgBase64Data = base64Match[2];
-    
-    // Decode base64 to binary
     const binaryStr = atob(imgBase64Data);
     const bytes = new Uint8Array(binaryStr.length);
     for (let i = 0; i < binaryStr.length; i++) {
       bytes[i] = binaryStr.charCodeAt(i);
     }
 
-    const finalFilename = `gemini-poc/${crypto.randomUUID()}.${imgFormat === 'jpeg' ? 'jpg' : imgFormat}`;
+    const ext = imgFormat === 'jpeg' ? 'jpg' : imgFormat;
+    const finalFilename = `gemini-poc/${crypto.randomUUID()}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from('processed-cars')
       .upload(finalFilename, bytes.buffer, {
@@ -196,10 +191,7 @@ CRITICAL RULES:
         upsert: false,
       });
 
-    if (uploadError) {
-      console.error('[GEMINI-POC] Upload error:', uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}`);
-    }
+    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
     const { data: publicUrlData } = supabase.storage
       .from('processed-cars')
@@ -208,10 +200,14 @@ CRITICAL RULES:
     const totalTime = Date.now() - startTime;
     console.log(`[GEMINI-POC] ✅ Complete in ${(totalTime / 1000).toFixed(1)}s — ${publicUrlData.publicUrl}`);
 
+    // Clean up cutout (fire and forget)
+    supabase.storage.from('processed-cars').remove([carCutoutPath]).catch(() => {});
+
     return new Response(
       JSON.stringify({
         success: true,
         finalUrl: publicUrlData.publicUrl,
+        cutoutUrl,
         pipeline: 'gemini-composite',
         processingTimeMs: totalTime,
       }),
