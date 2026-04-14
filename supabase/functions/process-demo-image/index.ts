@@ -232,9 +232,10 @@ serve(async (req) => {
     const bgBuf = await bgFetchResp.arrayBuffer();
     const bgBlob = new Blob([bgBuf], { type: bgFetchResp.headers.get('content-type') || 'image/jpeg' });
     photoroomFormData.append('background.guidance.imageFile', bgBlob, 'background.jpg');
-    const guidanceScale = (scene.referenceScale || 0.7).toString();
+    const guidanceScale = (scene.referenceScale || 0.85).toString();
     photoroomFormData.append('background.guidance.scale', guidanceScale);
-    const bgPrompt = scene.aiPrompt || scene.name || 'professional car photography studio';
+    // IMPORTANT: Keep prompt minimal to prevent PhotoRoom from adding objects.
+    const bgPrompt = 'empty car photography studio, no objects, no props';
     photoroomFormData.append('background.prompt', bgPrompt);
     
     // Determine shadow/reflection mode

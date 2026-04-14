@@ -468,9 +468,11 @@ serve(async (req) => {
       const bgContentType = bgFetchResponse.headers.get('content-type') || 'image/jpeg';
       const bgBlob = new Blob([bgBuffer], { type: bgContentType });
       photoroomFormData.append('background.guidance.imageFile', bgBlob, 'background.jpg');
-      const guidanceScale = (scene.referenceScale || 0.7).toString();
+      const guidanceScale = (scene.referenceScale || 0.85).toString();
       photoroomFormData.append('background.guidance.scale', guidanceScale);
-      const bgPrompt = scene.aiPrompt || scene.name || 'professional car photography studio';
+      // IMPORTANT: Keep prompt minimal to prevent PhotoRoom from adding objects.
+      // The guidance image already shows what we want — the prompt just sets the mood.
+      const bgPrompt = 'empty car photography studio, no objects, no props';
       photoroomFormData.append('background.prompt', bgPrompt);
       console.log('[BG] Guidance mode — scale:', guidanceScale, ', prompt:', bgPrompt, ', size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
       // Determine shadow/reflection mode
