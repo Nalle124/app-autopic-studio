@@ -1,99 +1,139 @@
 
-Mål: få tillbaka ett stabilt PhotoRoom-flöde där galleribilden styr bakgrunden tydligt och originalbildens bakgrundsbrus inte påverkar resultatet.
+Mål: komma till botten med varför vissa bilder fortfarande får hallucinerade objekt i studio-bakgrunder, trots att tjänsten historiskt fungerat bättre.
 
-Det jag nu bedömer som trolig rotorsak:
-- Scen-datan för NetGrey Light, NetGrey Dark, Anthracite Studio och Vit Kakel ser rimlig ut i databasen:
-  - `reference_scale = 0.85`
-  - tydliga “inga objekt”-prompts
-  - korrekta referens-URL:er
-- Problemet verkar i stället uppstå i själva requesten till PhotoRoom.
-- Jag kunde se en live-request där appen skickar:
-  - `autoCrop=true`
-  - `autoCropPadding=0.12`
-  - vilket i edge-funktionen blir `referenceBox=subjectBox`
-- Samtidigt komprimeras uppladdade bilder i klienten nästan alltid till JPEG och skalas ofta ner till max ca `3500px` innan de skickas.
-- För V2 sätts dessutom auto-crop till `standard` som default vid reset/start over.
+Det jag nu vet efter att ha jämfört kod, databas och tidigare historik:
 
-Min slutsats:
-- Ni kör inte längre ett “rent referensflöde” i praktiken.
-- Kombinationen av:
-  - client-side JPEG-komprimering/nedskalning
-  - `autoCrop=true`
-  - `referenceBox=subjectBox`
-  - relativt generös crop-padding (`0.12`)
-  - fast seed
-  gör att vissa bilder konsekvent beter sig fel, särskilt de med stökig originalbakgrund.
-- Det förklarar också varför vissa bilder alltid blir dåliga medan andra blir perfekta.
-
-Plan för fix:
-
-1. Återställ ett renare PhotoRoom-anrop för exterior
-- I `process-car-image` ska studio-/referensflödet inte längre automatiskt växla till `referenceBox=subjectBox` bara för att auto-crop är på.
-- Jag vill införa ett tydligt, konservativt standardläge för studios:
-  - `referenceBox=originalImage`
-  - låg och stabil padding
-  - behåll guidance-bilden och enkel prompt
-- Auto-crop ska inte få styra bakgrundsgenereringen för dessa scener.
-
-2. Begränsa auto-crop till där det faktiskt hjälper
-- För studio-kategorier (`studio-basic`, `studio-light`, `studio-dark`, `studio-colored`) ska vi stänga av eller kraftigt begränsa auto-crop i PhotoRoom-requesten.
-- Om auto-crop ska finnas kvar i V2 ska det bara användas för slutkomposition/layout när det verkligen behövs, inte som standard för bakgrundsgenerering.
-- Jag kommer särskilt justera V2 där `autoCropMode` idag återställs till `standard` som default.
-
-3. Sluta försämra input-bilden i onödan före PhotoRoom
-- I `src/pages/Index.tsx` komprimeras originalbilden nästan alltid till JPEG och ofta ner till max 3500 px.
-- Jag kommer ändra detta så exterior-bilder i normalfallet skickas med högre fidelity:
-  - mindre aggressiv eller villkorad komprimering
-  - behåll originalfil när storleken redan är rimlig
-  - undvik onödig JPG-konvertering för bilder som redan är bra
-- Målet är att PhotoRoom ska få ett renare subject-underlag.
-
-4. Justera seed-strategin
-- Idag används samma fasta `PROCESSING_SEED` för alla körningar.
-- Jag kommer verifiera om detta låser fast dåliga utfall för vissa bildtyper och byta till en säkrare strategi:
-  - antingen ingen seed alls för studioflödet
-  - eller seed per jobb/bild i stället för global konstant
-- Det minskar risken att samma “felaktiga tolkning” återkommer på samma typer av bilder.
-
-5. Behåll guidance strikt och enkel
-- Jag kommer inte gå över till statisk bakgrund.
-- I stället behåller vi:
+1. Den aktiva logiken idag skiljer sig tydligt från den äldre “fungerade bättre”-perioden
+- Tidigare fungerande spår i historiken använde PhotoRooms AI-guidance-flöde:
   - `background.guidance.imageUrl`
   - `background.guidance.scale`
-  - enkel scenprompt
-  - `background.expandPrompt.mode = 'ai.never'`
-- Men jag tar bort andra request-detaljer som stör referensstyrningen.
+  - kort prompt
+- Nuvarande kod i både `process-car-image` och `process-demo-image` använder i stället:
+  - `background.imageFile`
+  - ingen `background.guidance.scale`
+  - ingen `background.prompt`
+  - ingen `background.guidance.imageUrl`
 
-6. Gör demo- och produktionsflödet identiska
-- `process-demo-image` och `process-car-image` ska harmoniseras fullt så att de beter sig lika.
-- Samma regler för:
-  - reference box
-  - padding
-  - seed
-  - prompt
-  - output settings
+Det betyder att kommunikationen med PhotoRoom faktiskt har ändrats ganska mycket jämfört med för några veckor sedan.
 
-7. Verifiera mot de faktiska problembilderna
-- Efter implementation ska vi testa just de bilder som återkommande fallerar:
-  - NetGrey Light
-  - NetGrey Dark
-  - Anthracite Studio
-  - Vit Kakel
-- Förväntat resultat:
-  - inga nya objekt i bakgrunden
-  - ingen “bleed-through” från originalbakgrunden
-  - naturlig placering av bilen
-  - tydlig likhet med vald gallery-scen
+2. `reference_scale` är just nu i praktiken inte styrande
+Jag kontrollerade både koden och databasen:
+- Studio-scenerna du nämnt ligger nu på `reference_scale = 0.85`
+- Exempel:
+  - NetGrey Dark: `0.85`
+  - NetGrey Light: `0.85`
+  - Anthracite Studio: `0.85`
+  - Vit Kakel: `0.85`
 
-Tekniska ändringar:
+Men i nuvarande backend skickas inte `background.guidance.scale` alls i exterior-flödet. Så att ändra `reference_scale` i databasen påverkar just nu inte PhotoRoom-anropet för dessa bilder.
+
+3. Alla bakgrunder är alltså inte “olika kalibrerade” just nu
+- De aktuella studio-kategorierna verkar i stort sett ligga på samma nivå: `0.85`
+- Men viktigare: den nivån används inte i nuvarande request
+- Så problemet är mer sannolikt request-struktur / aktiv kodväg än själva scene-värdena
+
+4. Det finns flera inkonsekventa kodvägar som kan förklara varför vissa bilder blir bra och andra dåliga
+Jag hittade flera skillnader:
+- `process-car-image` skickar huvudbilden som `imageFile`
+- `process-demo-image` skickar huvudbilden som `imageUrl`
+- V2 batch-flödet skickar fortfarande `autoCrop` + `autoCropPadding`
+- V2 single-image-flödet pre-croppar lokalt först
+- classic / demo / v2 använder inte exakt samma väg
+
+Det gör att två bilder kan nå PhotoRoom med olika framing, olika subject box och olika inputtyp, även om användaren upplever “samma scen”.
+
+5. En väldigt konkret möjlig felkälla: `referenceBox`
+I `process-car-image` används:
+```text
+referenceBox = subjectBox när autoCrop = true
+referenceBox = originalImage när autoCrop = false
+```
+PhotoRooms docs säger att `referenceBox` styr om padding/margin räknas runt den croppade subject-boxen eller runt originalbilden. Det kan ge olika framing mellan bilder och bidra till att vissa motiv behandlas annorlunda.
+
+6. En annan konkret möjlig felkälla: PhotoRoom-shadow skiljer sig per scen
+De problematiska NetGrey-scenerna använder `photoroom_shadow_mode = ai.soft`, medan t.ex. Anthracite/Vit Kakel ligger på `none`.
+Det är inte min huvudmisstanke, men det är en verklig skillnad mellan scenerna som kan påverka hur mycket PhotoRoom “tolkar” bilden.
+
+7. PhotoRoom-dokumentationen bekräftar två viktiga saker
+- `background.guidance.scale` fungerar bara för nya guidance-modellen
+- `background.negativePrompt` är legacy och gäller bara modellversion `2`
+- `background.imageFile` och `background.prompt` får inte kombineras
+- `background.imageFile` är tänkt som statisk bakgrund, inte guidance
+
+Detta stärker slutsatsen att problemet sannolikt sitter i att vi har bytt renderingsstrategi, men fortfarande har flera rörliga parametrar runt framing/crop/inputtyp.
+
+Do I know what the issue is?
+Ja, tillräckligt för att isolera huvudproblemet:
+- Det största felet just nu är inte att `reference_scale` är fel satt.
+- Det största felet är att nuvarande exterior-flöde inte längre använder samma PhotoRoom-läge som när det fungerade bättre, samtidigt som flera klientvägar fortfarande skickar olika crop/framing-signaler.
+- Med andra ord: PhotoRoom får sannolikt inte “för mycket prompt-data”, men det får inkonsekvent och delvis förändrad strukturell data.
+
+Min plan för nästa implementation:
+
+1. Lås exterior-flödet till en enda sann requeststruktur
+Filer:
 - `supabase/functions/process-car-image/index.ts`
 - `supabase/functions/process-demo-image/index.ts`
-- `src/pages/Index.tsx`
-- `src/pages/AutopicV2.tsx`
 - `src/components/v2/V2GenerateStep.tsx`
-- eventuellt `src/pages/TryV2.tsx` om samma default-beteende finns där
+- `src/pages/Index.tsx`
+- `src/pages/Demo.tsx`
 
-Varför jag tror detta är rätt riktning:
-- De rapporterade scenerna i databasen ser inte trasiga ut.
-- Live-requesten visar däremot att flödet fortfarande skickar parametrar som gör anropet mer “tolkande” än du vill.
-- Det stämmer med din observation: vissa bilder fallerar konsekvent, vilket tyder mer på input-/request-beteende än på scenprompten i sig.
+Jag kommer att:
+- säkerställa att alla exterior-flöden använder samma PhotoRoom-inputmodell
+- eliminera skillnader mellan classic / demo / V2 batch / V2 single
+- välja antingen konsekvent `imageFile` eller konsekvent `imageUrl` för huvudbilden i alla flöden
+
+2. Instrumentera exakt vad som faktiskt skickas till PhotoRoom
+Jag kommer lägga in tydlig loggning per bild för:
+- scene id
+- resolved background URL
+- bakgrundsfilens storlek/content-type
+- autoCrop
+- referenceBox
+- padding
+- shadow.mode
+- lighting.mode
+- outputSize
+- vilken klientväg som kallade funktionen
+
+Detta behövs för att jämföra en “bra” och en “dålig” bild svart på vitt.
+
+3. Köra minimal A/B-struktur i exterior-flödet
+Jag kommer isolera två requestprofiler:
+```text
+Profil A: minimal static replacement
+- imageFile
+- background.imageFile
+- removeBackground default
+- padding
+- scaling
+- utan extra relight/shadow där möjligt
+
+Profil B: samma som idag
+- med shadow/relight/referenceBox-logik
+```
+Om A blir stabil men B inte, vet vi exakt vilken parametergrupp som orsakar artefakterna.
+
+4. Återställa närmare det historiskt fungerande läget om testerna pekar dit
+Om loggarna visar att static mode inte är roten, går jag tillbaka till ett rent guidance-test som matchar äldre beteende bättre:
+- `background.guidance.imageUrl` eller `background.guidance.imageFile`
+- `background.guidance.scale`
+- kort prompt
+- utan legacy-fält
+- samma struktur för alla klientvägar
+
+Detta blir då en kontrollerad återgång, inte fler gissningar.
+
+5. Verifiera att rätt bakgrundsasset faktiskt används
+Jag kommer även kontrollera att:
+- `full_res_url` för scenen verkligen är samma asset som användaren ser i galleriet
+- ingen annan background-asset hämtas i vissa vägar
+- ingen data-URI / temporär omväg ger annan bild än förväntat
+
+Tekniska detaljer som är viktigast för dig:
+- Ja, PhotoRoom-anropet har ändrats jämfört med tidigare fungerande versioner.
+- Nej, `reference_scale` styr inte det nuvarande exterior-resultatet trots att det finns i databasen.
+- Ja, studio-scenerna du nämner har i princip samma `reference_scale` nu.
+- Den mest sannolika rotorsaken är inkonsekvent requeststruktur mellan flera flöden, inte att bara en scenprompt eller en enskild bakgrund är “fel”.
+
+När du godkänner går jag vidare med exakt den här djupfixen: först standardisera requesten, sedan logga bra/dåliga fall, sedan isolera vilken parameter som gör att vissa bilder får objekt i bakgrunden.
