@@ -1,139 +1,45 @@
 
-Mål: komma till botten med varför vissa bilder fortfarande får hallucinerade objekt i studio-bakgrunder, trots att tjänsten historiskt fungerat bättre.
 
-Det jag nu vet efter att ha jämfört kod, databas och tidigare historik:
+## Problem
 
-1. Den aktiva logiken idag skiljer sig tydligt från den äldre “fungerade bättre”-perioden
-- Tidigare fungerande spår i historiken använde PhotoRooms AI-guidance-flöde:
-  - `background.guidance.imageUrl`
-  - `background.guidance.scale`
-  - kort prompt
-- Nuvarande kod i både `process-car-image` och `process-demo-image` använder i stället:
-  - `background.imageFile`
-  - ingen `background.guidance.scale`
-  - ingen `background.prompt`
-  - ingen `background.guidance.imageUrl`
+The current code sends the background via `background.imageFile`, which tells PhotoRoom to use it as a **static backdrop** — it just composites the car on top without any AI scene understanding. This is why the car isn't naturally placed/grounded in the scene.
 
-Det betyder att kommunikationen med PhotoRoom faktiskt har ändrats ganska mycket jämfört med för några veckor sedan.
+The previously working version used `background.guidance.imageFile` (or `imageUrl`) + `background.guidance.scale` + a short `background.prompt`, which activates PhotoRoom's **AI scene generation mode**. In this mode, PhotoRoom uses the reference image as a visual guide and generates a scene that naturally integrates the car with correct perspective, grounding, shadows, and reflections.
 
-2. `reference_scale` är just nu i praktiken inte styrande
-Jag kontrollerade både koden och databasen:
-- Studio-scenerna du nämnt ligger nu på `reference_scale = 0.85`
-- Exempel:
-  - NetGrey Dark: `0.85`
-  - NetGrey Light: `0.85`
-  - Anthracite Studio: `0.85`
-  - Vit Kakel: `0.85`
+## Plan
 
-Men i nuvarande backend skickas inte `background.guidance.scale` alls i exterior-flödet. Så att ändra `reference_scale` i databasen påverkar just nu inte PhotoRoom-anropet för dessa bilder.
+### 1. Switch from static to guidance mode in both edge functions
 
-3. Alla bakgrunder är alltså inte “olika kalibrerade” just nu
-- De aktuella studio-kategorierna verkar i stort sett ligga på samma nivå: `0.85`
-- Men viktigare: den nivån används inte i nuvarande request
-- Så problemet är mer sannolikt request-struktur / aktiv kodväg än själva scene-värdena
+**Files:** `supabase/functions/process-car-image/index.ts`, `supabase/functions/process-demo-image/index.ts`
 
-4. Det finns flera inkonsekventa kodvägar som kan förklara varför vissa bilder blir bra och andra dåliga
-Jag hittade flera skillnader:
-- `process-car-image` skickar huvudbilden som `imageFile`
-- `process-demo-image` skickar huvudbilden som `imageUrl`
-- V2 batch-flödet skickar fortfarande `autoCrop` + `autoCropPadding`
-- V2 single-image-flödet pre-croppar lokalt först
-- classic / demo / v2 använder inte exakt samma väg
-
-Det gör att två bilder kan nå PhotoRoom med olika framing, olika subject box och olika inputtyp, även om användaren upplever “samma scen”.
-
-5. En väldigt konkret möjlig felkälla: `referenceBox`
-I `process-car-image` används:
-```text
-referenceBox = subjectBox när autoCrop = true
-referenceBox = originalImage när autoCrop = false
+Replace:
 ```
-PhotoRooms docs säger att `referenceBox` styr om padding/margin räknas runt den croppade subject-boxen eller runt originalbilden. Det kan ge olika framing mellan bilder och bidra till att vissa motiv behandlas annorlunda.
-
-6. En annan konkret möjlig felkälla: PhotoRoom-shadow skiljer sig per scen
-De problematiska NetGrey-scenerna använder `photoroom_shadow_mode = ai.soft`, medan t.ex. Anthracite/Vit Kakel ligger på `none`.
-Det är inte min huvudmisstanke, men det är en verklig skillnad mellan scenerna som kan påverka hur mycket PhotoRoom “tolkar” bilden.
-
-7. PhotoRoom-dokumentationen bekräftar två viktiga saker
-- `background.guidance.scale` fungerar bara för nya guidance-modellen
-- `background.negativePrompt` är legacy och gäller bara modellversion `2`
-- `background.imageFile` och `background.prompt` får inte kombineras
-- `background.imageFile` är tänkt som statisk bakgrund, inte guidance
-
-Detta stärker slutsatsen att problemet sannolikt sitter i att vi har bytt renderingsstrategi, men fortfarande har flera rörliga parametrar runt framing/crop/inputtyp.
-
-Do I know what the issue is?
-Ja, tillräckligt för att isolera huvudproblemet:
-- Det största felet just nu är inte att `reference_scale` är fel satt.
-- Det största felet är att nuvarande exterior-flöde inte längre använder samma PhotoRoom-läge som när det fungerade bättre, samtidigt som flera klientvägar fortfarande skickar olika crop/framing-signaler.
-- Med andra ord: PhotoRoom får sannolikt inte “för mycket prompt-data”, men det får inkonsekvent och delvis förändrad strukturell data.
-
-Min plan för nästa implementation:
-
-1. Lås exterior-flödet till en enda sann requeststruktur
-Filer:
-- `supabase/functions/process-car-image/index.ts`
-- `supabase/functions/process-demo-image/index.ts`
-- `src/components/v2/V2GenerateStep.tsx`
-- `src/pages/Index.tsx`
-- `src/pages/Demo.tsx`
-
-Jag kommer att:
-- säkerställa att alla exterior-flöden använder samma PhotoRoom-inputmodell
-- eliminera skillnader mellan classic / demo / V2 batch / V2 single
-- välja antingen konsekvent `imageFile` eller konsekvent `imageUrl` för huvudbilden i alla flöden
-
-2. Instrumentera exakt vad som faktiskt skickas till PhotoRoom
-Jag kommer lägga in tydlig loggning per bild för:
-- scene id
-- resolved background URL
-- bakgrundsfilens storlek/content-type
-- autoCrop
-- referenceBox
-- padding
-- shadow.mode
-- lighting.mode
-- outputSize
-- vilken klientväg som kallade funktionen
-
-Detta behövs för att jämföra en “bra” och en “dålig” bild svart på vitt.
-
-3. Köra minimal A/B-struktur i exterior-flödet
-Jag kommer isolera två requestprofiler:
-```text
-Profil A: minimal static replacement
-- imageFile
-- background.imageFile
-- removeBackground default
-- padding
-- scaling
-- utan extra relight/shadow där möjligt
-
-Profil B: samma som idag
-- med shadow/relight/referenceBox-logik
+background.imageFile  →  background.guidance.imageFile
 ```
-Om A blir stabil men B inte, vet vi exakt vilken parametergrupp som orsakar artefakterna.
 
-4. Återställa närmare det historiskt fungerande läget om testerna pekar dit
-Om loggarna visar att static mode inte är roten, går jag tillbaka till ett rent guidance-test som matchar äldre beteende bättre:
-- `background.guidance.imageUrl` eller `background.guidance.imageFile`
-- `background.guidance.scale`
-- kort prompt
-- utan legacy-fält
-- samma struktur för alla klientvägar
+Add:
+```
+background.prompt = scene.aiPrompt || scene.name
+background.guidance.scale = scene.referenceScale || 0.7
+```
 
-Detta blir då en kontrollerad återgång, inte fler gissningar.
+Remove:
+```
+background.color = 'white'  (not needed with guidance mode)
+```
 
-5. Verifiera att rätt bakgrundsasset faktiskt används
-Jag kommer även kontrollera att:
-- `full_res_url` för scenen verkligen är samma asset som användaren ser i galleriet
-- ingen annan background-asset hämtas i vissa vägar
-- ingen data-URI / temporär omväg ger annan bild än förväntat
+### 2. Keep shadow/reflection and padding logic as-is
 
-Tekniska detaljer som är viktigast för dig:
-- Ja, PhotoRoom-anropet har ändrats jämfört med tidigare fungerande versioner.
-- Nej, `reference_scale` styr inte det nuvarande exterior-resultatet trots att det finns i databasen.
-- Ja, studio-scenerna du nämner har i princip samma `reference_scale` nu.
-- Den mest sannolika rotorsaken är inkonsekvent requeststruktur mellan flera flöden, inte att bara en scenprompt eller en enskild bakgrund är “fel”.
+The `shadow.mode`, `verticalAlignment`, `paddingBottom`, and `lighting.mode` parameters are orthogonal to the background mode and should continue working with guidance mode.
 
-När du godkänner går jag vidare med exakt den här djupfixen: först standardisera requesten, sedan logga bra/dåliga fall, sedan isolera vilken parameter som gör att vissa bilder får objekt i bakgrunden.
+### 3. Keep the hallucination fix
+
+The hallucination fix came from removing legacy fields (`negativePrompt`, `expandPrompt`, etc.) and using clean parameters. The guidance mode with a high `guidance.scale` (0.7–0.85) ensures the output closely matches the reference image, preventing random objects from appearing.
+
+### Technical details
+
+- `background.guidance.scale` controls how closely the AI follows the reference: 0.7 = close match, 1.0 = almost exact
+- Each scene's `reference_scale` from the database will be used (currently 0.85 for studio scenes)
+- The `background.prompt` will use the scene's `ai_prompt` field or fall back to the scene name
+- `background.imageFile` and `background.prompt` **cannot** coexist per the API docs, but `background.guidance.imageFile` **can** coexist with `background.prompt`
+
