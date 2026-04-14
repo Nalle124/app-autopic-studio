@@ -262,7 +262,7 @@ serve(async (req) => {
     if (!interiorMode) {
       const { data: canonicalScene, error: canonicalSceneError } = await supabase
         .from('scenes')
-        .select('ai_prompt, reference_scale, photoroom_shadow_mode, composite_mode, category')
+        .select('ai_prompt, reference_scale, photoroom_shadow_mode, composite_mode, category, reflection_enabled')
         .eq('id', scene.id)
         .maybeSingle();
 
