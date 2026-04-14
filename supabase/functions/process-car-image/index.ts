@@ -277,12 +277,16 @@ serve(async (req) => {
             : scene.referenceScale,
           shadowMode: canonicalScene.photoroom_shadow_mode ?? scene.shadowMode,
           compositeMode: canonicalScene.composite_mode ?? scene.compositeMode,
+          reflectionPreset: {
+            ...scene.reflectionPreset,
+            enabled: canonicalScene.reflection_enabled ?? scene.reflectionPreset?.enabled ?? false,
+          },
         };
         console.log('Using canonical scene config:', {
           sceneId: scene.id,
           category: canonicalScene.category,
-          compositeMode: scene.compositeMode,
-          referenceScale: scene.referenceScale,
+          shadowMode: scene.shadowMode,
+          reflectionEnabled: scene.reflectionPreset?.enabled,
         });
       }
     }
