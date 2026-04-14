@@ -226,14 +226,16 @@ serve(async (req) => {
     // Send car image as imageFile (consistent with process-car-image)
     photoroomFormData.append('imageFile', imageBlob, imageFile.name);
 
-    // Fetch background and send as imageFile (static background, no AI generation)
+    // Fetch background and send as guidance reference for AI scene generation
     const bgFetchResp = await fetch(backgroundImageUrl);
     if (!bgFetchResp.ok) throw new Error(`Failed to fetch background: ${bgFetchResp.status}`);
     const bgBuf = await bgFetchResp.arrayBuffer();
     const bgBlob = new Blob([bgBuf], { type: bgFetchResp.headers.get('content-type') || 'image/jpeg' });
-    photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
-    // Override any PNG transparency so export.format=jpg doesn't conflict
-    photoroomFormData.append('background.color', 'white');
+    photoroomFormData.append('background.guidance.imageFile', bgBlob, 'background.jpg');
+    const guidanceScale = (scene.referenceScale || 0.7).toString();
+    photoroomFormData.append('background.guidance.scale', guidanceScale);
+    const bgPrompt = scene.aiPrompt || scene.name || 'professional car photography studio';
+    photoroomFormData.append('background.prompt', bgPrompt);
     
     // Determine shadow/reflection mode
     let effectiveShadowMode = scene.shadowMode || 'none';
@@ -302,10 +304,12 @@ serve(async (req) => {
       autoCrop,
       autoCropPadding,
       referenceBox: autoCrop ? 'subjectBox' : 'originalImage',
-      shadowMode,
+      effectiveShadowMode,
       relightEnabled,
       orientation,
       outputSize,
+      guidanceScale,
+      bgPrompt,
       referenceScale: scene.referenceScale,
       params: prParams,
     }));
