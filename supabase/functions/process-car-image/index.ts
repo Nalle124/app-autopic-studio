@@ -473,12 +473,23 @@ serve(async (req) => {
         console.log('Adding PhotoRoom shadow:', shadowMode);
       }
     
-      const paddingValue = autoCrop ? autoCropPadding : (orientation === 'portrait' ? '0.08' : '0.10');
-      photoroomFormData.append('padding', paddingValue);
+      // Use asymmetric padding to ground the car at the bottom of the frame
+      if (autoCrop) {
+        photoroomFormData.append('padding', autoCropPadding);
+      } else {
+        // More padding on top, minimal on bottom → car sits on the ground
+        const topPad = orientation === 'portrait' ? '0.15' : '0.18';
+        const bottomPad = '0.02';
+        const sidePad = orientation === 'portrait' ? '0.06' : '0.08';
+        photoroomFormData.append('padding.top', topPad);
+        photoroomFormData.append('padding.bottom', bottomPad);
+        photoroomFormData.append('padding.left', sidePad);
+        photoroomFormData.append('padding.right', sidePad);
+      }
 
       photoroomFormData.append('scaling', 'fit');
       photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
-      console.log(`Auto-crop requested: ${autoCrop}, padding: ${paddingValue}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
+      console.log(`Auto-crop requested: ${autoCrop}, referenceBox: ${autoCrop ? 'subjectBox' : 'originalImage'}`);
     
       if (relightEnabled) {
         photoroomFormData.append('lighting.mode', 'ai.preserve-hue-and-saturation');
