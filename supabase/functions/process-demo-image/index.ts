@@ -243,9 +243,15 @@ serve(async (req) => {
     console.log('[DEMO] Processing with Photoroom...');
     
     const photoroomFormData = new FormData();
-    // Direct composite — no AI generation, car cut out and placed on reference background directly.
     photoroomFormData.append('imageUrl', originalImageUrl);
-    photoroomFormData.append('background.imageUrl', backgroundImageUrl);
+    photoroomFormData.append('background.guidance.imageUrl', backgroundImageUrl);
+    photoroomFormData.append('background.guidance.scale', '1.0');
+    const basePrompt = scene.aiPrompt ||
+      `Place the vehicle centered on the floor. Professional automotive photography.`;
+    const orientationHint = orientation === 'portrait' ? 'Vertical composition.' : 'Horizontal composition, vehicle centered.';
+    photoroomFormData.append('background.prompt', `${basePrompt} ${orientationHint}`);
+    photoroomFormData.append('background.negativePrompt',
+      'windows, outdoor view, trees, sky, clouds, buildings, nature, grass, exterior, daylight through opening');
     
     const shadowMode = scene.shadowMode || 'none';
     if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {

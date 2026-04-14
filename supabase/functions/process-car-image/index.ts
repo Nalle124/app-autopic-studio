@@ -452,12 +452,20 @@ serve(async (req) => {
         }
       }
 
-      // Direct composite — place car exactly on reference background, no AI generation.
-      // Using background.imageUrl instead of background.guidance.imageUrl ensures PhotoRoom
-      // cuts out the car and places it on the reference image without interpreting
-      // the car's reflections/colors to generate a new background.
-      photoroomFormData.append('background.imageUrl', resolvedBackgroundUrl);
-      console.log('Using direct background composite (no AI generation):', resolvedBackgroundUrl.substring(0, 80));
+      photoroomFormData.append('background.guidance.imageUrl', resolvedBackgroundUrl);
+      // Always use maximum scale — forces AI to follow reference image as closely as possible
+      photoroomFormData.append('background.guidance.scale', '1.0');
+      console.log('Reference scale: 1.0 (maximum)');
+
+      const basePrompt = scene.aiPrompt ||
+        `Place the vehicle centered on the floor. Professional automotive photography.`;
+      const orientationHint = orientation === 'portrait'
+        ? 'Vertical composition.'
+        : 'Horizontal composition, vehicle centered.';
+      photoroomFormData.append('background.prompt', `${basePrompt} ${orientationHint}`);
+      photoroomFormData.append('background.negativePrompt',
+        'windows, outdoor view, trees, sky, clouds, buildings, nature, grass, exterior, daylight through opening');
+      console.log('Using guidance imageUrl with scale 1.0 and negative prompt');
       const shadowMode = scene.shadowMode || 'none';
       if (shadowMode !== 'none' && shadowMode.startsWith('ai.')) {
         photoroomFormData.append('shadow.mode', shadowMode);
