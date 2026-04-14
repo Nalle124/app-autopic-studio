@@ -522,12 +522,35 @@ serve(async (req) => {
 
       photoroomFormData.append('export.format', 'jpg');
       photoroomFormData.append('export.quality', '90');
+
+      // === DETAILED PHOTOROOM REQUEST LOG ===
+      const prParams: Record<string, string> = {};
+      for (const [key, value] of photoroomFormData.entries()) {
+        if (value instanceof Blob) {
+          prParams[key] = `[Blob ${(value.size / 1024).toFixed(0)}KB ${value.type}]`;
+        } else {
+          prParams[key] = String(value);
+        }
+      }
+      console.log('[PHOTOROOM-REQUEST]', JSON.stringify({
+        flow: 'process-car-image',
+        sceneId: scene.id,
+        sceneName: scene.name,
+        autoCrop,
+        autoCropPadding,
+        referenceBox: autoCrop ? 'subjectBox' : 'originalImage',
+        shadowMode: scene.shadowMode || 'none',
+        relightEnabled,
+        orientation,
+        outputSize,
+        referenceScale: scene.referenceScale,
+        params: prParams,
+      }));
     
       const editResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
         method: 'POST',
         headers: {
           'x-api-key': PHOTOROOM_API_KEY!,
-          // Use default stable model (v3) — beta model generates unwanted windows/outdoor elements
         },
         body: photoroomFormData,
       });
