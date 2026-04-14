@@ -240,17 +240,14 @@ serve(async (req) => {
       photoroomFormData.append('shadow.mode', shadowMode);
     }
     
-    // Use asymmetric padding to ground the car at the bottom of the frame
+    // Use asymmetric padding + bottom alignment to ground the car
     if (autoCrop) {
       photoroomFormData.append('padding', autoCropPadding);
     } else {
-      const topPad = orientation === 'portrait' ? '0.15' : '0.18';
-      const bottomPad = '0.02';
-      const sidePad = orientation === 'portrait' ? '0.06' : '0.08';
-      photoroomFormData.append('padding.top', topPad);
-      photoroomFormData.append('padding.bottom', bottomPad);
-      photoroomFormData.append('padding.left', sidePad);
-      photoroomFormData.append('padding.right', sidePad);
+      const padValue = orientation === 'portrait' ? '0.08' : '0.10';
+      photoroomFormData.append('padding', padValue);
+      photoroomFormData.append('paddingBottom', '0.02');
+      photoroomFormData.append('verticalAlignment', 'bottom');
     }
     photoroomFormData.append('scaling', 'fit');
     photoroomFormData.append('referenceBox', autoCrop ? 'subjectBox' : 'originalImage');
