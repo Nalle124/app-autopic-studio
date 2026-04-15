@@ -1202,7 +1202,7 @@ async function processExteriorImage(img: V2Image, scene: any, accessToken: strin
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
   try {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-gemini`, {
       method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: formData, signal: controller.signal,
     });
     clearTimeout(timeoutId);
