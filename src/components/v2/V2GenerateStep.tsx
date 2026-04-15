@@ -668,6 +668,7 @@ export const V2GenerateStep = ({
           fd.append('scene', JSON.stringify(scenePayload));
           fd.append('backgroundUrl', backgroundUrl);
           fd.append('orientation', outputFormat === 'portrait' ? 'portrait' : 'landscape');
+          fd.append('imageType', img.classification || 'exterior');
           if (autoCropMode !== 'off') {
             fd.append('autoCrop', 'true');
             fd.append('autoCropPadding', autoCropMode === 'tight' ? '0.03' : '0.12');

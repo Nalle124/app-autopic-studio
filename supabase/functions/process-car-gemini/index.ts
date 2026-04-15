@@ -151,36 +151,69 @@ serve(async (req) => {
     // ═══════════════════════════════════════════════════════
     console.log('[GEMINI] Step 3: Compositing with Gemini...');
 
-    // Determine shadow/reflection description for prompt
-    const hasReflection = scene.reflectionPreset?.enabled === true;
+    // Read image type passed from client
+    const imageType = formData.get('imageType') as string || 'exterior';
+    const isDetailShot = imageType === 'detail';
+
+    // Shadow/reflection description — keep reflections minimal
+    const hasReflection = scene.reflectionPreset?.enabled === true && !isDetailShot;
     const hasShadow = scene.shadowMode && scene.shadowMode !== 'none';
-    let shadowDesc = 'natural shadow';
-    if (hasReflection) shadowDesc = 'clear floor reflection showing the car mirrored on the ground';
-    else if (hasShadow) {
-      if (scene.shadowMode === 'ai.soft') shadowDesc = 'soft diffused shadow';
-      else if (scene.shadowMode === 'ai.hard') shadowDesc = 'sharp defined shadow';
-      else shadowDesc = 'natural shadow';
+    let shadowDesc = 'a subtle soft contact shadow directly beneath the tires';
+    if (hasReflection) {
+      shadowDesc = 'a faint, tasteful floor reflection — keep it minimal, NOT a full mirror image';
+    } else if (hasShadow) {
+      if (scene.shadowMode === 'ai.soft') shadowDesc = 'a soft diffused shadow beneath the car';
+      else if (scene.shadowMode === 'ai.hard') shadowDesc = 'a defined crisp shadow beneath the car';
+      else shadowDesc = 'a subtle natural shadow beneath the car';
     }
 
-    const compositePrompt = `You are a professional automotive photo compositor. You have two images:
+    // Choose prompt based on image type
+    let compositePrompt: string;
 
-IMAGE 1: A car with transparent background (PNG cutout)
-IMAGE 2: A professional ${scene.name} background/scene for car photography
+    if (isDetailShot) {
+      compositePrompt = `You are a professional product photo compositor. You have two images:
 
-YOUR TASK:
-1. Place the car from Image 1 realistically into the scene from Image 2
-2. The car must sit naturally on the ground/floor with correct perspective and grounding
-3. Size the car appropriately for the scene — it should fill about 60-70% of the frame width
-4. Add a realistic ${shadowDesc} underneath and around the car that matches the scene's lighting
-5. The final image must look like the car was actually photographed in this exact location
+IMAGE 1: A car detail/close-up photo with transparent background (wheel, headlight, badge, mirror, grille, or similar component — shown as a tight close-up)
+IMAGE 2: A professional photography background/scene
 
-CRITICAL RULES:
-- PRESERVE the car EXACTLY — same color, same shape, same reflections, same details. Do NOT alter it.
-- Do NOT mirror or flip the car. Keep the exact same orientation and facing direction as in Image 1.
-- PRESERVE the background scene EXACTLY — use it as-is, do NOT modify, add objects, or change lighting
-- Do NOT add any objects, props, people, text, or decorations
-- The output must be ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
-- This is for professional automotive advertising — the result must be photorealistic and clean`;
+YOUR TASK — COMPOSITING ONLY, NOT GENERATION:
+1. Place the detail from Image 1 as a product photograph on the background from Image 2
+2. Keep it as a CLOSE-UP DETAIL SHOT — do NOT zoom out or show the full car
+3. Scale the detail to fill approximately 65-75% of the frame
+4. Center it naturally in the frame
+5. Add only a very subtle soft shadow beneath the detail
+
+ABSOLUTE RULES:
+- COPY the detail image EXACTLY pixel-for-pixel — same colors, same texture, same angle, same lighting
+- DO NOT add any car body, chassis, door panels, hood, or surrounding car parts
+- DO NOT reconstruct or imagine the full vehicle
+- DO NOT modify the background in any way
+- Output must be ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
+- This is a product photography composition — clean, exact, professional`;
+    } else {
+      compositePrompt = `You are performing a TECHNICAL DIGITAL COMPOSITING operation — not creative generation.
+
+You have two source images:
+IMAGE 1: A car with transparent background (PNG cutout — use this car EXACTLY as-is)
+IMAGE 2: A professional ${scene.name} automotive photography background (use this EXACTLY as-is)
+
+COMPOSITING TASK:
+1. Place the car from Image 1 onto the background from Image 2
+2. The car must sit naturally on the ground with correct perspective
+3. Scale the car to fill approximately 60-70% of frame width
+4. Add ${shadowDesc}
+
+PRESERVATION RULES — HIGHEST PRIORITY:
+- The car must appear IDENTICAL to Image 1 — exact same paint color, reflections, body details, dents, dirt, everything
+- Do NOT clean, enhance, smooth, or alter the car in any way
+- Do NOT flip or mirror the car — maintain exact orientation
+- Do NOT add chrome reflections, paint shine, or specular highlights that are not in the original
+- The background from Image 2 must appear EXACTLY as-is — do not alter lighting or atmosphere
+- No additional objects, people, props, or text
+
+Output format: ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
+This is professional automotive advertising — preserve the exact real-world appearance of the car.`;
+    }
 
     const geminiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

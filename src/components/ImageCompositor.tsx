@@ -251,8 +251,8 @@ export const ImageCompositor = ({
             reflCtx.fillStyle = gradient;
             reflCtx.fillRect(0, 0, scaledWidth, scaledHeight * 0.6);
             
-            // Draw the reflection on main canvas with 15% increased opacity
-            ctx.globalAlpha = Math.min(1.0, scene.reflectionPreset.opacity * 1.15);
+            // Draw the reflection on main canvas with reduced opacity for a more subtle effect
+            ctx.globalAlpha = Math.min(0.5, scene.reflectionPreset.opacity * 0.65);
             ctx.drawImage(
               reflectionCanvas,
               carX,
