@@ -176,6 +176,7 @@ YOUR TASK:
 
 CRITICAL RULES:
 - PRESERVE the car EXACTLY — same color, same shape, same reflections, same details. Do NOT alter it.
+- Do NOT mirror or flip the car. Keep the exact same orientation and facing direction as in Image 1.
 - PRESERVE the background scene EXACTLY — use it as-is, do NOT modify, add objects, or change lighting
 - Do NOT add any objects, props, people, text, or decorations
 - The output must be ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
