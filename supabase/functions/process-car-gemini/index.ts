@@ -1,58 +1,115 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 /**
- * POC: Gemini-based car composite pipeline
+ * Gemini-based car composite pipeline (production-ready)
  * 
  * Flow:
- * 1. PhotoRoom → remove background only (transparent PNG)
- * 2. Upload transparent car to storage (get URL)
- * 3. Gemini → composite car onto chosen background using URLs (not base64)
+ * 1. Auth check + credit deduction
+ * 2. PhotoRoom → background removal only (transparent PNG)
+ * 3. Upload cutout to storage (to avoid base64 memory issues)
+ * 4. Gemini → composite car onto chosen background
+ * 5. Upload final result + update processing_job
+ * 
+ * Accepts the same FormData format as process-car-image for drop-in replacement.
  */
+
+interface SceneMetadata {
+  id: string;
+  name: string;
+  horizonY: number;
+  baselineY: number;
+  defaultScale: number;
+  shadowPreset: {
+    enabled: boolean;
+    strength: number;
+    blur: number;
+    offsetX: number;
+    offsetY: number;
+  };
+  reflectionPreset: {
+    enabled: boolean;
+    opacity: number;
+    fade: number;
+  };
+  aiPrompt?: string;
+  shadowMode?: string;
+  referenceScale?: number;
+  compositeMode?: boolean;
+}
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  let jobId: string | null = null;
+  let userId: string | null = null;
+  let creditDeducted = false;
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     if (!PHOTOROOM_API_KEY) throw new Error('PHOTOROOM_API_KEY not configured');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
+    // ── Auth ──
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Ej autentiserad');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (authError || !user) throw new Error('Ej autentiserad');
+    userId = user.id;
+    console.log('Authenticated user:', userId);
+
+    // ── Parse FormData ──
     const formData = await req.formData();
     const imageFile = formData.get('image') as File;
+    const sceneData = formData.get('scene') as string;
     const backgroundUrl = formData.get('backgroundUrl') as string;
-    const sceneName = formData.get('sceneName') as string || 'studio scene';
-    const shadowType = formData.get('shadowType') as string || 'soft shadow';
     const orientation = formData.get('orientation') as string || 'landscape';
+    const originalWidth = parseInt(formData.get('originalWidth') as string || '0');
+    const originalHeight = parseInt(formData.get('originalHeight') as string || '0');
+    jobId = formData.get('jobId') as string || null;
+    const projectId = formData.get('projectId') as string || null;
 
-    if (!imageFile || !backgroundUrl) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing image or backgroundUrl' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!imageFile || !sceneData || !backgroundUrl) {
+      throw new Error('Saknade fält: image, scene, backgroundUrl');
     }
 
-    console.log(`[GEMINI-POC] Starting pipeline for scene: ${sceneName}`);
+    let scene: SceneMetadata;
+    try { scene = JSON.parse(sceneData); } catch { throw new Error('Ogiltigt scendata'); }
+
+    console.log(`[GEMINI] Processing for scene: ${scene.name}, orientation: ${orientation}`);
+
+    // Update job status
+    if (jobId) {
+      await supabase.from('processing_jobs').update({ status: 'processing' }).eq('id', jobId);
+    }
+
+    // ── Credits ──
+    const { data: creditData } = await supabase.from('user_credits').select('credits').eq('user_id', userId).single();
+    const currentCredits = creditData?.credits || 0;
+    console.log('Current credits:', currentCredits);
+    if (currentCredits <= 0) throw new Error('Inga credits kvar');
+    const { error: creditError } = await supabase.rpc('decrement_credits', { p_user_id: userId });
+    if (creditError) throw new Error('Kunde inte dra credit');
+    creditDeducted = true;
+
     const startTime = Date.now();
 
     // ═══════════════════════════════════════════════════════
     // STEP 1: PhotoRoom — Background removal only
     // ═══════════════════════════════════════════════════════
-    console.log('[GEMINI-POC] Step 1: Removing background with PhotoRoom...');
-    
+    console.log('[GEMINI] Step 1: Removing background...');
     const imageBuffer = await imageFile.arrayBuffer();
     const imageBlob = new Blob([imageBuffer], { type: imageFile.type });
-    
+    console.log(`[GEMINI] Image: ${(imageBuffer.byteLength / 1024).toFixed(0)}KB`);
+
     const bgRemovalForm = new FormData();
     bgRemovalForm.append('imageFile', imageBlob, imageFile.name);
     bgRemovalForm.append('export.format', 'png');
@@ -61,7 +118,7 @@ serve(async (req) => {
     bgRemovalForm.append('scaling', 'fit');
     // Keep output small to save memory — Gemini doesn't need huge resolution
     bgRemovalForm.append('outputSize', '1024x1024');
-    
+
     const bgRemovalResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
       headers: { 'x-api-key': PHOTOROOM_API_KEY },
@@ -69,63 +126,60 @@ serve(async (req) => {
     });
 
     if (!bgRemovalResponse.ok) {
-      const errorText = await bgRemovalResponse.text();
-      console.error('[GEMINI-POC] PhotoRoom bg removal failed:', bgRemovalResponse.status, errorText);
-      throw new Error(`Background removal failed: ${bgRemovalResponse.status}`);
+      const errText = await bgRemovalResponse.text();
+      console.error('[GEMINI] PhotoRoom bg removal failed:', bgRemovalResponse.status, errText);
+      throw new Error(`Bakgrundsborttagning misslyckades (${bgRemovalResponse.status})`);
     }
 
     const transparentCarBuffer = await bgRemovalResponse.arrayBuffer();
-    console.log(`[GEMINI-POC] Step 1 done: transparent car ${(transparentCarBuffer.byteLength / 1024).toFixed(0)}KB`);
+    console.log(`[GEMINI] Step 1 done: ${(transparentCarBuffer.byteLength / 1024).toFixed(0)}KB cutout`);
 
     // ═══════════════════════════════════════════════════════
-    // STEP 2: Upload transparent car to storage to get a URL
+    // STEP 2: Upload cutout to get URL (saves memory)
     // ═══════════════════════════════════════════════════════
-    const carCutoutPath = `gemini-poc/cutout-${crypto.randomUUID()}.png`;
-    const { error: cutoutUploadError } = await supabase.storage
+    const cutoutPath = `gemini-cutouts/${crypto.randomUUID()}.png`;
+    const { error: cutoutErr } = await supabase.storage
       .from('processed-cars')
-      .upload(carCutoutPath, transparentCarBuffer, {
-        contentType: 'image/png',
-        upsert: false,
-      });
-
-    if (cutoutUploadError) {
-      throw new Error(`Cutout upload failed: ${cutoutUploadError.message}`);
-    }
-
-    const { data: cutoutUrlData } = supabase.storage
-      .from('processed-cars')
-      .getPublicUrl(carCutoutPath);
-
+      .upload(cutoutPath, transparentCarBuffer, { contentType: 'image/png', upsert: false });
+    if (cutoutErr) throw new Error(`Cutout upload failed: ${cutoutErr.message}`);
+    const { data: cutoutUrlData } = supabase.storage.from('processed-cars').getPublicUrl(cutoutPath);
     const cutoutUrl = cutoutUrlData.publicUrl;
-    console.log(`[GEMINI-POC] Step 2 done: cutout at ${cutoutUrl}`);
-
-    // Free memory
-    // transparentCarBuffer is no longer needed
+    console.log('[GEMINI] Step 2 done: cutout uploaded');
 
     // ═══════════════════════════════════════════════════════
-    // STEP 3: Gemini — Composite car into scene (using URLs)
+    // STEP 3: Gemini — Composite car into scene
     // ═══════════════════════════════════════════════════════
-    console.log('[GEMINI-POC] Step 3: Compositing with Gemini...');
+    console.log('[GEMINI] Step 3: Compositing with Gemini...');
+
+    // Determine shadow/reflection description for prompt
+    const hasReflection = scene.reflectionPreset?.enabled === true;
+    const hasShadow = scene.shadowMode && scene.shadowMode !== 'none';
+    let shadowDesc = 'natural shadow';
+    if (hasReflection) shadowDesc = 'clear floor reflection showing the car mirrored on the ground';
+    else if (hasShadow) {
+      if (scene.shadowMode === 'ai.soft') shadowDesc = 'soft diffused shadow';
+      else if (scene.shadowMode === 'ai.hard') shadowDesc = 'sharp defined shadow';
+      else shadowDesc = 'natural shadow';
+    }
 
     const compositePrompt = `You are a professional automotive photo compositor. You have two images:
 
 IMAGE 1: A car with transparent background (PNG cutout)
-IMAGE 2: A ${sceneName} background/scene
+IMAGE 2: A professional ${scene.name} background/scene for car photography
 
 YOUR TASK:
 1. Place the car from Image 1 realistically into the scene from Image 2
-2. The car must be placed on the ground/floor of the scene with correct perspective
-3. Match the car's angle and size to look natural in the scene
-4. Add a realistic ${shadowType} underneath the car that matches the scene lighting
-5. The car should look like it was actually photographed in this location
+2. The car must sit naturally on the ground/floor with correct perspective and grounding
+3. Size the car appropriately for the scene — it should fill about 60-70% of the frame width
+4. Add a realistic ${shadowDesc} underneath and around the car that matches the scene's lighting
+5. The final image must look like the car was actually photographed in this exact location
 
 CRITICAL RULES:
-- Do NOT alter the car's appearance, color, shape, or any details whatsoever
-- Do NOT add any objects, props, people, or decorations to the scene
-- Do NOT change the background scene — use it exactly as provided  
-- The final image should look like a professional car photography shot
-- Keep the scene clean and minimal — this is for automotive advertising
-- The output should be ${orientation === 'portrait' ? 'portrait orientation' : 'landscape orientation'}`;
+- PRESERVE the car EXACTLY — same color, same shape, same reflections, same details. Do NOT alter it.
+- PRESERVE the background scene EXACTLY — use it as-is, do NOT modify, add objects, or change lighting
+- Do NOT add any objects, props, people, text, or decorations
+- The output must be ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
+- This is for professional automotive advertising — the result must be photorealistic and clean`;
 
     const geminiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -135,92 +189,103 @@ CRITICAL RULES:
       },
       body: JSON.stringify({
         model: 'google/gemini-3-pro-image-preview',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: compositePrompt },
-              { type: 'image_url', image_url: { url: cutoutUrl } },
-              { type: 'image_url', image_url: { url: backgroundUrl } }
-            ]
-          }
-        ],
-        modalities: ['image', 'text']
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: compositePrompt },
+            { type: 'image_url', image_url: { url: cutoutUrl } },
+            { type: 'image_url', image_url: { url: backgroundUrl } },
+          ]
+        }],
+        modalities: ['image', 'text'],
       }),
     });
 
     if (!geminiResponse.ok) {
       const errText = await geminiResponse.text();
-      console.error('[GEMINI-POC] Gemini error:', geminiResponse.status, errText);
-      if (geminiResponse.status === 429) throw new Error('AI rate limit exceeded.');
-      if (geminiResponse.status === 402) throw new Error('AI credits exhausted.');
-      throw new Error(`Gemini compositing failed: ${geminiResponse.status}`);
+      console.error('[GEMINI] Gemini error:', geminiResponse.status, errText);
+      if (geminiResponse.status === 429) throw new Error('AI-hastighetsgräns nådd. Försök igen om en stund.');
+      if (geminiResponse.status === 402) throw new Error('AI-krediter slut.');
+      throw new Error(`Gemini compositing misslyckades (${geminiResponse.status})`);
     }
 
     const geminiData = await geminiResponse.json();
     const generatedImageUrl = geminiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
     if (!generatedImageUrl) {
-      const textReply = geminiData.choices?.[0]?.message?.content || '';
-      console.error('[GEMINI-POC] No image in response. Text:', textReply.slice(0, 300));
-      throw new Error('Gemini did not return an image');
+      console.error('[GEMINI] No image returned');
+      throw new Error('Gemini returnerade ingen bild');
     }
-
-    console.log('[GEMINI-POC] Step 3 done: Gemini returned composite image');
+    console.log('[GEMINI] Step 3 done: composite received');
 
     // ═══════════════════════════════════════════════════════
     // STEP 4: Upload final result
     // ═══════════════════════════════════════════════════════
     const base64Match = generatedImageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
-    if (!base64Match) throw new Error('Invalid image data from Gemini');
+    if (!base64Match) throw new Error('Ogiltigt bilddata från Gemini');
 
     const imgFormat = base64Match[1];
     const imgBase64Data = base64Match[2];
     const binaryStr = atob(imgBase64Data);
     const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
 
     const ext = imgFormat === 'jpeg' ? 'jpg' : imgFormat;
-    const finalFilename = `gemini-poc/${crypto.randomUUID()}.${ext}`;
+    const sanitizedSceneId = scene.id.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const finalFilename = `${userId}/${crypto.randomUUID()}-${sanitizedSceneId}.${ext}`;
+    
     const { error: uploadError } = await supabase.storage
       .from('processed-cars')
-      .upload(finalFilename, bytes.buffer, {
-        contentType: `image/${imgFormat}`,
-        upsert: false,
-      });
+      .upload(finalFilename, bytes.buffer, { contentType: `image/${imgFormat}`, upsert: false });
+    if (uploadError) throw new Error(`Upload misslyckades: ${uploadError.message}`);
 
-    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
-
-    const { data: publicUrlData } = supabase.storage
-      .from('processed-cars')
-      .getPublicUrl(finalFilename);
+    const { data: publicUrlData } = supabase.storage.from('processed-cars').getPublicUrl(finalFilename);
+    const finalUrl = publicUrlData.publicUrl;
 
     const totalTime = Date.now() - startTime;
-    console.log(`[GEMINI-POC] ✅ Complete in ${(totalTime / 1000).toFixed(1)}s — ${publicUrlData.publicUrl}`);
+    console.log(`[GEMINI] ✅ Complete in ${(totalTime / 1000).toFixed(1)}s — ${finalUrl}`);
+
+    // Update job as completed
+    if (jobId) {
+      await supabase.from('processing_jobs').update({
+        status: 'completed',
+        final_url: finalUrl,
+        completed_at: new Date().toISOString(),
+      }).eq('id', jobId);
+    }
 
     // Clean up cutout (fire and forget)
-    supabase.storage.from('processed-cars').remove([carCutoutPath]).catch(() => {});
+    supabase.storage.from('processed-cars').remove([cutoutPath]).catch(() => {});
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        finalUrl: publicUrlData.publicUrl,
-        cutoutUrl,
-        pipeline: 'gemini-composite',
-        processingTimeMs: totalTime,
-      }),
+      JSON.stringify({ success: true, finalUrl, jobId, pipeline: 'gemini', processingTimeMs: totalTime }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('[GEMINI-POC] Error:', error);
+    console.error('[GEMINI] Error:', error);
+    const errMsg = error instanceof Error ? error.message : 'Okänt fel';
+
+    // Refund credit on failure
+    if (creditDeducted && userId) {
+      try {
+        const { data: uc } = await supabase.from('user_credits').select('credits').eq('user_id', userId).single();
+        const newBal = (uc?.credits || 0) + 1;
+        await supabase.from('user_credits').update({ credits: newBal, updated_at: new Date().toISOString() }).eq('user_id', userId);
+        console.log('[GEMINI] Credit refunded');
+      } catch (e) { console.error('[GEMINI] Credit refund failed:', e); }
+    }
+
+    // Mark job as failed
+    if (jobId) {
+      await supabase.from('processing_jobs').update({
+        status: 'failed',
+        error_message: errMsg,
+        completed_at: new Date().toISOString(),
+      }).eq('id', jobId).catch(() => {});
+    }
+
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }),
+      JSON.stringify({ success: false, error: errMsg }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
