@@ -690,9 +690,11 @@ export const V2GenerateStep = ({
           if (cancelledRef.current) return;
           const fd = buildFormData(prepared);
           const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
-          console.log(`Dispatching ${isExterior ? 'exterior' : 'interior'} image ${prepared.img.id} (job ${jobIds[prepared.img.id]})`);
+          // Use Gemini pipeline for exterior images, standard pipeline for interior
+          const functionName = isExterior ? 'process-car-gemini' : 'process-car-image';
+          console.log(`Dispatching ${isExterior ? 'exterior (gemini)' : 'interior'} image ${prepared.img.id} (job ${jobIds[prepared.img.id]})`);
           try {
-            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${session.access_token}` },
               body: fd,
