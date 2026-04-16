@@ -116,8 +116,8 @@ serve(async (req) => {
     bgRemovalForm.append('export.quality', '100');
     bgRemovalForm.append('padding', '0');
     bgRemovalForm.append('scaling', 'fit');
-    // Keep output small to save memory — Gemini doesn't need huge resolution
-    bgRemovalForm.append('outputSize', '1024x1024');
+    // Higher resolution cutout = more detail for Gemini to preserve faithfully
+    bgRemovalForm.append('outputSize', '2048x2048');
 
     const bgRemovalResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
@@ -191,28 +191,32 @@ ABSOLUTE RULES:
 - Output must be ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
 - This is a product photography composition — clean, exact, professional`;
     } else {
-      compositePrompt = `You are performing a TECHNICAL DIGITAL COMPOSITING operation — not creative generation.
+      compositePrompt = `You are a PHOTO EDITOR performing a cut-and-paste compositing job. You are NOT generating or creating anything new.
 
 You have two source images:
-IMAGE 1: A car with transparent background (PNG cutout — use this car EXACTLY as-is)
-IMAGE 2: A professional ${scene.name} automotive photography background (use this EXACTLY as-is)
+IMAGE 1: A photograph of a real car with transparent background (PNG cutout)
+IMAGE 2: A ${scene.name} background photograph
 
-COMPOSITING TASK:
-1. Place the car from Image 1 onto the background from Image 2
-2. The car must sit naturally on the ground with correct perspective
-3. Scale the car to fill approximately 60-70% of frame width
-4. Add ${shadowDesc}
+YOUR ONLY JOB: Cut the car from Image 1 and paste it onto Image 2. Like Photoshop — layer the car on top of the background.
 
-PRESERVATION RULES — HIGHEST PRIORITY:
-- The car must appear IDENTICAL to Image 1 — exact same paint color, reflections, body details, dents, dirt, everything
-- Do NOT clean, enhance, smooth, or alter the car in any way
-- Do NOT flip or mirror the car — maintain exact orientation
-- Do NOT add chrome reflections, paint shine, or specular highlights that are not in the original
-- The background from Image 2 must appear EXACTLY as-is — do not alter lighting or atmosphere
-- No additional objects, people, props, or text
+PLACEMENT:
+- Position the car naturally on the ground plane of the background
+- Scale the car to fill approximately 60-70% of frame width
+- Add ${shadowDesc}
 
-Output format: ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
-This is professional automotive advertising — preserve the exact real-world appearance of the car.`;
+CRITICAL — THE CAR MUST BE AN EXACT COPY:
+- Transfer every single pixel of the car unchanged — paint color, scratches, dents, dirt, reflections, lighting, wheel style, badges, everything
+- The car in the output must be PHOTOGRAPHICALLY IDENTICAL to Image 1 — if someone overlaid them they should match perfectly
+- Do NOT re-render, re-draw, re-imagine, or artistically interpret the car
+- Do NOT change the car's color temperature, exposure, contrast, or saturation
+- Do NOT smooth surfaces, add shine, remove imperfections, or enhance the image
+- Do NOT flip, mirror, or rotate the car — keep the EXACT same orientation and facing direction
+- Do NOT add any reflections, highlights, or effects that are not already present on the car in Image 1
+- The background must remain EXACTLY as provided in Image 2 — no color grading, no atmosphere changes
+
+Think of this as a Photoshop paste operation with shadow/ground integration — nothing more.
+
+Output format: ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}`;
     }
 
     const geminiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
