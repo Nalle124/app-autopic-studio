@@ -116,8 +116,8 @@ serve(async (req) => {
     bgRemovalForm.append('export.quality', '100');
     bgRemovalForm.append('padding', '0');
     bgRemovalForm.append('scaling', 'fit');
-    // Keep output small to save memory — Gemini doesn't need huge resolution
-    bgRemovalForm.append('outputSize', '1024x1024');
+    // Higher resolution cutout = more detail for Gemini to preserve faithfully
+    bgRemovalForm.append('outputSize', '2048x2048');
 
     const bgRemovalResponse = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
