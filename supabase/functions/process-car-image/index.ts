@@ -456,10 +456,10 @@ serve(async (req) => {
         }
       }
 
-      // Use STATIC background mode — sends the exact reference image as the backdrop.
-      // This prevents PhotoRoom's AI from being influenced by reflections on the car
-      // (e.g. trees reflected in paint causing greenery in the generated background).
-      console.log('[BG] Fetching background image for static mode...');
+      // Use GUIDANCE background mode — PhotoRoom's AI generates the scene using the
+      // reference image as a visual guide. This produces natural grounding, perspective,
+      // shadows and reflections (vs static which just composites flat).
+      console.log('[BG] Fetching background image for guidance mode...');
       const bgFetchResponse = await fetch(resolvedBackgroundUrl);
       if (!bgFetchResponse.ok) {
         throw new Error(`Failed to fetch background image: ${bgFetchResponse.status}`);
@@ -467,10 +467,18 @@ serve(async (req) => {
       const bgBuffer = await bgFetchResponse.arrayBuffer();
       const bgContentType = bgFetchResponse.headers.get('content-type') || 'image/jpeg';
       const bgBlob = new Blob([bgBuffer], { type: bgContentType });
-      photoroomFormData.append('background.imageFile', bgBlob, 'background.jpg');
-      // Fallback color for any transparent areas in the background PNG (JPG doesn't support transparency)
-      photoroomFormData.append('background.color', 'white');
-      console.log('[BG] Static background mode — size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
+      photoroomFormData.append('background.guidance.imageFile', bgBlob, 'background.jpg');
+      // Guidance scale: how closely PhotoRoom follows the reference (0.7 = close, 1.0 = near-exact)
+      const guidanceScale = typeof scene.referenceScale === 'number' && scene.referenceScale > 0
+        ? String(scene.referenceScale)
+        : '0.8';
+      photoroomFormData.append('background.guidance.scale', guidanceScale);
+      // Short prompt to nudge the AI; uses scene's ai_prompt or falls back to scene name
+      const bgPrompt = (scene.aiPrompt && scene.aiPrompt.trim().length > 0)
+        ? scene.aiPrompt
+        : scene.name;
+      photoroomFormData.append('background.prompt', bgPrompt);
+      console.log('[BG] Guidance mode — scale:', guidanceScale, '— size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
       // Determine shadow/reflection mode
       // If scene has photoroom_shadow_mode set, use it directly.
       // If scene has reflection_enabled but no shadow mode, use ai.soft for reflections.
