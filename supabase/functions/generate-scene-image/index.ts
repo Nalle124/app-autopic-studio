@@ -186,7 +186,16 @@ async function urlToBase64(url: string): Promise<string> {
   let binary = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   const b64 = btoa(binary);
-  const contentType = res.headers.get("content-type") || "image/jpeg";
+  let contentType = (res.headers.get("content-type") || "image/jpeg").toLowerCase().split(";")[0].trim();
+  // Gemini only supports a narrow set of image MIME types. Coerce anything else
+  // (image/jxl, image/avif, image/heic, image/heif, application/octet-stream, etc.)
+  // to image/jpeg — the underlying bytes are usually still JPEG-decodable, and even
+  // if not, sending a supported MIME prevents the hard 400 from the provider.
+  const SUPPORTED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+  if (!SUPPORTED.has(contentType)) {
+    console.warn(`[urlToBase64] Unsupported content-type "${contentType}" — forcing image/jpeg`);
+    contentType = "image/jpeg";
+  }
   return `data:${contentType};base64,${b64}`;
 }
 
