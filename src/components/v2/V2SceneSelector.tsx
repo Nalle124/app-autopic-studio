@@ -45,6 +45,7 @@ const CATEGORY_KEYS: { id: string; key: string }[] = [
   { id: 'studio-light', key: 'v2.categories.studioLight' },
   { id: 'studio-dark', key: 'v2.categories.studioDark' },
   { id: 'studio-colored', key: 'v2.categories.studioColored' },
+  { id: 'bilhall', key: 'v2.categories.bilhall' },
   { id: 'autumn', key: 'v2.categories.autumn' },
   { id: 'winter', key: 'v2.categories.winter' },
   { id: 'outdoor', key: 'v2.categories.outdoor' },

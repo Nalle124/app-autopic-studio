@@ -66,6 +66,11 @@ const categoryConfig: Record<string, { order: number; description: string; gradi
     description: 'Färgstarka studios med personlighet',
     gradient: 'from-accent-green/20 via-accent-orange/10 to-accent-pink/5'
   },
+  'bilhall': {
+    order: 4.5,
+    description: 'Moderna bilhallar och showrooms',
+    gradient: 'from-muted/20 via-accent-blue/10 to-background/5'
+  },
   'autumn': { 
     order: 5, 
     description: 'Höstmiljöer med varma färger',
@@ -113,6 +118,7 @@ const getCategoryDisplayName = (category: string) => {
     'studio-light': 'Ljusa Studios',
     'studio-dark': 'Mörka Studios',
     'studio-colored': 'Färgade Studios',
+    'bilhall': 'Bilhall',
     'autumn': 'Höst',
     'winter': 'Vinter',
     'outdoor': 'Utomhus',
