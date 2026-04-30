@@ -587,6 +587,9 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'x-api-key': PHOTOROOM_API_KEY!,
+          // Use PhotoRoom's best AI background model (Studio) — most photorealistic,
+          // required for background.guidance.scale to take effect.
+          'pr-ai-background-model-version': 'background-studio-beta-2025-03-17',
         },
         body: photoroomFormData,
       });
