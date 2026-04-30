@@ -478,6 +478,9 @@ serve(async (req) => {
         ? scene.aiPrompt
         : scene.name;
       photoroomFormData.append('background.prompt', bgPrompt);
+      // Disable automatic prompt expansion — prevents the AI from inventing extra
+      // props/details (pipes, clutter, etc.) that hallucinate beyond our reference.
+      photoroomFormData.append('background.expandPrompt.mode', 'ai.never');
       console.log('[BG] Guidance mode — scale:', guidanceScale, '— size:', (bgBuffer.byteLength / 1024).toFixed(0) + 'KB');
       // Determine shadow/reflection mode
       // If scene has photoroom_shadow_mode set, use it directly.
@@ -587,6 +590,9 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'x-api-key': PHOTOROOM_API_KEY!,
+          // Use PhotoRoom's best AI background model (Studio) — most photorealistic,
+          // required for background.guidance.scale to take effect.
+          'pr-ai-background-model-version': 'background-studio-beta-2025-03-17',
         },
         body: photoroomFormData,
       });
