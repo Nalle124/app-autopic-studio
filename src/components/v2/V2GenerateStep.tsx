@@ -350,6 +350,7 @@ export const V2GenerateStep = ({
   const [statusText, setStatusText] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
+  const [engine, setEngine] = useState<'photoroom' | 'gemini'>('photoroom');
   const [lightBoost, setLightBoost] = useState(false);
   const [lightEdit, setLightEdit] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
