@@ -1103,6 +1103,59 @@ export const V2GenerateStep = ({
         </div>
       </div>
 
+      {/* AI engine selector */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-foreground">AI-motor</h3>
+        <div className="space-y-2">
+          {[
+            {
+              id: 'photoroom' as const,
+              name: 'PhotoRoom Studio',
+              desc: 'Optimal för rena studios och bilhallar. Snabb och konsekvent.',
+              badge: { label: 'Populär', tone: 'primary' as const },
+            },
+            {
+              id: 'gemini' as const,
+              name: 'Gemini Scene Match',
+              desc: 'Bäst för anpassade miljöer — följer din referensbild exakt.',
+              badge: { label: 'Ny', tone: 'accent' as const },
+            },
+          ].map((opt) => {
+            const selected = engine === opt.id;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => setEngine(opt.id)}
+                className={`w-full text-left rounded-[10px] border-2 p-3 sm:p-4 transition-all flex items-start justify-between gap-3 ${
+                  selected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
+                }`}
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-foreground">{opt.name}</p>
+                    <span
+                      className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                        opt.badge.tone === 'primary'
+                          ? 'bg-primary/15 text-primary'
+                          : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
+                      {opt.badge.label}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                </div>
+                <div
+                  className={`mt-1 h-4 w-4 rounded-full border-2 shrink-0 ${
+                    selected ? 'border-primary bg-primary' : 'border-border'
+                  }`}
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Generate button */}
       <Button
         className="w-full text-white font-semibold shadow-[var(--shadow-elegant)] transition-all"
