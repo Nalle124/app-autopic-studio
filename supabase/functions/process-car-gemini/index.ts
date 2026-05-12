@@ -151,8 +151,9 @@ serve(async (req) => {
     // ═══════════════════════════════════════════════════════
     console.log('[GEMINI] Step 3: Compositing with Gemini...');
 
-    // Read image type passed from client
+    // Read image type and engine mode passed from client
     const imageType = formData.get('imageType') as string || 'exterior';
+    const engineMode = (formData.get('engineMode') as string) || 'match'; // 'match' = strict composite, 'studio' = generative scene
     const isDetailShot = imageType === 'detail';
 
     // Shadow/reflection description — keep reflections minimal
