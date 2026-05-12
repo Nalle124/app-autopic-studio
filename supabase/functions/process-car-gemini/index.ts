@@ -151,8 +151,9 @@ serve(async (req) => {
     // ═══════════════════════════════════════════════════════
     console.log('[GEMINI] Step 3: Compositing with Gemini...');
 
-    // Read image type passed from client
+    // Read image type and engine mode passed from client
     const imageType = formData.get('imageType') as string || 'exterior';
+    const engineMode = (formData.get('engineMode') as string) || 'match'; // 'match' = strict composite, 'studio' = generative scene
     const isDetailShot = imageType === 'detail';
 
     // Shadow/reflection description — keep reflections minimal
@@ -167,10 +168,45 @@ serve(async (req) => {
       else shadowDesc = 'a subtle natural shadow beneath the car';
     }
 
-    // Choose prompt based on image type
+    // Choose prompt based on engine mode and image type
     let compositePrompt: string;
 
-    if (isDetailShot) {
+    if (engineMode === 'studio') {
+      // GENERATIVE MODE — like PhotoRoom: adapts perspective and creates a natural scene around the car.
+      // Reference image is style/lighting inspiration only, NOT a strict pixel reference.
+      compositePrompt = `You are a professional automotive photographer creating a polished car advertisement image.
+
+You have two source images:
+IMAGE 1: A photograph of a real car with transparent background (PNG cutout) — this is the EXACT car that must appear in the output
+IMAGE 2: A reference background showing the desired ${scene.name} environment — use this for STYLE, LIGHTING, MOOD, COLOR PALETTE and ENVIRONMENT TYPE only
+
+YOUR JOB: Create a professional car advertisement photograph that places the EXACT car from Image 1 into a newly generated environment inspired by Image 2. The new environment should naturally fit the car's perspective and angle.
+
+PLACEMENT & PERSPECTIVE:
+- Generate a ground plane, walls, floor, sky, and surroundings whose perspective and vanishing lines match the car's angle in Image 1
+- Position the car naturally — it should look like it was photographed in this environment
+- Scale the car to fill approximately 60-72% of the frame width
+- Add ${shadowDesc} that matches the new lighting
+- Add subtle, realistic ground contact and ambient light wrap consistent with the new scene
+
+ENVIRONMENT (generate a NEW scene inspired by Image 2):
+- Match the type of environment, materials, lighting style, time of day, and color palette from Image 2
+- The output background does NOT need to be pixel-identical to Image 2 — adapt it so the car sits naturally in it
+- Keep the environment clean, professional, and free of distracting clutter, text, logos, or watermarks
+
+CAR PRESERVATION (CRITICAL):
+- The car must be the EXACT car from Image 1 — same model, same color, same trim, same wheels, same orientation, same facing direction
+- Do NOT change the car's bodywork, geometry, paint color, or design
+- You MAY subtly relight the car so its highlights and shadows match the new environment naturally
+- Do NOT flip, mirror, or rotate the car
+- Keep all details: badges, license plate area, wheel style, mirrors, antennas
+
+OUTPUT:
+- Format: ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
+- Quality: photorealistic, magazine-grade automotive advertisement
+- No text, no logos, no watermarks, no UI elements`;
+    } else if (isDetailShot) {
+      // STRICT detail composite (close-up parts only)
       compositePrompt = `You are a professional product photo compositor. You have two images:
 
 IMAGE 1: A car detail/close-up photo with transparent background (wheel, headlight, badge, mirror, grille, or similar component — shown as a tight close-up)
@@ -178,19 +214,19 @@ IMAGE 2: A professional photography background/scene
 
 YOUR TASK — COMPOSITING ONLY, NOT GENERATION:
 1. Place the detail from Image 1 as a product photograph on the background from Image 2
-2. Keep it as a CLOSE-UP DETAIL SHOT — do NOT zoom out or show the full car
+2. Preserve the ENTIRE content of Image 1 — every visible part of the cutout must remain in the output, do NOT crop, mask, or remove any portion of the detail
 3. Scale the detail to fill approximately 65-75% of the frame
 4. Center it naturally in the frame
 5. Add only a very subtle soft shadow beneath the detail
 
 ABSOLUTE RULES:
-- COPY the detail image EXACTLY pixel-for-pixel — same colors, same texture, same angle, same lighting
-- DO NOT add any car body, chassis, door panels, hood, or surrounding car parts
-- DO NOT reconstruct or imagine the full vehicle
+- COPY the detail image EXACTLY pixel-for-pixel — same colors, same texture, same angle, same lighting, same shape and full extent
+- Do NOT erase, mask, crop or trim any part of the cutout — if Image 1 contains a front bumper, the entire front bumper must appear
 - DO NOT modify the background in any way
 - Output must be ${orientation === 'portrait' ? 'portrait (2:3 ratio)' : 'landscape (3:2 ratio)'}
 - This is a product photography composition — clean, exact, professional`;
     } else {
+      // STRICT match composite (full vehicle)
       compositePrompt = `You are a PHOTO EDITOR performing a cut-and-paste compositing job. You are NOT generating or creating anything new.
 
 You have two source images:
@@ -206,6 +242,7 @@ PLACEMENT:
 
 CRITICAL — THE CAR MUST BE AN EXACT COPY:
 - Transfer every single pixel of the car unchanged — paint color, scratches, dents, dirt, reflections, lighting, wheel style, badges, everything
+- Preserve the FULL extent of the cutout — do not crop, mask, or remove any visible part of the car (front bumper, rear, wheels, mirrors all stay)
 - The car in the output must be PHOTOGRAPHICALLY IDENTICAL to Image 1 — if someone overlaid them they should match perfectly
 - Do NOT re-render, re-draw, re-imagine, or artistically interpret the car
 - Do NOT change the car's color temperature, exposure, contrast, or saturation

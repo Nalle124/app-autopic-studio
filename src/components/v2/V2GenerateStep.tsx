@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mail, Sun, Palette, Plus, RotateCcw, X } from 'lucide-react';
+import { Mail, Sun, Palette, Plus, RotateCcw, X, ChevronDown, Check } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
@@ -350,7 +351,7 @@ export const V2GenerateStep = ({
   const [statusText, setStatusText] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
-  const [engine, setEngine] = useState<'photoroom' | 'gemini'>('photoroom');
+  const [engine, setEngine] = useState<'photoroom' | 'gemini-match' | 'gemini-studio'>('photoroom');
   const [lightBoost, setLightBoost] = useState(false);
   const [lightEdit, setLightEdit] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -692,9 +693,13 @@ export const V2GenerateStep = ({
           if (cancelledRef.current) return;
           const fd = buildFormData(prepared);
           const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
+          const useGemini = (engine === 'gemini-match' || engine === 'gemini-studio') && isExterior;
           // Engine routing: Gemini only for exterior/detail shots; interiors always go through PhotoRoom
-          const functionName = engine === 'gemini' && isExterior ? 'process-car-gemini' : 'process-car-image';
-          console.log(`Dispatching image ${prepared.img.id} via ${functionName} (job ${jobIds[prepared.img.id]})`);
+          const functionName = useGemini ? 'process-car-gemini' : 'process-car-image';
+          if (useGemini) {
+            fd.append('engineMode', engine === 'gemini-studio' ? 'studio' : 'match');
+          }
+          console.log(`Dispatching image ${prepared.img.id} via ${functionName} (engine: ${engine}) (job ${jobIds[prepared.img.id]})`);
           try {
             await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
               method: 'POST',
@@ -1103,11 +1108,11 @@ export const V2GenerateStep = ({
         </div>
       </div>
 
-      {/* AI engine selector */}
+      {/* AI engine selector — dropdown */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-foreground">AI-motor</h3>
-        <div className="space-y-2">
-          {[
+        {(() => {
+          const ENGINE_OPTIONS = [
             {
               id: 'photoroom' as const,
               name: 'PhotoRoom Studio',
@@ -1115,45 +1120,67 @@ export const V2GenerateStep = ({
               badge: { label: 'Populär', tone: 'primary' as const },
             },
             {
-              id: 'gemini' as const,
-              name: 'Gemini Scene Match',
-              desc: 'Bäst för anpassade miljöer — följer din referensbild exakt.',
+              id: 'gemini-studio' as const,
+              name: 'Gemini Studio Pro',
+              desc: 'Generativ — skapar perspektiv och scen runt bilen som en bilannons.',
               badge: { label: 'Ny', tone: 'accent' as const },
             },
-          ].map((opt) => {
-            const selected = engine === opt.id;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => setEngine(opt.id)}
-                className={`w-full text-left rounded-[10px] border-2 p-3 sm:p-4 transition-all flex items-start justify-between gap-3 ${
-                  selected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'
-                }`}
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-foreground">{opt.name}</p>
-                    <span
-                      className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                        opt.badge.tone === 'primary'
-                          ? 'bg-primary/15 text-primary'
-                          : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                      }`}
-                    >
-                      {opt.badge.label}
-                    </span>
+            {
+              id: 'gemini-match' as const,
+              name: 'Gemini Scene Match',
+              desc: 'Följer din referensbild så exakt som möjligt.',
+              badge: { label: 'Exakt', tone: 'muted' as const },
+            },
+          ];
+          const current = ENGINE_OPTIONS.find((o) => o.id === engine) || ENGINE_OPTIONS[0];
+          const badgeClass = (tone: 'primary' | 'accent' | 'muted') =>
+            tone === 'primary'
+              ? 'bg-primary/15 text-primary'
+              : tone === 'accent'
+                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                : 'bg-muted text-muted-foreground';
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between gap-3 rounded-[10px] border-2 border-border hover:border-primary/40 p-3 sm:p-4 text-left transition-all"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground truncate">{current.name}</p>
+                      <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${badgeClass(current.badge.tone)}`}>
+                        {current.badge.label}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{current.desc}</p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
-                </div>
-                <div
-                  className={`mt-1 h-4 w-4 rounded-full border-2 shrink-0 ${
-                    selected ? 'border-primary bg-primary' : 'border-border'
-                  }`}
-                />
-              </button>
-            );
-          })}
-        </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[260px]">
+                {ENGINE_OPTIONS.map((opt) => (
+                  <DropdownMenuItem
+                    key={opt.id}
+                    onSelect={() => setEngine(opt.id)}
+                    className="flex items-start gap-2 py-2.5"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-foreground">{opt.name}</span>
+                        <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${badgeClass(opt.badge.tone)}`}>
+                          {opt.badge.label}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                    </div>
+                    {engine === opt.id && <Check className="h-4 w-4 text-primary shrink-0 mt-1" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        })()}
       </div>
 
       {/* Generate button */}
