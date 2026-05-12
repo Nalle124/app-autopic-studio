@@ -692,9 +692,13 @@ export const V2GenerateStep = ({
           if (cancelledRef.current) return;
           const fd = buildFormData(prepared);
           const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
+          const useGemini = (engine === 'gemini-match' || engine === 'gemini-studio') && isExterior;
           // Engine routing: Gemini only for exterior/detail shots; interiors always go through PhotoRoom
-          const functionName = engine === 'gemini' && isExterior ? 'process-car-gemini' : 'process-car-image';
-          console.log(`Dispatching image ${prepared.img.id} via ${functionName} (job ${jobIds[prepared.img.id]})`);
+          const functionName = useGemini ? 'process-car-gemini' : 'process-car-image';
+          if (useGemini) {
+            fd.append('engineMode', engine === 'gemini-studio' ? 'studio' : 'match');
+          }
+          console.log(`Dispatching image ${prepared.img.id} via ${functionName} (engine: ${engine}) (job ${jobIds[prepared.img.id]})`);
           try {
             await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
               method: 'POST',
