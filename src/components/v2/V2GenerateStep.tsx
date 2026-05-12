@@ -691,9 +691,10 @@ export const V2GenerateStep = ({
         const promises = batch.map(async (prepared) => {
           if (cancelledRef.current) return;
           const fd = buildFormData(prepared);
-          // Use PhotoRoom pipeline (process-car-image) for all images — exterior and interior
-          const functionName = 'process-car-image';
-          console.log(`Dispatching image ${prepared.img.id} via PhotoRoom (job ${jobIds[prepared.img.id]})`);
+          const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
+          // Engine routing: Gemini only for exterior/detail shots; interiors always go through PhotoRoom
+          const functionName = engine === 'gemini' && isExterior ? 'process-car-gemini' : 'process-car-image';
+          console.log(`Dispatching image ${prepared.img.id} via ${functionName} (job ${jobIds[prepared.img.id]})`);
           try {
             await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
               method: 'POST',
