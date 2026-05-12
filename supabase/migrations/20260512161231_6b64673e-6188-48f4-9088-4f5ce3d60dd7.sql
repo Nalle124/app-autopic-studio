@@ -1,0 +1,1 @@
+ALTER TABLE public.user_scenes ALTER COLUMN reference_scale SET DEFAULT 0.95;
