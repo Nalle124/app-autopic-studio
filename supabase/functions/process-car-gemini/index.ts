@@ -116,8 +116,13 @@ serve(async (req) => {
     // STEP 2: Gemini handles cutout + composite in a single call
     // ═══════════════════════════════════════════════════════
     const imageType = formData.get('imageType') as string || 'exterior';
-    const engineMode = (formData.get('engineMode') as string) || 'match';
+    const engineMode = (formData.get('engineMode') as string) || 'match'; // 'fast' | 'match' | 'studio'
     const isDetailShot = imageType === 'detail';
+
+    // Model selection: fast → 3.1 Flash Image (cheaper, faster); match/studio → 3 Pro Image (higher quality)
+    const geminiModel = engineMode === 'fast'
+      ? 'google/gemini-3.1-flash-image'
+      : 'google/gemini-3-pro-image';
 
     const hasReflection = scene.reflectionPreset?.enabled === true && !isDetailShot;
     const hasShadow = scene.shadowMode && scene.shadowMode !== 'none';
@@ -215,7 +220,7 @@ Output: ${aspect}`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-pro-image',
+        model: geminiModel,
         messages: [{
           role: 'user',
           content: [

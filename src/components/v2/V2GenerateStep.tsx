@@ -351,7 +351,7 @@ export const V2GenerateStep = ({
   const [statusText, setStatusText] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
-  const [engine, setEngine] = useState<'photoroom' | 'gemini-match' | 'gemini-studio'>('gemini-match');
+  const [engine, setEngine] = useState<'photoroom' | 'gemini-fast' | 'gemini-match' | 'gemini-studio'>('gemini-fast');
   const [lightBoost, setLightBoost] = useState(false);
   const [lightEdit, setLightEdit] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -693,11 +693,12 @@ export const V2GenerateStep = ({
           if (cancelledRef.current) return;
           const fd = buildFormData(prepared);
           const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
-          const useGemini = (engine === 'gemini-match' || engine === 'gemini-studio') && isExterior;
-          // Engine routing: exterior/detail → selected engine; interior masking always via process-car-image (uses AI gateway, no Photoroom)
+          const useGemini = (engine === 'gemini-fast' || engine === 'gemini-match' || engine === 'gemini-studio') && isExterior;
+          // Engine routing: exterior/detail → selected Gemini engine; interior masking always via process-car-image
           const functionName = useGemini ? 'process-car-gemini' : 'process-car-image';
           if (useGemini) {
-            fd.append('engineMode', engine === 'gemini-studio' ? 'studio' : 'match');
+            const modeMap = { 'gemini-fast': 'fast', 'gemini-match': 'match', 'gemini-studio': 'studio' } as const;
+            fd.append('engineMode', modeMap[engine as 'gemini-fast' | 'gemini-match' | 'gemini-studio']);
           }
           console.log(`Dispatching image ${prepared.img.id} via ${functionName} (engine: ${engine}) (job ${jobIds[prepared.img.id]})`);
           try {
@@ -1114,17 +1115,24 @@ export const V2GenerateStep = ({
         {(() => {
           const ENGINE_OPTIONS = [
             {
-              id: 'gemini-match' as const,
-              name: 'Scene Match',
-              desc: 'Följer din referensbild så exakt som möjligt. Rekommenderad default.',
+              id: 'gemini-fast' as const,
+              name: 'Scene Fast',
+              desc: 'Snabb och billig. Bra för volym och dagligt bruk. Default.',
               badge: { label: 'Populär', tone: 'primary' as const },
               disabled: false,
             },
             {
-              id: 'gemini-studio' as const,
+              id: 'gemini-match' as const,
               name: 'Scene Pro',
+              desc: 'Högre kvalitet — följer din referensbild så exakt som möjligt.',
+              badge: { label: 'Premium', tone: 'accent' as const },
+              disabled: false,
+            },
+            {
+              id: 'gemini-studio' as const,
+              name: 'Scene Studio',
               desc: 'Generativ — skapar perspektiv och scen runt bilen som en bilannons.',
-              badge: { label: 'Ny', tone: 'accent' as const },
+              badge: { label: 'Kreativ', tone: 'accent' as const },
               disabled: false,
             },
             {
