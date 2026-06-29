@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { removeBackground } from "../_shared/bg-removal.ts";
 
 /**
  * Flux Creative pipeline via Replicate (Flux Kontext Pro).
- * Single-shot composite: input car photo + background reference → final image.
- * No Photoroom dependency. Uses Replicate gateway.
+ * Cutout-first composite: dedicated bg-removal → clean car cutout →
+ *   Flux Kontext Pro composites onto the background reference.
  *
  * FormData (compatible with process-car-gemini):
  *   image, scene (json), backgroundUrl, orientation?, jobId?, imageType?
@@ -33,7 +34,7 @@ serve(async (req) => {
   let jobId: string | null = null;
   let userId: string | null = null;
   let creditDeducted = false;
-  let tempCarPath: string | null = null;
+  const tempPaths: string[] = [];
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -76,27 +77,56 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // Upload car so Replicate can fetch it
+    // Upload original car so Replicate can fetch it
     const imageBuffer = await imageFile.arrayBuffer();
     const srcExt = (imageFile.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
-    tempCarPath = `flux-source/${crypto.randomUUID()}.${srcExt}`;
+    const sourcePath = `flux-source/${crypto.randomUUID()}.${srcExt}`;
+    tempPaths.push(sourcePath);
     const { error: upErr } = await supabase.storage
       .from("processed-cars")
-      .upload(tempCarPath, imageBuffer, { contentType: imageFile.type || "image/jpeg", upsert: false });
+      .upload(sourcePath, imageBuffer, { contentType: imageFile.type || "image/jpeg", upsert: false });
     if (upErr) throw new Error(`Upload misslyckades: ${upErr.message}`);
-    const { data: srcUrlData } = supabase.storage.from("processed-cars").getPublicUrl(tempCarPath);
-    const carImageUrl = srcUrlData.publicUrl;
+    const { data: srcUrlData } = supabase.storage.from("processed-cars").getPublicUrl(sourcePath);
+    const sourceImageUrl = srcUrlData.publicUrl;
+
+    // Cutout-first (skip for detail shots — they're already isolated subjects)
+    const isDetail = imageType === "detail";
+    let carImageUrl = sourceImageUrl;
+    if (!isDetail) {
+      console.log("[FLUX] removing background via Replicate...");
+      const cutout = await removeBackground(sourceImageUrl);
+      if (cutout) {
+        const cutoutPath = `flux-cutout/${crypto.randomUUID()}.png`;
+        tempPaths.push(cutoutPath);
+        const { error: cutUpErr } = await supabase.storage
+          .from("processed-cars")
+          .upload(cutoutPath, cutout.buffer, { contentType: "image/png", upsert: false });
+        if (!cutUpErr) {
+          const { data: cutUrl } = supabase.storage.from("processed-cars").getPublicUrl(cutoutPath);
+          carImageUrl = cutUrl.publicUrl;
+        } else {
+          console.warn("[FLUX] cutout upload failed, using original:", cutUpErr.message);
+        }
+      } else {
+        console.warn("[FLUX] cutout failed, falling back to original");
+      }
+    }
 
     const aspect = orientation === "portrait" ? "2:3" : "3:2";
-    const isDetail = imageType === "detail";
+
+    // Simplified prompt — focuses ONLY on composite behaviour.
+    // We deliberately drop scene.aiPrompt: the background reference already
+    // carries the look, and scene prompts (originally written for PhotoRoom)
+    // tend to make Flux re-render the car or invent extra props.
+    const shadowKind = scene.reflectionPreset?.enabled
+      ? "a soft natural floor reflection"
+      : "a natural ground shadow";
 
     const prompt = isDetail
-      ? `Place this car detail/close-up photograph as a clean product shot on the provided ${scene.name} background. Keep the detail pixel-perfect, do not crop or alter it. Add a subtle natural shadow. No text, no logos, no watermarks.`
-      : `Place this exact car photograph onto the provided ${scene.name} background. ${scene.aiPrompt || ""}
-Keep the car pixel-perfect — same color, same angle, same details, full extent (do not crop or mask any part of the car). Add a realistic ${scene.reflectionPreset?.enabled ? "soft floor reflection" : "natural ground shadow"} beneath the car. Background must remain clean and free of extra props. No text, no logos, no watermarks.`;
+      ? `Place this product detail photograph centered on the provided background. Keep the detail pixel-perfect — do not crop, recolor, or alter it. Add a subtle natural shadow. No text, no logos, no watermarks, no extra props.`
+      : `Composite the car from the first image onto the second image (the background). The car must be photographically identical to the input — same color, same angle, same details, full extent, no cropping, no recoloring, no restyling. Position the car naturally on the ground plane. Add ${shadowKind} beneath the car. Keep the background clean and unchanged. No text, no logos, no watermarks, no extra props.`;
 
-    // Flux Kontext Pro (multi-image composite, $0.04 / image)
-    console.log("[FLUX] creating prediction...");
+    console.log("[FLUX] creating prediction (Kontext Pro)...");
     const createRes = await fetch(`${GATEWAY}/models/black-forest-labs/flux-kontext-pro/predictions`, {
       method: "POST",
       headers: {
@@ -111,7 +141,12 @@ Keep the car pixel-perfect — same color, same angle, same details, full extent
           input_image_2: backgroundUrl,
           aspect_ratio: aspect,
           output_format: "jpg",
+          output_quality: 95,
           safety_tolerance: 2,
+          // Tighter params: trognare mot input-bilderna, mindre kreativ tolkning.
+          guidance: 3.5,
+          num_inference_steps: 30,
+          prompt_upsampling: false,
         },
       }),
     });
@@ -172,7 +207,7 @@ Keep the car pixel-perfect — same color, same angle, same details, full extent
       }).eq("id", jobId);
     }
 
-    if (tempCarPath) supabase.storage.from("processed-cars").remove([tempCarPath]).catch(() => {});
+    if (tempPaths.length) supabase.storage.from("processed-cars").remove(tempPaths).catch(() => {});
 
     return new Response(
       JSON.stringify({ success: true, finalUrl, jobId, pipeline: "flux", processingTimeMs: totalTime }),
@@ -189,7 +224,7 @@ Keep the car pixel-perfect — same color, same angle, same details, full extent
         await supabase.from("user_credits").update({ credits: newBal, updated_at: new Date().toISOString() }).eq("user_id", userId);
       } catch (e) { console.error("[FLUX] refund failed", e); }
     }
-    if (tempCarPath) supabase.storage.from("processed-cars").remove([tempCarPath]).catch(() => {});
+    if (tempPaths.length) supabase.storage.from("processed-cars").remove(tempPaths).catch(() => {});
     if (jobId) {
       await supabase.from("processing_jobs").update({
         status: "failed",

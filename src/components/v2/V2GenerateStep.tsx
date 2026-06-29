@@ -1115,6 +1115,9 @@ export const V2GenerateStep = ({
       {/* AI engine selector — dropdown */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-foreground">AI-motor</h3>
+        <p className="text-[11px] text-muted-foreground -mt-1">
+          Scene Fast, Scene Pro och Flux skär ut bilen automatiskt först — så AI:n bara byter bakgrund och inte ändrar själva bilen.
+        </p>
         {(() => {
           const ENGINE_OPTIONS = [
             {
