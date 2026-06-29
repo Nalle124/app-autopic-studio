@@ -143,7 +143,7 @@ const Landing = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
               Logga in
             </Button>
-            <Button variant="premium" size="sm" onClick={() => navigate("/try")}>
+            <Button variant="premium" size="sm" onClick={() => navigate("/auth")}>
               Testa gratis
               <Sparkles className="ml-1.5 w-3.5 h-3.5" />
             </Button>
@@ -168,7 +168,7 @@ const Landing = () => {
                 egen — på sekunder.
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
-                <Button variant="premium" size="lg" onClick={() => navigate("/try")}>
+                <Button variant="premium" size="lg" onClick={() => navigate("/auth")}>
                   Testa gratis
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
@@ -229,7 +229,7 @@ const Landing = () => {
             <div
               key={scene.label}
               className="flex-none w-52 md:w-64 snap-start group cursor-pointer"
-              onClick={() => navigate("/try")}
+              onClick={() => navigate("/auth")}
             >
               <div className="rounded-[var(--radius)] overflow-hidden border border-border/30 shadow-card">
                 <img
@@ -247,7 +247,7 @@ const Landing = () => {
           {/* "See all" card */}
           <div
             className="flex-none w-52 md:w-64 snap-start cursor-pointer"
-            onClick={() => navigate("/try")}
+            onClick={() => navigate("/auth")}
           >
             <div className="rounded-[var(--radius)] overflow-hidden border border-border/30 shadow-card bg-secondary/50 flex items-center justify-center aspect-[3/2] transition-colors hover:bg-secondary">
               <div className="text-center space-y-2">
@@ -275,7 +275,7 @@ const Landing = () => {
                 Beskriv din drömmiljö så genererar vi den. En unik bakgrund för just dina
                 annonser som ingen annan har. Full kontroll — bilen placeras exakt som den är.
               </p>
-              <Button variant="premium" onClick={() => navigate("/try")}>
+              <Button variant="premium" onClick={() => navigate("/auth")}>
                 Prova AI-generatorn
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
@@ -362,7 +362,7 @@ const Landing = () => {
             ))}
           </div>
           <div className="text-center mt-10">
-            <Button variant="premium" size="lg" onClick={() => navigate("/try")}>
+            <Button variant="premium" size="lg" onClick={() => navigate("/auth")}>
               Testa gratis
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
@@ -529,7 +529,7 @@ const Landing = () => {
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">
             Skapa proffsiga bilannonser med AI — gratis att testa.
           </p>
-          <Button variant="premium" size="lg" onClick={() => navigate("/try")}>
+          <Button variant="premium" size="lg" onClick={() => navigate("/auth")}>
             Testa gratis
             <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
