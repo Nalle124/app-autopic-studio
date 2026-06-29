@@ -351,7 +351,7 @@ export const V2GenerateStep = ({
   const [statusText, setStatusText] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
-  const [engine, setEngine] = useState<'photoroom' | 'gemini-match' | 'gemini-studio'>('photoroom');
+  const [engine, setEngine] = useState<'photoroom' | 'gemini-match' | 'gemini-studio'>('gemini-match');
   const [lightBoost, setLightBoost] = useState(false);
   const [lightEdit, setLightEdit] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -694,7 +694,7 @@ export const V2GenerateStep = ({
           const fd = buildFormData(prepared);
           const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
           const useGemini = (engine === 'gemini-match' || engine === 'gemini-studio') && isExterior;
-          // Engine routing: Gemini only for exterior/detail shots; interiors always go through PhotoRoom
+          // Engine routing: exterior/detail → selected engine; interior masking always via process-car-image (uses AI gateway, no Photoroom)
           const functionName = useGemini ? 'process-car-gemini' : 'process-car-image';
           if (useGemini) {
             fd.append('engineMode', engine === 'gemini-studio' ? 'studio' : 'match');
@@ -1114,22 +1114,25 @@ export const V2GenerateStep = ({
         {(() => {
           const ENGINE_OPTIONS = [
             {
-              id: 'photoroom' as const,
-              name: 'PhotoRoom Studio',
-              desc: 'Optimal för rena studios och bilhallar. Snabb och konsekvent.',
+              id: 'gemini-match' as const,
+              name: 'Scene Match',
+              desc: 'Följer din referensbild så exakt som möjligt. Rekommenderad default.',
               badge: { label: 'Populär', tone: 'primary' as const },
+              disabled: false,
             },
             {
               id: 'gemini-studio' as const,
-              name: 'Gemini Studio Pro',
+              name: 'Scene Pro',
               desc: 'Generativ — skapar perspektiv och scen runt bilen som en bilannons.',
               badge: { label: 'Ny', tone: 'accent' as const },
+              disabled: false,
             },
             {
-              id: 'gemini-match' as const,
-              name: 'Gemini Scene Match',
-              desc: 'Följer din referensbild så exakt som möjligt.',
-              badge: { label: 'Exakt', tone: 'muted' as const },
+              id: 'photoroom' as const,
+              name: 'PhotoRoom Studio',
+              desc: 'Klassisk studio-look. Aktiveras när nytt Photoroom-konto är kopplat.',
+              badge: { label: 'Snart', tone: 'muted' as const },
+              disabled: true,
             },
           ];
           const current = ENGINE_OPTIONS.find((o) => o.id === engine) || ENGINE_OPTIONS[0];
@@ -1162,8 +1165,12 @@ export const V2GenerateStep = ({
                 {ENGINE_OPTIONS.map((opt) => (
                   <DropdownMenuItem
                     key={opt.id}
-                    onSelect={() => setEngine(opt.id)}
-                    className="flex items-start gap-2 py-2.5"
+                    onSelect={(e) => {
+                      if (opt.disabled) { e.preventDefault(); return; }
+                      setEngine(opt.id);
+                    }}
+                    disabled={opt.disabled}
+                    className={`flex items-start gap-2 py-2.5 ${opt.disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
