@@ -1207,6 +1207,7 @@ export const V2GenerateStep = ({
                         </span>
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                      <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">Motor: {opt.model}</p>
                     </div>
                     {engine === opt.id && <Check className="h-4 w-4 text-primary shrink-0 mt-1" />}
                   </DropdownMenuItem>
