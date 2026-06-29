@@ -100,8 +100,8 @@ const Auth = () => {
     } else if (isInvite) {
       navigate('/onboarding');
     } else {
-      // Free signup without plan → send to try flow
-      navigate('/try');
+      // Free signup without plan → straight into the app
+      navigate('/');
     }
   };
 
