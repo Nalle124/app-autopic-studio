@@ -1183,6 +1183,7 @@ export const V2GenerateStep = ({
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{current.desc}</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono truncate">Motor: {current.model}</p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>
