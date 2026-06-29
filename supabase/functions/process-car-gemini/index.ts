@@ -220,7 +220,7 @@ Output: ${aspect}`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-pro-image',
+        model: geminiModel,
         messages: [{
           role: 'user',
           content: [
