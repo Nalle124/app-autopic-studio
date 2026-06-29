@@ -20,6 +20,7 @@ import {
 import { AdminUserTable } from '@/components/admin/AdminUserTable';
 import { AdminUserImages } from '@/components/admin/AdminUserImages';
 import { AdminUserScenes } from '@/components/admin/AdminUserScenes';
+import { AdminEngineCosts } from '@/components/admin/AdminEngineCosts';
 
 interface UserData {
   id: string;
@@ -380,6 +381,11 @@ const Admin = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* AI engine cost dashboard */}
+          <AdminEngineCosts />
+
+
 
           {/* Users Table with Credits */}
           <Card>

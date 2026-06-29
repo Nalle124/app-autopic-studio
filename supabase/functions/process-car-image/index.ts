@@ -803,6 +803,7 @@ serve(async (req) => {
         .from('processing_jobs')
         .update({
           status: 'completed',
+          engine: 'photoroom',
           final_url: finalPublicUrlData.publicUrl,
           thumbnail_url: thumbnailUrl,
           completed_at: new Date().toISOString(),
@@ -825,6 +826,7 @@ serve(async (req) => {
           original_filename: imageFile.name,
           scene_id: scene.id,
           status: 'completed',
+          engine: 'photoroom',
           final_url: finalPublicUrlData.publicUrl,
           thumbnail_url: thumbnailUrl,
           completed_at: new Date().toISOString(),

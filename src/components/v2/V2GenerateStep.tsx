@@ -351,7 +351,7 @@ export const V2GenerateStep = ({
   const [statusText, setStatusText] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
-  const [engine, setEngine] = useState<'photoroom' | 'gemini-fast' | 'gemini-match' | 'gemini-studio'>('gemini-fast');
+  const [engine, setEngine] = useState<'photoroom' | 'gemini-fast' | 'gemini-match' | 'gemini-studio' | 'flux'>('gemini-fast');
   const [lightBoost, setLightBoost] = useState(false);
   const [lightEdit, setLightEdit] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -694,8 +694,11 @@ export const V2GenerateStep = ({
           const fd = buildFormData(prepared);
           const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
           const useGemini = (engine === 'gemini-fast' || engine === 'gemini-match' || engine === 'gemini-studio') && isExterior;
-          // Engine routing: exterior/detail → selected Gemini engine; interior masking always via process-car-image
-          const functionName = useGemini ? 'process-car-gemini' : 'process-car-image';
+          const useFlux = engine === 'flux' && isExterior;
+          // Engine routing: exterior/detail → selected engine; interior masking always via process-car-image
+          const functionName = useFlux
+            ? 'process-car-flux'
+            : useGemini ? 'process-car-gemini' : 'process-car-image';
           if (useGemini) {
             const modeMap = { 'gemini-fast': 'fast', 'gemini-match': 'match', 'gemini-studio': 'studio' } as const;
             fd.append('engineMode', modeMap[engine as 'gemini-fast' | 'gemini-match' | 'gemini-studio']);
@@ -1136,11 +1139,18 @@ export const V2GenerateStep = ({
               disabled: false,
             },
             {
+              id: 'flux' as const,
+              name: 'Flux Creative',
+              desc: 'Replicate Flux Kontext Pro. Bra för kreativa scener och experiment.',
+              badge: { label: 'Experiment', tone: 'accent' as const },
+              disabled: false,
+            },
+            {
               id: 'photoroom' as const,
               name: 'PhotoRoom Studio',
-              desc: 'Klassisk studio-look. Aktiveras när nytt Photoroom-konto är kopplat.',
-              badge: { label: 'Snart', tone: 'muted' as const },
-              disabled: true,
+              desc: 'Klassisk studio-look — strikt referensmatchning via Photoroom.',
+              badge: { label: 'Klassisk', tone: 'muted' as const },
+              disabled: false,
             },
           ];
           const current = ENGINE_OPTIONS.find((o) => o.id === engine) || ENGINE_OPTIONS[0];
