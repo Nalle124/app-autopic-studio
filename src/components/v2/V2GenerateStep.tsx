@@ -1123,6 +1123,7 @@ export const V2GenerateStep = ({
             {
               id: 'gemini-fast' as const,
               name: 'Scene Fast',
+              model: 'google/gemini-3-flash-image-preview',
               desc: 'Snabb och billig. Bra för volym och dagligt bruk. Default.',
               badge: { label: 'Populär', tone: 'primary' as const },
               disabled: false,
@@ -1130,6 +1131,7 @@ export const V2GenerateStep = ({
             {
               id: 'gemini-match' as const,
               name: 'Scene Pro',
+              model: 'google/gemini-3-pro-image-preview',
               desc: 'Högre kvalitet — följer din referensbild så exakt som möjligt.',
               badge: { label: 'Premium', tone: 'accent' as const },
               disabled: false,
@@ -1137,6 +1139,7 @@ export const V2GenerateStep = ({
             {
               id: 'gemini-studio' as const,
               name: 'Scene Studio',
+              model: 'google/gemini-3-pro-image-preview',
               desc: 'Generativ — skapar perspektiv och scen runt bilen som en bilannons.',
               badge: { label: 'Kreativ', tone: 'accent' as const },
               disabled: false,
@@ -1144,6 +1147,7 @@ export const V2GenerateStep = ({
             {
               id: 'flux' as const,
               name: 'Flux Creative',
+              model: 'black-forest-labs/flux-kontext-pro',
               desc: 'Replicate Flux Kontext Pro. Bra för kreativa scener och experiment.',
               badge: { label: 'Experiment', tone: 'accent' as const },
               disabled: false,
@@ -1151,6 +1155,7 @@ export const V2GenerateStep = ({
             {
               id: 'photoroom' as const,
               name: 'PhotoRoom Studio',
+              model: 'photoroom/background-studio-beta-2025-03-17',
               desc: 'Klassisk studio-look — strikt referensmatchning via Photoroom.',
               badge: { label: 'Klassisk', tone: 'muted' as const },
               disabled: false,
