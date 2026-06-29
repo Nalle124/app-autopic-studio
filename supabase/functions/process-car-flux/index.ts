@@ -166,6 +166,7 @@ Keep the car pixel-perfect — same color, same angle, same details, full extent
     if (jobId) {
       await supabase.from("processing_jobs").update({
         status: "completed",
+        engine: "flux",
         final_url: finalUrl,
         completed_at: new Date().toISOString(),
       }).eq("id", jobId);

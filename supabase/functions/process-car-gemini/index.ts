@@ -279,6 +279,7 @@ Output: ${aspect}`;
     if (jobId) {
       await supabase.from('processing_jobs').update({
         status: 'completed',
+        engine: `gemini-${engineMode}`,
         final_url: finalUrl,
         completed_at: new Date().toISOString(),
       }).eq('id', jobId);
