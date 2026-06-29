@@ -38,7 +38,7 @@ export function AdminEngineCosts() {
   const load = async (d: number) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('admin_get_engine_stats', { p_days: d });
+      const { data, error } = await (supabase as any).rpc('admin_get_engine_stats', { p_days: d });
       if (error) throw error;
       setRows((data || []) as EngineRow[]);
     } catch (e) {
