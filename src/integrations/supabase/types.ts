@@ -156,6 +156,7 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string | null
+          engine: string | null
           error_message: string | null
           final_url: string | null
           id: string
@@ -170,6 +171,7 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string | null
+          engine?: string | null
           error_message?: string | null
           final_url?: string | null
           id?: string
@@ -184,6 +186,7 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string | null
+          engine?: string | null
           error_message?: string | null
           final_url?: string | null
           id?: string
@@ -538,6 +541,15 @@ export type Database = {
           full_name: string
           id: string
           roles: string[]
+        }[]
+      }
+      admin_get_engine_stats: {
+        Args: { p_days?: number }
+        Returns: {
+          completed: number
+          engine: string
+          failed: number
+          total: number
         }[]
       }
       admin_get_user_stats: {
