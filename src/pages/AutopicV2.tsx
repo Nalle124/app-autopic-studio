@@ -32,7 +32,24 @@ export interface V2Image {
   status: 'pending' | 'classifying' | 'processing' | 'done' | 'error';
   error?: string;
   draftId?: string; // cloud draft ID for persistence
+  originalUrl?: string; // pre-generation source image, for before/after comparison
+  engine?: string; // engine used to generate this result
+  sceneName?: string; // scene used to generate this result
 }
+
+/** Serialize results for sessionStorage; blob: URLs die on reload so drop them */
+export const serializeV2Results = (results: V2Image[]) =>
+  results.map(r => ({
+    id: r.id,
+    previewUrl: r.previewUrl,
+    processedUrl: r.processedUrl,
+    classification: r.classification,
+    status: r.status,
+    error: r.error,
+    originalUrl: r.originalUrl?.startsWith('blob:') ? undefined : r.originalUrl,
+    engine: r.engine,
+    sceneName: r.sceneName,
+  }));
 
 export interface V2LogoConfig {
   preset: string;
@@ -217,14 +234,14 @@ const AutopicV2Content = () => {
             if (local && local.status === 'done' && local.processedUrl && local.processedUrl !== dbR.processedUrl) {
               return local;
             }
+            // Keep locally-known generation metadata (lost when rebuilding from DB)
+            if (local) {
+              return { ...dbR, originalUrl: local.originalUrl, engine: local.engine, sceneName: local.sceneName };
+            }
             return dbR;
           });
           try {
-            const serializable = merged.map(r => ({
-              id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
-              status: r.status, error: r.error,
-            }));
-            sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+            sessionStorage.setItem('v2-results', JSON.stringify(serializeV2Results(merged)));
           } catch {}
           return merged;
         });
@@ -264,15 +281,7 @@ const AutopicV2Content = () => {
     setResults(resultImages);
     setShowResults(true);
     try {
-      const serializable = resultImages.map(img => ({
-        id: img.id,
-        previewUrl: img.previewUrl,
-        processedUrl: img.processedUrl,
-        classification: img.classification,
-        status: img.status,
-        error: img.error,
-      }));
-      sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+      sessionStorage.setItem('v2-results', JSON.stringify(serializeV2Results(resultImages)));
       sessionStorage.setItem('v2-show-results', 'true');
     } catch {}
   }, []);
@@ -294,11 +303,7 @@ const AutopicV2Content = () => {
     setResults(prev => {
       const updated = prev.map(r => r.id === updatedImage.id ? updatedImage : r);
       try {
-        const serializable = updated.map(img => ({
-          id: img.id, previewUrl: img.previewUrl, processedUrl: img.processedUrl,
-          classification: img.classification, status: img.status, error: img.error,
-        }));
-        sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+        sessionStorage.setItem('v2-results', JSON.stringify(serializeV2Results(updated)));
       } catch {}
       return updated;
     });

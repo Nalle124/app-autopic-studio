@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Share2, Check, X, FolderDown, ListOrdered, CheckSquare, Focus } from 'lucide-react';
+import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Check, X, FolderDown, ListOrdered, CheckSquare, Focus, Pencil, ChevronDown, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -14,6 +14,7 @@ import {
 import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import type { V2Image } from '@/pages/AutopicV2';
 import { ImageCropEditor } from '@/components/ImageCropEditor';
 import { OriginalImageEditor } from '@/components/OriginalImageEditor';
@@ -31,13 +32,65 @@ interface Props {
   pendingCount?: number;
 }
 
+const ENGINE_LABELS: Record<string, string> = {
+  'gemini-fast': 'Scene Fast',
+  'gemini-match': 'Scene Pro',
+  'gemini-studio': 'Scene Studio',
+  'flux': 'Flux Creative',
+  'photoroom': 'PhotoRoom Studio',
+};
+
 export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, onFindPlan, isTryFlow, onRegenerateImage, regeneratingIds, pendingCount = 0 }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [showOriginal, setShowOriginal] = useState(false);
   const [editingImage, setEditingImage] = useState<{ url: string; index: number; type: 'crop' | 'adjust' | 'blur' } | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<number>>(new Set());
+  const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>({});
+
+  // Load any existing ratings for these results (silently skipped if table doesn't exist yet)
+  useEffect(() => {
+    const ids = results.map(r => r.id).filter(Boolean);
+    if (ids.length === 0) return;
+    (async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from('image_feedback')
+          .select('job_id, rating')
+          .in('job_id', ids);
+        if (data) {
+          const map: Record<string, 'up' | 'down'> = {};
+          for (const row of data) map[row.job_id] = row.rating;
+          setFeedback(map);
+        }
+      } catch {}
+    })();
+  }, [results.length]);
+
+  const handleFeedback = async (img: V2Image, rating: 'up' | 'down') => {
+    const previous = feedback[img.id];
+    const next = previous === rating ? undefined : rating;
+    setFeedback(prev => {
+      const copy = { ...prev };
+      if (next) copy[img.id] = next; else delete copy[img.id];
+      return copy;
+    });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      if (next) {
+        await (supabase as any).from('image_feedback').upsert(
+          { user_id: user.id, job_id: img.id, rating: next, engine: img.engine || null, scene_name: img.sceneName || null },
+          { onConflict: 'user_id,job_id' }
+        );
+        if (!previous) toast.success(t('v2.feedbackThanks'));
+      } else {
+        await (supabase as any).from('image_feedback').delete().eq('user_id', user.id).eq('job_id', img.id);
+      }
+    } catch {}
+  };
 
   const handleDownload = async (imageUrl: string, fileName: string) => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -115,94 +168,77 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
     });
   };
 
+  const openPreview = (index: number) => {
+    setShowOriginal(false);
+    setPreviewIndex(index);
+  };
+
+  const stepPreview = (direction: 1 | -1) => {
+    if (previewIndex === null) return;
+    setShowOriginal(false);
+    setPreviewIndex((previewIndex + direction + results.length) % results.length);
+  };
+
+  const openAiStudio = (imgIndex: number) => {
+    if (isTryFlow) {
+      toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
+      return;
+    }
+    const imgUrl = results[imgIndex]?.processedUrl || results[imgIndex]?.previewUrl || '';
+    sessionStorage.setItem('ai-studio-initial-image', imgUrl);
+    sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
+    const projectImages = results.filter(r => r.processedUrl).map(r => ({ url: r.processedUrl!, id: r.id }));
+    sessionStorage.setItem('ai-studio-project-images', JSON.stringify(projectImages));
+    setPreviewIndex(null);
+    navigate('/classic?tab=ai-studio');
+  };
+
   const previewImg = previewIndex !== null ? results[previewIndex] : null;
   const previewUrl = previewImg ? (previewImg.processedUrl || previewImg.previewUrl) : '';
+  const canCompare = !!previewImg?.originalUrl && previewImg.originalUrl !== previewUrl;
+  const displayedUrl = showOriginal && canCompare ? previewImg!.originalUrl! : previewUrl;
+  const previewEngineLabel = previewImg?.engine ? (ENGINE_LABELS[previewImg.engine] || previewImg.engine) : null;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       {/* Results section */}
       <section className="relative border border-border rounded-[10px] p-6 space-y-6 overflow-hidden bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.6)_0%,hsla(0,0%,20%,0.9)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.15)_0%,hsla(0,0%,20%,0.9)_100%)]">
-        {/* Header row */}
+        {/* Header row: one primary action, selection tools */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h2 className="font-sans font-medium text-lg text-foreground">{t('v2.finishedImages')}</h2>
-            
+
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-              {/* Crop tool */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
-                title={t('v2.crop')}
-                onClick={() => {
-                  if (results.length > 0) {
-                    const idx = previewIndex ?? 0;
-                    const url = results[idx].processedUrl || results[idx].previewUrl;
-                    setEditingImage({ url, index: idx, type: 'crop' });
-                  }
-                }}
-              >
-                <Scissors className="w-4 h-4" />
-              </Button>
+              {selectedImages.size > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={() => setSelectedImages(new Set())}
+                >
+                   <X className="w-4 h-4 mr-1" />
+                   {t('v2.deselect')}
+                </Button>
+              )}
 
-              {/* Edit tool */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20"
-                title={t('v2.adjust')}
-                onClick={() => {
-                  if (results.length > 0) {
-                    const idx = previewIndex ?? 0;
-                    const url = results[idx].processedUrl || results[idx].previewUrl;
-                    setEditingImage({ url, index: idx, type: 'adjust' });
-                  }
-                }}
-              >
-                <Sliders className="w-4 h-4" />
-              </Button>
-
-
-              {/* AI Studio button */}
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" 
-                title={t('v2.editFreely')}
-                onClick={() => {
-                  if (isTryFlow) {
-                    toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
-                    return;
-                  }
-                  const idx = previewIndex ?? 0;
-                  const imgUrl = results[idx]?.processedUrl || results[idx]?.previewUrl || '';
-                  sessionStorage.setItem('ai-studio-initial-image', imgUrl);
-                  sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
-                  const projectImages = results.filter(r => r.processedUrl).map(r => ({ url: r.processedUrl!, id: r.id }));
-                  sessionStorage.setItem('ai-studio-project-images', JSON.stringify(projectImages));
-                  navigate('/classic?tab=ai-studio');
-                }}
-              >
-                <img src="/favicon.png" alt="" className="w-7 h-7 object-contain dark:invert" />
-              </Button>
-
-              {/* Download dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="bg-white dark:bg-transparent border-foreground/20 dark:border-white/20" title={t('common.download')}>
-                    <Download className="w-4 h-4" />
+                  <Button variant="premium" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    {downloading ? t('v2.creatingZip') : t('common.download')}
+                    <ChevronDown className="w-3.5 h-3.5 ml-2 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onClick={() => downloadAsZip(results)} disabled={downloading}>
                     <FolderDown className="w-4 h-4 mr-2" />
-                    {downloading ? t('v2.creatingZip') : t('v2.downloadAsZip')}
+                    {t('v2.downloadAsZip')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => downloadOneByOne(results)}>
                     <ListOrdered className="w-4 h-4 mr-2" />
                     {t('v2.downloadOneByOne')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     disabled={selectedImages.size === 0}
                     onClick={() => {
                       const selected = Array.from(selectedImages).map(i => results[i]);
@@ -214,24 +250,12 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {selectedImages.size > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-muted-foreground"
-                  onClick={() => setSelectedImages(new Set())}
-                >
-                   <X className="w-4 h-4 mr-1" />
-                   {t('v2.deselect')}
-                </Button>
-              )}
             </div>
           </div>
-          
+
           {/* Select all */}
           <div className="flex items-center gap-2">
-            <Checkbox 
+            <Checkbox
               id="select-all-v2"
               checked={selectedImages.size === results.length && results.length > 0}
               onCheckedChange={(checked) => {
@@ -265,7 +289,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                 if (selectedImages.size > 0) {
                   toggleSelection(i);
                 } else {
-                  setPreviewIndex(i);
+                  openPreview(i);
                 }
               }}
               onContextMenu={(e) => {
@@ -291,7 +315,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                     onClick={(e) => { e.stopPropagation(); onRegenerateImage(img.id); }}
                   >
                     <RotateCcw className="w-5 h-5" />
-                    <span className="text-xs font-medium">{t('v2.regenerate') || 'Generera om'}</span>
+                    <span className="text-xs font-medium">{t('v2.regenerate')}</span>
                   </button>
                 )}
                 {selectedImages.has(i) && (
@@ -301,6 +325,13 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                       <Check className="w-4 h-4 text-primary-foreground" />
                     </div>
                   </>
+                )}
+                {feedback[img.id] && !selectedImages.has(i) && (
+                  <div className="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-background/80 border border-border/50 flex items-center justify-center">
+                    {feedback[img.id] === 'up'
+                      ? <ThumbsUp className="w-3.5 h-3.5 text-primary" />
+                      : <ThumbsDown className="w-3.5 h-3.5 text-muted-foreground" />}
+                  </div>
                 )}
                 <button
                   className="absolute top-2 left-2 w-6 h-6 rounded-full bg-background/80 border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -326,7 +357,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span className="text-[10px] text-muted-foreground">{t('common.waiting') || 'Väntar...'}</span>
+                    <span className="text-[10px] text-muted-foreground">{t('common.waiting')}</span>
                   </div>
                 </div>
               </div>
@@ -356,85 +387,140 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
 
       {/* Preview dialog */}
       <Dialog open={previewIndex !== null && !editingImage} onOpenChange={(open) => !open && setPreviewIndex(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-hidden p-0"
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') stepPreview(-1);
+            if (e.key === 'ArrowRight') stepPreview(1);
+          }}
+        >
           <VisuallyHidden><DialogTitle>{t('v2.preview')}</DialogTitle></VisuallyHidden>
           {previewImg && (
             <div className="flex flex-col h-full max-h-[90vh]">
+              {/* Context header: which image, which scene, which engine */}
+              <div className="flex items-center gap-2 px-4 py-2.5 pr-12 border-b bg-background min-h-[44px]">
+                <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                  {t('v2.imageOf', { current: (previewIndex ?? 0) + 1, total: results.length })}
+                </span>
+                <div className="flex items-center gap-1.5 overflow-hidden">
+                  {previewImg.sceneName && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border/50 truncate">
+                      {previewImg.sceneName}
+                    </span>
+                  )}
+                  {previewEngineLabel && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border/50 whitespace-nowrap">
+                      {previewEngineLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <div className="relative flex-1 bg-black min-h-0 flex items-center justify-center">
                 <img
-                  src={previewUrl}
-                  alt={t('v2.preview')}
-                  className="max-w-full max-h-[calc(90vh-80px)] object-contain"
+                  src={displayedUrl}
+                  alt={showOriginal ? t('v2.original') : t('v2.result')}
+                  className="max-w-full max-h-[calc(90vh-124px)] object-contain"
                 />
                 {results.length > 1 && (
                   <>
-                    <Button 
-                      size="icon" 
-                      variant="secondary" 
-                      className="absolute left-2 top-1/2 -translate-y-1/2" 
-                      onClick={() => setPreviewIndex(previewIndex! > 0 ? previewIndex! - 1 : results.length - 1)}
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute left-2 top-1/2 -translate-y-1/2"
+                      onClick={() => stepPreview(-1)}
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </Button>
-                    <Button 
-                      size="icon" 
-                      variant="secondary" 
-                      className="absolute right-2 top-1/2 -translate-y-1/2" 
-                      onClick={() => setPreviewIndex(previewIndex! < results.length - 1 ? previewIndex! + 1 : 0)}
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute right-2 top-1/2 -translate-y-1/2"
+                      onClick={() => stepPreview(1)}
                     >
                       <ChevronRight className="w-5 h-5" />
                     </Button>
                   </>
                 )}
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                  {(previewIndex ?? 0) + 1} / {results.length}
-                </div>
-              </div>
-              
-              <div className="p-3 bg-background border-t flex items-center justify-between gap-2">
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" title={t('v2.adjust')} onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
-                    <Sliders className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">{t('v2.adjust')}</span>
-                  </Button>
-                  <Button size="sm" variant="outline" title={t('v2.crop')} onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
-                    <Scissors className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">{t('v2.crop')}</span>
-                  </Button>
-                  <Button size="sm" variant="outline" title="Bokeh" onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'blur' })}>
-                    <Focus className="w-4 h-4" />
-                    <span className="hidden sm:inline ml-1">Bokeh</span>
-                  </Button>
-                  {onRegenerateImage && (
-                    <Button size="sm" variant="outline" title={t('v2.regenerate') || 'Generera om'}
-                      disabled={regeneratingIds?.has(previewImg?.id || '')}
-                      onClick={() => { if (previewImg) onRegenerateImage(previewImg.id); }}
+                {/* Original/result comparison — the fastest way to spot AI mistakes */}
+                {canCompare && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex bg-black/60 border border-white/15 rounded-full p-0.5 text-xs backdrop-blur-sm">
+                    <button
+                      className={`px-3.5 py-1 rounded-full transition-colors ${showOriginal ? 'bg-white text-black font-semibold' : 'text-white/70 hover:text-white'}`}
+                      onClick={() => setShowOriginal(true)}
                     >
-                      <RotateCcw className={`w-4 h-4 ${regeneratingIds?.has(previewImg?.id || '') ? 'animate-spin' : ''}`} />
-                      <span className="hidden sm:inline ml-1">{t('v2.regenerate') || 'Generera om'}</span>
+                      {t('v2.original')}
+                    </button>
+                    <button
+                      className={`px-3.5 py-1 rounded-full transition-colors ${!showOriginal ? 'bg-white text-black font-semibold' : 'text-white/70 hover:text-white'}`}
+                      onClick={() => setShowOriginal(false)}
+                    >
+                      {t('v2.result')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* One primary action; everything else is secondary */}
+              <div className="p-3 bg-background border-t flex items-center gap-2 flex-wrap">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Pencil className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-1">{t('v2.edit')}</span>
+                      <ChevronDown className="w-3 h-3 ml-1 opacity-60" />
                     </Button>
-                  )}
-                  <Button size="sm" variant="outline" title={t('v2.editFreely')} onClick={() => {
-                    if (isTryFlow) {
-                      toast.info('AI Studio är en premiumfunktion. Skaffa ett paket för att använda den.');
-                      return;
-                    }
-                    const imgUrl = previewImg?.processedUrl || previewImg?.previewUrl || '';
-                    sessionStorage.setItem('ai-studio-initial-image', imgUrl);
-                    sessionStorage.setItem('ai-studio-initial-mode', 'free-create');
-                    const projectImages = results.filter(r => r.processedUrl).map(r => ({ url: r.processedUrl!, id: r.id }));
-                    sessionStorage.setItem('ai-studio-project-images', JSON.stringify(projectImages));
-                    setPreviewIndex(null);
-                    navigate('/classic?tab=ai-studio');
-                  }}>
-                    <img src="/favicon.png" alt="" className="w-5 h-5 object-contain dark:invert" />
-                    <span className="hidden sm:inline ml-1">AI</span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-44">
+                    <DropdownMenuItem onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'adjust' })}>
+                      <Sliders className="w-4 h-4 mr-2" />
+                      {t('v2.adjust')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'crop' })}>
+                      <Scissors className="w-4 h-4 mr-2" />
+                      {t('v2.crop')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditingImage({ url: previewUrl, index: previewIndex!, type: 'blur' })}>
+                      <Focus className="w-4 h-4 mr-2" />
+                      Bokeh
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openAiStudio(previewIndex!)}>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {t('v2.aiStudio')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {onRegenerateImage && (
+                  <Button size="sm" variant="ghost" className="text-muted-foreground"
+                    disabled={regeneratingIds?.has(previewImg.id)}
+                    onClick={() => onRegenerateImage(previewImg.id)}
+                  >
+                    <RotateCcw className={`w-4 h-4 ${regeneratingIds?.has(previewImg.id) ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline ml-1">{t('v2.regenerate')}</span>
+                  </Button>
+                )}
+
+                <div className="flex-1" />
+
+                <div className="flex items-center gap-0.5 mr-1">
+                  <Button size="sm" variant="ghost" title={t('v2.goodResult')}
+                    className={feedback[previewImg.id] === 'up' ? 'text-primary' : 'text-muted-foreground/60'}
+                    onClick={() => handleFeedback(previewImg, 'up')}
+                  >
+                    <ThumbsUp className="w-4 h-4" />
+                  </Button>
+                  <Button size="sm" variant="ghost" title={t('v2.badResult')}
+                    className={feedback[previewImg.id] === 'down' ? 'text-destructive' : 'text-muted-foreground/60'}
+                    onClick={() => handleFeedback(previewImg, 'down')}
+                  >
+                    <ThumbsDown className="w-4 h-4" />
                   </Button>
                 </div>
-                
-                <Button size="sm" onClick={() => handleDownload(previewUrl, `image-${(previewIndex ?? 0) + 1}.jpg`)}>
-                  <Share2 className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">{t('v2.share')}</span>
+
+                <Button size="sm" variant="premium" onClick={() => handleDownload(previewUrl, `image-${(previewIndex ?? 0) + 1}.jpg`)}>
+                  <Download className="w-4 h-4 mr-1.5" />
+                  {t('common.download')}
                 </Button>
               </div>
             </div>
