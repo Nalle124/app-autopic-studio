@@ -701,7 +701,6 @@ export const V2GenerateStep = ({
             const modeMap = { 'gemini-fast': 'fast', 'gemini-match': 'match', 'gemini-studio': 'studio' } as const;
             fd.append('engineMode', modeMap[engine as 'gemini-fast' | 'gemini-match' | 'gemini-studio']);
           }
-          console.log(`Dispatching image ${prepared.img.id} via ${functionName} (engine: ${engine}) (job ${jobIds[prepared.img.id]})`);
           try {
             await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
               method: 'POST',
@@ -730,7 +729,6 @@ export const V2GenerateStep = ({
               sessionStorage.setItem('v2-results', JSON.stringify([]));
             } catch {}
           }
-          console.log(`Dispatched ${dispatched}/${validPrepared.length} images`);
         }
       })();
 

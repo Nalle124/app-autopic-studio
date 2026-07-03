@@ -40,6 +40,7 @@ import volvoCropExample from "@/assets/examples/volvo-crop-example.png";
 const GUIDE_SECTIONS = [
   { id: 'foto', label: 'Fotografering' },
   { id: 'ai-bakgrunder', label: 'AI-bakgrunder' },
+  { id: 'motorer', label: 'AI-motorer' },
   { id: 'ljus', label: 'Ljusförbättring' },
   { id: 'blur', label: 'Bakgrundsblur' },
   { id: 'beskärning', label: 'Beskärning' },
@@ -221,6 +222,54 @@ const Guide = () => {
           </div>
         </section>
 
+        {/* Section: AI-motorer */}
+        <section id="motorer" className="space-y-6">
+          <SectionHeading icon={<Sparkles className="w-5 h-5" />} title="Välj rätt AI-motor" />
+
+          <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
+            <p>
+              AutoPic låter dig välja vilken <strong className="text-foreground">AI-motor</strong> som genererar dina bilder — en styrka som få andra verktyg erbjuder. Motorerna har olika karaktär, och du väljer i sista steget innan du genererar.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold text-foreground text-sm">Scene Fast</h4>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Standard</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Snabb och pålitlig — bäst för volym och dagligt bruk. Bilen skärs ut automatiskt först, så AI:n bara byter bakgrund.
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-1.5">
+              <h4 className="font-semibold text-foreground text-sm">Scene Pro</h4>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Högsta kvalitet — följer din valda bakgrund så exakt som möjligt. Välj den när bilden ska bära hela annonsen.
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-1.5">
+              <h4 className="font-semibold text-foreground text-sm">Scene Studio & Flux Creative</h4>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Generativa motorer som bygger perspektiv och scen runt bilen — för kreativa kampanjbilder snarare än exakta bakgrundsbyten.
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-1.5">
+              <h4 className="font-semibold text-foreground text-sm">PhotoRoom Studio</h4>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Klassisk studio-look med strikt referensmatchning — ett tryggt val för enhetliga lagerbilder.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-[10px] border border-border/50 bg-card/50 p-5 flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <p className="text-sm text-muted-foreground font-sans">
+              <strong className="text-foreground">Tips:</strong> Osäker? Börja med Scene Fast. Blir du inte nöjd kan du generera om samma bild med en annan motor — och jämföra mot originalet direkt i förhandsvisningen.
+            </p>
+          </div>
+        </section>
+
         {/* Section 3: Ljusförbättring */}
         <section id="ljus" className="space-y-6">
           <SectionHeading icon={<Sun className="w-5 h-5" />} title="Ljusförbättring" />
@@ -369,24 +418,24 @@ const Guide = () => {
 
           <div className="space-y-4 font-sans text-sm sm:text-base text-muted-foreground">
             <p>
-              AI-chatten är ett <strong className="text-foreground">interaktivt chattverktyg</strong> där du kan skapa bakgrunder, annonsbilder och fritt redigera bilder genom att beskriva vad du vill ha. Du hittar den under <strong className="text-foreground">"Skapa med AI"</strong> i appen.
+              AI Studio är ett <strong className="text-foreground">interaktivt verktyg</strong> där du kan skapa bakgrunder, redigera bilder fritt och köra snabba batchverktyg. Du hittar det under <strong className="text-foreground">"AI Studio"</strong> i menyn.
             </p>
             <p>
-              Chatten har tre lägen att välja mellan:
+              Två kreativa lägen och tre snabbverktyg:
             </p>
           </div>
 
-          {/* Three modes */}
-          <div className="grid gap-3 sm:grid-cols-3">
+          {/* Creative modes */}
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <div className="p-1 rounded-md bg-primary/10">
                   <Image className="w-4 h-4 text-primary" />
                 </div>
-                <h4 className="font-semibold text-foreground text-sm">Bakgrundsstudio</h4>
+                <h4 className="font-semibold text-foreground text-sm">Skapa bakgrund</h4>
               </div>
               <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-                Guidat flöde för att skapa bilbakgrunder. Välj kategori (studio, utomhus, showroom) och AI:n leder dig genom detaljer som ljus, material och väder.
+                Guidat flöde för att skapa egna bilbakgrunder. Välj kategori (studio, utomhus, showroom), följ frågorna eller beskriv fritt — och förfina med ett klick via snabbsvar som "gör ljusare" eller "mjukare skuggor".
               </p>
             </div>
             <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-2">
@@ -394,21 +443,32 @@ const Guide = () => {
                 <div className="p-1 rounded-md bg-primary/10">
                   <Sparkles className="w-4 h-4 text-primary" />
                 </div>
-                <h4 className="font-semibold text-foreground text-sm">Fritt skapande</h4>
+                <h4 className="font-semibold text-foreground text-sm">Redigera fritt</h4>
               </div>
               <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-                Öppen bildgenerering utan regler. Beskriv fritt vad du vill ha, ladda upp en referensbild och iterera tills du är nöjd.
+                Öppen bildredigering utan regler. Ladda upp en bild eller välj en genererad, beskriv ändringen och iterera tills du är nöjd.
               </p>
             </div>
-            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-md bg-primary/10">
-                  <Palette className="w-4 h-4 text-primary" />
-                </div>
-                <h4 className="font-semibold text-foreground text-sm">Skapa annons</h4>
-              </div>
+          </div>
+
+          {/* Quick tools */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-1.5">
+              <h4 className="font-semibold text-foreground text-sm">Maskera interiör</h4>
               <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-                Skapa annonsbilder med text, logotyp och CTA. Välj liggande eller stående format och beskriv vad som ska synas i annonsen.
+                Byter det som syns genom rutor och öppna dörrar mot en ren bakgrund — utan att röra bilen.
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-1.5">
+              <h4 className="font-semibold text-foreground text-sm">Blurra regskyltar</h4>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Döljer registreringsskyltar på flera bilder samtidigt — blur, mörk platta eller din logotyp.
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-1.5">
+              <h4 className="font-semibold text-foreground text-sm">Applicera logo</h4>
+              <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                Lägger din logotyp på valda bilder med färdiga placeringar och storlekar.
               </p>
             </div>
           </div>
@@ -430,8 +490,8 @@ const Guide = () => {
                 prompt="Gör bakgrunden mörkare och lägg till regndroppar"
               />
               <PromptExample
-                label="Annons"
-                prompt="Skapa en annons med texten 'Nyhet – nu i lager' i svart och guld"
+                label="Fri bild"
+                prompt="Ändra vinkeln något men behåll bilen exakt som den är"
               />
             </div>
           </div>
@@ -480,14 +540,17 @@ const Guide = () => {
                 text="Testa 2–3 bakgrunder för att hitta den som matchar din bil bäst."
               />
               <MiniTip
-                icon={<Sparkles className="w-4 h-4" />}
-                text="Du kan generera om med samma bakgrund för att få en ny variant om du vill."
+                icon={<Image className="w-4 h-4" />}
+                text="Använd Original/Resultat-knappen i förhandsvisningen för att snabbt jämföra mot ditt originalfoto innan du laddar ner."
               />
               <MiniTip
                 icon={<Camera className="w-4 h-4" />}
                 text="Bilens vinkel och ljussättning i originalfotot påverkar slutresultatet mest."
               />
             </div>
+            <p>
+              Ge gärna tummen upp eller ner på dina resultat — din feedback hjälper oss välja rätt motor och scen åt dig framöver.
+            </p>
           </div>
         </section>
 
@@ -504,7 +567,7 @@ const Guide = () => {
             <FaqItem
               value="faq-2"
               question="Kan jag använda mina egna bakgrunder?"
-              answer="Just nu erbjuder vi ett kurerat bibliotek av bakgrunder som är optimerade för bästa resultat. Vi jobbar på möjligheten att ladda upp egna bakgrunder – stay tuned!"
+              answer="Ja! Skapa egna bakgrunder i AI Studio – beskriv miljön du vill ha eller ladda upp en referensbild som inspiration. Alla bakgrunder du sparar hamnar under 'Mina scener' och kan användas precis som bibliotekets bakgrunder."
             />
             <FaqItem
               value="faq-3"
@@ -524,7 +587,7 @@ const Guide = () => {
             <FaqItem
               value="faq-6"
               question="Kan jag redigera bilden efter generering?"
-              answer="Du kan lägga till logotyp via Brand Kit-funktionen. Just nu kan du inte redigera själva bilden i appen, men du kan ladda ner den i hög upplösning och redigera den i valfritt bildverktyg."
+              answer="Ja. Öppna bilden i resultatvyn och välj Redigera – där finns beskärning, ljusjustering och bakgrundsblur (bokeh). Vill du göra större ändringar skickar du bilden till AI Studio och beskriver ändringen fritt. Du kan också jämföra mot originalet och generera om bilden direkt."
             />
             <FaqItem
               value="faq-7"

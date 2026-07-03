@@ -468,27 +468,37 @@ const Landing = () => {
             })}
           </div>
 
-          {/* Credit pack */}
-          <div className="max-w-sm mx-auto">
-            <Card className="p-6 text-center">
-              <h3 className="font-semibold mb-1">{PRICING_TIERS.creditPack.name}</h3>
-              <div className="flex items-baseline gap-1 justify-center mb-2">
-                <span className="text-2xl font-['Playfair_Display'] italic font-bold">
-                  {PRICING_TIERS.creditPack.price}
-                </span>
-                <span className="text-sm text-muted-foreground">kr</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-4">
-                {PRICING_TIERS.creditPack.credits} credits — engångsköp
-              </p>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate("/guest-checkout?plan=creditPack")}
-              >
-                Köp credits
-              </Button>
-            </Card>
+          {/* Credit packs — one-time purchases */}
+          <div className="max-w-3xl mx-auto">
+            <p className="text-center text-sm text-muted-foreground mb-4">
+              Vill du inte prenumerera? Köp credits när du behöver dem.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-5">
+              {(["creditPack30", "creditPack100", "creditPack300"] as const).map((key) => {
+                const pack = PRICING_TIERS[key];
+                return (
+                  <Card key={key} className="p-6 text-center">
+                    <h3 className="font-semibold mb-1">{pack.credits} credits</h3>
+                    <div className="flex items-baseline gap-1 justify-center mb-2">
+                      <span className="text-2xl font-['Playfair_Display'] italic font-bold">
+                        {pack.price}
+                      </span>
+                      <span className="text-sm text-muted-foreground">kr</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Engångsköp — ingen prenumeration
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => navigate(`/guest-checkout?plan=${key}`)}
+                    >
+                      Köp credits
+                    </Button>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>

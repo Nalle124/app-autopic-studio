@@ -39,11 +39,9 @@ export const ImageCompositor = ({
           ? scene.fullResUrl 
           : new URL(scene.fullResUrl, window.location.origin).href;
         
-        console.log('Loading background from:', absoluteBgUrl);
         
         await new Promise((resolve, reject) => {
           bgImage.onload = () => {
-            console.log('Background loaded successfully');
             resolve(true);
           };
           bgImage.onerror = (e) => {
@@ -61,7 +59,6 @@ export const ImageCompositor = ({
         canvas.width = targetWidth;
         canvas.height = targetHeight;
         
-        console.log('Canvas size set to:', targetWidth, 'x', targetHeight, '(original bg:', bgImage.width, 'x', bgImage.height, ')');
 
         // Draw background
         ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
@@ -70,11 +67,9 @@ export const ImageCompositor = ({
         const carImage = new Image();
         carImage.crossOrigin = 'anonymous';
         
-        console.log('Loading car from:', segmentedImageUrl);
         
         await new Promise((resolve, reject) => {
           carImage.onload = () => {
-            console.log('Car loaded successfully, dimensions:', carImage.width, 'x', carImage.height);
             resolve(true);
           };
           carImage.onerror = (e) => {
@@ -98,16 +93,8 @@ export const ImageCompositor = ({
           // Use AI-determined positioning
           scale = carAnalysis.recommendedScale;
           tireBottomPercent = carAnalysis.tireBottomPercent;
-          console.log('✓ Using AI positioning:', { 
-            tireBottomPercent, 
-            scale,
-            shadowAngle: carAnalysis.shadowAngle,
-            shadowLength: carAnalysis.shadowLength
-          });
         } else {
           // Smart fallback: estimate tire position based on aspect ratio and image composition
-          console.log('⚠ Using fallback positioning (no AI data)');
-          console.log('Image dimensions:', carImage.width, 'x', carImage.height, 'aspect:', aspectRatio.toFixed(2));
           
           // More conservative positioning to handle various photo perspectives
           if (isPortrait) {
@@ -115,23 +102,18 @@ export const ImageCompositor = ({
             // Tires are usually much lower in portrait mode
             scale = scene.defaultScale * 1.25; // Slightly less aggressive scaling
             tireBottomPercent = 82; // More conservative placement
-            console.log('Portrait mode: scale', scale, 'tireBottom', tireBottomPercent);
           } else if (aspectRatio > 2.5) {
             // Very wide panoramic images
             tireBottomPercent = 72; // Slightly lower than before
-            console.log('Panoramic mode: tireBottom', tireBottomPercent);
           } else if (aspectRatio > 1.8) {
             // Wide landscape (16:9, etc.)
             tireBottomPercent = 76; // More conservative
-            console.log('Wide landscape: tireBottom', tireBottomPercent);
           } else if (aspectRatio > 1.3) {
             // Normal landscape (4:3, 3:2)
             tireBottomPercent = 79; // Slightly lower
-            console.log('Normal landscape: tireBottom', tireBottomPercent);
           } else {
             // Square-ish or unusual ratios - be more conservative
             tireBottomPercent = 81;
-            console.log('Square-ish: tireBottom', tireBottomPercent);
           }
         }
         
@@ -147,15 +129,6 @@ export const ImageCompositor = ({
         
         // Center horizontally
         const carX = (canvas.width - scaledWidth) / 2;
-        
-        console.log('Positioning:', {
-          baselineY,
-          tireBottomPercent,
-          scaledHeight,
-          tireBottomInScaledImage,
-          carY,
-          carX
-        });
 
         // Draw professional contact shadow directly under the car
         const shouldDrawShadow = scene.shadowPreset.enabled;
@@ -173,7 +146,6 @@ export const ImageCompositor = ({
           const shadowBlur = hasAIShadow ? carAnalysis.shadowBlur : 20;
           const shadowOpacity = hasAIShadow ? carAnalysis.shadowOpacity : 0.4;
           
-          console.log('Shadow params:', { hasAIShadow, shadowAngle, shadowLength, shadowBlur, shadowOpacity });
           
           // Draw contact shadow DIRECTLY under the tires at baseline
           const angleRad = (shadowAngle * Math.PI) / 180;
@@ -266,9 +238,7 @@ export const ImageCompositor = ({
         }
 
         // Convert to data URL and callback
-        console.log('Composition complete, converting to data URL');
         const dataUrl = canvas.toDataURL('image/png', 1.0);
-        console.log('Data URL created, length:', dataUrl.length);
         onCompositionComplete(dataUrl);
       } catch (error) {
         console.error('Error composing image:', error);
