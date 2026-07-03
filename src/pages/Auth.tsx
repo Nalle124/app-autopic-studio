@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/AuthContext';
+import autopicLogoDark from '@/assets/autopic-logo-dark.png';
+import autopicLogoWhite from '@/assets/autopic-logo-white.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -17,6 +20,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 
 const Auth = () => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [searchParams] = useSearchParams();
   const planParam = searchParams.get('plan') as PricingTier | null;
   const selectedPlan = planParam && PRICING_TIERS[planParam] ? planParam : null;
@@ -486,16 +490,56 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md overflow-hidden">
-        
-        
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+      {/* Brand panel — desktop only */}
+      <div className="hidden lg:flex relative flex-col justify-between p-10 xl:p-14 overflow-hidden text-white bg-[linear-gradient(160deg,hsl(222,26%,16%)_0%,hsl(0,0%,7%)_70%)]">
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[#A1581D]/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 -left-24 w-80 h-80 rounded-full bg-[#4D6185]/25 blur-3xl pointer-events-none" />
+
+        <img src={autopicLogoWhite} alt="AutoPic" className="h-7 w-auto self-start relative" />
+
+        <div className="relative space-y-7 max-w-md">
+          <div className="space-y-3">
+            <p className="font-['Playfair_Display'] italic text-lg text-white/60">
+              {t('auth.brandQuote')}
+            </p>
+            <h1 className="text-3xl xl:text-4xl font-bold leading-tight tracking-tight">
+              {t('auth.brandHeadline')}
+            </h1>
+          </div>
+          <ul className="space-y-3">
+            {[t('auth.brandPoint1'), t('auth.brandPoint2'), t('auth.brandPoint3')].map((point) => (
+              <li key={point} className="flex items-start gap-3 text-sm text-white/80">
+                <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 mt-[1px]">
+                  <Check className="w-3 h-3 text-[#D98A4A]" />
+                </span>
+                {point}
+              </li>
+            ))}
+          </ul>
+          <div className="rounded-[14px] overflow-hidden border border-white/10 shadow-2xl">
+            <img src="/scenes/nordisk-dagsljus.jpg" alt="AI-genererad miljö i nordiskt dagsljus" className="w-full h-auto" loading="lazy" />
+          </div>
+        </div>
+
+        <p className="relative text-xs text-white/40">© {new Date().getFullYear()} AutoPic</p>
+      </div>
+
+      {/* Form side */}
+      <div className="flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-md space-y-6">
+          <img
+            src={theme === 'light' ? autopicLogoDark : autopicLogoWhite}
+            alt="AutoPic"
+            className="h-6 w-auto mx-auto lg:hidden"
+          />
+          <Card className="w-full overflow-hidden">
         <CardHeader>
           <CardTitle className="text-2xl text-center">
             {selectedPlan ? t('auth.createAccountToContinue') : t('auth.welcome')}
           </CardTitle>
           <CardDescription className="text-center">
-            {selectedPlan 
+            {selectedPlan
               ? t('auth.fillDetailsForPayment')
               : t('auth.loginOrSignup')
             }
@@ -573,7 +617,9 @@ const Auth = () => {
             </TabsContent>
           </Tabs>
         </CardContent>
-      </Card>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

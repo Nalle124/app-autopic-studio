@@ -90,7 +90,12 @@
     "couldNotUpdatePassword": "Could not update password",
     "enterEmail": "Enter your email address",
     "newPasswordTitle": "New password",
-    "enterNewPassword": "Enter your new password"
+    "enterNewPassword": "Enter your new password",
+    "brandHeadline": "Professional car ads in minutes",
+    "brandPoint1": "Swap backgrounds with AI — the car stays exactly as it is",
+    "brandPoint2": "80+ scenes built for real car listings",
+    "brandPoint3": "Upload, pick a background, done — no skills needed",
+    "brandQuote": "Great ads, whatever the weather"
   },
   "v2": {
     "steps": {
