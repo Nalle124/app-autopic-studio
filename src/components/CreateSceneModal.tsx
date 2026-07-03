@@ -7,7 +7,7 @@ import {
 '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown, Share2, Scissors, Sliders, Upload, ArrowLeft } from 'lucide-react';
+import { Loader2, RotateCcw, Check, X, Send, ImageIcon, Download, Image, MoreVertical, Plus, Type, Menu, ChevronDown, ChevronRight, Share2, Scissors, Sliders, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -2932,70 +2932,49 @@ export const CreateSceneModal = ({
                     </button>
                   </div>
                   <input ref={blurFileInputRef} type="file" accept="image/*" multiple onChange={handleBlurFileUpload} className="hidden" />
+                  {/* Blur style choice appears directly when images are selected — no extra "Nästa" step */}
                   {selectedBlurImages.length > 0 && chatMode === 'blur-plates' && !blurStyle &&
-              <div className="pl-9">
-                      <Button
-                  onClick={() => {
-                    setMessages((prev) => [
-                      ...prev,
-                      { role: 'assistant-status', text: `${selectedBlurImages.length} bild(er) valda` },
-                      {
-                        role: 'assistant-options',
-                        text: 'Välj hur skylten ska döljas:',
-                        options: BLUR_STYLE_OPTIONS.map((s) => ({ label: s.label, value: `__blur_style_${s.value}__` }))
-                      }
-                    ]);
-                  }}
-                  variant="outline"
-                  className="w-full rounded-full h-10">
-                        Nästa
-                      </Button>
+              <div className="pl-9 space-y-2">
+                      <p className="text-xs text-muted-foreground">{selectedBlurImages.length} bild(er) valda — välj hur skylten ska döljas:</p>
+                      {BLUR_STYLE_OPTIONS.map((s) => (
+                        <button
+                          key={s.value}
+                          onClick={() => handleOptionClick(`__blur_style_${s.value}__`)}
+                          className="flex items-center justify-between gap-3 w-full px-3 py-2.5 rounded-xl border border-border/50 bg-muted/30 hover:bg-muted hover:border-primary/40 transition-colors text-left">
+                          <div>
+                            <p className="text-sm text-foreground">{s.label}</p>
+                            <p className="text-[11px] text-muted-foreground">{s.description}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        </button>
+                      ))}
                     </div>
               }
-                  {selectedBlurImages.length > 0 && chatMode === 'fix-interior' && !blurStyle &&
-              <div className="pl-9">
-                      <Button
-                  onClick={() => {
-                    setMessages((prev) => [
-                      ...prev,
-                      { role: 'assistant-status', text: `${selectedBlurImages.length} bild(er) valda` },
-                      {
-                        role: 'assistant-options',
-                        text: 'Vilken bakgrundsfärg ska synas genom rutorna?',
-                        options: [
+                  {/* Interior background choice appears directly when images are selected */}
+                  {selectedBlurImages.length > 0 && chatMode === 'fix-interior' && !interiorBgType && !awaitingGuidedCustomInput &&
+              <div className="pl-9 space-y-2">
+                      <p className="text-xs text-muted-foreground">{selectedBlurImages.length} bild(er) valda — vilken bakgrundsfärg ska synas genom rutorna?</p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
                           { label: 'Vit', value: '__fix_interior_batch_light__' },
                           { label: 'Mörk', value: '__fix_interior_batch_dark__' },
                           { label: 'Grå', value: '__fix_interior_batch_grey__' },
                           { label: 'Eget', value: '__fix_interior_batch_custom__' }
-                        ]
-                      }
-                    ]);
-                  }}
-                  variant="outline"
-                  className="w-full rounded-full h-10">
-                        Nästa
-                      </Button>
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => handleOptionClick(opt.value)}
+                            className="px-4 py-2 text-sm rounded-full border border-border/60 bg-muted/30 hover:bg-muted hover:border-primary/40 transition-colors text-foreground">
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
               }
+                  {/* Logo picker appears directly when images are selected */}
                   {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && !selectedLogoUrl &&
-              <div className="pl-9 space-y-3">
-                      <Button
-                  onClick={() => {
-                    setMessages((prev) => [
-                      ...prev,
-                      { role: 'assistant-status', text: `${selectedBlurImages.length} bild(er) valda` },
-                      { role: 'assistant', text: 'Välj vilken logo du vill använda:' }
-                    ]);
-                  }}
-                  variant="outline"
-                  className="w-full rounded-full h-10">
-                        Nästa
-                      </Button>
-                    </div>
-              }
-                  {/* Logo picker - shown after logo prompt */}
-                  {selectedBlurImages.length > 0 && chatMode === 'logo-studio' && !selectedLogoUrl && messages.some(m => m.role === 'assistant' && typeof (m as any).text === 'string' && (m as any).text.includes('Välj vilken logo')) &&
               <div className="pl-9 space-y-2">
+                      <p className="text-xs text-muted-foreground">{selectedBlurImages.length} bild(er) valda — välj logo:</p>
                       {profileLogoLight && (
                         <button
                           onClick={() => handleOptionClick('__logo_profile_light__')}
@@ -3698,22 +3677,23 @@ export const CreateSceneModal = ({
           </div>
     }
 
-        {/* Post-generation suggestions above input */}
-        {showPostGenSuggestions && chatMode &&
+        {/* Post-generation quick replies: one tap sends the refinement directly */}
+        {showPostGenSuggestions && chatMode && postGenSuggestions.length > 0 &&
     <div className="px-4 pt-2 pb-1 bg-background/50 flex-shrink-0">
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
-              {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 2)).map((s, idx) =>
+            <div className="flex flex-wrap gap-1.5">
+              {(showAllSuggestions ? postGenSuggestions : postGenSuggestions.slice(0, 3)).map((s, idx) =>
         <button
           key={idx}
-          onClick={() => setPrompt(s + ' ')}
-          className="text-[13px] py-1 text-primary/80 hover:text-primary transition-colors">
-                  {s}...
+          disabled={isGenerating}
+          onClick={() => handleSuggestionSend(s)}
+          className="text-[12px] px-3 py-1.5 rounded-full border border-border/60 bg-muted/30 text-foreground/80 hover:bg-muted hover:border-primary/40 hover:text-foreground transition-colors disabled:opacity-40">
+                  {s}
                 </button>
         )}
-              {postGenSuggestions.length > 2 && !showAllSuggestions &&
+              {postGenSuggestions.length > 3 && !showAllSuggestions &&
         <button
           onClick={() => setShowAllSuggestions(true)}
-          className="text-[13px] py-1 text-muted-foreground hover:text-foreground transition-colors">
+          className="text-[12px] px-3 py-1.5 rounded-full text-muted-foreground hover:text-foreground transition-colors">
                   Fler...
                 </button>
         }
