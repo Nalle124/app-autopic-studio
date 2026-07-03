@@ -585,6 +585,10 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2.5">
+                  <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">{t('auth.freeCreditsNote')}</p>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">{t('auth.name')}</Label>
                   <Input id="signup-name" type="text" placeholder={t('auth.namePlaceholder')} value={fullName} onChange={e => setFullName(e.target.value)} disabled={loading} />

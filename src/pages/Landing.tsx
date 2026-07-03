@@ -102,7 +102,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Är det gratis att testa?",
-    a: "Ja, du kan testa verktyget helt gratis i vår demo utan att skapa konto. Ladda upp en bild och se resultatet direkt.",
+    a: "Ja. När du skapar ett konto får du 3 gratis credits att testa med — inget betalkort behövs. Ladda upp dina bilder och se resultatet direkt.",
   },
   {
     q: "Hur kontaktar jag er?",
