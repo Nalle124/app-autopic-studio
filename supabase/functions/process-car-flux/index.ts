@@ -13,7 +13,10 @@ import { removeBackground } from "../_shared/bg-removal.ts";
  */
 
 const GATEWAY = "https://connector-gateway.lovable.dev/replicate/v1";
-const POLL_MAX_SECONDS = 180;
+// Edge functions are wall-clock limited (~150s). Budget the whole pipeline
+// below that so we fail gracefully (refund + job failed) instead of being
+// killed mid-poll and leaving the job stuck in "processing" forever.
+const TOTAL_BUDGET_MS = 135_000;
 
 interface SceneMetadata {
   id: string;
@@ -124,31 +127,40 @@ serve(async (req) => {
 
     const prompt = isDetail
       ? `Place this product detail photograph centered on the provided background. Keep the detail pixel-perfect — do not crop, recolor, or alter it. Add a subtle natural shadow. No text, no logos, no watermarks, no extra props.`
-      : `Composite the car from the first image onto the second image (the background). The car must be photographically identical to the input — same color, same angle, same details, full extent, no cropping, no recoloring, no restyling. Position the car naturally on the ground plane. Add ${shadowKind} beneath the car. Keep the background clean and unchanged. No text, no logos, no watermarks, no extra props.`;
+      : `Composite the car from the first image onto the background scene from the second image. The car is FINAL ART — it must stay photographically identical: same paint color, same angle, same wheels, badges, lights and details, full extent visible, no cropping, no recoloring, no restyling. Your only job is the ENVIRONMENT: place the car naturally on the ground plane of the scene, adapt the scene's light around the car, and add ${shadowKind} beneath it. Change the environment to fit the car — never change the car to fit the environment. No text, no logos, no watermarks, no extra props.`;
 
-    console.log("[FLUX] creating prediction (Kontext Pro)...");
-    const createRes = await fetch(`${GATEWAY}/models/black-forest-labs/flux-kontext-pro/predictions`, {
+    // flux-kontext-pro accepts a SINGLE input image; sending the background as a
+    // second input silently drops it (result: cutout on plain white). For the
+    // car+background composite we use the multi-image Kontext app instead.
+    const modelPath = isDetail
+      ? "black-forest-labs/flux-kontext-pro/predictions"
+      : "flux-kontext-apps/multi-image-kontext-pro/predictions";
+    const input: Record<string, unknown> = isDetail
+      ? {
+          prompt,
+          input_image: carImageUrl,
+          aspect_ratio: aspect,
+          output_format: "jpg",
+          safety_tolerance: 2,
+        }
+      : {
+          prompt,
+          input_image_1: carImageUrl,
+          input_image_2: backgroundUrl,
+          aspect_ratio: aspect,
+          output_format: "jpg",
+          safety_tolerance: 2,
+        };
+
+    console.log(`[FLUX] creating prediction (${isDetail ? "Kontext Pro" : "multi-image Kontext Pro"})...`);
+    const createRes = await fetch(`${GATEWAY}/models/${modelPath}`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "X-Connection-Api-Key": REPLICATE_API_KEY,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        input: {
-          prompt,
-          input_image: carImageUrl,
-          input_image_2: backgroundUrl,
-          aspect_ratio: aspect,
-          output_format: "jpg",
-          output_quality: 95,
-          safety_tolerance: 2,
-          // Tighter params: trognare mot input-bilderna, mindre kreativ tolkning.
-          guidance: 3.5,
-          num_inference_steps: 30,
-          prompt_upsampling: false,
-        },
-      }),
+      body: JSON.stringify({ input }),
     });
 
     if (!createRes.ok) {
@@ -159,9 +171,10 @@ serve(async (req) => {
     const created = await createRes.json();
     const predictionId = created.id;
 
-    // Poll
+    // Poll — bounded by the remaining time budget so the function always
+    // finishes (and can refund/mark the job failed) before being killed.
     let outputUrl: string | null = null;
-    for (let i = 0; i < POLL_MAX_SECONDS / 2; i++) {
+    while (Date.now() - startTime < TOTAL_BUDGET_MS) {
       await new Promise((r) => setTimeout(r, 2000));
       const pollRes = await fetch(`${GATEWAY}/predictions/${predictionId}`, {
         headers: {
