@@ -4,7 +4,26 @@ import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/AuthContext';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
-import partnerAfter from '@/assets/examples/partner-after.png';
+
+/**
+ * Shared shell for all auth screens: centered card on the app's signature
+ * radial gradient surface (same treatment as V2 section cards), with logo.
+ */
+const AuthShell = ({ children }: { children: React.ReactNode }) => {
+  const { theme } = useTheme();
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.5)_0%,hsla(0,0%,20%,0.85)_100%)] dark:bg-[radial-gradient(ellipse_120%_100%_at_center,hsla(0,0%,87%,0.12)_0%,hsla(0,0%,4%,0.9)_100%)]">
+      <div className="w-full max-w-md space-y-6">
+        <img
+          src={theme === 'light' ? autopicLogoDark : autopicLogoWhite}
+          alt="AutoPic"
+          className="h-6 w-auto mx-auto"
+        />
+        {children}
+      </div>
+    </div>
+  );
+};
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -21,7 +40,6 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 
 const Auth = () => {
   const { t } = useTranslation();
-  const { theme } = useTheme();
   const [searchParams] = useSearchParams();
   const planParam = searchParams.get('plan') as PricingTier | null;
   const selectedPlan = planParam && PRICING_TIERS[planParam] ? planParam : null;
@@ -338,8 +356,8 @@ const Auth = () => {
   // Email verification screen with OTP input
   if (showEmailVerification && pendingSignupData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
+      <AuthShell>
+        <Card className="w-full">
           <CardHeader className="text-center">
             <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <Mail className="w-8 h-8 text-primary" />
@@ -418,14 +436,14 @@ const Auth = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </AuthShell>
     );
   }
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
+      <AuthShell>
+        <Card className="w-full">
           <CardHeader>
             <button
               onClick={() => {
@@ -486,37 +504,13 @@ const Auth = () => {
             )}
           </CardContent>
         </Card>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      {/* Brand panel — desktop only */}
-      <div className="hidden lg:flex relative flex-col justify-between p-10 xl:p-14 overflow-hidden text-white bg-[linear-gradient(160deg,hsl(222,26%,16%)_0%,hsl(0,0%,7%)_70%)]">
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[#A1581D]/20 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 -left-24 w-80 h-80 rounded-full bg-[#4D6185]/25 blur-3xl pointer-events-none" />
-
-        <img src={autopicLogoWhite} alt="AutoPic" className="h-7 w-auto self-start relative" />
-
-        <div className="relative max-w-md w-full">
-          <div className="rounded-[14px] overflow-hidden border border-white/10 shadow-2xl">
-            <img src={partnerAfter} alt="Bil i ny miljö skapad med AutoPic" className="w-full h-auto" loading="lazy" />
-          </div>
-        </div>
-
-        <p className="relative text-xs text-white/40">© {new Date().getFullYear()} AutoPic</p>
-      </div>
-
-      {/* Form side */}
-      <div className="flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-md space-y-6">
-          <img
-            src={theme === 'light' ? autopicLogoDark : autopicLogoWhite}
-            alt="AutoPic"
-            className="h-6 w-auto mx-auto lg:hidden"
-          />
-          <Card className="w-full overflow-hidden">
+    <AuthShell>
+      <Card className="w-full overflow-hidden">
         <CardHeader>
           <CardTitle className="text-2xl text-center">
             {selectedPlan ? t('auth.createAccountToContinue') : t('auth.welcome')}
@@ -600,10 +594,8 @@ const Auth = () => {
             </TabsContent>
           </Tabs>
         </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+      </Card>
+    </AuthShell>
   );
 };
 
@@ -651,8 +643,8 @@ const ResetPasswordForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <AuthShell>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-2xl text-center">{t('auth.newPasswordTitle')}</CardTitle>
           <CardDescription className="text-center">
@@ -687,7 +679,7 @@ const ResetPasswordForm = () => {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </AuthShell>
   );
 };
 
