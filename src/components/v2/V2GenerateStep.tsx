@@ -1117,97 +1117,58 @@ export const V2GenerateStep = ({
           Scene Fast, Scene Pro och Flux skär ut bilen automatiskt först — så AI:n bara byter bakgrund och inte ändrar själva bilen.
         </p>
         {(() => {
+          // Compact engine list: provider monogram + name + one short line.
           const ENGINE_OPTIONS = [
-            {
-              id: 'gemini-fast' as const,
-              name: 'Scene Fast',
-              model: 'google/gemini-3-flash-image-preview',
-              desc: 'Snabb och billig. Bra för volym och dagligt bruk. Default.',
-              badge: { label: 'Populär', tone: 'primary' as const },
-              disabled: false,
-            },
-            {
-              id: 'gemini-match' as const,
-              name: 'Scene Pro',
-              model: 'google/gemini-3-pro-image-preview',
-              desc: 'Högre kvalitet — följer din referensbild så exakt som möjligt.',
-              badge: { label: 'Premium', tone: 'accent' as const },
-              disabled: false,
-            },
-            {
-              id: 'gemini-studio' as const,
-              name: 'Scene Studio',
-              model: 'google/gemini-3-pro-image-preview',
-              desc: 'Generativ — skapar perspektiv och scen runt bilen som en bilannons.',
-              badge: { label: 'Kreativ', tone: 'accent' as const },
-              disabled: false,
-            },
-            {
-              id: 'flux' as const,
-              name: 'Flux Creative',
-              model: 'black-forest-labs/flux-kontext-pro',
-              desc: 'Replicate Flux Kontext Pro. Bra för kreativa scener och experiment.',
-              badge: { label: 'Experiment', tone: 'accent' as const },
-              disabled: false,
-            },
-            {
-              id: 'photoroom' as const,
-              name: 'PhotoRoom Studio',
-              model: 'photoroom/background-studio-beta-2025-03-17',
-              desc: 'Klassisk studio-look — strikt referensmatchning via Photoroom.',
-              badge: { label: 'Klassisk', tone: 'muted' as const },
-              disabled: false,
-            },
+            { id: 'gemini-fast' as const, name: 'Scene Fast', mono: 'G', monoClass: 'bg-[#4c5f85]', desc: 'Snabb standard för volym', badge: 'Populär' },
+            { id: 'gemini-match' as const, name: 'Scene Pro', mono: 'G', monoClass: 'bg-[#4c5f85]', desc: 'Högsta kvalitet, följer referensen', badge: 'Premium' },
+            { id: 'gemini-studio' as const, name: 'Scene Studio', mono: 'G', monoClass: 'bg-[#4c5f85]', desc: 'Generativ scen runt bilen', badge: null },
+            { id: 'flux' as const, name: 'Flux Creative', mono: 'F', monoClass: 'bg-[#7c5cbf]', desc: 'Kreativa miljöer', badge: null },
+            { id: 'photoroom' as const, name: 'PhotoRoom Studio', mono: 'P', monoClass: 'bg-[#a1581d]', desc: 'Klassisk studio-look', badge: null },
           ];
           const current = ENGINE_OPTIONS.find((o) => o.id === engine) || ENGINE_OPTIONS[0];
-          const badgeClass = (tone: 'primary' | 'accent' | 'muted') =>
-            tone === 'primary'
-              ? 'bg-primary/15 text-primary'
-              : tone === 'accent'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                : 'bg-muted text-muted-foreground';
+          const Mono = ({ opt }: { opt: typeof ENGINE_OPTIONS[0] }) => (
+            <span className={`w-7 h-7 rounded-full ${opt.monoClass} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
+              {opt.mono}
+            </span>
+          );
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between gap-3 rounded-[10px] border-2 border-border hover:border-primary/40 p-3 sm:p-4 text-left transition-all"
+                  className="w-full flex items-center gap-3 rounded-[10px] border-2 border-border hover:border-primary/40 p-3 text-left transition-all"
                 >
+                  <Mono opt={current} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-foreground truncate">{current.name}</p>
-                      <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${badgeClass(current.badge.tone)}`}>
-                        {current.badge.label}
-                      </span>
+                      {current.badge && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary/15 text-primary">
+                          {current.badge}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{current.desc}</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono truncate">Motor: {current.model}</p>
+                    <p className="text-xs text-muted-foreground truncate">{current.desc}</p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[260px]">
+              <DropdownMenuContent
+                align="start"
+                className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[240px] max-h-[min(60vh,320px)] overflow-y-auto"
+              >
                 {ENGINE_OPTIONS.map((opt) => (
                   <DropdownMenuItem
                     key={opt.id}
-                    onSelect={(e) => {
-                      if (opt.disabled) { e.preventDefault(); return; }
-                      setEngine(opt.id);
-                    }}
-                    disabled={opt.disabled}
-                    className={`flex items-start gap-2 py-2.5 ${opt.disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    onSelect={() => setEngine(opt.id)}
+                    className="flex items-center gap-3 py-2"
                   >
+                    <Mono opt={opt} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-foreground">{opt.name}</span>
-                        <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${badgeClass(opt.badge.tone)}`}>
-                          {opt.badge.label}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</p>
-                      <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">Motor: {opt.model}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{opt.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{opt.desc}</p>
                     </div>
-                    {engine === opt.id && <Check className="h-4 w-4 text-primary shrink-0 mt-1" />}
+                    {engine === opt.id && <Check className="h-4 w-4 text-primary shrink-0" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
