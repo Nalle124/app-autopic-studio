@@ -239,7 +239,16 @@
     "deselectAll": "Deselect all",
     "confirmSelection": "Confirm",
     "regenerate": "Regenerate",
-    "demoMaxImages": "Only {{count}} images in demo account — get a plan for more!"
+    "demoMaxImages": "Only {{count}} images in demo account — get a plan for more!",
+    "edit": "Edit",
+    "original": "Original",
+    "imageOf": "Image {{current}} of {{total}}",
+    "creditCost": "Credits",
+    "creditCostValue": "{{cost}} used · {{balance}} left",
+    "feedbackThanks": "Thanks for your feedback!",
+    "goodResult": "Good result",
+    "badResult": "Bad result",
+    "aiStudio": "AI Studio"
   },
   "paywall": {
     "findYourPlan": "Find your plan",

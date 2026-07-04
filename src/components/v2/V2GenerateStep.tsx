@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import type { V2Image, V2LogoConfig, V2PlateConfig } from '@/pages/AutopicV2';
+import { serializeV2Results, type V2Image, type V2LogoConfig, type V2PlateConfig } from '@/pages/AutopicV2';
 
 interface Props {
   images: V2Image[];
@@ -133,19 +133,16 @@ function applyCropRegion(imageUrl: string, crop: { left: number; top: number; wi
 }
 
 function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string, logoSize: string): Promise<string> {
-  console.log('[LOGO] applyLogoToImage called', { preset, logoSize, imgLen: imageUrl?.length, logoLen: logoUrl?.length, imgPrefix: imageUrl?.substring(0, 50), logoPrefix: logoUrl?.substring(0, 50) });
   return new Promise((resolve) => {
     const img = new Image();
     // Only set crossOrigin for non-data URLs
     if (!imageUrl.startsWith('data:')) img.crossOrigin = 'anonymous';
     img.onload = () => {
-      console.log('[LOGO] Main image loaded', { w: img.naturalWidth, h: img.naturalHeight });
       const logo = new Image();
       // Only set crossOrigin for non-data URLs
       if (!logoUrl.startsWith('data:')) logo.crossOrigin = 'anonymous';
       logo.onload = () => {
         try {
-          console.log('[LOGO] Logo image loaded', { w: logo.naturalWidth, h: logo.naturalHeight });
           const canvas = document.createElement('canvas');
           canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d')!;
@@ -181,26 +178,17 @@ function applyLogoToImage(imageUrl: string, logoUrl: string, preset: string, log
             ctx.fillRect(0, 0, img.naturalWidth, bannerH);
             x = img.naturalWidth - logoW - pad; y = pad;
           }
-          console.log('[LOGO] Drawing logo at', { x, y, logoW, logoH, preset });
           ctx.drawImage(logo, x, y, logoW, logoH);
-          const result = canvas.toDataURL('image/jpeg', 0.92);
-          console.log('[LOGO] Logo applied successfully, result length:', result.length);
-          resolve(result);
+          resolve(canvas.toDataURL('image/jpeg', 0.92));
         } catch (err) {
-          console.error('[LOGO] Canvas error:', err);
+          console.error('Logo canvas error:', err);
           resolve(imageUrl);
         }
       };
-      logo.onerror = (e) => {
-        console.error('[LOGO] Logo image failed to load:', e, logoUrl?.substring(0, 100));
-        resolve(imageUrl);
-      };
+      logo.onerror = () => resolve(imageUrl);
       logo.src = logoUrl;
     };
-    img.onerror = (e) => {
-      console.error('[LOGO] Main image failed to load:', e, imageUrl?.substring(0, 100));
-      resolve(imageUrl);
-    };
+    img.onerror = () => resolve(imageUrl);
     img.src = imageUrl;
   });
 }
@@ -440,7 +428,17 @@ export const V2GenerateStep = ({
         processedUrl = await applyLogoToImage(processedUrl, logoUrl, logoConfig.preset, logoConfig.logoSize);
       }
 
-      const updatedImage: V2Image = { ...img, processedUrl, status: 'done', error: undefined };
+      const updatedImage: V2Image = {
+        ...img,
+        processedUrl,
+        status: 'done',
+        error: undefined,
+        // Keep the pre-generation source if we have it; a result being regenerated
+        // only carries its own originalUrl, not previewUrl (that's the old result)
+        originalUrl: img.originalUrl || (images.includes(img) ? img.previewUrl : undefined),
+        engine,
+        sceneName: scene.name,
+      };
       if (onRegenerateComplete) onRegenerateComplete(updatedImage);
       await onRefetchCredits();
     } catch (err: any) {
@@ -703,7 +701,6 @@ export const V2GenerateStep = ({
             const modeMap = { 'gemini-fast': 'fast', 'gemini-match': 'match', 'gemini-studio': 'studio' } as const;
             fd.append('engineMode', modeMap[engine as 'gemini-fast' | 'gemini-match' | 'gemini-studio']);
           }
-          console.log(`Dispatching image ${prepared.img.id} via ${functionName} (engine: ${engine}) (job ${jobIds[prepared.img.id]})`);
           try {
             await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
               method: 'POST',
@@ -732,7 +729,6 @@ export const V2GenerateStep = ({
               sessionStorage.setItem('v2-results', JSON.stringify([]));
             } catch {}
           }
-          console.log(`Dispatched ${dispatched}/${validPrepared.length} images`);
         }
       })();
 
@@ -799,15 +795,11 @@ export const V2GenerateStep = ({
             if (currentLightEdit) url = await applyLightEdit(url);
 
             // 2. Logo — convert both image and logo to dataURL first to avoid CORS tainted canvas
-            console.log('[LOGO-POLL] Check:', { hasLogoUrl: !!currentLogoUrl, logoUrlLen: currentLogoUrl?.length, applyTo: currentLogoConfig.applyTo, jobId: job.id, originalImgId: jobIdToImgId[job.id], jobIndex, totalExpected });
             // Use original image ID for 'selected' mode matching, fall back to job.id
             const originalImgId = jobIdToImgId[job.id] || job.id;
-            const shouldApply = currentLogoUrl && shouldApplyLogo(originalImgId, jobIndex, totalExpected, currentLogoConfig);
-            console.log('[LOGO-POLL] shouldApply:', shouldApply, 'originalImgId:', originalImgId);
-            if (shouldApply) {
+            if (currentLogoUrl && shouldApplyLogo(originalImgId, jobIndex, totalExpected, currentLogoConfig)) {
               const safeUrl = await ensureDataUrl(url);
               const safeLogoUrl = await ensureDataUrl(currentLogoUrl);
-              console.log('[LOGO-POLL] ensureDataUrl done', { imgIsDataUrl: safeUrl.startsWith('data:'), logoIsDataUrl: safeLogoUrl.startsWith('data:') });
               url = await applyLogoToImage(safeUrl, safeLogoUrl, currentLogoConfig.preset, currentLogoConfig.logoSize);
             }
 
@@ -826,12 +818,16 @@ export const V2GenerateStep = ({
             }
           } catch (e) { console.warn('Post-processing failed:', e); }
 
+          const sourceImg = classifiedImages.find(ci => ci.id === jobIdToImgId[job.id]);
           const result: V2Image = {
             id: job.id,
             file: new File([], job.original_filename || 'image.jpg'),
             previewUrl: url,
             processedUrl: url,
             status: 'done',
+            originalUrl: sourceImg?.previewUrl,
+            engine,
+            sceneName: scene.name,
           };
 
           // Add a small delay between reveals for sequential appearance
@@ -842,11 +838,7 @@ export const V2GenerateStep = ({
           // Update ref DIRECTLY so it's always in sync (not dependent on React batching)
           liveResultsRef.current = [...liveResultsRef.current, result];
           try {
-            const serializable = liveResultsRef.current.map(r => ({
-              id: r.id, previewUrl: r.previewUrl, processedUrl: r.processedUrl,
-              classification: r.classification, status: r.status, error: r.error,
-            }));
-            sessionStorage.setItem('v2-results', JSON.stringify(serializable));
+            sessionStorage.setItem('v2-results', JSON.stringify(serializeV2Results(liveResultsRef.current)));
             sessionStorage.setItem('v2-show-results', 'true');
           } catch {}
           setLiveResults([...liveResultsRef.current]);
@@ -1055,6 +1047,12 @@ export const V2GenerateStep = ({
           <div className="flex justify-between text-sm">
               <span className="text-foreground/50 dark:text-white/50">{t('v2.format')}</span>
               <span className="text-foreground dark:text-white font-medium">{outputFormat === 'landscape' ? t('v2.landscape') : t('v2.portrait')}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+              <span className="text-foreground/50 dark:text-white/50">{t('v2.creditCost')}</span>
+              <span className={`font-medium ${canGenerate ? 'text-foreground dark:text-white' : 'text-destructive'}`}>
+                {t('v2.creditCostValue', { cost: totalCost, balance: credits })}
+              </span>
           </div>
         </div>
       </div>

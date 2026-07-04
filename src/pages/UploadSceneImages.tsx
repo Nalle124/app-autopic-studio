@@ -57,7 +57,6 @@ const UploadSceneImages = () => {
       const fileName = `${sceneId}.${fileExt}`;
       const filePath = `scenes/${fileName}`;
 
-      console.log('Uploading to Storage:', filePath);
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage

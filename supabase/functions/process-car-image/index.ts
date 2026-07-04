@@ -43,9 +43,11 @@ async function compressToJpeg(
   try {
     const blob = new Blob([imageBuffer], { type: 'image/png' });
     const formData = new FormData();
-    formData.append('image_file', blob, 'image.png');
-    formData.append('format', 'jpg');
-    formData.append('quality', '85');
+    // v2/edit field names — image_file/format/quality are v1 names and 400 silently
+    formData.append('imageFile', blob, 'image.png');
+    formData.append('export.format', 'jpg');
+    formData.append('export.quality', '85');
+    formData.append('removeBackground', 'false');
 
     const response = await fetch('https://image-api.photoroom.com/v2/edit', {
       method: 'POST',
@@ -294,6 +296,10 @@ serve(async (req) => {
     const PHOTOROOM_API_KEY = Deno.env.get('PHOTOROOM_API_KEY');
     if (!interiorMode && !PHOTOROOM_API_KEY) {
       throw new Error('PHOTOROOM_API_KEY not configured');
+    }
+    // Sandbox keys watermark every output ("Photoroom" tiled across the image)
+    if (PHOTOROOM_API_KEY?.startsWith('sandbox_')) {
+      console.warn('⚠️ PHOTOROOM_API_KEY is a SANDBOX key — all outputs will be watermarked. Switch to the live key in Supabase secrets.');
     }
 
     console.log(`Processing image: interior=${interiorMode}, scene=${scene.name}, plates=${plateStyle || 'none'}`);

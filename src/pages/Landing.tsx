@@ -28,10 +28,8 @@ import {
 } from "lucide-react";
 import autopicLogoDark from "@/assets/autopic-logo-dark.png";
 import autopicLogoWhite from "@/assets/autopic-logo-white.png";
-import fordBefore from "@/assets/examples/ford-before.png";
-import fordAfter from "@/assets/examples/ford-after.png";
-import vwBefore from "@/assets/examples/vw-before.png";
-import vwAfter from "@/assets/examples/vw-after.png";
+import partnerBefore from "@/assets/examples/partner-before.jpg";
+import partnerAfter from "@/assets/examples/partner-after.png";
 
 const SCENE_PREVIEWS = [
   { src: "/scenes/white-studio.png", label: "Vit studio" },
@@ -102,7 +100,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Är det gratis att testa?",
-    a: "Ja, du kan testa verktyget helt gratis i vår demo utan att skapa konto. Ladda upp en bild och se resultatet direkt.",
+    a: "Ja. När du skapar ett konto får du 3 gratis credits att testa med — inget betalkort behövs. Ladda upp dina bilder och se resultatet direkt.",
   },
   {
     q: "Hur kontaktar jag er?",
@@ -182,7 +180,7 @@ const Landing = () => {
             <div className="relative">
               <div className="rounded-[var(--radius)] overflow-hidden shadow-elegant border border-border/30">
                 <img
-                  src={fordAfter}
+                  src={partnerAfter}
                   alt="Bil i professionell studio-bakgrund skapad med AutoPic"
                   className="w-full h-auto"
                   loading="eager"
@@ -204,8 +202,8 @@ const Landing = () => {
           </p>
           <div className="max-w-3xl mx-auto">
             <BeforeAfterSlider
-              beforeSrc={vwBefore}
-              afterSrc={vwAfter}
+              beforeSrc={partnerBefore}
+              afterSrc={partnerAfter}
               beforeLabel="Före"
               afterLabel="Efter"
             />
@@ -468,27 +466,37 @@ const Landing = () => {
             })}
           </div>
 
-          {/* Credit pack */}
-          <div className="max-w-sm mx-auto">
-            <Card className="p-6 text-center">
-              <h3 className="font-semibold mb-1">{PRICING_TIERS.creditPack.name}</h3>
-              <div className="flex items-baseline gap-1 justify-center mb-2">
-                <span className="text-2xl font-['Playfair_Display'] italic font-bold">
-                  {PRICING_TIERS.creditPack.price}
-                </span>
-                <span className="text-sm text-muted-foreground">kr</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-4">
-                {PRICING_TIERS.creditPack.credits} credits — engångsköp
-              </p>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate("/guest-checkout?plan=creditPack")}
-              >
-                Köp credits
-              </Button>
-            </Card>
+          {/* Credit packs — one-time purchases */}
+          <div className="max-w-3xl mx-auto">
+            <p className="text-center text-sm text-muted-foreground mb-4">
+              Vill du inte prenumerera? Köp credits när du behöver dem.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-5">
+              {(["creditPack30", "creditPack100", "creditPack300"] as const).map((key) => {
+                const pack = PRICING_TIERS[key];
+                return (
+                  <Card key={key} className="p-6 text-center">
+                    <h3 className="font-semibold mb-1">{pack.credits} credits</h3>
+                    <div className="flex items-baseline gap-1 justify-center mb-2">
+                      <span className="text-2xl font-['Playfair_Display'] italic font-bold">
+                        {pack.price}
+                      </span>
+                      <span className="text-sm text-muted-foreground">kr</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Engångsköp — ingen prenumeration
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => navigate(`/guest-checkout?plan=${key}`)}
+                    >
+                      Köp credits
+                    </Button>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>

@@ -481,16 +481,13 @@ function IndexContent() {
         try {
           const formData = new FormData();
           const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-          console.log(`[ProcessImage] Start: ${image.file?.name}, mobile: ${isMobileDevice}, size: ${(image.file?.size / 1024 / 1024).toFixed(2)}MB, type: ${image.file?.type}`);
 
           // CRITICAL: Use original file if no edits, or croppedUrl if edited
           if (image.croppedUrl) {
-            console.log(`[ProcessImage] Has croppedUrl, fetching edited image...`);
             let blob: Blob;
             try {
               const response = await fetch(image.croppedUrl);
               blob = await response.blob();
-              console.log(`[ProcessImage] Edited blob fetched: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
             } catch (fetchErr: any) {
               console.error('[ProcessImage] Failed to fetch croppedUrl:', fetchErr);
               throw new Error('Kunde inte hämta redigerad bild');
@@ -511,7 +508,6 @@ function IndexContent() {
               const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
               canvas.width = Math.round(img.width * scale);
               canvas.height = Math.round(img.height * scale);
-              console.log(`[ProcessImage] Edit canvas: ${canvas.width}x${canvas.height}`);
               const ctx = canvas.getContext('2d');
               if (ctx) {
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -522,7 +518,6 @@ function IndexContent() {
                   }, 'image/jpeg', 0.9);
                 });
                 blob = compressedBlob;
-                console.log(`[ProcessImage] Edit compressed: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
               }
             } catch (compressError: any) {
               console.warn('[ProcessImage] Edit compression failed, using original blob:', compressError.message);
@@ -533,7 +528,6 @@ function IndexContent() {
             // For draft images restored from cloud, the file object is empty (size 0)
             let fileToSend = image.file;
             if (image.file.size === 0 && image.preview?.startsWith('http')) {
-              console.log(`[ProcessImage] Fetching draft from cloud: ${image.file.name}`);
               try {
                 const cloudResponse = await fetch(image.preview);
                 const cloudBlob = await cloudResponse.blob();
@@ -544,13 +538,11 @@ function IndexContent() {
               }
             }
             
-            console.log(`[ProcessImage] Original: ${fileToSend.name} (${(fileToSend.size / 1024 / 1024).toFixed(2)}MB, type: ${fileToSend.type})`);
             
             // Compress to keep file size manageable, but preserve high resolution for PhotoRoom
             const shouldCompress = true;
             
             if (shouldCompress) {
-              console.log(`[ProcessImage] Compressing (mobile: ${isMobileDevice}, size: ${(fileToSend.size / 1024 / 1024).toFixed(2)}MB)...`);
               try {
                 const imgUrl = URL.createObjectURL(fileToSend);
                 const img = new Image();
@@ -574,7 +566,6 @@ function IndexContent() {
                 const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
                 canvas.width = Math.round(img.width * scale);
                 canvas.height = Math.round(img.height * scale);
-                console.log(`[ProcessImage] Canvas: ${canvas.width}x${canvas.height} (orig: ${img.width}x${img.height})`);
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -587,7 +578,6 @@ function IndexContent() {
                       else reject(new Error('Canvas-komprimering misslyckades (minnesbrist)'));
                     }, format, quality);
                   });
-                  console.log(`[ProcessImage] Compressed: ${(blob.size / 1024 / 1024).toFixed(2)}MB (${format})`);
                   const fileName = fileToSend.name.replace(/\.[^/.]+$/, '') + '.jpg';
                   formData.append('image', blob, fileName);
                 } else {
@@ -599,7 +589,6 @@ function IndexContent() {
                 formData.append('image', fileToSend);
               }
             } else {
-              console.log(`[ProcessImage] Sending original (no compression needed)`);
               formData.append('image', fileToSend);
             }
           }
@@ -627,7 +616,6 @@ function IndexContent() {
               throw new Error('Din session har gått ut. Ladda om sidan och logga in igen.');
             }
             
-            console.log(`[ProcessImage] Sending to edge function...`);
             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-car-image`, {
               method: 'POST',
               headers: {
@@ -638,7 +626,6 @@ function IndexContent() {
             });
           clearTimeout(timeoutId);
             
-            console.log(`[ProcessImage] Response status: ${response.status}`);
             
             // Handle insufficient credits (402) - stop processing more images
             if (response.status === 402) {
@@ -748,7 +735,6 @@ function IndexContent() {
       } catch (error: any) {
         // User cancelled share or share not supported
         if (error.name !== 'AbortError') {
-          console.log('Share failed, falling back to download');
         } else {
           return; // User cancelled, don't fallback
         }

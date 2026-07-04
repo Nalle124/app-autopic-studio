@@ -133,7 +133,6 @@ export const convertToJpeg = async (file: File): Promise<File> => {
               lastModified: Date.now()
             });
             
-            console.log(`Converted ${file.name} -> ${newFileName} (${(convertedFile.size / 1024 / 1024).toFixed(2)}MB)`);
             resolve(convertedFile);
           },
           'image/jpeg',
@@ -164,7 +163,6 @@ export const convertHeicToJpeg = async (file: File): Promise<File> => {
   }
 
   try {
-    console.log(`Converting HEIC file: ${file.name}`);
     
     const convertedBlob = await heic2any({
       blob: file,
@@ -182,7 +180,6 @@ export const convertHeicToJpeg = async (file: File): Promise<File> => {
       lastModified: Date.now()
     });
 
-    console.log(`HEIC conversion complete: ${file.name} -> ${newFileName} (${(convertedFile.size / 1024 / 1024).toFixed(2)}MB)`);
     return convertedFile;
   } catch (error) {
     console.error('HEIC conversion failed:', error);
