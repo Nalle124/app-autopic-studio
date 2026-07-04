@@ -58,17 +58,17 @@
     --gradient-button: linear-gradient(180deg, hsl(220 27% 45%) 0%, hsl(220 27% 38%) 100%);
     --gradient-button-hover: linear-gradient(180deg, hsl(220 27% 50%) 0%, hsl(220 27% 41%) 100%);
     
-    /* Shadows - 3px 3px 3px as specified */
-    --shadow-elegant: 3px 3px 3px hsl(0 0% 0% / 0.08);
+    /* Shadows - layered, soft, straight down */
+    --shadow-elegant: 0 2px 4px hsl(0 0% 0% / 0.05), 0 16px 40px -12px hsl(0 0% 0% / 0.16);
     --shadow-glow: 0 0 30px hsl(220 27% 41% / 0.3);
-    --shadow-card: 3px 3px 3px hsl(0 0% 0% / 0.06);
-    --shadow-2xs: 3px 3px 3px hsl(0 0% 0% / 0.03);
-    --shadow-xs: 3px 3px 3px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 3px 3px 3px hsl(0 0% 0% / 0.08);
-    --shadow-md: 3px 3px 3px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 3px 3px 3px hsl(0 0% 0% / 0.12);
-    --shadow-xl: 3px 3px 3px hsl(0 0% 0% / 0.15);
-    --shadow-2xl: 3px 3px 3px hsl(0 0% 0% / 0.2);
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.04), 0 8px 24px -8px hsl(0 0% 0% / 0.12);
+    --shadow-2xs: 0 1px 2px hsl(0 0% 0% / 0.04);
+    --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.05), 0 2px 8px -2px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.05), 0 4px 12px -4px hsl(0 0% 0% / 0.08);
+    --shadow-md: 0 2px 4px hsl(0 0% 0% / 0.05), 0 8px 20px -6px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 2px 4px hsl(0 0% 0% / 0.06), 0 12px 28px -8px hsl(0 0% 0% / 0.12);
+    --shadow-xl: 0 4px 8px hsl(0 0% 0% / 0.06), 0 20px 40px -12px hsl(0 0% 0% / 0.16);
+    --shadow-2xl: 0 6px 12px hsl(0 0% 0% / 0.08), 0 28px 56px -16px hsl(0 0% 0% / 0.2);
     
     /* Charts */
     --chart-1: 220 27% 41%;
@@ -131,16 +131,16 @@
     --gradient-button-hover: linear-gradient(180deg, hsl(220 27% 50%) 0%, hsl(220 27% 41%) 100%);
     
     /* Shadows - dark mode */
-    --shadow-elegant: 3px 3px 3px hsl(0 0% 0% / 0.4);
+    --shadow-elegant: 0 2px 4px hsl(0 0% 0% / 0.3), 0 16px 40px -12px hsl(0 0% 0% / 0.5);
     --shadow-glow: 0 0 40px hsl(220 27% 41% / 0.25);
-    --shadow-card: 3px 3px 3px hsl(0 0% 0% / 0.3);
-    --shadow-2xs: 3px 3px 3px hsl(0 0% 0% / 0.15);
-    --shadow-xs: 3px 3px 3px hsl(0 0% 0% / 0.2);
-    --shadow-sm: 3px 3px 3px hsl(0 0% 0% / 0.25);
-    --shadow-md: 3px 3px 3px hsl(0 0% 0% / 0.3);
-    --shadow-lg: 3px 3px 3px hsl(0 0% 0% / 0.35);
-    --shadow-xl: 3px 3px 3px hsl(0 0% 0% / 0.4);
-    --shadow-2xl: 3px 3px 3px hsl(0 0% 0% / 0.45);
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.25), 0 8px 24px -8px hsl(0 0% 0% / 0.45);
+    --shadow-2xs: 0 1px 2px hsl(0 0% 0% / 0.2);
+    --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.22), 0 2px 8px -2px hsl(0 0% 0% / 0.25);
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.25), 0 4px 12px -4px hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 2px 4px hsl(0 0% 0% / 0.25), 0 8px 20px -6px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0 2px 4px hsl(0 0% 0% / 0.28), 0 12px 28px -8px hsl(0 0% 0% / 0.4);
+    --shadow-xl: 0 4px 8px hsl(0 0% 0% / 0.3), 0 20px 40px -12px hsl(0 0% 0% / 0.45);
+    --shadow-2xl: 0 6px 12px hsl(0 0% 0% / 0.32), 0 28px 56px -16px hsl(0 0% 0% / 0.5);
     
     /* Charts - dark mode */
     --chart-1: 220 27% 50%;

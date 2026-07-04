@@ -90,13 +90,7 @@
     "couldNotUpdatePassword": "Kunde inte uppdatera lösenord",
     "enterEmail": "Ange din e-postadress",
     "newPasswordTitle": "Nytt lösenord",
-    "enterNewPassword": "Ange ditt nya lösenord",
-    "brandHeadline": "Proffsiga bilannonser på minuter",
-    "brandPoint1": "Byt bakgrund med AI — bilen förblir exakt som den är",
-    "brandPoint2": "80+ miljöer anpassade för svenska marknaden",
-    "brandPoint3": "Ladda upp, välj bakgrund, klart — inga förkunskaper",
-    "brandQuote": "Bra annonser oavsett väder",
-    "freeCreditsNote": "Du får 3 gratis credits att testa med — inget betalkort behövs."
+    "enterNewPassword": "Ange ditt nya lösenord"
   },
   "v2": {
     "steps": {

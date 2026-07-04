@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Sparkles, Check, Mail, AlertTriangle } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail, AlertTriangle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
@@ -499,25 +499,7 @@ const Auth = () => {
 
         <img src={autopicLogoWhite} alt="AutoPic" className="h-7 w-auto self-start relative" />
 
-        <div className="relative space-y-7 max-w-md">
-          <div className="space-y-3">
-            <p className="font-['Playfair_Display'] italic text-lg text-white/60">
-              {t('auth.brandQuote')}
-            </p>
-            <h1 className="text-3xl xl:text-4xl font-bold leading-tight tracking-tight">
-              {t('auth.brandHeadline')}
-            </h1>
-          </div>
-          <ul className="space-y-3">
-            {[t('auth.brandPoint1'), t('auth.brandPoint2'), t('auth.brandPoint3')].map((point) => (
-              <li key={point} className="flex items-start gap-3 text-sm text-white/80">
-                <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 mt-[1px]">
-                  <Check className="w-3 h-3 text-[#D98A4A]" />
-                </span>
-                {point}
-              </li>
-            ))}
-          </ul>
+        <div className="relative max-w-md w-full">
           <div className="rounded-[14px] overflow-hidden border border-white/10 shadow-2xl">
             <img src={partnerAfter} alt="Bil i ny miljö skapad med AutoPic" className="w-full h-auto" loading="lazy" />
           </div>
@@ -586,10 +568,6 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/15 px-3 py-2.5">
-                  <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-muted-foreground">{t('auth.freeCreditsNote')}</p>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">{t('auth.name')}</Label>
                   <Input id="signup-name" type="text" placeholder={t('auth.namePlaceholder')} value={fullName} onChange={e => setFullName(e.target.value)} disabled={loading} />
