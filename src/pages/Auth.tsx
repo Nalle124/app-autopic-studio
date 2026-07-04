@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/AuthContext';
 import autopicLogoDark from '@/assets/autopic-logo-dark.png';
 import autopicLogoWhite from '@/assets/autopic-logo-white.png';
+import partnerAfter from '@/assets/examples/partner-after.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -518,7 +519,7 @@ const Auth = () => {
             ))}
           </ul>
           <div className="rounded-[14px] overflow-hidden border border-white/10 shadow-2xl">
-            <img src="/scenes/nordisk-dagsljus.jpg" alt="AI-genererad miljö i nordiskt dagsljus" className="w-full h-auto" loading="lazy" />
+            <img src={partnerAfter} alt="Bil i ny miljö skapad med AutoPic" className="w-full h-auto" loading="lazy" />
           </div>
         </div>
 

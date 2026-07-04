@@ -28,10 +28,8 @@ import {
 } from "lucide-react";
 import autopicLogoDark from "@/assets/autopic-logo-dark.png";
 import autopicLogoWhite from "@/assets/autopic-logo-white.png";
-import fordBefore from "@/assets/examples/ford-before.png";
-import fordAfter from "@/assets/examples/ford-after.png";
-import vwBefore from "@/assets/examples/vw-before.png";
-import vwAfter from "@/assets/examples/vw-after.png";
+import partnerBefore from "@/assets/examples/partner-before.jpg";
+import partnerAfter from "@/assets/examples/partner-after.png";
 
 const SCENE_PREVIEWS = [
   { src: "/scenes/white-studio.png", label: "Vit studio" },
@@ -182,7 +180,7 @@ const Landing = () => {
             <div className="relative">
               <div className="rounded-[var(--radius)] overflow-hidden shadow-elegant border border-border/30">
                 <img
-                  src={fordAfter}
+                  src={partnerAfter}
                   alt="Bil i professionell studio-bakgrund skapad med AutoPic"
                   className="w-full h-auto"
                   loading="eager"
@@ -204,8 +202,8 @@ const Landing = () => {
           </p>
           <div className="max-w-3xl mx-auto">
             <BeforeAfterSlider
-              beforeSrc={vwBefore}
-              afterSrc={vwAfter}
+              beforeSrc={partnerBefore}
+              afterSrc={partnerAfter}
               beforeLabel="Före"
               afterLabel="Efter"
             />
