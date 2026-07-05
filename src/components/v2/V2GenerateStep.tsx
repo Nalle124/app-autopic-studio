@@ -9,6 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { serializeV2Results, type V2Image, type V2LogoConfig, type V2PlateConfig } from '@/pages/AutopicV2';
+import engineGoogle from '@/assets/engines/google.jpg';
+import engineFlux from '@/assets/engines/flux.png';
+import enginePhotoroom from '@/assets/engines/photoroom.png';
 
 interface Props {
   images: V2Image[];
