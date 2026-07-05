@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Check, X, FolderDown, ListOrdered, CheckSquare, Focus, Pencil, ChevronDown, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
+import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Check, X, FolderDown, ListOrdered, CheckSquare, Focus, Pencil, ChevronDown, ThumbsUp, ThumbsDown, Sparkles, Share2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -85,7 +85,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
           { user_id: user.id, job_id: img.id, rating: next, engine: img.engine || null, scene_name: img.sceneName || null },
           { onConflict: 'user_id,job_id' }
         );
-        if (!previous) toast.success(t('v2.feedbackThanks'));
+        // Silent — no toast per user preference.
       } else {
         await (supabase as any).from('image_feedback').delete().eq('user_id', user.id).eq('job_id', img.id);
       }
@@ -221,10 +221,10 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                 </Button>
               )}
 
-              <DropdownMenu>
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="premium" size="sm">
-                    <Download className="w-4 h-4 mr-2" />
+                  <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
+                    <Share2 className="w-4 h-4 mr-2" />
                     {downloading ? t('v2.creatingZip') : t('common.download')}
                     <ChevronDown className="w-3.5 h-3.5 ml-2 opacity-70" />
                   </Button>
@@ -518,10 +518,50 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                   </Button>
                 </div>
 
-                <Button size="sm" variant="premium" onClick={() => handleDownload(previewUrl, `image-${(previewIndex ?? 0) + 1}.jpg`)}>
-                  <Download className="w-4 h-4 mr-1.5" />
-                  {t('common.download')}
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
+                      <Share2 className="w-4 h-4 mr-1.5" />
+                      <span className="hidden sm:inline">{t('common.download')}</span>
+                      <ChevronDown className="w-3 h-3 ml-1.5 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => handleDownload(previewUrl, `image-${(previewIndex ?? 0) + 1}.jpg`)}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Ladda ner
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={async () => {
+                      // Explicit Save to Photos (uses Web Share on mobile if available)
+                      await handleDownload(previewUrl, `image-${(previewIndex ?? 0) + 1}.jpg`);
+                    }}>
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      Spara bild
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={async () => {
+                      try {
+                        if (navigator.share) {
+                          const resp = await fetch(previewUrl);
+                          const blob = await resp.blob();
+                          const file = new File([blob], `image-${(previewIndex ?? 0) + 1}.jpg`, { type: 'image/jpeg' });
+                          if ((navigator as any).canShare?.({ files: [file] })) {
+                            await navigator.share({ files: [file], title: 'AutoPic bild' });
+                            return;
+                          }
+                          await navigator.share({ url: previewUrl, title: 'AutoPic bild' });
+                        } else {
+                          await navigator.clipboard.writeText(previewUrl);
+                          toast.success('Länk kopierad');
+                        }
+                      } catch (e: any) {
+                        if (e?.name !== 'AbortError') toast.error('Kunde inte dela');
+                      }
+                    }}>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Dela...
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           )}

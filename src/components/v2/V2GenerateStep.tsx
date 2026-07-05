@@ -9,6 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { serializeV2Results, type V2Image, type V2LogoConfig, type V2PlateConfig } from '@/pages/AutopicV2';
+import engineGoogle from '@/assets/engines/google.jpg';
+import engineFlux from '@/assets/engines/flux.png';
+import enginePhotoroom from '@/assets/engines/photoroom.png';
 
 interface Props {
   images: V2Image[];
@@ -1148,23 +1151,33 @@ export const V2GenerateStep = ({
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-foreground">AI-motor</h3>
         <p className="text-[11px] text-muted-foreground -mt-1">
-          Scene Fast, Scene Pro och Flux skär ut bilen automatiskt först — så AI:n bara byter bakgrund och inte ändrar själva bilen.
+          Generativa motorer (märkta med <span className="font-medium text-amber-600 dark:text-amber-400">Generativ</span>) skapar bilden på nytt och kan ändra små detaljer (t.ex. vinkel, säten). PhotoRoom är icke-generativ och skär bara ut bilen.
         </p>
         {(() => {
-          // Compact engine list: provider monogram + name + one short line.
+          // Real model IDs shown so it's clear what powers each engine.
           const ENGINE_OPTIONS = [
-            { id: 'gemini-fast' as const, name: 'Scene Fast', mono: 'G', monoClass: 'bg-[#4c5f85]', desc: 'Snabb standard för volym', badge: 'Populär' },
-            { id: 'gemini-match' as const, name: 'Scene Pro', mono: 'G', monoClass: 'bg-[#4c5f85]', desc: 'Högsta kvalitet, följer referensen', badge: 'Premium' },
-            { id: 'gemini-studio' as const, name: 'Scene Studio', mono: 'G', monoClass: 'bg-[#4c5f85]', desc: 'Generativ scen runt bilen', badge: null },
-            { id: 'flux' as const, name: 'Flux Creative', mono: 'F', monoClass: 'bg-[#7c5cbf]', desc: 'Kreativa miljöer', badge: null },
-            { id: 'photoroom' as const, name: 'PhotoRoom Studio', mono: 'P', monoClass: 'bg-[#a1581d]', desc: 'Klassisk studio-look', badge: null },
+            { id: 'gemini-fast' as const, name: 'Scene Fast', model: 'google/gemini-3.1-flash-image', logo: engineGoogle, desc: 'Snabb standard för volym', badge: 'Populär', generative: true },
+            { id: 'gemini-match' as const, name: 'Scene Pro', model: 'google/gemini-3-pro-image', logo: engineGoogle, desc: 'Högsta kvalitet, följer referensen', badge: 'Premium', generative: true },
+            { id: 'gemini-studio' as const, name: 'Scene Studio', model: 'google/gemini-3-pro-image', logo: engineGoogle, desc: 'Generativ scen runt bilen', badge: null, generative: true },
+            { id: 'flux' as const, name: 'Flux Creative', model: 'black-forest-labs/flux-kontext-pro', logo: engineFlux, desc: 'Kreativa miljöer', badge: null, generative: true },
+            { id: 'photoroom' as const, name: 'PhotoRoom Studio', model: 'photoroom/background-studio', logo: enginePhotoroom, desc: 'Klassisk studio-look — bevarar bilen 1:1', badge: 'Icke-generativ', generative: false },
           ];
           const current = ENGINE_OPTIONS.find((o) => o.id === engine) || ENGINE_OPTIONS[0];
-          const Mono = ({ opt }: { opt: typeof ENGINE_OPTIONS[0] }) => (
-            <span className={`w-7 h-7 rounded-full ${opt.monoClass} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
-              {opt.mono}
+          const Logo = ({ opt }: { opt: typeof ENGINE_OPTIONS[0] }) => (
+            <span className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center shrink-0 overflow-hidden">
+              <img src={opt.logo} alt="" className="w-6 h-6 object-contain" />
             </span>
           );
+          const GenBadge = ({ opt }: { opt: typeof ENGINE_OPTIONS[0] }) =>
+            opt.generative ? (
+              <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                Generativ
+              </span>
+            ) : (
+              <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                Icke-generativ
+              </span>
+            );
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1172,37 +1185,42 @@ export const V2GenerateStep = ({
                   type="button"
                   className="w-full flex items-center gap-3 rounded-[10px] border-2 border-border hover:border-primary/40 p-3 text-left transition-all"
                 >
-                  <Mono opt={current} />
+                  <Logo opt={current} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium text-foreground truncate">{current.name}</p>
                       {current.badge && (
                         <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary/15 text-primary">
                           {current.badge}
                         </span>
                       )}
+                      <GenBadge opt={current} />
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{current.desc}</p>
+                    <p className="text-[11px] text-muted-foreground truncate font-mono">{current.model}</p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="start"
-                className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[240px] max-h-[min(60vh,320px)] overflow-y-auto"
+                className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[280px] max-h-[min(70vh,420px)] overflow-y-auto"
               >
                 {ENGINE_OPTIONS.map((opt) => (
                   <DropdownMenuItem
                     key={opt.id}
                     onSelect={() => setEngine(opt.id)}
-                    className="flex items-center gap-3 py-2"
+                    className="flex items-start gap-3 py-2.5"
                   >
-                    <Mono opt={opt} />
+                    <Logo opt={opt} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground truncate">{opt.name}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-medium text-foreground truncate">{opt.name}</p>
+                        <GenBadge opt={opt} />
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">{opt.desc}</p>
+                      <p className="text-[10px] text-muted-foreground/70 truncate font-mono mt-0.5">{opt.model}</p>
                     </div>
-                    {engine === opt.id && <Check className="h-4 w-4 text-primary shrink-0" />}
+                    {engine === opt.id && <Check className="h-4 w-4 text-primary shrink-0 mt-1" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
