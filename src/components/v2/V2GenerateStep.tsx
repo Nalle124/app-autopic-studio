@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Mail, Sun, Palette, Plus, RotateCcw, X, ChevronDown, Check } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -325,6 +324,32 @@ function getTargetAspect(format: 'landscape' | 'portrait'): number {
   return 2 / 3;
 }
 
+// Single rotating status line during generation — the only place text changes
+const GENERATION_PHRASES = [
+  'Analyserar bilderna…',
+  'Skär ut karosserna…',
+  'Bygger miljöerna…',
+  'Matchar ljussättningen…',
+  'Lägger skuggor och reflektioner…',
+  'Finjusterar detaljer…',
+];
+
+/** Result image that reveals by sharpening up out of a blur once loaded */
+const RevealImage = ({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) => {
+  const [ready, setReady] = useState(false);
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onLoad={() => requestAnimationFrame(() => setReady(true))}
+      onClick={onClick}
+      className={`absolute inset-0 w-full h-full object-cover cursor-pointer transition-all duration-[1400ms] ease-out ${
+        ready ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-xl scale-105'
+      }`}
+    />
+  );
+};
+
 // --- component ---
 
 export const V2GenerateStep = ({
@@ -345,6 +370,16 @@ export const V2GenerateStep = ({
   const [emailSent, setEmailSent] = useState(false);
   const [liveResults, setLiveResults] = useState<V2Image[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
+  // Rotate the single status phrase while generating
+  useEffect(() => {
+    if (!processing) { setPhraseIndex(0); return; }
+    const interval = setInterval(() => {
+      setPhraseIndex((prev) => (prev + 1) % GENERATION_PHRASES.length);
+    }, 2600);
+    return () => clearInterval(interval);
+  }, [processing]);
   const galleryRef = useRef<HTMLDivElement>(null);
   const liveResultsRef = useRef<V2Image[]>([]);
 
@@ -352,7 +387,6 @@ export const V2GenerateStep = ({
   const exteriorCount = images.filter(i => i.classification === 'exterior' || !i.classification).length;
   const totalCost = totalImages + (plateConfig.enabled ? exteriorCount : 0);
   const canGenerate = credits >= totalCost;
-  const useLiveGallery = deliveryMode === 'direct';
 
   useEffect(() => {
     liveResultsRef.current = liveResults;
@@ -862,6 +896,7 @@ export const V2GenerateStep = ({
             originalUrl: sourceImg?.previewUrl,
             engine,
             sceneName: scene.name,
+            sourceId: sourceImg?.id,
           };
 
           // Add a small delay between reveals for sequential appearance
@@ -987,24 +1022,34 @@ export const V2GenerateStep = ({
     );
   }
 
-  // Live gallery during direct generation
+  // Live gallery during direct generation: each card shows the blurred original
+  // and sharpens into the result as it completes — text only changes in one place.
   if (processing && deliveryMode === 'direct') {
+    const doneCount = liveResults.length;
     return (
-      <div className="space-y-6" ref={galleryRef}>
+      <div className="space-y-5" ref={galleryRef}>
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {currentImageIndex} av {totalImages} — {statusText}
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-foreground">
+              {GENERATION_PHRASES[phraseIndex]}
             </p>
-            <Button variant="outline" size="sm" onClick={handleCancelGeneration} className="text-destructive border-destructive/30 hover:bg-destructive/10">
-              <X className="w-3.5 h-3.5 mr-1" />
-              Avbryt
-            </Button>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-sm text-muted-foreground tabular-nums">{doneCount} av {totalImages} klara</span>
+              <Button variant="outline" size="sm" onClick={handleCancelGeneration} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                <X className="w-3.5 h-3.5 mr-1" />
+                Avbryt
+              </Button>
+            </div>
           </div>
-          <Progress value={progress} className="h-2 max-w-md" />
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden max-w-md">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[hsl(220,27%,41%)] to-[hsl(25,71%,45%)] transition-[width] duration-700 ease-out"
+              style={{ width: `${Math.max(progress, 4)}%` }}
+            />
+          </div>
         </div>
 
-        {/* Lightbox preview */}
+        {/* Lightbox preview — works as soon as the first image is done */}
         {previewUrl && (
           <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
             <img src={previewUrl} alt="Preview" className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
@@ -1012,38 +1057,40 @@ export const V2GenerateStep = ({
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {liveResults.map((img, i) => (
-            <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all" onClick={() => setPreviewUrl(img.processedUrl || img.previewUrl)}>
-              <div className="aspect-auto bg-muted relative overflow-hidden">
-                <img src={img.processedUrl || img.previewUrl} alt={`${t('v2.imagesDone', { current: i + 1 })}`} className="w-full h-full object-cover animate-in fade-in duration-500" />
-              </div>
-            </div>
-          ))}
-          {liveResults.length < totalImages && (
-            useLiveGallery ? (
-              Array.from({ length: totalImages - liveResults.length }).map((_, i) => (
-                <div key={`skel-${i}`} className="relative overflow-hidden rounded-[10px] border border-border bg-card">
-                  <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                    {i === 0 ? (
-                      <div className="absolute inset-0 animate-premium-shimmer" />
-                    ) : (
-                      <div className="absolute inset-0 bg-background/40 flex items-center justify-center">
-                        <div className="text-muted-foreground text-center text-xs bg-background/60 backdrop-blur-sm rounded px-2 py-1">{t('common.waiting')}</div>
-                      </div>
-                    )}
-                  </div>
+        <div className="relative overflow-hidden rounded-[10px]">
+          <div className="ap-aurora" />
+          <div className="relative grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {images.map((img) => {
+              const result = liveResults.find((r) => r.sourceId === img.id);
+              const resultUrl = result ? (result.processedUrl || result.previewUrl) : null;
+              return (
+                <div key={img.id} className="relative overflow-hidden rounded-[10px] border border-border bg-card aspect-[4/3]">
+                  {/* Original layer: dimmed + blurred while its result is being created */}
+                  <img
+                    src={img.previewUrl}
+                    alt=""
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                      resultUrl ? 'opacity-0' : 'opacity-100 blur-md scale-105 saturate-50 brightness-90'
+                    }`}
+                  />
+                  {!resultUrl && (
+                    <>
+                      <div className="absolute inset-0 ap-breathe pointer-events-none" />
+                      <div className="absolute -inset-[30%] ap-sweep pointer-events-none" />
+                    </>
+                  )}
+                  {/* Result layer: sharpens up out of the blur, clickable immediately */}
+                  {resultUrl && (
+                    <RevealImage
+                      src={resultUrl}
+                      alt={t('v2.result')}
+                      onClick={() => setPreviewUrl(resultUrl)}
+                    />
+                  )}
                 </div>
-              ))
-            ) : (
-              <div className="relative overflow-hidden rounded-[10px] border border-border bg-card col-span-full">
-                <div className="p-4 flex items-center justify-center gap-4 bg-muted/50">
-                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm font-medium text-foreground">{t('v2.generating', { current: liveResults.length + 1, total: totalImages })}</p>
-                </div>
-              </div>
-            )
-          )}
+              );
+            })}
+          </div>
         </div>
       </div>
     );

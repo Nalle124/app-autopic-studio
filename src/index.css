@@ -519,6 +519,41 @@
   .animate-reveal-5 { animation-delay: 400ms; }
   .animate-reveal-6 { animation-delay: 500ms; }
   
+  /* ── Generation "förvandling": ambient aurora, breathing glow, glass sweep ── */
+  @keyframes ap-drift {
+    from { transform: translate(-3%, -2%) rotate(0deg); }
+    to { transform: translate(3%, 2%) rotate(4deg); }
+  }
+  .ap-aurora {
+    position: absolute;
+    inset: -30%;
+    pointer-events: none;
+    background:
+      radial-gradient(30% 30% at 30% 40%, hsl(220 27% 41% / 0.10), transparent 70%),
+      radial-gradient(26% 26% at 70% 60%, hsl(25 71% 45% / 0.08), transparent 70%);
+    animation: ap-drift 14s ease-in-out infinite alternate;
+  }
+  @keyframes ap-breathe {
+    0%, 100% { opacity: 0.35; transform: scale(0.92); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+  }
+  .ap-breathe {
+    background: radial-gradient(60% 55% at 50% 55%, hsl(25 71% 55% / 0.26), transparent 72%);
+    animation: ap-breathe 3.6s ease-in-out infinite;
+  }
+  @keyframes ap-sweep {
+    0%, 55% { opacity: 0; transform: translateX(-60%); }
+    62% { opacity: 1; }
+    78%, 100% { opacity: 0; transform: translateX(60%); }
+  }
+  .ap-sweep {
+    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.30) 50%, transparent 58%);
+    animation: ap-sweep 4.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ap-aurora, .ap-breathe, .ap-sweep { animation: none; }
+  }
+
   /* Premium processing shimmer effect */
   @keyframes premium-shimmer {
     0% {
