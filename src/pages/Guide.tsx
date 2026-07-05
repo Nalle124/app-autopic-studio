@@ -435,7 +435,7 @@ const Guide = () => {
                 <h4 className="font-semibold text-foreground text-sm">Skapa bakgrund</h4>
               </div>
               <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-                Guidat flöde för att skapa egna bilbakgrunder. Välj kategori (studio, utomhus, showroom), följ frågorna eller beskriv fritt — och förfina med ett klick via snabbsvar som "gör ljusare" eller "mjukare skuggor".
+                Bygg scenen av delar — miljö, golv, ljus och känsla — och se beskrivningen växa fram innan du skapar. Du får två förslag att välja mellan, och förfinar sedan med ett klick: "gör ljusare", "mjukare skuggor".
               </p>
             </div>
             <div className="rounded-[10px] border border-border/50 bg-card/50 p-4 space-y-2">

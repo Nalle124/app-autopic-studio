@@ -53,6 +53,8 @@ type ChatMessage =
 {role: 'assistant-ad-overlay';backgroundUrl: string;templateId: string;userTexts: Record<string, string>;} |
 {role: 'assistant-logo-presets';text: string;} |
 {role: 'assistant-status';text: string;} |
+{role: 'scene-builder';} |
+{role: 'assistant-variants';text: string;variants: Array<{imageUrl: string;suggestedName: string;description: string;scenePrompt: string;}>;} |
 {role: 'mode-select';};
 
 // Image with shimmer skeleton loading state
@@ -332,6 +334,40 @@ const GUIDED_FLOWS: Record<string, Array<{question: string; options: GuidedOptio
   }]
 };
 
+// ─── Scene builder: compose a scene from curated attribute fragments ───
+// Each chip maps to a prompt fragment we've tested — tune here, everyone benefits.
+type SceneBuilderOption = { label: string; frag: string; dot?: string };
+const SCENE_BUILDER_ROWS: Array<{ key: 'miljo' | 'golv' | 'ljus' | 'kansla'; label: string; multi?: boolean; options: SceneBuilderOption[] }> = [
+  { key: 'miljo', label: 'Miljö', options: [
+    { label: 'Bilhall', frag: 'a modern car showroom interior', dot: '#2b303a' },
+    { label: 'Ljus studio', frag: 'a bright seamless photography studio', dot: '#e8e8e8' },
+    { label: 'Mörk studio', frag: 'a dark moody photography studio', dot: '#191b1f' },
+    { label: 'Utomhus natur', frag: 'a scenic outdoor location with greenery', dot: '#7d8a6a' },
+    { label: 'Stadsgata', frag: 'a clean upscale urban street scene', dot: '#55584f' },
+  ] },
+  { key: 'golv', label: 'Golv', options: [
+    { label: 'Mörk epoxi', frag: 'polished dark epoxy floor with subtle reflections', dot: '#3a3f49' },
+    { label: 'Ljus betong', frag: 'light polished concrete floor', dot: '#9a9a96' },
+    { label: 'Asfalt', frag: 'smooth dark asphalt ground', dot: '#5a544c' },
+    { label: 'Kullersten', frag: 'classic cobblestone ground', dot: '#8a7c68' },
+    { label: 'Grus', frag: 'fine light gravel ground', dot: '#b0a894' },
+  ] },
+  { key: 'ljus', label: 'Ljus', options: [
+    { label: 'Mjukt dagsljus', frag: 'soft natural daylight', dot: '#f5efdf' },
+    { label: 'Varma spotlights', frag: 'warm ceiling spotlights', dot: '#ffd9a0' },
+    { label: 'Kvällsglöd', frag: 'golden evening light', dot: '#c47b3a' },
+    { label: 'Dramatiskt', frag: 'dramatic directional lighting with strong contrast', dot: '#6a7690' },
+  ] },
+  { key: 'kansla', label: 'Känsla', multi: true, options: [
+    { label: 'Rena ytor', frag: 'clean minimalist surfaces' },
+    { label: 'Stora fönster', frag: 'large windows with soft incoming light' },
+    { label: 'Växter', frag: 'a few tasteful green plants' },
+    { label: 'Skyline', frag: 'a city skyline in the far background' },
+  ] },
+];
+// Fixed quality suffix: the part that makes a scene actually work for car placement.
+const SCENE_QUALITY_SUFFIX = 'Wide empty ground plane in the center foreground with clear space for a car, camera at knee height (low angle), photorealistic, high-detail professional photography. No cars, no vehicles, no people, no text, no logos.';
+
 const POST_GENERATION_SUGGESTIONS_BG = [
 'Gör ljusare',
 'Gör mörkare',
@@ -610,6 +646,9 @@ export const CreateSceneModal = ({
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Scene builder state (background-studio)
+  const [builderSel, setBuilderSel] = useState<{ miljo: string | null; golv: string | null; ljus: string | null; kansla: string[] }>({ miljo: null, golv: null, ljus: null, kansla: [] });
+
   // Guided flow state
   const [guidedCategory, setGuidedCategory] = useState<string | null>(null);
   const [guidedStepIndex, setGuidedStepIndex] = useState(0);
@@ -761,6 +800,7 @@ export const CreateSceneModal = ({
     setReferenceImage(null);
     setReferenceFile(null);
     setHasGeneratedImage(false);
+    setBuilderSel({ miljo: null, golv: null, ljus: null, kansla: [] });
     setGuidedCategory(null);
     setGuidedStepIndex(0);
     setGuidedSelections([]);
@@ -835,19 +875,10 @@ export const CreateSceneModal = ({
   const selectMode = (mode: ChatMode) => {
     setChatMode(mode);
     if (mode === 'background-studio') {
+      setBuilderSel({ miljo: null, golv: null, ljus: null, kansla: [] });
       setMessages([
-      { role: 'assistant', text: 'Låt oss skapa en ny bakgrund! Välj kategori nedan, eller beskriv fritt i text och med egen referensbild i chatten.' },
-      {
-        role: 'assistant-category-grid',
-        text: 'Använd inspiration från någon av dessa:',
-        categories: [
-        { label: 'Ljus studio', value: 'studio', thumbnail: '/scenes/white-studio.png', thumbnail2: '/scenes/vit-rundad-studio.png' },
-        { label: 'Mörk studio', value: 'studio-dark', thumbnail: '/scenes/dark-studio.png', thumbnail2: '/scenes/brun-spotlight-studio.png' },
-        { label: 'Utomhus', value: 'outdoor', thumbnail: '/scenes/hostgata.png', thumbnail2: '/scenes/kullerstengata.png' },
-        { label: 'Showroom', value: 'showroom', thumbnail: '/scenes/nordic-showroom.png', thumbnail2: '/scenes/glas-walls.png' },
-        { label: 'Premium', value: 'premium', thumbnail: '/scenes/lyxigt-fjallhus.png', thumbnail2: '/scenes/klassisk-innergard-kvall.png' },
-        { label: 'Beskriv fritt', value: 'custom', thumbnail: '' }]
-      }]
+      { role: 'assistant', text: 'Vi bygger din scen. Välj en per rad — eller skriv fritt i fältet nedan. Du kan också ladda upp en referensbild via +.' },
+      { role: 'scene-builder' }]
       );
     } else if (mode === 'ad-create') {
       setMessages([
@@ -925,6 +956,7 @@ export const CreateSceneModal = ({
     setReferenceImage(null);
     setReferenceFile(null);
     setHasGeneratedImage(false);
+    setBuilderSel({ miljo: null, golv: null, ljus: null, kansla: [] });
     setGuidedCategory(null);
     setGuidedStepIndex(0);
     setGuidedSelections([]);
@@ -1151,6 +1183,101 @@ export const CreateSceneModal = ({
         throw new Error('__timeout__');
       }
       throw err;
+    }
+  };
+
+  // ─── Scene builder generation: compose prompt from chips, get 2 candidates ───
+  const generateFromBuilder = async () => {
+    if (!user || isGenerating || !builderSel.miljo) return;
+    if (!canGenerate) {
+      triggerPaywall('subscriber-limit');
+      return;
+    }
+
+    const findOpt = (key: typeof SCENE_BUILDER_ROWS[number]['key'], label: string | null) =>
+      label ? SCENE_BUILDER_ROWS.find((r) => r.key === key)?.options.find((o) => o.label === label) : undefined;
+
+    const frags: string[] = [];
+    const swParts: string[] = [];
+    const miljo = findOpt('miljo', builderSel.miljo);
+    if (miljo) { frags.push(miljo.frag); swParts.push(miljo.label); }
+    const golv = findOpt('golv', builderSel.golv);
+    if (golv) { frags.push(`with ${golv.frag}`); swParts.push(golv.label); }
+    const ljus = findOpt('ljus', builderSel.ljus);
+    if (ljus) { frags.push(ljus.frag); swParts.push(ljus.label); }
+    for (const k of builderSel.kansla) {
+      const opt = findOpt('kansla', k);
+      if (opt) { frags.push(opt.frag); swParts.push(opt.label); }
+    }
+    const extra = prompt.trim();
+    if (extra) swParts.push(extra);
+
+    const englishPrompt = `Create a professional car photography background: ${frags.join(', ')}.${extra ? ` Additional details: ${extra}.` : ''} ${SCENE_QUALITY_SUFFIX}${referenceImage ? ' The attached image is ONLY a style/mood reference — create a NEW original scene with similar mood, not a copy.' : ''}`;
+
+    const displayUserMsg: ChatMessage = { role: 'user', text: swParts.join(' · ') };
+    const aiUserMsg: ChatMessage = referenceImage
+      ? { role: 'user', text: englishPrompt, image: referenceImage }
+      : { role: 'user', text: englishPrompt };
+    const historyBase = [...messages, aiUserMsg];
+
+    setMessages((prev) => [...prev, displayUserMsg, { role: 'assistant-loading' }]);
+    setIsGenerating(true);
+    setPrompt('');
+    setReferenceImage(null);
+    setReferenceFile(null);
+
+    const conversationHistory = buildConversationHistory(historyBase);
+    const payload = { conversationHistory, mode: 'background-studio' };
+    const wantTwo = credits >= 2;
+
+    try {
+      const settled = await Promise.allSettled(
+        wantTwo ? [invokeWithTimeout(payload), invokeWithTimeout(payload)] : [invokeWithTimeout(payload)]
+      );
+      const oks: any[] = [];
+      let firstErr: any = null;
+      for (const s of settled) {
+        if (s.status === 'fulfilled' && !s.value.error && s.value.data?.imageUrl && !s.value.data?.error) {
+          oks.push(s.value.data);
+        } else if (!firstErr) {
+          firstErr = s.status === 'fulfilled' ? (s.value.error || s.value.data?.error) : s.reason;
+        }
+      }
+
+      setMessages((prev) => prev.filter((m) => m.role !== 'assistant-loading'));
+      setIsGenerating(false);
+      refetchCredits();
+
+      if (oks.length === 0) {
+        const is402 = firstErr === 'insufficient_credits' || firstErr?.context?.status === 402 || firstErr?.message?.includes('non-2xx');
+        if (is402) { triggerPaywall('subscriber-limit'); return; }
+        setMessages((prev) => [...prev, { role: 'assistant-error', text: 'Något gick fel vid skapandet — försök igen.', retryData: payload }]);
+        return;
+      }
+
+      if (oks.length === 1) {
+        setMessages((prev) => [...prev, {
+          role: 'assistant-image',
+          imageUrl: oks[0].imageUrl,
+          suggestedName: oks[0].suggestedName,
+          description: oks[0].description,
+          scenePrompt: oks[0].photoroomPrompt,
+        }]);
+        return;
+      }
+
+      setMessages((prev) => [...prev, {
+        role: 'assistant-variants',
+        text: 'Två förslag på din scen — välj den du gillar bäst. Sen kan du förfina eller spara den.',
+        variants: oks.map((d) => ({
+          imageUrl: d.imageUrl,
+          suggestedName: d.suggestedName,
+          description: d.description,
+          scenePrompt: d.photoroomPrompt,
+        })),
+      }]);
+    } catch (err) {
+      handleGenerateError(err, payload);
     }
   };
 
@@ -2546,6 +2673,107 @@ export const CreateSceneModal = ({
         <div ref={chatAreaRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 py-4 space-y-4 sm:space-y-6 bg-background/50">
           {messages.map((msg, i) => {
         // ─── Mode select cards ────────────────────────
+        // ─── Scene builder card ───────────────────────
+        if (msg.role === 'scene-builder') {
+          const summary = [builderSel.miljo, builderSel.golv, builderSel.ljus, ...builderSel.kansla].filter(Boolean).join(' · ');
+          return (
+            <div key={i} className="flex gap-2.5 items-start">
+              <AutopicAvatar />
+              <div className="bg-card border border-border/50 rounded-2xl rounded-tl-md p-4 w-full max-w-[440px] space-y-3.5">
+                {SCENE_BUILDER_ROWS.map((row) => (
+                  <div key={row.key}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      {row.label}
+                      {row.multi && <span className="ml-1.5 normal-case font-normal tracking-normal text-muted-foreground/70">valfritt, flera ok</span>}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {row.options.map((opt) => {
+                        const selected = row.multi
+                          ? builderSel.kansla.includes(opt.label)
+                          : builderSel[row.key as 'miljo' | 'golv' | 'ljus'] === opt.label;
+                        return (
+                          <button
+                            key={opt.label}
+                            disabled={isGenerating}
+                            onClick={() => setBuilderSel((prev) => row.multi
+                              ? { ...prev, kansla: selected ? prev.kansla.filter((k) => k !== opt.label) : [...prev.kansla, opt.label] }
+                              : { ...prev, [row.key]: selected ? null : opt.label })}
+                            className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors disabled:opacity-50 ${
+                              selected
+                                ? 'border-primary bg-primary/10 text-foreground font-medium'
+                                : 'border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                            }`}
+                          >
+                            {opt.dot && <span className="w-2.5 h-2.5 rounded-[3px] border border-black/10" style={{ background: opt.dot }} />}
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {summary && (
+                  <div className="rounded-xl bg-muted/50 border border-border/40 px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Din scen</p>
+                    <p className="text-xs text-foreground leading-relaxed">{summary}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">Skriv detaljer i fältet nedan om du vill lägga till något innan du skapar.</p>
+                  </div>
+                )}
+                <Button
+                  onClick={generateFromBuilder}
+                  disabled={!builderSel.miljo || isGenerating}
+                  className={`w-full rounded-full h-10 ${isGenerating ? 'btn-processing' : ''}`}
+                >
+                  {isGenerating ? 'Skapar scen…' : credits >= 2 ? 'Skapa scen — 2 förslag' : 'Skapa scen'}
+                </Button>
+              </div>
+            </div>
+          );
+        }
+
+        // ─── Two scene candidates: pick A or B ────────
+        if (msg.role === 'assistant-variants') {
+          return (
+            <div key={i} className="flex gap-2.5 items-start">
+              <AutopicAvatar />
+              <div className="space-y-2 max-w-[85%] w-full">
+                <div className="bg-muted/60 rounded-2xl rounded-tl-md px-4 py-2.5">
+                  <p className="text-sm sm:text-base text-foreground leading-relaxed">{msg.text}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {msg.variants.map((v, vi) => (
+                    <div key={vi} className="space-y-1.5">
+                      <ImageWithSkeleton
+                        src={v.imageUrl}
+                        alt={v.suggestedName}
+                        className="rounded-xl overflow-hidden border border-border/40 cursor-pointer relative"
+                        onClick={() => setPreviewImage({ imageUrl: v.imageUrl, name: v.suggestedName })}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full rounded-full"
+                        disabled={isGenerating}
+                        onClick={() => {
+                          setMessages((prev) => [...prev, {
+                            role: 'assistant-image',
+                            imageUrl: v.imageUrl,
+                            suggestedName: v.suggestedName,
+                            description: v.description,
+                            scenePrompt: v.scenePrompt,
+                          }]);
+                        }}
+                      >
+                        Välj {vi === 0 ? 'A' : 'B'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         if (msg.role === 'mode-select') {
           return (
             <div key={i} className="flex-1 flex flex-col min-h-[200px] pt-4 sm:pt-0">
