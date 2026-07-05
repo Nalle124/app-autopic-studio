@@ -633,6 +633,24 @@ export const V2GenerateStep = ({
         }
         if (!file) { preparedImages.push(null); continue; }
         file = await normalizeImageOrientation(file);
+        // PhotoRoom auto-crops server-side (referenceBox=subjectBox); Gemini/Flux
+        // ignore those fields, so crop client-side before dispatch for them.
+        const isExteriorish = img.classification === 'exterior' || img.classification === 'detail' || !img.classification;
+        if (autoCropMode !== 'off' && engine !== 'photoroom' && isExteriorish) {
+          const targetAspect = getTargetAspect(outputFormat);
+          const localUrl = URL.createObjectURL(file);
+          try {
+            const croppedDataUrl = await autoCropImage(localUrl, targetAspect);
+            if (croppedDataUrl !== localUrl) {
+              const croppedBlob = await fetch(croppedDataUrl).then((r) => r.blob());
+              file = new File([croppedBlob], file.name.replace(/\.[^/.]+$/, '') + '-cropped.jpg', { type: croppedBlob.type || 'image/jpeg' });
+            }
+          } catch (e) {
+            console.warn('Client auto-crop failed, sending original:', e);
+          } finally {
+            URL.revokeObjectURL(localUrl);
+          }
+        }
         const dims = await new Promise<{ w: number; h: number }>((resolve) => {
           const image = new window.Image();
           const objUrl = URL.createObjectURL(file!);
@@ -734,6 +752,7 @@ export const V2GenerateStep = ({
 
       // 7. Start polling for results
       const totalExpected = classifiedImages.length;
+      const currentEngine = engine;
       const currentLogoUrl = logoUrl;
       const currentLogoConfig = { ...logoConfig };
       const currentLightBoost = lightBoost;
@@ -793,6 +812,21 @@ export const V2GenerateStep = ({
             // 1. Light boost / edit
             if (currentLightBoost) url = await applyLightBoost(url);
             if (currentLightEdit) url = await applyLightEdit(url);
+
+            // 1b. Plate blur — PhotoRoom handles this server-side; Gemini/Flux don't,
+            // so run it here. blur-license-plates deducts its own +1 credit,
+            // matching the advertised plate cost.
+            if (currentEngine !== 'photoroom' && currentPlateConfig.enabled) {
+              const plateSrcImg = classifiedImages.find(ci => ci.id === jobIdToImgId[job.id]);
+              const plateCls = plateSrcImg?.classification;
+              if (plateCls === 'exterior' || !plateCls) {
+                try {
+                  url = await blurPlatesOnImage(url, currentPlateConfig.style, currentPlateLogoBase64, currentAccessToken);
+                } catch (e) {
+                  console.warn('Plate blur failed (non-fatal):', e);
+                }
+              }
+            }
 
             // 2. Logo — convert both image and logo to dataURL first to avoid CORS tainted canvas
             // Use original image ID for 'selected' mode matching, fall back to job.id
