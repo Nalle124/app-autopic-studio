@@ -35,6 +35,7 @@ export interface V2Image {
   originalUrl?: string; // pre-generation source image, for before/after comparison
   engine?: string; // engine used to generate this result
   sceneName?: string; // scene used to generate this result
+  sourceId?: string; // id of the uploaded image this result was generated from
 }
 
 /** Serialize results for sessionStorage; blob: URLs die on reload so drop them */
@@ -49,6 +50,7 @@ export const serializeV2Results = (results: V2Image[]) =>
     originalUrl: r.originalUrl?.startsWith('blob:') ? undefined : r.originalUrl,
     engine: r.engine,
     sceneName: r.sceneName,
+    sourceId: r.sourceId,
   }));
 
 export interface V2LogoConfig {
