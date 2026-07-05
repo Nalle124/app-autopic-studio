@@ -224,7 +224,6 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
-                    <Share2 className="w-4 h-4 mr-2" />
                     {downloading ? t('v2.creatingZip') : t('common.download')}
                     <ChevronDown className="w-3.5 h-3.5 ml-2 opacity-70" />
                   </Button>
