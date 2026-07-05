@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Check, X, FolderDown, ListOrdered, CheckSquare, Focus, Pencil, ChevronDown, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
+import { Download, RotateCcw, Scissors, Sliders, ChevronLeft, ChevronRight, Check, X, FolderDown, ListOrdered, CheckSquare, Focus, Pencil, ChevronDown, ThumbsUp, ThumbsDown, Sparkles, Share2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
