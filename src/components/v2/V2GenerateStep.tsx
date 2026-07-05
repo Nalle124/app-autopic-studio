@@ -12,6 +12,7 @@ import { serializeV2Results, type V2Image, type V2LogoConfig, type V2PlateConfig
 import engineGoogle from '@/assets/engines/google.jpg';
 import engineFlux from '@/assets/engines/flux.png';
 import enginePhotoroom from '@/assets/engines/photoroom.png';
+import engineBria from '@/assets/engines/bria.png';
 
 interface Props {
   images: V2Image[];
@@ -342,7 +343,7 @@ export const V2GenerateStep = ({
   const [statusText, setStatusText] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [deliveryMode, setDeliveryMode] = useState<'direct' | 'email'>('direct');
-  const [engine, setEngine] = useState<'photoroom' | 'gemini-fast' | 'gemini-match' | 'gemini-studio' | 'flux'>('gemini-fast');
+  const [engine, setEngine] = useState<'photoroom' | 'gemini-fast' | 'gemini-match' | 'gemini-studio' | 'flux' | 'bria'>('gemini-fast');
   const [lightBoost, setLightBoost] = useState(false);
   const [lightEdit, setLightEdit] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -714,8 +715,11 @@ export const V2GenerateStep = ({
           const isExterior = prepared.img.classification === 'exterior' || prepared.img.classification === 'detail';
           const useGemini = (engine === 'gemini-fast' || engine === 'gemini-match' || engine === 'gemini-studio') && isExterior;
           const useFlux = engine === 'flux' && isExterior;
+          const useBria = engine === 'bria' && isExterior;
           // Engine routing: exterior/detail → selected engine; interior masking always via process-car-image
-          const functionName = useFlux
+          const functionName = useBria
+            ? 'process-car-bria'
+            : useFlux
             ? 'process-car-flux'
             : useGemini ? 'process-car-gemini' : 'process-car-image';
           if (useGemini) {
@@ -1160,6 +1164,7 @@ export const V2GenerateStep = ({
             { id: 'gemini-match' as const, name: 'Scene Pro', model: 'google/gemini-3-pro-image', logo: engineGoogle, desc: 'Högsta kvalitet, följer referensen', badge: 'Premium', generative: true },
             { id: 'gemini-studio' as const, name: 'Scene Studio', model: 'google/gemini-3-pro-image', logo: engineGoogle, desc: 'Generativ scen runt bilen', badge: null, generative: true },
             { id: 'flux' as const, name: 'Flux Creative', model: 'black-forest-labs/flux-kontext-pro', logo: engineFlux, desc: 'Kreativa miljöer', badge: null, generative: true },
+            { id: 'bria' as const, name: 'Bria Studio', model: 'bria/remove-background + canvas composite', logo: engineBria, desc: 'Bilen bevaras pixel-exakt. Ren komposition på scenen.', badge: 'Bevarar bilen 1:1', generative: false },
             { id: 'photoroom' as const, name: 'PhotoRoom Studio', model: 'photoroom/background-studio', logo: enginePhotoroom, desc: 'Klassisk studio-look — bevarar bilen 1:1', badge: 'Icke-generativ', generative: false },
           ];
           const current = ENGINE_OPTIONS.find((o) => o.id === engine) || ENGINE_OPTIONS[0];
