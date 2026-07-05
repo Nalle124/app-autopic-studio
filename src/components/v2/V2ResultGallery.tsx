@@ -85,7 +85,7 @@ export const V2ResultGallery = ({ results, onStartOver, onTryAnotherBackground, 
           { user_id: user.id, job_id: img.id, rating: next, engine: img.engine || null, scene_name: img.sceneName || null },
           { onConflict: 'user_id,job_id' }
         );
-        if (!previous) toast.success(t('v2.feedbackThanks'));
+        // Silent — no toast per user preference.
       } else {
         await (supabase as any).from('image_feedback').delete().eq('user_id', user.id).eq('job_id', img.id);
       }
