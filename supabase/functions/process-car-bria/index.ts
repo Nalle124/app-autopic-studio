@@ -33,6 +33,7 @@ interface SceneMetadata {
   id: string;
   name: string;
   aiPrompt?: string;
+  baselineY?: number; // ground plane as percentage (0-100) of scene height
 }
 
 /**
@@ -224,21 +225,37 @@ serve(async (req) => {
       throw new Error("Kunde inte avkoda bilderna");
     }
 
-    // 5. Target output size — respect orientation, cap at 2000px on long edge
+    // 5. Center-crop the background to the REQUESTED aspect ratio, so portrait
+    //    actually yields portrait (the raw background aspect is ignored).
+    const targetAspect = orientation === "portrait" ? 2 / 3 : 3 / 2; // width / height
+    const bgAspect = bgImg.width / bgImg.height;
+    let cropW: number;
+    let cropH: number;
+    if (bgAspect > targetAspect) {
+      // background too wide → trim sides
+      cropH = bgImg.height;
+      cropW = Math.round(cropH * targetAspect);
+    } else {
+      // background too tall → trim top/bottom
+      cropW = bgImg.width;
+      cropH = Math.round(cropW / targetAspect);
+    }
+    const cropX = Math.round((bgImg.width - cropW) / 2);
+    const cropY = Math.round((bgImg.height - cropH) / 2);
+    const bgCropped = bgImg.crop(cropX, cropY, cropW, cropH);
+
+    // 6. Resize cropped background to output canvas (cap long edge at 2000px)
     const MAX = 2000;
     let outW: number;
     let outH: number;
-    const bgAspect = bgImg.width / bgImg.height;
-    if (orientation === "portrait") {
-      outH = Math.min(MAX, bgImg.height);
-      outW = Math.round(outH * bgAspect);
+    if (cropW >= cropH) {
+      outW = Math.min(MAX, cropW);
+      outH = Math.round(outW / targetAspect);
     } else {
-      outW = Math.min(MAX, bgImg.width);
-      outH = Math.round(outW / bgAspect);
+      outH = Math.min(MAX, cropH);
+      outW = Math.round(outH * targetAspect);
     }
-
-    // 6. Resize background to output canvas size
-    const canvas = bgImg.resize(outW, outH);
+    const canvas = bgCropped.resize(outW, outH);
 
     // 7. Scale cutout so car width ≈ 62% of canvas (tuned for showroom look)
     const targetCarW = Math.round(outW * 0.62);
@@ -248,8 +265,12 @@ serve(async (req) => {
 
     // 8. Find real bottom-most opaque pixel (tire baseline) in scaled cutout
     const baselineInCar = findAlphaBaseline(carScaled);
-    // Ground plane at 82% of canvas height feels natural for most scenes
-    const groundY = Math.round(outH * 0.82);
+    // Ground plane: honor the scene's tuned baseline_y (percentage) when sane,
+    // otherwise fall back to 82% which suits most showroom scenes.
+    const baselinePct = typeof scene.baselineY === "number" && scene.baselineY >= 40 && scene.baselineY <= 95
+      ? scene.baselineY / 100
+      : 0.82;
+    const groundY = Math.round(outH * baselinePct);
 
     // Car placement: horizontally centered
     const carX = Math.round((outW - targetCarW) / 2);

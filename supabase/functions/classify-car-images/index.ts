@@ -51,9 +51,25 @@ serve(async (req) => {
       });
     }
 
+    // Classification only routes images; it must never fail the batch. If the
+    // AI gateway is unavailable, we return an all-exterior fallback with 200.
+    const validTypes = ["interior", "exterior", "detail"];
+    const allExterior = () => {
+      const r: Record<string, string> = {};
+      for (const img of images) r[img.id] = "exterior";
+      return r;
+    };
+    const degradedResponse = (reason: string) => {
+      console.warn(`classify-car-images degraded (${reason}); defaulting to exterior`);
+      return new Response(
+        JSON.stringify({ classifications: allExterior(), degraded: true, reason }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    };
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      return degradedResponse("no_api_key");
     }
 
     // Build content array with all images for Gemini
@@ -124,36 +140,26 @@ Return ONLY valid JSON, no markdown or explanation. Example:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded, try again shortly" }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted" }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      throw new Error(`AI gateway error: ${response.status}`);
+      // 402 (credits exhausted), 429 (rate limit) or anything else: never block
+      // the batch — routing to exterior is a safe default for car photos.
+      return degradedResponse(`gateway_${response.status}`);
     }
 
-    const aiData = await response.json();
-    const rawText = aiData.choices?.[0]?.message?.content || "{}";
-
-    // Parse JSON from response (strip markdown fences if present)
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    const classifications = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    let classifications: Record<string, unknown> = {};
+    try {
+      const aiData = await response.json();
+      const rawText = aiData.choices?.[0]?.message?.content || "{}";
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      classifications = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    } catch (parseErr) {
+      return degradedResponse("parse_error");
+    }
 
     // Validate and fill defaults
-    const validTypes = ["interior", "exterior", "detail"];
     const result: Record<string, string> = {};
     for (const img of images) {
       const val = classifications[img.id];
-      result[img.id] = validTypes.includes(val) ? val : "exterior";
+      result[img.id] = typeof val === "string" && validTypes.includes(val) ? val : "exterior";
     }
 
     console.log(`Classified ${images.length} images for user ${user.id}`);
@@ -163,10 +169,13 @@ Return ONLY valid JSON, no markdown or explanation. Example:
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    // Last-resort guard: still return a usable (all-exterior) result rather than
+    // a 500 that blanks the generation screen. We can't see `images` here if the
+    // body failed to parse, so return an empty map — the client defaults to exterior.
     console.error("classify-car-images error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ classifications: {}, degraded: true, reason: "exception" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

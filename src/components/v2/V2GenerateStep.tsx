@@ -576,11 +576,20 @@ export const V2GenerateStep = ({
         })
       );
       const validImageData = imageData.filter(d => d.base64.length > 100);
-      const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', {
-        body: { images: validImageData.map(d => ({ id: d.id, base64: d.base64 })) },
-      });
-      if (classError) throw classError;
-      const classifications: Record<string, 'interior' | 'exterior' | 'detail'> = classData.classifications;
+      // Classification only ROUTES images (exterior/interior/detail). It must never
+      // block generation: if the classifier is unavailable (e.g. Lovable AI credits
+      // exhausted → 402) we default everything to 'exterior' and carry on. The
+      // selected engine (Bria/Flux/PhotoRoom) doesn't depend on the AI gateway.
+      let classifications: Record<string, 'interior' | 'exterior' | 'detail'> = {};
+      try {
+        const { data: classData, error: classError } = await supabase.functions.invoke('classify-car-images', {
+          body: { images: validImageData.map(d => ({ id: d.id, base64: d.base64 })) },
+        });
+        if (classError) throw classError;
+        classifications = classData?.classifications || {};
+      } catch (err) {
+        console.warn('Classification unavailable, defaulting all to exterior:', err);
+      }
       const classifiedImages = images.map(img => ({ ...img, classification: classifications[img.id] || 'exterior' }));
       onImagesUpdate(classifiedImages);
 
