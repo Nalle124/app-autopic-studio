@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { aiChat, hasAiKey } from "../_shared/ai-chat.ts";
 
 const BLUR_PROMPTS: Record<string, string> = {
   'blur-dark': 'Look at this car image. Find the RECTANGULAR LICENSE PLATE(s) — the small metal plate with registration numbers/letters mounted on the car body. There may be one on the front bumper and one on the rear. Cover ONLY the license plate rectangle(s) with a solid dark/black rectangle. The rectangle must match the exact size and angle of the physical plate. DO NOT cover any other part of the car — not the bumper, not the headlights, not the wheels, not the grille. ONLY the small rectangular plate with text. CRITICAL: Output the EXACT same image dimensions, aspect ratio, and framing as the input. Do NOT crop, resize, zoom, or reframe. Do NOT add logos, watermarks, or text. Keep everything else pixel-perfect identical.',
@@ -32,8 +33,7 @@ serve(async (req) => {
     if (!resolvedImageBase64) throw new Error("imageBase64 or imageUrl is required");
     if (!style) throw new Error("style is required");
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!hasAiKey()) throw new Error("GEMINI_API_KEY not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -108,17 +108,10 @@ serve(async (req) => {
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       console.log(`AI gateway attempt ${attempt}/${maxRetries}`);
-      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3.1-flash-image-preview",
-          messages,
-          modalities: ["image", "text"],
-        }),
+      aiResponse = await aiChat({
+        model: "google/gemini-3.1-flash-image-preview",
+        messages,
+        modalities: ["image", "text"],
       });
 
       if (aiResponse.ok) break;

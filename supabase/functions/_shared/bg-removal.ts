@@ -9,7 +9,7 @@
  * of the car by the generative models.
  */
 
-const GATEWAY = "https://connector-gateway.lovable.dev/replicate/v1";
+const GATEWAY = "https://api.replicate.com/v1";
 const POLL_INTERVAL_MS = 1500;
 const POLL_MAX_ATTEMPTS = 60; // ~90s ceiling (model usually completes in 3-8s)
 
@@ -28,10 +28,9 @@ export async function removeBackground(
   imageUrl: string,
   log: (msg: string) => void = console.log,
 ): Promise<BgRemovalResult | null> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
-  if (!LOVABLE_API_KEY || !REPLICATE_API_KEY) {
-    log("[BG-REMOVAL] Replicate connector not configured — skipping cutout");
+  if (!REPLICATE_API_KEY) {
+    log("[BG-REMOVAL] REPLICATE_API_KEY not configured — skipping cutout");
     return null;
   }
 
@@ -41,8 +40,7 @@ export async function removeBackground(
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": REPLICATE_API_KEY,
+          "Authorization": `Bearer ${REPLICATE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -74,8 +72,7 @@ export async function removeBackground(
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
       const pollRes = await fetch(`${GATEWAY}/predictions/${predictionId}`, {
         headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": REPLICATE_API_KEY,
+          "Authorization": `Bearer ${REPLICATE_API_KEY}`,
         },
       });
       if (!pollRes.ok) continue;

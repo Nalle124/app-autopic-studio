@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { aiChat, hasAiKey } from "../_shared/ai-chat.ts";
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
@@ -42,20 +43,13 @@ serve(async (req) => {
       throw new Error('No image provided');
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!hasAiKey()) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
     console.log('Analyzing scene with AI...');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const response = await aiChat({
         model: 'google/gemini-2.5-flash',
         messages: [
           {
@@ -102,7 +96,6 @@ Return ONLY valid JSON, no markdown or explanation.`
           }
         ],
         temperature: 0.3,
-      }),
     });
 
     if (!response.ok) {

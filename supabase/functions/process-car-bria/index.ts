@@ -26,7 +26,7 @@ import { Image, decode } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
  * FormData is compatible with process-car-gemini / process-car-flux.
  */
 
-const GATEWAY = "https://connector-gateway.lovable.dev/replicate/v1";
+const GATEWAY = "https://api.replicate.com/v1";
 const TOTAL_BUDGET_MS = 135_000;
 
 interface SceneMetadata {
@@ -45,10 +45,9 @@ async function briaCutout(
   imageUrl: string,
   log: (m: string) => void,
 ): Promise<ArrayBuffer | null> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
-  if (!LOVABLE_API_KEY || !REPLICATE_API_KEY) {
-    log("[BRIA] Replicate connector not configured");
+  if (!REPLICATE_API_KEY) {
+    log("[BRIA] REPLICATE_API_KEY not configured");
     return null;
   }
 
@@ -57,8 +56,7 @@ async function briaCutout(
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": REPLICATE_API_KEY,
+        Authorization: `Bearer ${REPLICATE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ input: { image: imageUrl } }),
@@ -77,8 +75,7 @@ async function briaCutout(
     await new Promise((r) => setTimeout(r, 1500));
     const poll = await fetch(`${GATEWAY}/predictions/${predictionId}`, {
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": REPLICATE_API_KEY,
+        Authorization: `Bearer ${REPLICATE_API_KEY}`,
       },
     });
     if (!poll.ok) continue;

@@ -12,7 +12,7 @@ import { removeBackground } from "../_shared/bg-removal.ts";
  *   image, scene (json), backgroundUrl, orientation?, jobId?, imageType?
  */
 
-const GATEWAY = "https://connector-gateway.lovable.dev/replicate/v1";
+const GATEWAY = "https://api.replicate.com/v1";
 // Edge functions are wall-clock limited (~150s). Budget the whole pipeline
 // below that so we fail gracefully (refund + job failed) instead of being
 // killed mid-poll and leaving the job stuck in "processing" forever.
@@ -40,10 +40,9 @@ serve(async (req) => {
   const tempPaths: string[] = [];
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
-    if (!LOVABLE_API_KEY || !REPLICATE_API_KEY) {
-      throw new Error("Replicate connector inte konfigurerad");
+    if (!REPLICATE_API_KEY) {
+      throw new Error("REPLICATE_API_KEY inte konfigurerad");
     }
 
     const authHeader = req.headers.get("Authorization");
@@ -156,8 +155,7 @@ serve(async (req) => {
     const createRes = await fetch(`${GATEWAY}/models/${modelPath}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": REPLICATE_API_KEY,
+        "Authorization": `Bearer ${REPLICATE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ input }),
@@ -178,8 +176,7 @@ serve(async (req) => {
       await new Promise((r) => setTimeout(r, 2000));
       const pollRes = await fetch(`${GATEWAY}/predictions/${predictionId}`, {
         headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": REPLICATE_API_KEY,
+          "Authorization": `Bearer ${REPLICATE_API_KEY}`,
         },
       });
       const pollData = await pollRes.json();

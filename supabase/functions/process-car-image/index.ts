@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { aiChat, hasAiKey } from "../_shared/ai-chat.ts";
 
 interface SceneMetadata {
   id: string;
@@ -356,8 +357,7 @@ serve(async (req) => {
 
     if (interiorMode) {
       // ===== INTERIOR PROCESSING via AI Gateway =====
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+      if (!hasAiKey()) throw new Error("GEMINI_API_KEY not configured");
 
       const uint8 = new Uint8Array(imageBuffer);
       const b64 = base64Encode(uint8);
@@ -374,23 +374,16 @@ serve(async (req) => {
       let aiResponse: Response | null = null;
       const maxRetries = 3;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-3.1-flash-image-preview",
-            messages: [
-              { role: "system", content: "You are an image editing assistant. Preserve exact input image dimensions. Never crop, resize, or reframe." },
-              { role: "user", content: [
-                { type: "text", text: prompt },
-                { type: "image_url", image_url: { url: dataUrl } },
-              ] },
-            ],
-            modalities: ["image", "text"],
-          }),
+        aiResponse = await aiChat({
+          model: "google/gemini-3.1-flash-image-preview",
+          messages: [
+            { role: "system", content: "You are an image editing assistant. Preserve exact input image dimensions. Never crop, resize, or reframe." },
+            { role: "user", content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ] },
+          ],
+          modalities: ["image", "text"],
         });
         
         if (aiResponse.ok) break;

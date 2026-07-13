@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { removeBackground } from "../_shared/bg-removal.ts";
+import { aiChat, hasAiKey } from "../_shared/ai-chat.ts";
 
 /**
  * Gemini-based car composite pipeline (v3 — cutout-first).
@@ -58,8 +59,7 @@ serve(async (req) => {
   const tempPaths: string[] = [];
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
+    if (!hasAiKey()) throw new Error('GEMINI_API_KEY not configured');
 
     // ── Auth ──
     const authHeader = req.headers.get('Authorization');
@@ -247,13 +247,7 @@ OUTPUT: ${aspect}, photorealistic composite. The car must be photographically id
     }
 
     console.log(`[GEMINI] Step 3: calling ${geminiModel} (cutout=${useCutout})...`);
-    const geminiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const geminiResponse = await aiChat({
         model: geminiModel,
         // Low temperature → trognare mot input, mindre kreativ drift.
         temperature: 0.2,
@@ -270,7 +264,6 @@ OUTPUT: ${aspect}, photorealistic composite. The car must be photographically id
           },
         ],
         modalities: ['image', 'text'],
-      }),
     });
 
     if (!geminiResponse.ok) {

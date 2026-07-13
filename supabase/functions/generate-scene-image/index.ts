@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { aiChat, hasAiKey } from "../_shared/ai-chat.ts";
 
 // Rate limiting: max 10 generations per minute per user
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -234,9 +235,8 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!hasAiKey()) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     // Auth check
@@ -433,21 +433,13 @@ CRITICAL: ZERO text in the image. The application handles all text as a separate
               },
             ];
 
-      const imageResponse = await fetch(
-        "https://ai.gateway.lovable.dev/v1/chat/completions",
+      const imageResponse = await aiChat(
         {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image",
-            messages: messagesForAttempt,
-            modalities: ["image", "text"],
-          }),
-          signal: AbortSignal.timeout(80_000), // 80s timeout per attempt
-        }
+          model: "google/gemini-2.5-flash-image",
+          messages: messagesForAttempt,
+          modalities: ["image", "text"],
+        },
+        { signal: AbortSignal.timeout(80_000) } // 80s timeout per attempt
       );
 
       if (!imageResponse.ok) {
@@ -526,15 +518,8 @@ Generate:
 NEVER use emojis. Respond ONLY with valid JSON in this exact format:
 {"name": "...", "description": "...", "photoroomPrompt": "Place the vehicle centered on the ground in ... Professional automotive photography with realistic lighting matching the environment."}`;
 
-    const metaResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+    const metaResponse = await aiChat(
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
           model: "google/gemini-2.5-flash-lite",
           messages: [
             {
@@ -546,9 +531,8 @@ NEVER use emojis. Respond ONLY with valid JSON in this exact format:
               content: `Scene description: ${latestPromptText}\n\nGenerate metadata for this scene.`,
             },
           ],
-        }),
-        signal: AbortSignal.timeout(15_000), // 15s timeout for metadata
-      }
+      },
+      { signal: AbortSignal.timeout(15_000) } // 15s timeout for metadata
     );
 
     let suggestedName = "Ny skapad scen";
