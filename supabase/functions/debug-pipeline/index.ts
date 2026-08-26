@@ -42,6 +42,29 @@ serve(async (req) => {
     out.replicate = { error: String(e) };
   }
 
+  // 3. Probe connector gateway paths
+  const GW = "https://connector-gateway.lovable.dev/replicate/v1";
+  const probes: Record<string, unknown> = {};
+  for (const p of [
+    "/account",
+    "/models/851-labs/background-remover",
+    "/models/bria/remove-background",
+    "/predictions",
+  ]) {
+    try {
+      const r = await fetch(`${GW}${p}`, {
+        headers: {
+          Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+          "X-Connection-Api-Key": Deno.env.get("REPLICATE_API_KEY") ?? "",
+        },
+      });
+      probes[p] = { status: r.status, body: (await r.text()).slice(0, 200) };
+    } catch (e) {
+      probes[p] = { error: String(e) };
+    }
+  }
+  out.probes = probes;
+
   return new Response(JSON.stringify(out, null, 2), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
