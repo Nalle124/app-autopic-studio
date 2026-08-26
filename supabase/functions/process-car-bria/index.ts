@@ -52,54 +52,21 @@ async function briaCutout(
     return null;
   }
 
-  const create = await fetch(
-    `${GATEWAY}/models/bria/remove-background/predictions`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": REPLICATE_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ input: { image: imageUrl } }),
-    },
-  );
-  if (!create.ok) {
-    log(`[BRIA] create failed ${create.status}: ${(await create.text()).slice(0, 300)}`);
+  const created = await createPrediction("bria/remove-background", { image: imageUrl }, log);
+  if (!("id" in created)) {
+    log(`[BRIA] create failed ${created.status}: ${created.error}`);
     return null;
   }
-  const created = await create.json();
-  const predictionId = created.id as string;
-  if (!predictionId) return null;
 
-  // Poll ~90s ceiling
-  for (let i = 0; i < 60; i++) {
-    await new Promise((r) => setTimeout(r, 1500));
-    const poll = await fetch(`${GATEWAY}/predictions/${predictionId}`, {
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": REPLICATE_API_KEY,
-      },
-    });
-    if (!poll.ok) continue;
-    const d = await poll.json();
-    if (d.status === "succeeded") {
-      const outputUrl: string | null = Array.isArray(d.output) ? d.output[0] : d.output;
-      if (!outputUrl) return null;
-      const dl = await fetch(outputUrl);
-      if (!dl.ok) return null;
-      const buf = await dl.arrayBuffer();
-      log(`[BRIA] ✅ cutout ready (${(buf.byteLength / 1024).toFixed(0)}KB)`);
-      return buf;
-    }
-    if (d.status === "failed" || d.status === "canceled") {
-      log(`[BRIA] ${d.status}: ${d.error || "unknown"}`);
-      return null;
-    }
-  }
-  log("[BRIA] poll timeout");
-  return null;
+  const outputUrl = await pollPrediction(created.id, { timeoutMs: 90_000, log });
+  if (!outputUrl) return null;
+  const dl = await fetch(outputUrl);
+  if (!dl.ok) return null;
+  const buf = await dl.arrayBuffer();
+  log(`[BRIA] ✅ cutout ready (${(buf.byteLength / 1024).toFixed(0)}KB)`);
+  return buf;
 }
+
 
 /**
  * Find the y coordinate (0..h-1) of the bottom-most row that contains at
