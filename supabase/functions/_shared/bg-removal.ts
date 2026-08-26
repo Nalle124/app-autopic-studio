@@ -9,9 +9,9 @@
  * of the car by the generative models.
  */
 
-const GATEWAY = "https://connector-gateway.lovable.dev/replicate/v1";
-const POLL_INTERVAL_MS = 1500;
-const POLL_MAX_ATTEMPTS = 60; // ~90s ceiling (model usually completes in 3-8s)
+import { createPrediction, pollPrediction } from "./replicate.ts";
+
+const MODEL = "851-labs/background-remover";
 
 export interface BgRemovalResult {
   /** Public URL hosted on Replicate's CDN (short-lived, ~1h). Use immediately. */
@@ -36,77 +36,30 @@ export async function removeBackground(
   }
 
   try {
-    const createRes = await fetch(
-      `${GATEWAY}/models/851-labs/background-remover/predictions`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": REPLICATE_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          input: {
-            image: imageUrl,
-            format: "png",
-            background_type: "rgba",
-            threshold: 0,
-          },
-        }),
-      },
+    const created = await createPrediction(
+      MODEL,
+      { image: imageUrl, format: "png", background_type: "rgba", threshold: 0 },
+      log,
     );
-
-    if (!createRes.ok) {
-      const errTxt = await createRes.text();
-      log(`[BG-REMOVAL] create failed ${createRes.status}: ${errTxt.slice(0, 300)}`);
+    if (!("id" in created)) {
+      log(`[BG-REMOVAL] create failed (${created.status}): ${created.error}`);
       return null;
     }
 
-    const created = await createRes.json();
-    const predictionId = created.id;
-    if (!predictionId) {
-      log("[BG-REMOVAL] no prediction id returned");
+    const cutoutUrl = await pollPrediction(created.id, { timeoutMs: 90_000, log });
+    if (!cutoutUrl) return null;
+
+    const imgRes = await fetch(cutoutUrl);
+    if (!imgRes.ok) {
+      log(`[BG-REMOVAL] cutout download failed ${imgRes.status}`);
       return null;
     }
-
-    // Poll
-    for (let i = 0; i < POLL_MAX_ATTEMPTS; i++) {
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-      const pollRes = await fetch(`${GATEWAY}/predictions/${predictionId}`, {
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": REPLICATE_API_KEY,
-        },
-      });
-      if (!pollRes.ok) continue;
-      const pollData = await pollRes.json();
-
-      if (pollData.status === "succeeded") {
-        const output = pollData.output;
-        const cutoutUrl: string | null = Array.isArray(output) ? output[0] : output;
-        if (!cutoutUrl || typeof cutoutUrl !== "string") {
-          log("[BG-REMOVAL] no output url in succeeded prediction");
-          return null;
-        }
-        const imgRes = await fetch(cutoutUrl);
-        if (!imgRes.ok) {
-          log(`[BG-REMOVAL] cutout download failed ${imgRes.status}`);
-          return null;
-        }
-        const buffer = await imgRes.arrayBuffer();
-        log(`[BG-REMOVAL] ✅ cutout ready (${(buffer.byteLength / 1024).toFixed(0)}KB)`);
-        return { cutoutUrl, buffer };
-      }
-      if (pollData.status === "failed" || pollData.status === "canceled") {
-        log(`[BG-REMOVAL] ${pollData.status}: ${pollData.error || "unknown"}`);
-        return null;
-      }
-    }
-
-    log("[BG-REMOVAL] poll timeout");
-    return null;
+    const buffer = await imgRes.arrayBuffer();
+    log(`[BG-REMOVAL] ✅ cutout ready (${(buffer.byteLength / 1024).toFixed(0)}KB)`);
+    return { cutoutUrl, buffer };
   } catch (err) {
     log(`[BG-REMOVAL] exception: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
+
