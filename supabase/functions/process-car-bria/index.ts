@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 // imagescript: pure-JS Deno-compatible image processing (decode/encode/composite/blur).
 import { Image, decode } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
+import { createPrediction, pollPrediction } from "../_shared/replicate.ts";
 
 /**
  * Bria Studio — 100% non-generative background swap.
