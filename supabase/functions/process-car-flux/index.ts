@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { removeBackground } from "../_shared/bg-removal.ts";
+import { createPrediction, pollPrediction } from "../_shared/replicate.ts";
 
 /**
  * Flux Creative pipeline via Replicate (Flux Kontext Pro).
