@@ -35,8 +35,9 @@ serve(async (req) => {
   // 2. Replicate connector probe
   try {
     const t0 = Date.now();
-    const res = await removeBackground(testImage);
-    out.replicate = { ok: !!res, ms: Date.now() - t0, bytes: res?.buffer.byteLength ?? 0 };
+    const logs: string[] = [];
+    const res = await removeBackground(testImage, (m) => logs.push(m));
+    out.replicate = { ok: !!res, ms: Date.now() - t0, bytes: res?.buffer.byteLength ?? 0, logs };
   } catch (e) {
     out.replicate = { error: String(e) };
   }
