@@ -65,6 +65,26 @@ serve(async (req) => {
   }
   out.probes = probes;
 
+  // 4. Try creating a prediction via version id (POST /predictions)
+  try {
+    const h = {
+      Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+      "X-Connection-Api-Key": Deno.env.get("REPLICATE_API_KEY") ?? "",
+      "Content-Type": "application/json",
+    };
+    const m = await (await fetch(`${GW}/models/851-labs/background-remover`, { headers: h })).json();
+    const version = m?.latest_version?.id;
+    const cr = await fetch(`${GW}/predictions`, {
+      method: "POST",
+      headers: h,
+      body: JSON.stringify({ version, input: { image: testImage, format: "png" } }),
+    });
+    out.versionCreate = { version, status: cr.status, body: (await cr.text()).slice(0, 300) };
+  } catch (e) {
+    out.versionCreate = { error: String(e) };
+  }
+
+
   return new Response(JSON.stringify(out, null, 2), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
