@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { removeBackground } from "../_shared/bg-removal.ts";
+import { createPrediction, pollPrediction } from "../_shared/replicate.ts";
 
 /**
  * Flux Creative pipeline via Replicate (Flux Kontext Pro).
@@ -133,8 +134,8 @@ serve(async (req) => {
     // second input silently drops it (result: cutout on plain white). For the
     // car+background composite we use the multi-image Kontext app instead.
     const modelPath = isDetail
-      ? "black-forest-labs/flux-kontext-pro/predictions"
-      : "flux-kontext-apps/multi-image-kontext-pro/predictions";
+      ? "black-forest-labs/flux-kontext-pro"
+      : "flux-kontext-apps/multi-image-kontext-pro";
     const input: Record<string, unknown> = isDetail
       ? {
           prompt,
@@ -153,23 +154,12 @@ serve(async (req) => {
         };
 
     console.log(`[FLUX] creating prediction (${isDetail ? "Kontext Pro" : "multi-image Kontext Pro"})...`);
-    const createRes = await fetch(`${GATEWAY}/models/${modelPath}`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": REPLICATE_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ input }),
-    });
-
-    if (!createRes.ok) {
-      const errTxt = await createRes.text();
-      console.error("[FLUX] create failed", createRes.status, errTxt);
-      throw new Error(`Flux create misslyckades (${createRes.status})`);
+    const created = await createPrediction(modelPath, input, console.log);
+    if (!("id" in created)) {
+      throw new Error(`Flux create misslyckades (${created.status}): ${created.error}`);
     }
-    const created = await createRes.json();
     const predictionId = created.id;
+
 
     // Poll — bounded by the remaining time budget so the function always
     // finishes (and can refund/mark the job failed) before being killed.

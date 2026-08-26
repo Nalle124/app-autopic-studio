@@ -770,13 +770,39 @@ export const V2GenerateStep = ({
             fd.append('engineMode', modeMap[engine as 'gemini-fast' | 'gemini-match' | 'gemini-studio']);
           }
           try {
-            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
+            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${session.access_token}` },
               body: fd,
             });
+            if (!res.ok) {
+              let msg = `Motorn svarade med fel (${res.status})`;
+              try {
+                const body = await res.json();
+                if (body?.error) msg = String(body.error);
+              } catch {}
+              console.error(`Dispatch error for ${prepared.img.id}:`, msg);
+              const jid = jobIds[prepared.img.id];
+              if (jid) {
+                await supabase
+                  .from('processing_jobs')
+                  .update({ status: 'failed', error_message: msg, completed_at: new Date().toISOString() })
+                  .eq('id', jid);
+              }
+            }
           } catch (err) {
             console.error(`Dispatch failed for ${prepared.img.id}:`, err);
+            const jid = jobIds[prepared.img.id];
+            if (jid) {
+              await supabase
+                .from('processing_jobs')
+                .update({
+                  status: 'failed',
+                  error_message: 'Kunde inte nå bildmotorn. Kontrollera din anslutning och försök igen.',
+                  completed_at: new Date().toISOString(),
+                })
+                .eq('id', jid);
+            }
           }
         });
         await Promise.allSettled(promises);
