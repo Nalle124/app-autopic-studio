@@ -8,7 +8,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const out: Record<string, unknown> = {};
-  const testImage = "https://replicate.delivery/pbxt/KWjHqjrMDvhqYQ8N5oPjfnnCPKGXvhnhLZDsHOSRvBpXPZmO/car.jpg";
+  const testImage = "https://cfsyxrokdemwkklqflnb.supabase.co/storage/v1/object/public/processed-cars/scenes/netgrey-light.png";
 
   out.hasLovableKey = !!Deno.env.get("LOVABLE_API_KEY");
   out.hasReplicateKey = !!Deno.env.get("REPLICATE_API_KEY");
