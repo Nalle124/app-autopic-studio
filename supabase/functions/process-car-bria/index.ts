@@ -298,12 +298,8 @@ serve(async (req) => {
 
     if (creditDeducted && userId) {
       try {
-        const { data: uc } = await supabase.from("user_credits").select("credits").eq("user_id", userId).single();
-        const newBal = (uc?.credits || 0) + 1;
-        await supabase.from("user_credits").update({
-          credits: newBal,
-          updated_at: new Date().toISOString(),
-        }).eq("user_id", userId);
+        const { error: refundErr } = await supabase.rpc("increment_credits", { p_user_id: userId, p_amount: 1 });
+        if (refundErr) throw refundErr;
       } catch (e) { console.error("[BRIA] refund failed", e); }
     }
     if (tempPaths.length) supabase.storage.from("processed-cars").remove(tempPaths).catch(() => {});
