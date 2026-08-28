@@ -583,6 +583,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_credits: {
+        Args: { p_amount?: number; p_user_id: string }
+        Returns: number
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
