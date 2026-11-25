@@ -210,7 +210,7 @@ serve(async (req) => {
       }).eq("id", jobId);
     }
 
-    if (tempPaths.length) supabase.storage.from("processed-cars").remove(tempPaths).catch(() => {});
+    if (tempPaths.length) supabase.storage.from("processed-cars").remove(tempPaths).then(() => {}, () => {});
 
     return new Response(
       JSON.stringify({ success: true, finalUrl, jobId, pipeline: "flux", processingTimeMs: totalTime }),
@@ -226,13 +226,13 @@ serve(async (req) => {
         if (refundErr) throw refundErr;
       } catch (e) { console.error("[FLUX] refund failed", e); }
     }
-    if (tempPaths.length) supabase.storage.from("processed-cars").remove(tempPaths).catch(() => {});
+    if (tempPaths.length) supabase.storage.from("processed-cars").remove(tempPaths).then(() => {}, () => {});
     if (jobId) {
       await supabase.from("processing_jobs").update({
         status: "failed",
         error_message: errMsg,
         completed_at: new Date().toISOString(),
-      }).eq("id", jobId).catch(() => {});
+      }).eq("id", jobId).then(() => {}, () => {});
     }
 
     return new Response(
